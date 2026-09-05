@@ -10,9 +10,19 @@
 //! ## Ce que voit un robot
 //!
 //! La coquille portait des métadonnées correctes et un corps vide (`<div id="racine">`). Pour un
-//! navigateur c'est suffisant — le bundle remplit la page. Pour Googlebot c'est un pari sur son
-//! deuxième passage, pour Bing un pari perdu, et pour un aperçu Discord ou Slack — qui ne
-//! lancent aucun JavaScript — une page sans contenu.
+//! navigateur c'est suffisant — le bundle remplit la page.
+//!
+//! Pour Googlebot, ce n'est plus un obstacle d'indexation : toutes les pages HTML sont rendues.
+//! C'est en revanche un coût de latence à queue longue — la mesure indépendante la plus sérieuse
+//! (MERJ × Vercel, 2024, 37 000 paires) donne une médiane de 10 s avant rendu, mais un p90 autour
+//! de 3 h et un p99 vers 18 h. Sur un catalogue qui bouge, le rendu serveur ne débloque pas
+//! l'indexation : il raccourcit la fraîcheur.
+//!
+//! Pour Bing et pour les aperçus sociaux, en revanche, l'obstacle est entier. La documentation de
+//! Meta écrit noir sur blanc que le crawler de WhatsApp n'exécute aucun JavaScript, n'attend aucun
+//! chargement et ne défile pas ; Discord, Slack, X et LinkedIn se comportent de même. Aucun des
+//! sept ne lit le JSON-LD pour composer son aperçu. Un lien partagé vers une coquille vide est un
+//! lien sans titre et sans image.
 //!
 //! Le template rend donc un `<main>` **réel** : titre, description, navigation vers les
 //! catalogues, sélecteur de langue. Il vit à l'intérieur de `#racine`, l'élément que React
@@ -29,6 +39,24 @@ use crate::state::EtatSite;
 
 /// Couleur de cadrage de la DA du jeu (`#295B9F`), mesurée sur le menu principal.
 pub const COULEUR_THEME: &str = "#295B9F";
+
+/// La vignette de partage, servie par le bundle.
+///
+/// Elle n'etait **jamais** emise : `image` valait `None` en dur, et le seul appelant ne la
+/// posait pas. Consequence invisible en developpement et visible partout ailleurs — tout lien
+/// vers Aphrody partage sur Discord, Slack, X ou WhatsApp s'affichait sans vignette, et rien
+/// dans les tests ne le disait, puisqu'ils verifiaient la balise sur une coquille de test ou
+/// l'image etait injectee a la main.
+///
+/// 1200x630, la taille que toutes les plateformes acceptent, pour 23 Ko — largement sous la
+/// rupture de WhatsApp (~300 Ko observes) et sous les 5 Mo de LinkedIn.
+pub const VIGNETTE: &str = "/static/og.png";
+
+/// Largeur de [`VIGNETTE`], declaree pour eviter un fetch asynchrone de la plateforme.
+pub const VIGNETTE_L: u32 = 1200;
+
+/// Hauteur de [`VIGNETTE`].
+pub const VIGNETTE_H: u32 = 630;
 
 /// Le nom du jeu, **non traduit**.
 ///
@@ -115,6 +143,127 @@ fn accueil(langue: Langue) -> (String, String) {
     }
 }
 
+/// Nombre d'entrées rendues par page de catalogue.
+///
+/// 60, la même valeur qu'`apps/azalee` a retenue après avoir mesuré une page de 2 355 397
+/// octets à 200 entrées. Au-delà, le poids de la page cesse d'être proportionnel à ce qu'un
+/// visiteur lit réellement.
+pub const PAR_PAGE: usize = 60;
+
+/// Une entrée de catalogue, rendue côté serveur.
+pub struct Element {
+    /// URL de la ressource — son chemin VFS verbatim, sous `/f/`.
+    pub href: String,
+    /// Nom de la feuille, extension du jeu conservée.
+    pub nom: String,
+    /// Chemin complet, affiché : c'est l'identifiant, et il vaut d'être lu.
+    pub chemin: String,
+    /// Taille, en unités lisibles.
+    pub taille: String,
+}
+
+/// Une page de catalogue rendue côté serveur.
+pub struct Catalogue {
+    /// Les entrées de cette page.
+    pub elements: Vec<Element>,
+    /// Nombre total d'entrées du catalogue.
+    pub total: usize,
+    /// Numéro de la page courante, à partir de 1.
+    pub page: usize,
+    /// Nombre de pages.
+    pub pages: usize,
+    /// URL de la page précédente, quand il y en a une.
+    pub precedent: Option<String>,
+    /// URL de la page suivante, quand il y en a une.
+    pub suivant: Option<String>,
+}
+
+/// Taille en octets, rendue lisible.
+///
+/// Les puissances de 1024 et leurs symboles usuels ; une décimale au-delà du kilo-octet, aucune
+/// en dessous — « 3,4 Mio » se lit, « 3565158 o » se compte.
+#[must_use]
+pub fn taille_lisible(octets: u32) -> String {
+    const SEUIL: f64 = 1024.0;
+    let o = f64::from(octets);
+    if o < SEUIL {
+        return format!("{octets} o");
+    }
+    let unites = ["kio", "Mio", "Gio"];
+    let mut valeur = o / SEUIL;
+    let mut rang = 0;
+    while valeur >= SEUIL && rang + 1 < unites.len() {
+        valeur /= SEUIL;
+        rang += 1;
+    }
+    format!("{valeur:.1} {}", unites[rang])
+}
+
+/// Le numéro de page demandé par la requête, borné à 1 au minimum.
+///
+/// Une valeur absente, vide, nulle ou illisible vaut 1. Refuser la requête n'apporterait rien :
+/// `?page=abc` est une URL fabriquée, pas une erreur de l'utilisateur, et la première page est
+/// une réponse correcte à une question mal posée.
+#[must_use]
+pub fn numero_de_page(query: Option<&str>) -> usize {
+    query
+        .and_then(|q| {
+            q.split('&')
+                .find_map(|p| p.strip_prefix("page="))
+                .and_then(|v| v.parse::<usize>().ok())
+        })
+        .filter(|n| *n >= 1)
+        .unwrap_or(1)
+}
+
+/// Largeur d'affichage d'un texte, en demi-cadratins.
+///
+/// ## Pourquoi compter autre chose que des caractères
+///
+/// Un moteur ne tronque pas un titre à un nombre de caractères mais à une largeur — et un
+/// idéogramme occupe deux fois la place d'une lettre latine (Unicode UAX #11 les classe
+/// *Wide* ou *Fullwidth*). Valider `titre.chars().count()` laisserait donc passer un titre
+/// japonais deux fois trop long, et rejetterait un titre français correct.
+///
+/// Un seul compteur pour les trois langues : 2 unités pour un caractère large, 1 sinon.
+#[must_use]
+pub fn largeur_affichage(texte: &str) -> usize {
+    texte.chars().map(|c| if est_large(c) { 2 } else { 1 }).sum()
+}
+
+/// Dit si un caractère occupe deux demi-cadratins (UAX #11, classes `W` et `F`).
+///
+/// Les plages retenues sont celles qui apparaissent réellement dans du texte japonais, coréen
+/// ou chinois — pas la table complète d'UAX #11, qui décrirait des écritures que ce site
+/// n'affiche pas.
+const fn est_large(c: char) -> bool {
+    matches!(c as u32,
+        0x1100..=0x115F      // jamos hangul de tête
+        | 0x2E80..=0x303E    // radicaux CJK, Kangxi, ponctuation CJK
+        | 0x3041..=0x33FF    // hiragana, katakana, bopomofo, carrés de compatibilité
+        | 0x3400..=0x4DBF    // idéogrammes, extension A
+        | 0x4E00..=0x9FFF    // idéogrammes unifiés
+        | 0xA000..=0xA4CF    // yi
+        | 0xAC00..=0xD7A3    // syllabes hangul
+        | 0xF900..=0xFAFF    // idéogrammes de compatibilité
+        | 0xFE30..=0xFE6F    // formes de ponctuation verticale
+        | 0xFF00..=0xFF60    // formes pleine chasse
+        | 0xFFE0..=0xFFE6
+        | 0x20000..=0x2FFFD  // extensions B et suivantes
+        | 0x30000..=0x3FFFD
+    )
+}
+
+/// Largeur au-delà de laquelle un `<title>` est tronqué à l'affichage.
+///
+/// Google ne fixe aucune limite de longueur ; c'est la largeur du bandeau de résultats qui
+/// coupe. 60 demi-cadratins couvrent les deux usages mesurés : ~55-60 caractères latins, ~30
+/// caractères japonais.
+pub const LARGEUR_TITRE: usize = 60;
+
+/// Largeur au-delà de laquelle une `meta description` est tronquée.
+pub const LARGEUR_DESCRIPTION: usize = 240;
+
 /// Un lien de navigation rendu côté serveur.
 pub struct Lien {
     /// URL absolue ou relative à suivre.
@@ -151,6 +300,12 @@ pub struct Coquille {
     pub alternatives: Vec<Alternative>,
     /// Vignette absolue, quand la route en désigne une.
     pub image: Option<String>,
+    /// Largeur de la vignette, déclarée pour éviter un fetch asynchrone de la plateforme.
+    pub vignette_l: u32,
+    /// Hauteur de la vignette.
+    pub vignette_h: u32,
+    /// Texte alternatif de la vignette.
+    pub vignette_alt: String,
     /// Route demandée, transmise au bundle par `data-route`.
     pub route: String,
     /// Feuille de style du bundle, quand elle a été trouvée.
@@ -169,6 +324,14 @@ pub struct Coquille {
     pub libelle_catalogues: &'static str,
     /// Libellé du sélecteur de langue, dans la langue de la page.
     pub libelle_langues: &'static str,
+    /// Le contenu du catalogue, quand la route en désigne un et que le VFS est prêt.
+    pub catalogue: Option<Catalogue>,
+    /// Libellé du compte d'entrées, dans la langue de la page.
+    pub libelle_total: String,
+    /// Libellé de la page précédente.
+    pub libelle_precedent: &'static str,
+    /// Libellé de la page suivante.
+    pub libelle_suivant: &'static str,
 }
 
 /// Page d'erreur HTML, pour les routes de navigation.
@@ -254,7 +417,14 @@ fn json_sur_pour_script(json: &str) -> String {
 /// Ce que Google exploite réellement ici est le fil d'Ariane (affiché dans les résultats) et le
 /// `SearchAction` de l'accueil ; le reste décrit le site pour les moteurs qui savent le lire.
 /// Rien de tout cela n'invente de données : les libellés sont ceux de la page.
-fn donnees_structurees(origine: &str, route: &str, langue: Langue, titre: &str, description: &str) -> String {
+fn donnees_structurees(
+    origine: &str,
+    route: &str,
+    langue: Langue,
+    titre: &str,
+    description: &str,
+    catalogue: Option<&Catalogue>,
+) -> String {
     let url = langue.url(origine, route);
     let racine = langue.url(origine, "/");
     let nu = route.trim_matches('/');
@@ -297,6 +467,30 @@ fn donnees_structurees(origine: &str, route: &str, langue: Langue, titre: &str, 
             "isPartOf": { "@id": format!("{racine}#site") },
             "about": { "@type": "VideoGame", "name": JEU },
         }));
+        // `ItemList` ne decrit que ce qui est REELLEMENT dans la page. En annoncer plus que le
+        // document n'en porte est la facon la plus simple d'invalider tout le bloc.
+        if let Some(c) = catalogue {
+            let items: Vec<_> = c
+                .elements
+                .iter()
+                .take(10)
+                .enumerate()
+                .map(|(i, e)| {
+                    serde_json::json!({
+                        "@type": "ListItem",
+                        "position": i + 1,
+                        "name": e.nom,
+                        "url": format!("{origine}{}", e.href),
+                    })
+                })
+                .collect();
+            graphe.push(serde_json::json!({
+                "@type": "ItemList",
+                "name": titre,
+                "numberOfItems": c.total,
+                "itemListElement": items,
+            }));
+        }
         graphe.push(serde_json::json!({
             "@type": "BreadcrumbList",
             "itemListElement": [
@@ -320,6 +514,7 @@ pub fn construire(
     langue: Langue,
     feuille: Option<String>,
     script: Option<String>,
+    catalogue: Option<Catalogue>,
 ) -> Coquille {
     let (titre, description, type_og) = metadonnees(route, langue);
     let i = rang(langue);
@@ -352,10 +547,26 @@ pub fn construire(
         Langue::En => ("Catalogues", "Languages"),
         Langue::Ja => ("カタログ", "言語"),
     };
+    let (libelle_precedent, libelle_suivant) = match langue {
+        Langue::Fr => ("Page précédente", "Page suivante"),
+        Langue::En => ("Previous page", "Next page"),
+        Langue::Ja => ("前のページ", "次のページ"),
+    };
+    let libelle_total = catalogue.as_ref().map_or_else(String::new, |c| match langue {
+        Langue::Fr => format!("{} fichiers · page {} sur {}", c.total, c.page, c.pages),
+        Langue::En => format!("{} files · page {} of {}", c.total, c.page, c.pages),
+        Langue::Ja => format!("{} 件 · {} / {} ページ", c.total, c.page, c.pages),
+    });
+    // La page courante fait partie de l'identite de l'URL : sans `?page=` au canonique, les
+    // pages 2 et suivantes se declarent toutes copies de la premiere et disparaissent.
+    let url = match catalogue.as_ref().map(|c| c.page) {
+        Some(n) if n > 1 => format!("{}?page={n}", langue.url(origine, route)),
+        _ => langue.url(origine, route),
+    };
     Coquille {
         lang: langue.code(),
-        jsonld: donnees_structurees(origine, route, langue, &titre, &description),
-        url: langue.url(origine, route),
+        jsonld: donnees_structurees(origine, route, langue, &titre, &description, catalogue.as_ref()),
+        url,
         og_locale: langue.og_locale(),
         og_locales_alternes: Langue::TOUTES
             .iter()
@@ -363,10 +574,14 @@ pub fn construire(
             .map(|l| l.og_locale())
             .collect(),
         alternatives: alternatives(origine, route),
+        // Absolue : une plateforme sociale ne resout pas les URL relatives.
+        image: Some(format!("{origine}{VIGNETTE}")),
+        vignette_l: VIGNETTE_L,
+        vignette_h: VIGNETTE_H,
+        vignette_alt: titre.clone(),
         titre,
         description,
         type_og,
-        image: None,
         route: route.to_owned(),
         feuille,
         script,
@@ -375,7 +590,54 @@ pub fn construire(
         langues,
         libelle_catalogues,
         libelle_langues,
+        catalogue,
+        libelle_total,
+        libelle_precedent,
+        libelle_suivant,
     }
+}
+
+/// Charge la page de catalogue que la route désigne, si elle en désigne une.
+///
+/// Rend `None` — et non une erreur — quand la route n'est pas un catalogue, ou quand l'index du
+/// VFS n'est pas encore monté. Le montage prend des minutes sur 255 000 entrées : une page qui
+/// refuserait de se rendre pendant ce temps serait pire que la même page sans sa liste, qui
+/// garde son titre, sa navigation et ses liens.
+fn charger_catalogue(
+    etat: &EtatSite,
+    route: &str,
+    langue: Langue,
+    page: usize,
+) -> Option<Catalogue> {
+    let segment = route.trim_matches('/');
+    let vue = crate::vfs_index::Vue::depuis_segment(segment)?;
+    let index = etat.index().ok()?;
+    let total = index.compte_vue(vue);
+    let pages = total.div_ceil(PAR_PAGE).max(1);
+    let page = page.min(pages);
+    let elements = index
+        .page_vue(vue, (page - 1) * PAR_PAGE, PAR_PAGE)
+        .into_iter()
+        .map(|f| Element {
+            href: format!("/f/{}", f.chemin),
+            nom: f.nom,
+            chemin: f.chemin,
+            taille: taille_lisible(f.taille),
+        })
+        .collect();
+    let lien = |n: usize| {
+        let base = langue.url("", route);
+        let base = if base.is_empty() { "/" } else { &base };
+        if n == 1 { base.to_owned() } else { format!("{base}?page={n}") }
+    };
+    Some(Catalogue {
+        elements,
+        total,
+        page,
+        pages,
+        precedent: (page > 1).then(|| lien(page - 1)),
+        suivant: (page < pages).then(|| lien(page + 1)),
+    })
 }
 
 /// Sert la coquille pour une route de navigation.
@@ -391,12 +653,19 @@ pub async fn coquille(State(etat): State<EtatSite>, uri: Uri) -> Response {
     }
     let (feuille, script) =
         crate::routes::static_files::points_d_entree(&etat.config.statique).await;
+    let catalogue = charger_catalogue(
+        &etat,
+        &demande.route,
+        demande.langue,
+        numero_de_page(uri.query()),
+    );
     let page = construire(
         &etat.config.origine,
         &demande.route,
         demande.langue,
         feuille,
         script,
+        catalogue,
     );
     match page.render() {
         Ok(html) => (
@@ -444,9 +713,29 @@ mod tests {
     use super::*;
 
     fn page(route: &str, langue: Langue) -> String {
-        construire("https://aphrody.com", route, langue, None, None)
+        construire("https://aphrody.com", route, langue, None, None, None)
             .render()
             .expect("rendu")
+    }
+
+    /// Un catalogue synthétique : `n` entrées sur un total annoncé, à la page `page`.
+    fn catalogue(n: usize, total: usize, page: usize) -> Catalogue {
+        let pages = total.div_ceil(PAR_PAGE).max(1);
+        Catalogue {
+            elements: (0..n)
+                .map(|i| Element {
+                    href: format!("/f/data/dx11/chr/x{i:03}.g4tx"),
+                    nom: format!("x{i:03}.g4tx"),
+                    chemin: format!("data/dx11/chr/x{i:03}.g4tx"),
+                    taille: taille_lisible(1024 * (i as u32 + 1)),
+                })
+                .collect(),
+            total,
+            page,
+            pages,
+            precedent: (page > 1).then(|| format!("/textures?page={}", page - 1)),
+            suivant: (page < pages).then(|| format!("/textures?page={}", page + 1)),
+        }
     }
 
     #[test]
@@ -476,8 +765,10 @@ mod tests {
 
     #[test]
     fn coquille_porte_les_balises_og() {
-        let mut c = construire("https://aphrody.com", "/", Langue::Fr, None, None);
-        c.image = Some("https://aphrody.com/i.png".to_owned());
+        // L'image n'est plus injectee par le test : elle doit etre la SANS qu'on la pose,
+        // sinon on verifie une balise que la production n'emet pas.
+        let c = construire("https://aphrody.com", "/", Langue::Fr, None, None, None);
+        assert_eq!(c.image.as_deref(), Some("https://aphrody.com/static/og.png"));
         let html = c.render().expect("rendu");
         for balise in [
             "og:title",
@@ -487,10 +778,17 @@ mod tests {
             "og:type",
             "og:site_name",
             "og:locale",
+            "og:image:width",
+            "og:image:height",
+            "og:image:alt",
             "twitter:card",
+            "twitter:image",
         ] {
             assert!(html.contains(balise), "balise {balise} absente");
         }
+        assert!(html.contains(r#"content="summary_large_image""#));
+        assert!(html.contains(r#"content="1200""#));
+        assert!(html.contains(r#"content="630""#));
     }
 
     #[test]
@@ -559,10 +857,179 @@ mod tests {
     }
 
     #[test]
+    fn la_largeur_compte_les_ideogrammes_pour_deux() {
+        assert_eq!(largeur_affichage("abc"), 3);
+        assert_eq!(largeur_affichage("テクスチャ"), 10);
+        assert_eq!(largeur_affichage("モデル — Aphrody"), 6 + 1 + 1 + 1 + 7);
+        // Un caractère latin pleine chasse compte double, comme un idéogramme.
+        assert_eq!(largeur_affichage("Ａ"), 2);
+        assert_eq!(largeur_affichage(""), 0);
+    }
+
+    #[test]
+    fn aucun_titre_ni_description_ne_sera_tronque() {
+        // La gate porte sur la LARGEUR, pas sur le nombre de caractères : sans cela un titre
+        // japonais deux fois trop long passerait, et un titre français correct serait rejeté.
+        let routes = ["/", "/textures", "/modeles", "/sons", "/videos"];
+        for langue in Langue::TOUTES {
+            for route in routes {
+                let (titre, description, _) = metadonnees(route, langue);
+                let lt = largeur_affichage(&titre);
+                let ld = largeur_affichage(&description);
+                assert!(
+                    lt <= LARGEUR_TITRE,
+                    "titre trop large en {langue} sur {route} : {lt} > {LARGEUR_TITRE} — {titre}"
+                );
+                assert!(
+                    ld <= LARGEUR_DESCRIPTION,
+                    "description trop large en {langue} sur {route} : {ld} > {LARGEUR_DESCRIPTION}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn aucun_titre_ni_description_n_est_duplique() {
+        // Deux pages qui portent le meme titre se font concurrence a elles-memes. Le compte
+        // se mesure, il ne se relit pas a l'oeil (gate `wiki-azalee.md` §5).
+        let routes = ["/", "/textures", "/modeles", "/sons", "/videos"];
+        for langue in Langue::TOUTES {
+            let titres: std::collections::BTreeSet<_> =
+                routes.iter().map(|r| metadonnees(r, langue).0).collect();
+            assert_eq!(titres.len(), routes.len(), "titres dupliqués en {langue}");
+            let descriptions: std::collections::BTreeSet<_> =
+                routes.iter().map(|r| metadonnees(r, langue).1).collect();
+            assert_eq!(descriptions.len(), routes.len(), "descriptions dupliquées en {langue}");
+        }
+    }
+
+    #[test]
+    fn taille_lisible_change_d_unite_sans_mentir() {
+        assert_eq!(taille_lisible(0), "0 o");
+        assert_eq!(taille_lisible(1023), "1023 o");
+        assert_eq!(taille_lisible(1024), "1.0 kio");
+        assert_eq!(taille_lisible(3_498_240), "3.3 Mio");
+        // Le plus gros fichier du jeu reste sous le gibioctet : l'unite suivante n'existe pas.
+        assert_eq!(taille_lisible(u32::MAX), "4.0 Gio");
+    }
+
+    #[test]
+    fn le_numero_de_page_tolere_ce_qu_on_lui_donne() {
+        assert_eq!(numero_de_page(None), 1);
+        assert_eq!(numero_de_page(Some("")), 1);
+        assert_eq!(numero_de_page(Some("page=3")), 3);
+        assert_eq!(numero_de_page(Some("q=x&page=12")), 12);
+        // Une URL fabriquee n'est pas une erreur de l'utilisateur : la premiere page repond.
+        assert_eq!(numero_de_page(Some("page=abc")), 1);
+        assert_eq!(numero_de_page(Some("page=0")), 1);
+        assert_eq!(numero_de_page(Some("page=-4")), 1);
+    }
+
+    #[test]
+    fn le_catalogue_est_rendu_cote_serveur() {
+        let c = construire(
+            "https://aphrody.com",
+            "/textures",
+            Langue::Fr,
+            None,
+            None,
+            Some(catalogue(60, 54_203, 1)),
+        );
+        let html = c.render().expect("rendu");
+        // 60 entrees reellement dans le document : c'est ce que voit un robot qui n'execute rien.
+        assert_eq!(html.matches("<li><a href=\"/f/").count(), 60);
+        assert!(html.contains("54203 fichiers · page 1 sur 904"));
+        assert!(html.contains(r#"<a href="/f/data/dx11/chr/x000.g4tx">x000.g4tx</a>"#));
+        // La taille est lisible, pas un nombre d'octets nu.
+        assert!(html.contains("1.0 kio"));
+        // Premiere page : un suivant, pas de precedent.
+        assert!(html.contains(r#"rel="next""#));
+        assert!(!html.contains(r#"rel="prev""#));
+    }
+
+    #[test]
+    fn la_pagination_se_declare_dans_le_canonique_et_dans_le_head() {
+        let c = construire(
+            "https://aphrody.com",
+            "/textures",
+            Langue::Ja,
+            None,
+            None,
+            Some(catalogue(60, 54_203, 7)),
+        );
+        // Sans `?page=` au canonique, les pages 2 et suivantes se declarent copies de la
+        // premiere, et disparaissent de l'index.
+        assert_eq!(c.url, "https://aphrody.com/ja/textures?page=7");
+        let html = c.render().expect("rendu");
+        assert!(html.contains(r#"<link rel="prev" href="/textures?page=6">"#));
+        assert!(html.contains(r#"<link rel="next" href="/textures?page=8">"#));
+        assert!(html.contains(r#"<link rel="canonical" href="https://aphrody.com/ja/textures?page=7">"#));
+        // Les libelles suivent la langue.
+        assert!(html.contains("前のページ"));
+        assert!(html.contains("54203 件 · 7 / 904 ページ"));
+        // Le groupe hreflang reste celui de la ROUTE, sans le numero de page : les trois
+        // langues d'une meme page se pointent, pas la page 7 francaise depuis la page 1.
+        assert!(html.contains(r#"hreflang="fr" href="https://aphrody.com/textures""#));
+    }
+
+    #[test]
+    fn la_derniere_page_n_annonce_pas_de_suivante() {
+        let c = construire(
+            "https://aphrody.com",
+            "/textures",
+            Langue::En,
+            None,
+            None,
+            Some(catalogue(23, 143, 3)),
+        );
+        let html = c.render().expect("rendu");
+        assert_eq!(html.matches("<li><a href=\"/f/").count(), 23);
+        assert!(html.contains(r#"rel="prev""#));
+        assert!(!html.contains(r#"rel="next""#));
+        assert!(html.contains("143 files · page 3 of 3"));
+    }
+
+    #[test]
+    fn l_itemlist_ne_decrit_que_ce_que_la_page_porte() {
+        let c = construire(
+            "https://aphrody.com",
+            "/textures",
+            Langue::Fr,
+            None,
+            None,
+            Some(catalogue(60, 54_203, 1)),
+        );
+        let brut = c
+            .jsonld
+            .replace(r"\u003c", "<")
+            .replace(r"\u003e", ">")
+            .replace(r"\u0026", "&");
+        let v: serde_json::Value = serde_json::from_str(&brut).expect("json-ld");
+        let liste = v["@graph"]
+            .as_array()
+            .expect("graphe")
+            .iter()
+            .find(|n| n["@type"] == "ItemList")
+            .expect("ItemList absent");
+        assert_eq!(liste["numberOfItems"], 54_203);
+        // 10 elements decrits, jamais les 60 : annoncer plus que le document ne porte invalide
+        // le bloc entier.
+        assert_eq!(liste["itemListElement"].as_array().expect("items").len(), 10);
+        assert_eq!(liste["itemListElement"][0]["position"], 1);
+        assert_eq!(
+            liste["itemListElement"][0]["url"],
+            "https://aphrody.com/f/data/dx11/chr/x000.g4tx"
+        );
+        // Une page sans catalogue n'en fabrique pas.
+        let sans = construire("https://aphrody.com", "/", Langue::Fr, None, None, None);
+        assert!(!sans.jsonld.contains("ItemList"));
+    }
+
+    #[test]
     fn les_donnees_structurees_sont_du_json_valide_et_inoffensif() {
         for langue in Langue::TOUTES {
             for route in ["/", "/textures"] {
-                let c = construire("https://aphrody.com", route, langue, None, None);
+                let c = construire("https://aphrody.com", route, langue, None, None, None);
                 // Le `<` échappé doit se relire comme du JSON : sinon la page porte un bloc mort.
                 let brut = c.jsonld.replace(r"\u003c", "<").replace(r"\u003e", ">").replace(r"\u0026", "&");
                 let v: serde_json::Value = serde_json::from_str(&brut).expect("json-ld valide");
@@ -572,7 +1039,7 @@ mod tests {
                 assert!(!c.jsonld.contains('<'), "jsonld non échappé en {langue}");
             }
         }
-        let c = construire("https://aphrody.com", "/textures", Langue::Fr, None, None);
+        let c = construire("https://aphrody.com", "/textures", Langue::Fr, None, None, None);
         let brut = c.jsonld.replace(r"\u003c", "<").replace(r"\u003e", ">").replace(r"\u0026", "&");
         let v: serde_json::Value = serde_json::from_str(&brut).expect("json-ld");
         let types: Vec<_> = v["@graph"]

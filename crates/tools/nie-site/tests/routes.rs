@@ -433,8 +433,11 @@ async fn la_coquille_porte_les_balises_og_de_la_route() {
     assert_eq!(statut, StatusCode::OK);
     assert_eq!(entetes[header::CONTENT_TYPE], "text/html; charset=utf-8");
     let html = String::from_utf8(corps).unwrap();
-    // 8 sans vignette : type, site_name, locale, 2 locale:alternate, title, description, url.
-    assert_eq!(html.matches("<meta property=\"og:").count(), 8, "og: sans vignette");
+    // 12 : type, site_name, locale, 2 locale:alternate, title, description, url, puis la
+    // vignette et ses trois attributs. La vignette est servie PAR DEFAUT — elle ne l'etait
+    // jamais avant, et aucun test ne le voyait parce qu'ils l'injectaient a la main.
+    assert_eq!(html.matches("<meta property=\"og:").count(), 12, "og: avec vignette");
+    assert!(html.contains(r#"content="https://aphrody.com/static/og.png""#));
     assert_eq!(html.matches("og:locale:alternate").count(), 2, "les deux autres langues");
     assert!(html.contains("data-route=\"/\""));
     assert!(html.contains("data-langue=\"fr\""));

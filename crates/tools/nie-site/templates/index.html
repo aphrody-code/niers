@@ -18,6 +18,9 @@
 <meta property="og:description" content="{{ description }}">
 <meta property="og:url" content="{{ url }}">
 {% if let Some(img) = image %}<meta property="og:image" content="{{ img }}">
+<meta property="og:image:width" content="{{ vignette_l }}">
+<meta property="og:image:height" content="{{ vignette_h }}">
+<meta property="og:image:alt" content="{{ vignette_alt }}">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="{{ img }}">
 {% else %}<meta name="twitter:card" content="summary">
@@ -25,7 +28,9 @@
 <meta name="twitter:description" content="{{ description }}">
 {# Palette MESUREE du menu principal du jeu (docs/stack/web-platform.md) : la DA
    d'Aphrody est celle de nie, pas Material Design. `theme-color` n'accepte pas de variable CSS. #}
-<meta name="theme-color" content="{{ couleur_theme }}">
+{% if let Some(cat) = catalogue %}{% if let Some(prec) = cat.precedent %}<link rel="prev" href="{{ prec }}">
+{% endif %}{% if let Some(suiv) = cat.suivant %}<link rel="next" href="{{ suiv }}">
+{% endif %}{% endif %}<meta name="theme-color" content="{{ couleur_theme }}">
 {% if let Some(css) = feuille %}<link rel="stylesheet" href="{{ css }}">
 {% endif %}<script type="application/ld+json">{{ jsonld|safe }}</script>
 </head>
@@ -37,7 +42,15 @@
 <main>
 <h1>{{ titre }}</h1>
 <p>{{ description }}</p>
-<nav aria-label="{{ libelle_catalogues }}">
+{% if let Some(cat) = catalogue %}<p>{{ libelle_total }}</p>
+<ol start="{{ cat.page * 60 - 59 }}">
+{% for e in cat.elements %}<li><a href="{{ e.href }}">{{ e.nom }}</a> <span>{{ e.chemin }}</span> <span>{{ e.taille }}</span></li>
+{% endfor %}</ol>
+<nav aria-label="{{ libelle_total }}">
+{% if let Some(prec) = cat.precedent %}<a href="{{ prec }}" rel="prev">{{ libelle_precedent }}</a>
+{% endif %}{% if let Some(suiv) = cat.suivant %}<a href="{{ suiv }}" rel="next">{{ libelle_suivant }}</a>
+{% endif %}</nav>
+{% endif %}<nav aria-label="{{ libelle_catalogues }}">
 <h2>{{ libelle_catalogues }}</h2>
 <ul>
 {% for c in catalogues %}<li><a href="{{ c.href }}">{{ c.libelle }}</a></li>
