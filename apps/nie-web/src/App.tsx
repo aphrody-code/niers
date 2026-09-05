@@ -55,7 +55,38 @@ function Accueil() {
 	const capacites = useCapacites();
 	const erreur = useErreurSource();
 	const [etat, setEtat] = useState<SanteApi | null>(null);
-	const [vue, setVue] = useState<VueCatalogue | typeof EXPLORATEUR>(VUES[0]);
+	// L'entree courante vit dans l'URL, pas seulement en memoire.
+	//
+	// Sans cela, un lien vers un catalogue ne mene qu'a l'accueil, le bouton « precedent » du
+	// navigateur quitte le site au lieu de revenir a la vue precedente, et un rechargement perd
+	// ou l'on etait. Une interface qui ne se laisse pas mettre en signet oblige a refaire le
+	// chemin a chaque visite.
+	const [vue, setVueEtat] = useState<VueCatalogue | typeof EXPLORATEUR>(() => {
+		const demandee = new URLSearchParams(window.location.search).get("vue");
+		return (ENTREES as readonly string[]).includes(demandee ?? "")
+			? (demandee as VueCatalogue | typeof EXPLORATEUR)
+			: VUES[0];
+	});
+
+	/** Change de vue ET d'URL, sans recharger la page. */
+	const setVue = (suivante: VueCatalogue | typeof EXPLORATEUR) => {
+		setVueEtat(suivante);
+		const url = new URL(window.location.href);
+		url.searchParams.set("vue", suivante);
+		window.history.pushState({ vue: suivante }, "", url);
+	};
+
+	// Le bouton « precedent » doit ramener a la vue precedente, pas sortir du site.
+	useEffect(() => {
+		const surRetour = () => {
+			const demandee = new URLSearchParams(window.location.search).get("vue");
+			if ((ENTREES as readonly string[]).includes(demandee ?? "")) {
+				setVueEtat(demandee as VueCatalogue | typeof EXPLORATEUR);
+			}
+		};
+		window.addEventListener("popstate", surRetour);
+		return () => window.removeEventListener("popstate", surRetour);
+	}, []);
 
 	useEffect(() => {
 		const ac = new AbortController();
