@@ -216,6 +216,10 @@ Un seul lockfile, à la racine. Bibliothèque → `packages/`, application avec 
 | `packages/nie-catalog` | **La façade des quatre gisements** (jeu / extrait / re / anime) et leurs jointures |
 | `packages/nie-plugin` | Plugin Bun d'import des formats — **préchargé par `bunfig.toml`** |
 | `packages/azalee` | La bibliothèque du wiki — service, images, clients CDN client-safe (`cpk/*`) |
+| `packages/azalee-tools` | **L'outillage HORS LIGNE du wiki** : CLI `azalee`, scripts de manifestes, serveur local, client distant. Il lit le disque et les bases locales — jamais déployé sur Vercel, et c'est pour cela qu'il est séparé |
+| `packages/nie-game` | La logique de JEU pure : formations, codes d'équipe, règles, texte. Neutre, sans marque, sans I/O |
+| `packages/asset-source` | **Le contrat d'accès aux ressources** (`AssetSource`) et sa source web. Ne dépend PAS de Tauri : c'est ce qui le rend consommable par un navigateur |
+| `packages/inacord-ui` | **L'interface partagée** d'Inacord et d'Aphrody — 45 primitives, les coquilles `shell/{main-menu,inacord}`, et `useAssetSource()`. Zéro `@tauri-apps` |
 | `packages/inagle` | Le pipeline des données du jeu : parsers, entités, push vers Postgres |
 | `packages/cron` | Le démon de tâches, dont `src/tasks/ie-crawl/` (43 modules de veille) |
 | `packages/ietv`, `wonderbot`, `zukan` | Catalogue d'épisodes de la série, son bot Discord, le zukan officiel |
@@ -224,6 +228,7 @@ Un seul lockfile, à la racine. Bibliothèque → `packages/`, application avec 
 | `apps/bxc` | La passerelle vers `@aphrody/bxc` et le workflow de scrapping unifié |
 | `apps/inacord` | Explorateur/éditeur Tauri (React + Rust, `src-tauri` hors workspace Cargo) |
 | `apps/nie-mcp` | Serveur MCP `niers-game` — VFS, assets, KB RE, pilotage de l'explorateur |
+| `apps/nie-web` | **Aphrody sur le web** : hôte Vite d'`inacord-ui`, servi par la crate `nie-site`. `src/legacy/` est un SAS — le code sorti du wiki qui attend d'être réécrit, exclu du `tsconfig` |
 
 ```bash
 bun install                 # depuis la racine, jamais dans un sous-paquet
@@ -328,6 +333,14 @@ Carte complète : `docs/ARCHITECTURE.md`. En bref :
 | **Bun/TS** (`packages/`, `apps/`) | MCP, serveur web, types, API, UI |
 
 - La conversion de texture C++ est **la moins bonne des trois** : ne pas l'étendre.
+- **Une interface, deux hôtes.** Inacord (Tauri) et Aphrody (navigateur) montent les MÊMES
+  composants (`packages/inacord-ui`) par deux implémentations d'un seul contrat
+  (`packages/asset-source`). Un composant ne sait jamais qui l'héberge : il demande sa source par
+  `useAssetSource()` et ce que l'hôte sait faire par `useCapacites()`. Sur les 147 commandes de
+  l'hôte desktop, ~66 sont portables et 81 ne le seront jamais (Lua, forge, modding, Blender,
+  mémoire du jeu, disque) : l'interface MASQUE ce que l'hôte ne sait pas faire au lieu de le
+  proposer puis d'échouer. Ne jamais écrire de condition sur l'hôte dans un composant — c'est le
+  contrat qui porte l'asymétrie, et `capacites()` la mesure au lieu de l'affirmer.
 - **`niers` est la seule CLI utilisateur.** Les autres sont derrière la façade :
   `niers cpp <args>` (toolkit C++), `niers cs <args>` (outillage .NET), `niers backends`
   (ce qui est construit et où). Une commande nouvelle s'écrit en Rust, jamais dans les deux
