@@ -37,14 +37,14 @@ Environment=NIE_GAME_DIR=/home/ubuntu/niers
 Environment=RUST_LOG=info
 # Budget du cache de CPK de nie-formats. La machine sert déjà nie-model-serve avec 8 GiB :
 # nie-site ne lit que des fichiers, il n'assemble rien — 2 GiB suffisent.
-Environment=NIE_CPK_CACHE_BUDGET_GIB=2
+Environment=NIE_CPK_CACHE_BUDGET_GIB=4
 
 Restart=always
 RestartSec=5s
 # Plafond mémoire : au-delà, systemd tue le service plutôt que de laisser earlyoom choisir
 # une victime au hasard sur une machine qui porte 18 autres services.
-MemoryMax=3G
-MemoryHigh=2500M
+MemoryMax=8G
+MemoryHigh=6G
 LimitNOFILE=16384
 
 # Durcissement : le service ne fait que LIRE des fichiers et parler à 127.0.0.1.
