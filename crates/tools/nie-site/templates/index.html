@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ titre }}</title>
+<meta name="description" content="{{ description }}">
+<link rel="canonical" href="{{ url }}">
+<meta property="og:type" content="{{ type_og }}">
+<meta property="og:site_name" content="Aphrody">
+<meta property="og:locale" content="fr_FR">
+<meta property="og:title" content="{{ titre }}">
+<meta property="og:description" content="{{ description }}">
+<meta property="og:url" content="{{ url }}">
+{% if let Some(img) = image %}<meta property="og:image" content="{{ img }}">
+<meta name="twitter:card" content="summary_large_image">
+{% else %}<meta name="twitter:card" content="summary">
+{% endif %}{# Palette MESUREE du menu principal du jeu (docs/stack/web-platform.md) : la DA
+   d'Aphrody est celle de nie, pas Material Design. `theme-color` n'accepte pas de variable CSS. #}
+<meta name="theme-color" content="{{ couleur_theme }}">
+{% if let Some(css) = feuille %}<link rel="stylesheet" href="{{ css }}">
+{% endif %}</head>
+<body>
+<div id="racine" data-route="{{ route }}"></div>
+{% if let Some(js) = script %}<script type="module" src="{{ js }}"></script>
+{% endif %}<noscript>Aphrody a besoin de JavaScript pour afficher les assets du jeu. Les données restent accessibles sous /api/v1/ et /f/.</noscript>
+</body>
+</html>

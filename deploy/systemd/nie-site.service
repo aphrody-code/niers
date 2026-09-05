@@ -1,0 +1,69 @@
+# Aphrody (aphrody.com) — servi par la crate `nie-site`, 100 % Rust, sur 127.0.0.1:8085.
+#
+# NE PAS INSTALLER depuis cette session : l'installation, le `daemon-reload` et le `reload`
+# nginx sont des actes de production (J5 du PLAN, propriétaire Codex, avec le go de
+# l'utilisateur). Ce fichier décrit ce qui doit tourner ; il ne le fait pas tourner.
+#
+#   sudo cp deploy/systemd/nie-site.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now nie-site
+#   curl -s http://127.0.0.1:8085/healthz | jq .        # doit répondre "nie-site"
+#
+# Rollback : le vhost `aphrody.com` repointe sur :8083 (`aphrody-site` n'est jamais arrêté).
+
+[Unit]
+Description=nie-site — Aphrody (bundle nie-web, /api/v1, espaces VFS /f et /b, proxy nie-model-serve)
+Documentation=file:///home/ubuntu/niers/docs/stack/web-platform.md
+After=network.target
+# Le proxy /assets dégrade proprement quand l'amont est absent (502/504) : la dépendance est
+# souhaitée, pas requise — nie-site doit pouvoir démarrer et répondre /healthz sans lui.
+Wants=nie-model-serve.service
+After=nie-model-serve.service
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/niers
+ExecStart=/home/ubuntu/niers/target/release/nie-site \
+    --listen 127.0.0.1:8085 \
+    --db /home/ubuntu/niers/var/mirror.sqlite \
+    --upstream http://127.0.0.1:8790 \
+    --bundle-dir /home/ubuntu/niers/apps/nie-web/dist \
+    --origin https://aphrody.com
+
+# Le VFS se monte en tâche de fond : le processus écoute et répond /healthz immédiatement,
+# et /f + /b passent de 503 à 200 quand l'index des ~255 000 entrées est construit.
+Environment=NIE_GAME_DIR=/home/ubuntu/niers
+Environment=RUST_LOG=info
+# Budget du cache de CPK de nie-formats. La machine sert déjà nie-model-serve avec 8 GiB :
+# nie-site ne lit que des fichiers, il n'assemble rien — 2 GiB suffisent.
+Environment=NIE_CPK_CACHE_BUDGET_GIB=2
+
+Restart=always
+RestartSec=5s
+# Plafond mémoire : au-delà, systemd tue le service plutôt que de laisser earlyoom choisir
+# une victime au hasard sur une machine qui porte 18 autres services.
+MemoryMax=3G
+MemoryHigh=2500M
+LimitNOFILE=16384
+
+# Durcissement : le service ne fait que LIRE des fichiers et parler à 127.0.0.1.
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=false
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=true
+RestrictSUIDSGID=true
+LockPersonality=true
+# Aucun chemin en écriture : nie-site n'écrit rien sur disque (le cache est en mémoire).
+ReadOnlyPaths=/home/ubuntu/niers
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+
+[Install]
+WantedBy=multi-user.target

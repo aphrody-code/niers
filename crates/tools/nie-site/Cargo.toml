@@ -1,0 +1,79 @@
+[package]
+name = "nie-site"
+description = "Aphrody — serveur HTTP 100 % Rust (Axum 0.8) : bundle nie-web, /api/v1, espaces VFS /f et /b, proxy nie-model-serve"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+publish = false
+
+[lib]
+name = "nie_site"
+path = "src/lib.rs"
+
+[[bin]]
+name = "nie-site"
+path = "src/main.rs"
+
+[[bench]]
+name = "routing"
+harness = false
+
+[lints]
+workspace = true
+
+[dependencies]
+# Le VFS du jeu : `open_game()`/`resolve_game_dir()` — la MÊME résolution que le reste du
+# dépôt (aucun chemin machine compilé). Features par défaut (std + lua) : le site ne décode
+# rien lui-même, il sert des octets et délègue tout décodage à nie-model-serve.
+nie-formats = { path = "../../engine/nie-formats" }
+
+# Serveur HTTP. Seul ajout réel au workspace (cf. docs/stack/dependencies.md) : 0.8.9, jamais
+# 0.8.2 (yanked). Syntaxe de route 0.8 : `{param}` et `{*wildcard}` — l'ancienne PANIQUE.
+axum = { version = "0.8.9", default-features = false, features = [
+    "http1",
+    "json",
+    "query",
+    "tokio",
+    "matched-path",
+    "original-uri",
+] }
+# `net`/`signal`/`fs`/`io-util` s'ajoutent aux features du workspace (rt, rt-multi-thread,
+# sync, macros, time) : les features cargo sont additives.
+tokio = { workspace = true, features = ["net", "signal", "fs", "io-util"] }
+tower = { version = "0.5.3", features = ["util", "limit"] }
+tower-http = { version = "0.6.11", features = ["trace", "timeout"] }
+http-body-util = "0.1.4"
+bytes = "1.12.1"
+
+# Templates compilés. `askama_axum` est mort et il n'existe pas de feature `with-axum` :
+# on rend en `String` et on construit la réponse à la main (cf. `routes::pages`).
+askama = "0.16.1"
+
+# Cache asynchrone à TTL et poids. Plancher 0.12.16 : en deçà, `EvictionPolicy::lru()`
+# pouvait figer l'éviction définitivement.
+moka = { version = "0.12.16", features = ["future"] }
+# ETag fort : blake3 est ~3× plus rapide que sha2 sur les gros corps, et `to_hex()` n'alloue pas.
+blake3 = "1.8.7"
+
+# Client vers nie-model-serve. Localhost en clair : aucune pile TLS n'entre dans la crate
+# (nginx termine le TLS). `default-features = false` ⇒ ni native-tls ni rustls.
+reqwest = { version = "0.13.4", default-features = false, features = ["http2"] }
+
+# Lecture seule des gisements (var/mirror.sqlite). Version du lock (0.37) : le bump vers 0.40
+# est un lot de workspace, pas une décision de cette crate.
+rusqlite.workspace = true
+parking_lot.workspace = true
+
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+anyhow.workspace = true
+clap.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+criterion = "0.8"
