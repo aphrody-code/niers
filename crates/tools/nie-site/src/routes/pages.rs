@@ -284,6 +284,8 @@ pub struct Lien {
 pub struct Coquille {
     /// Code de langue de la page (`<html lang>`).
     pub lang: &'static str,
+    /// Préfixe d'URL de la langue — vide en français. Sert aux liens absolus au site.
+    pub prefixe_langue: &'static str,
     /// Titre de la page (`<title>` et `og:title`).
     pub titre: String,
     /// Description (`meta description` et `og:description`).
@@ -565,6 +567,7 @@ pub fn construire(
     };
     Coquille {
         lang: langue.code(),
+        prefixe_langue: langue.prefixe(),
         jsonld: donnees_structurees(origine, route, langue, &titre, &description, catalogue.as_ref()),
         url,
         og_locale: langue.og_locale(),

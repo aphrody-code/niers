@@ -77,10 +77,10 @@ fn json(corps: &[u8]) -> serde_json::Value {
 }
 
 #[tokio::test]
-async fn les_quinze_routes_repondent() {
+async fn les_dix_huit_routes_repondent() {
     let etat = etat();
     // Une instance concrète par route déclarée, dans le même ordre que `ROUTES`.
-    let instances: [(&str, &[u16]); 15] = [
+    let instances: [(&str, &[u16]); 18] = [
         ("/healthz", &[200]),
         ("/robots.txt", &[200]),
         ("/.well-known/security.txt", &[200]),
@@ -89,6 +89,9 @@ async fn les_quinze_routes_repondent() {
         ("/api/v1/chara", &[503]), // miroir absent : capacité dégradée, pas une panne
         ("/llms.txt", &[200]),
         ("/llms-full.txt", &[200]),
+        ("/manifest.webmanifest", &[200]),
+        ("/en/manifest.webmanifest", &[200]),
+        ("/ja/manifest.webmanifest", &[200]),
         ("/api/v1/textures", &[200]),
         ("/f/data/dx11/menu/title/a.g4tx", &[503]), // index sans contenu
         ("/b", &[200]),
@@ -100,7 +103,7 @@ async fn les_quinze_routes_repondent() {
         ("/api/v1/episodes", &[503]),
         ("/", &[200]),
     ];
-    assert_eq!(ROUTES.len(), 15);
+    assert_eq!(ROUTES.len(), 18);
     assert_eq!(instances.len(), ROUTES.len(), "une instance par route declaree");
     let mut vus = 0;
     for (uri, attendus) in instances {
@@ -112,7 +115,7 @@ async fn les_quinze_routes_repondent() {
         );
         vus += 1;
     }
-    assert_eq!(vus, 15);
+    assert_eq!(vus, 18);
 }
 
 #[tokio::test]
@@ -383,7 +386,10 @@ async fn bundle_statique_precompresse_et_empreinte() {
     std::fs::write(assets.join("app-1a2b3c4d.js"), &brut).unwrap();
     std::fs::write(assets.join("app-1a2b3c4d.js.br"), b"BROTLI").unwrap();
     std::fs::write(assets.join("app-1a2b3c4d.js.zst"), b"ZSTD!").unwrap();
-    std::fs::write(dir.path().join("manifest.webmanifest"), b"{}").unwrap();
+    // Un fichier du bundle SANS empreinte dans son nom. `manifest.webmanifest` tenait ce
+    // role et ne le peut plus : c'est desormais une route declaree, servie par la crate dans
+    // les trois langues, donc elle passe avant le repli statique.
+    std::fs::write(dir.path().join("parametres.json"), b"{}").unwrap();
     let etat = etat_avec(|c| c.statique = dir.path().to_path_buf());
 
     // Sans négociation : le fichier tel quel, immuable parce qu'empreinté.
@@ -420,10 +426,35 @@ async fn bundle_statique_precompresse_et_empreinte() {
     assert_eq!(entetes[header::CONTENT_ENCODING], "zstd");
 
     // Fichier sans empreinte : revalidation obligatoire.
-    let (statut, entetes, _) = reponse(&etat, "/manifest.webmanifest").await;
+    let (statut, entetes, _) = reponse(&etat, "/parametres.json").await;
     assert_eq!(statut, StatusCode::OK);
     assert_eq!(entetes[header::CACHE_CONTROL], "no-cache");
-    assert_eq!(entetes[header::CONTENT_TYPE], "application/manifest+json");
+    assert_eq!(entetes[header::CONTENT_TYPE], "application/json");
+}
+
+#[tokio::test]
+async fn le_manifeste_repond_dans_les_trois_langues() {
+    // Ce test passe par le ROUTEUR, pas par le handler. La version qui appelait le handler
+    // directement etait verte alors que `/en/manifest.webmanifest` tombait dans le repli et
+    // rendait du HTML : le handler savait lire le prefixe, le routeur ne connaissait pas l'URL.
+    let etat = etat();
+    for (chemin, code, depart) in [
+        ("/manifest.webmanifest", "fr", "/"),
+        ("/en/manifest.webmanifest", "en", "/en"),
+        ("/ja/manifest.webmanifest", "ja", "/ja"),
+    ] {
+        let (statut, entetes, corps) = reponse(&etat, chemin).await;
+        assert_eq!(statut, StatusCode::OK, "{chemin}");
+        assert_eq!(
+            entetes[header::CONTENT_TYPE], "application/manifest+json; charset=utf-8",
+            "{chemin} : un manifeste qui arrive en text/html est ignore en silence"
+        );
+        let v: serde_json::Value = serde_json::from_slice(&corps)
+            .unwrap_or_else(|e| panic!("{chemin} ne rend pas du JSON : {e}"));
+        assert_eq!(v["lang"], code, "{chemin}");
+        assert_eq!(v["start_url"], depart, "{chemin}");
+        assert_eq!(v["icons"].as_array().expect("icones").len(), 2, "{chemin}");
+    }
 }
 
 #[tokio::test]

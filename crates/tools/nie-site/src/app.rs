@@ -58,11 +58,14 @@ pub const DELAI_REQUETE: Duration = Duration::from_secs(15);
 
 /// Les routes exposées, dans l'ordre où elles sont déclarées. Sert de contrat vérifiable : les
 /// tests comptent cette liste et interrogent chacune de ses entrées.
-pub const ROUTES: [&str; 15] = [
+pub const ROUTES: [&str; 18] = [
     "/healthz",
     "/robots.txt",
     "/llms.txt",
     "/llms-full.txt",
+    "/manifest.webmanifest",
+    "/en/manifest.webmanifest",
+    "/ja/manifest.webmanifest",
     "/.well-known/security.txt",
     "/sitemap.xml",
     "/api/v1/health",
@@ -86,6 +89,12 @@ pub fn routeur(etat: EtatSite) -> Router {
         .route("/robots.txt", get(crate::routes::well_known::robots))
         .route("/llms.txt", get(crate::routes::well_known::llms))
         .route("/llms-full.txt", get(crate::routes::well_known::llms_complet))
+        // Une route par langue, declarees une par une. Un parametre `/{langue}/manifest…`
+        // capturerait n'importe quel segment et servirait le manifeste francais sous autant
+        // d'URL qu'on peut en inventer.
+        .route("/manifest.webmanifest", get(crate::routes::well_known::manifeste))
+        .route("/en/manifest.webmanifest", get(crate::routes::well_known::manifeste))
+        .route("/ja/manifest.webmanifest", get(crate::routes::well_known::manifeste))
         .route("/.well-known/security.txt", get(crate::routes::well_known::security))
         .route("/sitemap.xml", get(crate::routes::well_known::sitemap))
         .route("/api/v1/health", get(crate::routes::api_v1::health))
@@ -144,7 +153,7 @@ mod tests {
 
     #[test]
     fn contrat_de_routes() {
-        assert_eq!(ROUTES.len(), 15);
+        assert_eq!(ROUTES.len(), 18);
         for r in ROUTES {
             assert!(r.starts_with('/'), "{r}");
             assert!(!r.contains(":{"), "syntaxe axum 0.7 interdite: {r}");

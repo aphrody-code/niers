@@ -215,6 +215,54 @@ pub async fn llms_complet(State(etat): State<EtatSite>) -> Response {
     texte(LlmsComplet { origine: &etat.config.origine }.render(), "text/plain; charset=utf-8")
 }
 
+/// `/manifest.webmanifest` — le manifeste d'application web.
+///
+/// Construit avec `serde_json` plutot qu'avec un template : askama choisit son echappeur sur
+/// l'extension du fichier, et `.webmanifest` ne lui dit rien. Un guillemet dans un libelle
+/// traduit produirait alors du JSON invalide, que rien ne signalerait — un manifeste casse ne
+/// leve pas, il est simplement ignore.
+///
+/// La langue vient de l'URL, comme partout ailleurs : `/ja/manifest.webmanifest` decrit la
+/// meme application en japonais, avec sa propre `start_url`.
+pub async fn manifeste(uri: axum::http::Uri) -> Response {
+    let langue = Langue::separer(uri.path()).langue;
+    // Hors macro : `json!` lit une accolade comme le debut d'un objet, pas comme un bloc.
+    let depart = match langue.url("", "/").as_str() {
+        "" => "/".to_owned(),
+        u => u.to_owned(),
+    };
+    let (nom, description) = match langue {
+        Langue::Fr => (
+            "Aphrody",
+            "Explorer, décoder et exporter les fichiers d'Inazuma Eleven: Victory Road.",
+        ),
+        Langue::En => (
+            "Aphrody",
+            "Browse, decode and export the files of Inazuma Eleven: Victory Road.",
+        ),
+        Langue::Ja => (
+            "Aphrody",
+            "イナズマイレブン Victory Road のファイルを閲覧・デコード・書き出しできます。",
+        ),
+    };
+    let doc = serde_json::json!({
+        "name": nom,
+        "short_name": nom,
+        "description": description,
+        "lang": langue.code(),
+        "start_url": depart,
+        "scope": "/",
+        "display": "standalone",
+        "background_color": crate::routes::pages::COULEUR_THEME,
+        "theme_color": crate::routes::pages::COULEUR_THEME,
+        "icons": [
+            { "src": "/static/icone-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+            { "src": "/static/icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+        ],
+    });
+    texte(Ok(doc.to_string()), "application/manifest+json; charset=utf-8")
+}
+
 /// `/sitemap.xml`.
 pub async fn sitemap(State(etat): State<EtatSite>) -> Response {
     let urls = plan_trilingue(&etat.config.origine);
@@ -374,6 +422,25 @@ mod tests {
             assert!(complet.contains(attendu), "{attendu} absent de llms-full.txt");
         }
         assert!(complet.len() > court.len(), "le complet doit etre plus complet");
+    }
+
+    #[tokio::test]
+    async fn le_manifeste_suit_la_langue_de_l_url() {
+        use axum::body::to_bytes;
+        use axum::http::Uri;
+        for (chemin, code, depart) in [
+            ("/manifest.webmanifest", "fr", "/"),
+            ("/en/manifest.webmanifest", "en", "/en"),
+            ("/ja/manifest.webmanifest", "ja", "/ja"),
+        ] {
+            let r = manifeste(chemin.parse::<Uri>().expect("uri")).await;
+            let corps = to_bytes(r.into_body(), 64 * 1024).await.expect("corps");
+            let v: serde_json::Value = serde_json::from_slice(&corps).expect("json valide");
+            assert_eq!(v["lang"], code, "{chemin}");
+            assert_eq!(v["start_url"], depart, "{chemin}");
+            assert_eq!(v["icons"].as_array().expect("icones").len(), 2);
+            assert_eq!(v["theme_color"], crate::routes::pages::COULEUR_THEME);
+        }
     }
 
     #[test]
