@@ -22,10 +22,22 @@ import {
 export { ensureUserProfile } from "@rosegriffon/auth";
 
 const getDatabaseURL = () => {
-	let url = process.env.DATABASE_URL;
+	const url = process.env.DATABASE_URL;
 	if (!url || url.startsWith("eyJ2Ijo") || url === "undefined" || url === "null") {
-		url =
-			"***REDACTED-DATABASE-URL***";
+		// Aucun repli, et surtout pas une chaine de connexion en dur.
+		//
+		// Il y en avait une ici : identifiants complets du Postgres de production, en clair dans
+		// la source, utilisee des que la variable manquait ou arrivait sous forme de blob chiffre
+		// Vercel. Deux consequences, et la seconde est la pire : le secret vit dans l'historique
+		// git de tout clone du depot, et un deploiement mal configure se connectait quand meme —
+		// donc sans jamais signaler qu'il lui manquait sa configuration.
+		//
+		// Mieux vaut un demarrage qui echoue et se lit qu'une authentification qui marche par
+		// accident sur des identifiants que personne ne croit utiliser.
+		throw new Error(
+			"DATABASE_URL absente ou invalide. Better Auth ne peut pas ouvrir sa connexion " +
+				"Postgres : renseigner la variable dans la configuration du deploiement.",
+		);
 	}
 	return url;
 };
