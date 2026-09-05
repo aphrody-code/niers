@@ -8,6 +8,8 @@ mod delegate;
 mod icons_cmd;
 mod img_cmd;
 mod lua_cmd;
+mod lua_audit_cmd;
+mod lua_run_cmd;
 mod mem_lua;
 mod menu_predecode;
 mod mod_cmd;
@@ -204,6 +206,40 @@ enum Cmd {
         /// Lignes de détail maximales par rubrique et par fichier (0 = illimité).
         #[arg(long, default_value_t = 20)]
         limit: usize,
+    },
+    /// Exécute un `.lua.bin` brut dans la VM Lua 5.2, avec `INCLUDE` résolu depuis le VFS.
+    #[command(name = "lua-run")]
+    LuaRun {
+        /// Chemin disque ou chemin logique VFS (ex. `data/common/script/lua/menu/main_menu...`).
+        script: String,
+        /// Racine du jeu (défaut : résolution automatique).
+        #[arg(long)]
+        game_dir: Option<PathBuf>,
+        /// Limite d'instructions (0 = illimitée ; à réserver aux scripts terminants).
+        #[arg(long, default_value_t = 20_000_000)]
+        instruction_limit: u32,
+        /// Installe aussi les stubs de commandes de menu du moteur.
+        #[arg(long)]
+        menu_host: bool,
+        /// Ajoute le désassemblage Lua 5.2 du chunk au JSON de sortie.
+        #[arg(long)]
+        disassemble: bool,
+    },
+    /// Exécute en lot les chunks Lua bruts du VFS et mesure les trous de l'hôte moteur.
+    #[command(name = "lua-audit")]
+    LuaAudit {
+        /// Sous-racine du jeu (défaut : résolution automatique).
+        #[arg(long)]
+        game_dir: Option<PathBuf>,
+        /// Ne retenir que les chemins commençant par ce préfixe VFS.
+        #[arg(long)]
+        prefix: Option<String>,
+        /// Limite par script (0 = illimitée).
+        #[arg(long, default_value_t = 200_000)]
+        instruction_limit: u32,
+        /// Installe aussi le host de commandes de menu.
+        #[arg(long)]
+        menu_host: bool,
     },
     /// Importe le savoir fusionné (index Ghidra nie-index.json) dans la base de connaissance.
     Seed {
@@ -2012,6 +2048,30 @@ fn run() -> anyhow::Result<()> {
                 crc32,
                 limit,
             },
+        ),
+        Cmd::LuaRun {
+            script,
+            game_dir,
+            instruction_limit,
+            menu_host,
+            disassemble,
+        } => lua_run_cmd::run(
+            &script,
+            game_dir.as_deref(),
+            instruction_limit,
+            menu_host,
+            disassemble,
+        ),
+        Cmd::LuaAudit {
+            game_dir,
+            prefix,
+            instruction_limit,
+            menu_host,
+        } => lua_audit_cmd::run(
+            game_dir.as_deref(),
+            prefix.as_deref(),
+            instruction_limit,
+            menu_host,
         ),
         Cmd::Seed { db, json, exe } => seed(&db, &json, exe.as_deref()),
         Cmd::SeedUi {

@@ -688,9 +688,13 @@ mod tests {
     #[test]
     #[ignore = "nécessite les assets du jeu (data/lua_scripts)"]
     fn decode_les_vrais_scripts_du_jeu() {
-        let dir = std::path::Path::new("../../data/lua_scripts");
-        let entries: Vec<_> = std::fs::read_dir(dir)
-            .expect("data/lua_scripts introuvable")
+        let dir = nie_formats::vfs::resolve_game_dir().join("data/lua_scripts");
+        if !dir.is_dir() {
+            eprintln!("skip : {} introuvable (définir NIE_GAME_DIR)", dir.display());
+            return;
+        }
+        let entries: Vec<_> = std::fs::read_dir(&dir)
+            .expect("lecture de data/lua_scripts")
             .filter_map(Result::ok)
             .filter(|e| e.path().to_string_lossy().ends_with(".lua.bin"))
             .collect();

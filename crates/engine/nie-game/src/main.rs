@@ -222,7 +222,14 @@ fn main() -> Result<()> {
             let name = cli.screen_name.as_deref().unwrap_or(screen);
             // --runtime : génère le layout en exécutant les vrais scripts Lua (comme nie.exe).
             if cli.runtime {
-                return cmd_export_layout_runtime(&game_dir, screen, name, out, cli.from_setting);
+                return cmd_export_layout_runtime(
+                    &game_dir,
+                    screen,
+                    name,
+                    out,
+                    cli.from_setting,
+                    cli.frames.unwrap_or(1),
+                );
             }
             return cmd_export_layout(&game_dir, screen, name, out, cli.from_setting);
         }
@@ -258,7 +265,12 @@ fn main() -> Result<()> {
 
     // Render-from-runtime : rogne une région nommée → pixels réels (PNG si --capture).
     if let Some(ref region) = cli.g4tx_region {
-        return cmd_g4tx_region(&game_dir, cli.g4tx.as_deref(), region, cli.capture.as_deref());
+        return cmd_g4tx_region(
+            &game_dir,
+            cli.g4tx.as_deref(),
+            region,
+            cli.capture.as_deref(),
+        );
     }
 
     // Diagnostic C4/D1.d : rend du texte depuis l'atlas de police bitmap réel.
@@ -623,7 +635,12 @@ fn obtenir_g4tx_bytes(game_dir: &Path, path: &str) -> Result<(String, Vec<u8>)> 
         .iter()
         .find(|a| a.internal_path == path || a.internal_path.ends_with(path))
         .cloned()
-        .ok_or_else(|| anyhow::anyhow!("chemin '{path}' non trouvé (VFS + {} CPK assets)", assets.len()))?;
+        .ok_or_else(|| {
+            anyhow::anyhow!(
+                "chemin '{path}' non trouvé (VFS + {} CPK assets)",
+                assets.len()
+            )
+        })?;
     let donnees = extraire_g4tx_depuis_cpk(game_dir, &asset)?;
     Ok((asset.internal_path, donnees))
 }
@@ -633,8 +650,8 @@ fn obtenir_g4tx_bytes(game_dir: &Path, path: &str) -> Result<(String, Vec<u8>)> 
 /// Prouve que la cible d'un `SetIconSprite(obj, CRC32(chemin), CRC32(region))` résolu au runtime
 /// (ex. `icon_rarity.g4tx` + `gtxt_rarity01_05`) correspond à une vraie sous-texture `(x,y,w,h)`.
 fn cmd_g4tx_regions(game_dir: &Path, g4tx_path: Option<&str>) -> Result<()> {
-    let path =
-        g4tx_path.ok_or_else(|| anyhow::anyhow!("--g4tx-regions requiert --g4tx <chemin|basename>"))?;
+    let path = g4tx_path
+        .ok_or_else(|| anyhow::anyhow!("--g4tx-regions requiert --g4tx <chemin|basename>"))?;
     let (resolved, bytes) = obtenir_g4tx_bytes(game_dir, path)?;
     let parsed = g4tx::parse(&bytes).with_context(|| format!("parsing G4TX : {resolved}"))?;
 
@@ -723,15 +740,18 @@ fn cmd_render_text(game_dir: &Path, text: &str, capture: Option<&Path>) -> Resul
 
     // 1. Atlas de police : g4tx → texture principale → RGBA8.
     let (atlas_path, atlas_bytes) = obtenir_g4tx_bytes(game_dir, ATLAS)?;
-    let parsed = g4tx::parse(&atlas_bytes).with_context(|| format!("parsing G4TX police : {atlas_path}"))?;
-    let tex = g4tx::select_main_texture(&parsed, "font_def")
-        .ok_or_else(|| anyhow::anyhow!("texture principale de l'atlas police introuvable dans {atlas_path}"))?;
+    let parsed =
+        g4tx::parse(&atlas_bytes).with_context(|| format!("parsing G4TX police : {atlas_path}"))?;
+    let tex = g4tx::select_main_texture(&parsed, "font_def").ok_or_else(|| {
+        anyhow::anyhow!("texture principale de l'atlas police introuvable dans {atlas_path}")
+    })?;
     let (aw, ah, atlas) = g4tx_decode::decode_texture_rgba(&atlas_bytes, tex)
         .ok_or_else(|| anyhow::anyhow!("échec décodage de l'atlas police '{}'", tex.name))?;
 
     // 2. Métriques de glyphes : font.cfg.bin (T2B) → FontMetrics.
     let (m_path, m_bytes) = obtenir_g4tx_bytes(game_dir, METRICS)?;
-    let cfg = cfgbin::parse_t2b(&m_bytes).with_context(|| format!("parse_t2b métriques police : {m_path}"))?;
+    let cfg = cfgbin::parse_t2b(&m_bytes)
+        .with_context(|| format!("parse_t2b métriques police : {m_path}"))?;
     let metrics = font::parse_metrics(&cfg);
 
     // 3. Canvas + draw_text (sommet de cellule = pen_y − ascent ⇒ pen_y = ascent, dst_y = 0).
@@ -741,21 +761,43 @@ fn cmd_render_text(game_dir: &Path, text: &str, capture: Option<&Path>) -> Resul
     let stride = cw * 4;
     let mut canvas = alloc_canvas(cw, ch);
     let advance = font::draw_text(
-        &atlas, aw, &metrics, text, &mut canvas, stride, 0,
-        i32::from(metrics.dims.ascent), [255, 255, 255, 255],
+        &atlas,
+        aw,
+        &metrics,
+        text,
+        &mut canvas,
+        stride,
+        0,
+        i32::from(metrics.dims.ascent),
+        [255, 255, 255, 255],
     );
     let opaques = canvas.chunks_exact(4).filter(|p| p[3] != 0).count();
-    let resolved = text.chars().filter(|c| metrics.glyph(*c as u32).is_some()).count();
+    let resolved = text
+        .chars()
+        .filter(|c| metrics.glyph(*c as u32).is_some())
+        .count();
     println!(
         "rendu texte {text:?} : atlas '{}' {aw}x{ah} ({} glyphes en table) ; {resolved}/{} codepoints \
          résolus ; avance {advance}px ; {opaques} px opaques",
-        tex.name, metrics.glyph_count(), n_cp
+        tex.name,
+        metrics.glyph_count(),
+        n_cp
     );
 
     if let Some(out) = capture {
         let w = (advance.max(1) as u32).min(cw);
-        let (ow, oh, rgba) = crop_rgba(&canvas, cw, ch, (0, 0, w.min(i16::MAX as u32) as i16, ch.min(i16::MAX as u32) as i16))
-            .unwrap_or((cw, ch, canvas));
+        let (ow, oh, rgba) = crop_rgba(
+            &canvas,
+            cw,
+            ch,
+            (
+                0,
+                0,
+                w.min(i16::MAX as u32) as i16,
+                ch.min(i16::MAX as u32) as i16,
+            ),
+        )
+        .unwrap_or((cw, ch, canvas));
         let png = encoder_rgba_png(&rgba, ow, oh)?;
         std::fs::write(out, &png).with_context(|| format!("écriture {}", out.display()))?;
         println!("PNG écrit : {} ({} octets)", out.display(), png.len());
@@ -960,8 +1002,10 @@ fn cmd_compose_layout(game_dir: &Path, json_in: &[PathBuf], png_out: &Path) -> R
         // Charge la SOURCE de pixels : région d'atlas (runtime) en priorité, sinon texture statique.
         let rt = &o["runtime"];
         let region_src = (|| {
-            let (g4tx_path, region) =
-                (rt["spriteRegionG4tx"].as_str()?, rt["spriteRegion"].as_str()?);
+            let (g4tx_path, region) = (
+                rt["spriteRegionG4tx"].as_str()?,
+                rt["spriteRegion"].as_str()?,
+            );
             let entry = cache.entry(g4tx_path.to_string()).or_insert_with(|| {
                 obtenir_g4tx_bytes(game_dir, g4tx_path)
                     .ok()
@@ -984,15 +1028,13 @@ fn cmd_compose_layout(game_dir: &Path, json_in: &[PathBuf], png_out: &Path) -> R
         // `CRC32(nom) == hash` — au lieu de rendre l'atlas entier (toutes ses sous-textures empilées).
         // Même mécanisme CRC32 que partout (cf. `nie-core::ecs`, `cfgbin::crc32`).
         let region_hash_src = (|| {
-            let srh = rt["spriteRegionHash"]
-                .as_u64()
-                .or_else(|| {
-                    rt["spriteRegionHash"]
-                        .as_str()
-                        .and_then(|s| s.strip_prefix("0x"))
-                        .and_then(|h| u32::from_str_radix(h, 16).ok())
-                        .map(u64::from)
-                })? as u32;
+            let srh = rt["spriteRegionHash"].as_u64().or_else(|| {
+                rt["spriteRegionHash"]
+                    .as_str()
+                    .and_then(|s| s.strip_prefix("0x"))
+                    .and_then(|h| u32::from_str_radix(h, 16).ok())
+                    .map(u64::from)
+            })? as u32;
             if srh == 0 {
                 return None;
             }
@@ -1104,8 +1146,15 @@ fn cmd_compose_layout(game_dir: &Path, json_in: &[PathBuf], png_out: &Path) -> R
         let cw = ((label.chars().count() as u32).max(1) * ch).max(ch);
         let mut buf = alloc_canvas(cw, ch);
         let adv = font::draw_text(
-            atlas, *aw, metrics, &label, &mut buf, cw * 4, 0,
-            i32::from(metrics.dims.ascent), [255, 255, 255, 255],
+            atlas,
+            *aw,
+            metrics,
+            &label,
+            &mut buf,
+            cw * 4,
+            0,
+            i32::from(metrics.dims.ascent),
+            [255, 255, 255, 255],
         );
         if adv <= 0 {
             continue; // aucun glyphe résolu
@@ -1345,16 +1394,14 @@ fn creer_device(adapter: &wgpu::Adapter) -> Result<(wgpu::Device, wgpu::Queue)> 
     // brider la taille maximale des textures (downlevel_defaults plafonne à 2048,
     // ce qui est insuffisant pour les sprites IEVR qui peuvent dépasser 4096 px).
     let limits = adapter.limits();
-    pollster::block_on(adapter.request_device(
-        &wgpu::DeviceDescriptor {
-            label: Some("nie-game"),
-            required_features: wgpu::Features::empty(),
-            required_limits: limits,
-            experimental_features: wgpu::ExperimentalFeatures::disabled(),
-            memory_hints: wgpu::MemoryHints::default(),
-            trace: wgpu::Trace::Off,
-        },
-    ))
+    pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor {
+        label: Some("nie-game"),
+        required_features: wgpu::Features::empty(),
+        required_limits: limits,
+        experimental_features: wgpu::ExperimentalFeatures::disabled(),
+        memory_hints: wgpu::MemoryHints::default(),
+        trace: wgpu::Trace::Off,
+    }))
     .context("création device wgpu")
 }
 
@@ -1717,7 +1764,9 @@ fn cmd_play(max_frames: u32) -> Result<()> {
             modele3d: None,
         }),
     };
-    event_loop.run_app(&mut app).context("boucle événements winit")?;
+    event_loop
+        .run_app(&mut app)
+        .context("boucle événements winit")?;
     if let Some(e) = app.erreur {
         return Err(e);
     }
@@ -1800,7 +1849,11 @@ impl EtatFenetre {
                 bytes_per_row: Some(4 * width),
                 rows_per_image: Some(height),
             },
-            wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+            wgpu::Extent3d {
+                width,
+                height,
+                depth_or_array_layers: 1,
+            },
         );
     }
 }
@@ -1967,7 +2020,9 @@ impl Jeu {
                 .map(|v| v.iter().map(nie_app::effectif::Joueur::ligne).collect()),
             Onglet::Objets => nie_app::effectif::charger_objets(&self.vfs, 200, "fr")
                 .map(|v| v.iter().map(nie_app::effectif::Objet::ligne).collect()),
-            Onglet::Texte(fichier) => nie_app::effectif::charger_textes(&self.vfs, fichier, 200, "fr"),
+            Onglet::Texte(fichier) => {
+                nie_app::effectif::charger_textes(&self.vfs, fichier, 200, "fr")
+            }
         }
         .unwrap_or_else(|e| {
             warn!("{titre} indisponible : {e:#}");
@@ -2012,8 +2067,8 @@ impl Jeu {
     /// portent que des marqueurs de test japonais — donc on ne le refait pas à chaque ouverture.
     fn dialogue(&mut self) -> Option<(String, Vec<String>)> {
         if self.dialogue.is_none() {
-            let choisi = nie_app::effectif::premier_dialogue_traduit(&self.vfs, "fr", 5)
-                .and_then(|id| {
+            let choisi =
+                nie_app::effectif::premier_dialogue_traduit(&self.vfs, "fr", 5).and_then(|id| {
                     nie_app::effectif::charger_dialogue(&self.vfs, &id, "fr")
                         .ok()
                         .map(|l| (id, l))
@@ -2050,7 +2105,11 @@ fn decrire_ecran(e: &nie_app::flow::Screen) -> String {
         S::Menu { sel } => format!("menu[{sel}] {}", nie_app::MENU[*sel]),
         S::ModeSelect { sel } => format!("mode[{sel}] {}", nie_app::MODES[*sel]),
         S::Match { .. } => "match".into(),
-        S::Story { idx, titre, repliques } => {
+        S::Story {
+            idx,
+            titre,
+            repliques,
+        } => {
             format!("histoire[{idx}] {titre} ({} repliques)", repliques.len())
         }
         S::Info { title } => format!("info « {title} »"),
@@ -2236,16 +2295,16 @@ fn process_objbin_layer(
     // n'existent pas dans la capture. Ces layers exigent le driver-transform C++/Lua (cf. §6/§13) ;
     // tant qu'il n'est pas émulé, leur sprite brut dégrade la SSIM au lieu de l'améliorer.
     const COMPOSE_BLACKLIST: &[&str] = &[
-        "mainmenu90_00_background",  // fond bleu saturé → dégradé pastel peint à la place
-        "mainmenu90_01_header",      // bande 5280×296 à l'échelle 1.0 → couvre le centre
-        "mainmenu90_02_header_tab",  // bande 5280×520 à l'échelle 1.0 → couvre le centre
+        "mainmenu90_00_background", // fond bleu saturé → dégradé pastel peint à la place
+        "mainmenu90_01_header",     // bande 5280×296 à l'échelle 1.0 → couvre le centre
+        "mainmenu90_02_header_tab", // bande 5280×520 à l'échelle 1.0 → couvre le centre
         "mainmenu90_02_2_header_tab_icon",
-        "cmn01_13_new_icon_middle",  // badge orange « ! »
-        "cmn01_12_new_icon",         // pastille verte de check
-        "cmn01_40_list_base_empty",  // panneau gris + box verte + toggle (placement fallback centre)
-        "mainmenu90_31_doc_item",    // dossier translucide + pastille check (placement fallback centre)
+        "cmn01_13_new_icon_middle",        // badge orange « ! »
+        "cmn01_12_new_icon",               // pastille verte de check
+        "cmn01_40_list_base_empty", // panneau gris + box verte + toggle (placement fallback centre)
+        "mainmenu90_31_doc_item", // dossier translucide + pastille check (placement fallback centre)
         "mainmenu01_06_base_button_guide", // bande 4×92 dégénérée au centre
-        "mainmenu01_07_button_guide",      // 16×16 au centre
+        "mainmenu01_07_button_guide", // 16×16 au centre
         "rpg00_07_weekday_timezone_guide", // toggle décodé placé au centre (fallback)
     ];
     let obj_stem = obj_basename.strip_suffix(".objbin").unwrap_or(obj_basename);
@@ -2453,7 +2512,8 @@ fn setting_objbin_paths(vfs: &Vfs, setting: &str) -> Vec<String> {
                 .filter(|p| {
                     let b = p.rsplit('/').next().unwrap_or(p);
                     b == basename
-                        || b.strip_suffix(".objbin").is_some_and(|s| s == stem || s.starts_with(&pref))
+                        || b.strip_suffix(".objbin")
+                            .is_some_and(|s| s == stem || s.starts_with(&pref))
                 })
                 .min_by_key(|p| p.rsplit('/').next().unwrap_or(p).len());
             if resolved.is_none() {
@@ -2485,7 +2545,8 @@ fn cmd_export_layout(
 
     let data_dir = game_dir.join("data");
     let mut vfs = Vfs::new();
-    vfs.init(&data_dir).context("VFS init échoué (cpk_list.cfg.bin)")?;
+    vfs.init(&data_dir)
+        .context("VFS init échoué (cpk_list.cfg.bin)")?;
     info!("VFS monté : {} assets", vfs.asset_count());
 
     let (objs, n_sprites) = collect_layout_objects(&vfs, screen, from_setting);
@@ -2600,19 +2661,25 @@ fn t2b_siblings_to_iecode(siblings: &[cfgbin::CfgEntry]) -> Vec<serde_json::Valu
 /// `0x40687BAD` → « Informations ») ; les libellés runtime (noms d'items) restent au driver.
 fn load_menu_text(vfs: &Vfs) -> Vec<(nie_data::hash::HashId, String)> {
     let needle = format!("/text/{MENU_LOCALE}/");
-    let Some(path) = vfs.iter().map(|(p, _)| p.to_string()).find(|p| {
-        p.contains(&needle) && p.rsplit('/').next() == Some("menu_text.cfg.bin")
-    }) else {
+    let Some(path) = vfs
+        .iter()
+        .map(|(p, _)| p.to_string())
+        .find(|p| p.contains(&needle) && p.rsplit('/').next() == Some("menu_text.cfg.bin"))
+    else {
         return Vec::new();
     };
-    let Ok(bytes) = vfs.read(&path) else { return Vec::new() };
-    let Ok(file) = cfgbin::parse_t2b(&bytes) else { return Vec::new() };
+    let Ok(bytes) = vfs.read(&path) else {
+        return Vec::new();
+    };
+    let Ok(file) = cfgbin::parse_t2b(&bytes) else {
+        return Vec::new();
+    };
     let root = serde_json::json!({ "entries": t2b_siblings_to_iecode(&file.entries) });
     nie_data::text::parse_text_file(&root)
 }
 
 fn collect_layout_objects(vfs: &Vfs, screen: &str, from_setting: bool) -> (Vec<LayoutObj>, usize) {
-    use serde_json::{json, Value};
+    use serde_json::{Value, json};
 
     // Table de texte de menu (locale fr) : résout les libellés STATIQUES (cf. DESIGN.md §7).
     let menu_text = load_menu_text(vfs);
@@ -2650,14 +2717,24 @@ fn collect_layout_objects(vfs: &Vfs, screen: &str, from_setting: bool) -> (Vec<L
     let mut attaches: std::collections::BTreeMap<u32, Vec<menu::AttachSlot>> =
         std::collections::BTreeMap::new();
     for obj_path in &obj_paths {
-        let Ok(obj_bytes) = vfs.read(obj_path) else { continue };
-        let Ok(obj) = objbin::parse(&obj_bytes) else { continue };
-        let Some(g4pkm_logical) = obj.g4pkm_path.as_deref() else { continue };
+        let Ok(obj_bytes) = vfs.read(obj_path) else {
+            continue;
+        };
+        let Ok(obj) = objbin::parse(&obj_bytes) else {
+            continue;
+        };
+        let Some(g4pkm_logical) = obj.g4pkm_path.as_deref() else {
+            continue;
+        };
         let Some(g4pkm_vfs) = resolve_vfs_basename(vfs, g4pkm_logical, MENU_LOCALE) else {
             continue;
         };
-        let Ok(bytes) = vfs.read(&g4pkm_vfs) else { continue };
-        let Ok(skel) = g4pkm::parse(&bytes) else { continue };
+        let Ok(bytes) = vfs.read(&g4pkm_vfs) else {
+            continue;
+        };
+        let Ok(skel) = g4pkm::parse(&bytes) else {
+            continue;
+        };
         for slot in menu::attach_slots(&obj, &skel) {
             attaches.entry(slot.target_hash).or_default().push(slot);
         }
@@ -2667,8 +2744,12 @@ fn collect_layout_objects(vfs: &Vfs, screen: &str, from_setting: bool) -> (Vec<L
     let mut n_sprites = 0usize;
 
     for obj_path in &obj_paths {
-        let Ok(obj_bytes) = vfs.read(obj_path) else { continue };
-        let Ok(obj) = objbin::parse(&obj_bytes) else { continue };
+        let Ok(obj_bytes) = vfs.read(obj_path) else {
+            continue;
+        };
+        let Ok(obj) = objbin::parse(&obj_bytes) else {
+            continue;
+        };
 
         // Métadonnées de composants.
         let (mut draw_priority, mut draw_type, mut camera) = (0i32, 0i32, 0u32);
@@ -2682,7 +2763,13 @@ fn collect_layout_objects(vfs: &Vfs, screen: &str, from_setting: bool) -> (Vec<L
                     camera = r.camera_name_hash;
                 }
                 objbin::MenuComponent::Animation(a) => {
-                    let hx = |h: u32| if h != 0 { json!(format!("0x{h:08X}")) } else { Value::Null };
+                    let hx = |h: u32| {
+                        if h != 0 {
+                            json!(format!("0x{h:08X}"))
+                        } else {
+                            Value::Null
+                        }
+                    };
                     anim = json!({ "open": hx(a.mot_open_hash), "close": hx(a.mot_close_hash) });
                 }
                 objbin::MenuComponent::Text(tc) => {
@@ -2690,11 +2777,9 @@ fn collect_layout_objects(vfs: &Vfs, screen: &str, from_setting: bool) -> (Vec<L
                     // dans `menu_text` (pas toujours `hashes[0]` — cf. DESIGN.md §7). Les slots
                     // non résolus (libellés runtime, ex. « COMMENCER ») restent au driver D1.c.
                     for e in &tc.entries {
-                        if let Some(label) = e
-                            .hashes
-                            .iter()
-                            .find_map(|h| nie_data::text::find_text(&menu_text, nie_data::hash::HashId(*h)))
-                        {
+                        if let Some(label) = e.hashes.iter().find_map(|h| {
+                            nie_data::text::find_text(&menu_text, nie_data::hash::HashId(*h))
+                        }) {
                             text_labels.push(json!({ "slot": e.key, "text": label }));
                         }
                     }
@@ -2712,13 +2797,14 @@ fn collect_layout_objects(vfs: &Vfs, screen: &str, from_setting: bool) -> (Vec<L
 
         // g4tx explicite (param `Texture`) OU dérivé co-localisé du g4pkm (cas mainmenu01, cf.
         // `build_sprite_list` D1.c) : `<mesh-stem>.g4tx`, résolu par basename dans le VFS.
-        let g4tx_logical: Option<String> = obj.g4tx_path.as_deref().map(str::to_string).or_else(|| {
-            obj.g4pkm_path
-                .as_deref()
-                .and_then(|p| p.rsplit('/').next())
-                .and_then(|b| b.strip_suffix(".g4pkm"))
-                .map(|stem| format!("{stem}.g4tx"))
-        });
+        let g4tx_logical: Option<String> =
+            obj.g4tx_path.as_deref().map(str::to_string).or_else(|| {
+                obj.g4pkm_path
+                    .as_deref()
+                    .and_then(|p| p.rsplit('/').next())
+                    .and_then(|b| b.strip_suffix(".g4pkm"))
+                    .map(|stem| format!("{stem}.g4tx"))
+            });
         if let (Some(g4pkm_logical), Some(g4tx_logical)) =
             (obj.g4pkm_path.as_deref(), g4tx_logical.as_deref())
             && let Some(g4pkm_vfs) = resolve_vfs_basename(vfs, g4pkm_logical, MENU_LOCALE)
@@ -2742,7 +2828,10 @@ fn collect_layout_objects(vfs: &Vfs, screen: &str, from_setting: bool) -> (Vec<L
                     "rot": st.rot, "anchorX": 0.5, "anchorY": 0.5
                 });
                 // logicalPath = chemin VFS sans `data/` ; pngUrl = `/<logical>` en `.png`.
-                let logical = g4tx_vfs.strip_prefix("data/").unwrap_or(&g4tx_vfs).to_string();
+                let logical = g4tx_vfs
+                    .strip_prefix("data/")
+                    .unwrap_or(&g4tx_vfs)
+                    .to_string();
                 let stem = logical.strip_suffix(".g4tx").unwrap_or(&logical);
                 sprite = json!({
                     "logicalPath": logical, "pngUrl": format!("/{stem}.png"), "w": w, "h": h
@@ -2758,7 +2847,11 @@ fn collect_layout_objects(vfs: &Vfs, screen: &str, from_setting: bool) -> (Vec<L
         // d'une liste), pas un doublon : on en émet une par emplacement.
         let poses_attache: Vec<(f32, f32)> = attaches
             .get(&nie_formats::cfgbin::crc32(obj.name.as_bytes()))
-            .map(|v| v.iter().map(nie_formats::menu::AttachSlot::to_css).collect())
+            .map(|v| {
+                v.iter()
+                    .map(nie_formats::menu::AttachSlot::to_css)
+                    .collect()
+            })
             .unwrap_or_default();
         for (i, (x, y)) in poses_attache.iter().enumerate() {
             let mut t = transform.clone();
@@ -2798,7 +2891,11 @@ fn collect_layout_objects(vfs: &Vfs, screen: &str, from_setting: bool) -> (Vec<L
             sprite,
             anim,
             visible: true,
-            text: if text_labels.is_empty() { Value::Null } else { json!(text_labels) },
+            text: if text_labels.is_empty() {
+                Value::Null
+            } else {
+                json!(text_labels)
+            },
             runtime: Value::Null,
         });
     }
@@ -2832,17 +2929,25 @@ fn collect_item_counts(vfs: &Vfs, screen: &str) -> std::collections::BTreeMap<u3
         if !path.contains("/menu/obj/") || !path.ends_with(".objbin") {
             continue;
         }
-        let Some(basename) = path.rsplit('/').next() else { continue };
+        let Some(basename) = path.rsplit('/').next() else {
+            continue;
+        };
         let retenu = if depuis_setting.is_empty() {
-            basename.to_ascii_lowercase().starts_with(screen_lower.as_str())
+            basename
+                .to_ascii_lowercase()
+                .starts_with(screen_lower.as_str())
         } else {
-            depuis_setting.iter().any(|p| p == path || p.ends_with(basename))
+            depuis_setting
+                .iter()
+                .any(|p| p == path || p.ends_with(basename))
         };
         if !retenu {
             continue;
         }
         let Ok(bytes) = vfs.read(path) else { continue };
-        let Ok(obj) = objbin::parse(&bytes) else { continue };
+        let Ok(obj) = objbin::parse(&bytes) else {
+            continue;
+        };
         for c in &obj.components {
             if let objbin::MenuComponent::AttachLocator(a) = c {
                 // Quads [A, B, layerHash, slotIndex] : compter par layerHash.
@@ -2909,14 +3014,18 @@ fn load_menu_crc32_dict() -> std::collections::HashMap<u32, String> {
     let mut m = std::collections::HashMap::new();
     let candidates = [
         std::path::PathBuf::from("data/re/menu-crc32-dictionary.json"),
-        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/re/menu-crc32-dictionary.json"),
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../data/re/menu-crc32-dictionary.json"),
     ];
     for cand in candidates {
         if let Ok(txt) = std::fs::read_to_string(&cand)
             && let Ok(raw) = serde_json::from_str::<std::collections::HashMap<String, String>>(&txt)
         {
             for (k, v) in raw {
-                if let Some(h) = k.strip_prefix("0x").and_then(|s| u32::from_str_radix(s, 16).ok()) {
+                if let Some(h) = k
+                    .strip_prefix("0x")
+                    .and_then(|s| u32::from_str_radix(s, 16).ok())
+                {
                     m.insert(h, v);
                 }
             }
@@ -2932,12 +3041,12 @@ fn load_menu_crc32_dict() -> std::collections::HashMap<u32, String> {
 fn load_region_index() -> std::collections::HashMap<String, String> {
     let candidates = [
         std::path::PathBuf::from("data/re/menu-region-index.json"),
-        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../data/re/menu-region-index.json"),
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../data/re/menu-region-index.json"),
     ];
     for cand in candidates {
         if let Ok(txt) = std::fs::read_to_string(&cand)
-            && let Ok(raw) =
-                serde_json::from_str::<std::collections::HashMap<String, String>>(&txt)
+            && let Ok(raw) = serde_json::from_str::<std::collections::HashMap<String, String>>(&txt)
         {
             return raw;
         }
@@ -2959,24 +3068,29 @@ fn cmd_export_layout_runtime(
     screen_name: &str,
     out: &Path,
     from_setting: bool,
+    frames: u32,
 ) -> Result<()> {
-    use std::collections::{BTreeMap, HashMap};
+    use std::collections::BTreeMap;
     use std::rc::Rc;
 
     use nie_formats::cfgbin::crc32;
     use nie_lua::{
-        drive_menu, enumerate_header_tabs, include_logical_base, install_include, install_menu_host,
-        new_vm, script_logical_base, HeaderTab,
+        HeaderTab, drive_menu_for_frames, enumerate_header_tabs, index_script_paths,
+        install_include, install_menu_host, new_vm, resolve_script_path,
     };
-    use serde_json::{json, Value};
+    use serde_json::{Value, json};
 
     let data_dir = game_dir.join("data");
     let mut vfs = Vfs::new();
-    vfs.init(&data_dir).context("VFS init échoué (cpk_list.cfg.bin)")?;
+    vfs.init(&data_dir)
+        .context("VFS init échoué (cpk_list.cfg.bin)")?;
     info!("VFS monté : {} assets", vfs.asset_count());
 
     // 1) Layout statique de l'écran (placement + sprite) — base à muter par le runtime.
     let (mut objects, n_sprites) = collect_layout_objects(&vfs, screen, from_setting);
+    // La même table alimente le getter général Lua `GetText`, pour les libellés que le script
+    // construit dynamiquement (les libellés statiques sont déjà joints dans le layout ci-dessus).
+    let menu_text = load_menu_text(&vfs);
 
     // 2) Index basename(.lua.bin) → chemin VFS (résolveur INCLUDE + découverte des scripts).
     //    `by_base`    : basename exact minuscule → chemin (résolution directe d'INCLUDE).
@@ -2984,16 +3098,12 @@ fn cmd_export_layout_runtime(
     //                   LOGIQUES du moteur (`INCLUDE("LUA_MAIN_MENU_INC")`) vers le bon fichier
     //                   `main_menu_inc_3.00.01.00.lua.bin`. SANS ça, `MAIN_MENU` (défini par cet
     //                   include) reste nil et tout `OnInit`/`OnSetupLayer` du main_menu avorte.
-    let mut by_base: HashMap<String, String> = HashMap::new();
-    let mut by_logical: HashMap<String, String> = HashMap::new();
+    let script_paths: Vec<String> = vfs.iter().map(|(p, _)| p.to_string()).collect();
+    let (by_base, by_logical) = index_script_paths(script_paths.iter().map(String::as_str));
     let mut menu_scripts: Vec<String> = Vec::new();
     for (p, _) in vfs.iter() {
-        if let Some(b) = p.rsplit('/').next().filter(|b| b.ends_with(".lua.bin")) {
-            by_base.entry(b.to_ascii_lowercase()).or_insert_with(|| p.to_string());
-            by_logical.entry(script_logical_base(b)).or_insert_with(|| p.to_string());
-            if p.starts_with("data/common/script/lua/menu/") {
-                menu_scripts.push(p.to_string());
-            }
+        if p.starts_with("data/common/script/lua/menu/") && p.ends_with(".lua.bin") {
+            menu_scripts.push(p.to_string());
         }
     }
     menu_scripts.sort();
@@ -3041,9 +3151,13 @@ fn cmd_export_layout_runtime(
     let mut total_list_items = 0usize;
     // cmdId -> (nombre d'appels, échantillon de représentation des args — aide à la RE du handler).
     let mut unknown_cmds: BTreeMap<u32, (usize, String)> = BTreeMap::new();
+    // Même télémétrie pour `funcLuaCommand`, séparée des commandes de rendu menu.
+    let mut unknown_general_cmds: BTreeMap<u32, (usize, String)> = BTreeMap::new();
     // Commandes reconnues, ventilées par nom : sépare celles qui agissent de celles qui se
     // contentent de rendre 1 au script.
     let mut known_by_name: BTreeMap<String, usize> = BTreeMap::new();
+    let mut missing_host_calls: BTreeMap<String, usize> = BTreeMap::new();
+    let mut missing_host_paths: BTreeMap<String, usize> = BTreeMap::new();
     let mut script_reports: Vec<(String, bool, usize, usize, usize)> = Vec::new();
     // Callbacks que les scripts de l'écran DÉFINISSENT. Le driver n'en joue qu'une partie
     // (`OnInit`, `OnSetupLayer`, `OnOpenLayer`, `OnEnter`, `Step`) ; les autres nomment
@@ -3051,6 +3165,7 @@ fn cmd_export_layout_runtime(
     // manque l'état de navigation » reste une phrase ; avec lui, c'est une liste.
     let mut callbacks_definis: std::collections::BTreeSet<String> =
         std::collections::BTreeSet::new();
+    let mut callback_errors: Vec<String> = Vec::new();
     // Onglets d'en-tête virtuels (sous-items absents de l'objbin), énumérés depuis la vraie
     // logique du script (GetSortOfTabs + GetMenuObjectNameFromTabType). Clé = hash d'objet.
     let mut header_tabs: BTreeMap<u32, HeaderTab> = BTreeMap::new();
@@ -3064,29 +3179,29 @@ fn cmd_export_layout_runtime(
             let (vfs, by_base, by_logical) =
                 (Rc::clone(&vfs), Rc::clone(&by_base), Rc::clone(&by_logical));
             install_include(&lua, move |n| {
-                // 1) basename exact ("foo" → "foo.lua.bin" ou "foo").
-                let lower = n.to_ascii_lowercase();
-                let exact = format!("{lower}.lua.bin");
-                by_base
-                    .get(&exact)
-                    .or_else(|| by_base.get(&lower))
-                    // 2) nom LOGIQUE moteur ("LUA_MAIN_MENU_INC" → base "main_menu_inc").
-                    .or_else(|| by_logical.get(&include_logical_base(n)))
-                    .and_then(|p| vfs.read(p).ok())
+                resolve_script_path(n, &by_base, &by_logical).and_then(|p| vfs.read(p).ok())
             })
             .map_err(|e| anyhow::anyhow!("install_include : {e}"))?;
         }
-        let state = install_menu_host(&lua).map_err(|e| anyhow::anyhow!("install_menu_host : {e}"))?;
+        let state =
+            install_menu_host(&lua).map_err(|e| anyhow::anyhow!("install_menu_host : {e}"))?;
+        {
+            let mut state = state.borrow_mut();
+            for (id, text) in &menu_text {
+                state.set_text(id.0, text.clone());
+            }
+        }
         // Seed la donnée de scène AVANT le pilotage : GetObjectAttr/GetItemButtonNum la lit
         // pendant OnInit (le compte est mis en cache à ce moment-là).
         state.borrow_mut().object_attr.clone_from(&item_counts);
-        let report = match drive_menu(&lua, &bytes, name, &drive_layers, &item_counts) {
-            Ok(r) => r,
-            Err(e) => {
-                warn!("drive_menu {name} : {e}");
-                continue;
-            }
-        };
+        let report =
+            match drive_menu_for_frames(&lua, &bytes, name, &drive_layers, &item_counts, frames) {
+                Ok(r) => r,
+                Err(e) => {
+                    warn!("drive_menu {name} : {e}");
+                    continue;
+                }
+            };
 
         // Énumère les onglets d'en-tête PENDANT que la VM est vivante (sous-items virtuels :
         // les 9 onglets du main_menu absents de l'objbin, issus de GetSortOfTabs réel).
@@ -3106,6 +3221,12 @@ fn cmd_export_layout_runtime(
             .sum::<usize>();
         for (c, _, args_repr) in &st.unknown_cmd_log {
             let e = unknown_cmds.entry(*c).or_insert((0, args_repr.clone()));
+            e.0 += 1;
+        }
+        for (c, _, args_repr) in &st.unknown_general_cmd_log {
+            let e = unknown_general_cmds
+                .entry(*c)
+                .or_insert((0, args_repr.clone()));
             e.0 += 1;
         }
         // Ventilation des commandes RECONNUES par nom. Un compteur global d'appels connus ne dit
@@ -3152,10 +3273,28 @@ fn cmd_export_layout_runtime(
             report.on_init,
             report.on_open,
             st.known_cmd_log.len(),
-            st.unknown_cmd_log.len()
+            st.unknown_cmd_log.len() + st.unknown_general_cmd_log.len()
         );
         callbacks_definis.extend(report.callbacks.iter().cloned());
-        script_reports.push((name.to_string(), report.on_open, n_layers, n_objs, st.known_cmd_log.len()));
+        for call in &report.missing_host_calls {
+            *missing_host_calls.entry(call.clone()).or_default() += 1;
+        }
+        for path in &report.missing_host_paths {
+            *missing_host_paths.entry(path.clone()).or_default() += 1;
+        }
+        callback_errors.extend(
+            report
+                .callback_errors
+                .iter()
+                .map(|error| format!("{name}: {error}")),
+        );
+        script_reports.push((
+            name.to_string(),
+            report.on_open,
+            n_layers,
+            n_objs,
+            st.known_cmd_log.len(),
+        ));
     }
 
     // 5) APPLIQUE le MenuState fusionné au layout via crc32(objbin.name).
@@ -3170,10 +3309,13 @@ fn cmd_export_layout_runtime(
         (0usize, 0usize, 0usize, 0usize, 0usize);
     let mut n_region_rect = 0usize;
     // Rang d'apparition de chaque nom : les exemplaires d'un gabarit se distinguent par lui.
-    let mut rangs_par_nom: std::collections::HashMap<String, i32> = std::collections::HashMap::new();
+    let mut rangs_par_nom: std::collections::HashMap<String, i32> =
+        std::collections::HashMap::new();
     for o in &mut objects {
         let h = crc32(o.name.as_bytes());
-        let Some(m) = merged_objs.get(&h) else { continue };
+        let Some(m) = merged_objs.get(&h) else {
+            continue;
+        };
         n_matched += 1;
         let mut rt = serde_json::Map::new();
         rt.insert("matched".into(), Value::Bool(true));
@@ -3207,10 +3349,7 @@ fn cmd_export_layout_runtime(
                         if let Some(p) = parsed
                             && let Some((x, y, w, h)) = p.named_rect(rn)
                         {
-                            rt.insert(
-                                "spriteRect".into(),
-                                json!({"x": x, "y": y, "w": w, "h": h}),
-                            );
+                            rt.insert("spriteRect".into(), json!({"x": x, "y": y, "w": w, "h": h}));
                             // La texture à décoder n'est pas forcément la première du conteneur :
                             // sans son nom, le consommateur croppe le bon rectangle dans la
                             // mauvaise image.
@@ -3279,7 +3418,11 @@ fn cmd_export_layout_runtime(
             continue; // déjà présent dans l'objbin (n'arrive pas pour le main_menu) -> pas de doublon
         }
         // Position dérivée selon l'ORDRE VISUEL de l'onglet (tab.index = ordre GetSortOfTabs).
-        let frac = if n_tab_total > 1 { tab.index as f64 / (n_tab_total as f64 - 1.0) } else { 0.0 };
+        let frac = if n_tab_total > 1 {
+            tab.index as f64 / (n_tab_total as f64 - 1.0)
+        } else {
+            0.0
+        };
         let x = 180.0 + frac * 920.0;
         let transform = json!({
             "x": x, "y": 44.0, "scaleX": 1.0, "scaleY": 1.0,
@@ -3325,7 +3468,14 @@ fn cmd_export_layout_runtime(
         .iter()
         .map(|(c, (n, args))| json!({ "cmdId": format!("0x{c:08X}"), "count": n, "args": args }))
         .collect();
-    let script_names: Vec<&str> = scripts.iter().map(|s| s.rsplit('/').next().unwrap_or(s)).collect();
+    let unknown_general_list: Vec<Value> = unknown_general_cmds
+        .iter()
+        .map(|(c, (n, args))| json!({ "cmdId": format!("0x{c:08X}"), "count": n, "args": args }))
+        .collect();
+    let script_names: Vec<&str> = scripts
+        .iter()
+        .map(|s| s.rsplit('/').next().unwrap_or(s))
+        .collect();
 
     let layout = json!({
         "screen": screen_name,
@@ -3343,7 +3493,10 @@ fn cmd_export_layout_runtime(
             "listItemsRecorded": total_list_items,
             "objectsHidden": n_hidden,
             "knownCmdsByName": known_by_name,
+            "missingHostCalls": missing_host_calls,
+            "missingHostPaths": missing_host_paths,
             "callbacksDefinis": callbacks_definis,
+            "callbackErrors": callback_errors,
             // Ceux que le driver ne joue pas : la cible exacte du travail de navigation restant.
             "callbacksNonJoues": callbacks_definis
                 .iter()
@@ -3377,6 +3530,7 @@ fn cmd_export_layout_runtime(
             "textsMutated": n_text_mut,
             "knownCmdCalls": total_known,
             "unknownCmds": unknown_list,
+            "unknownGeneralCmds": unknown_general_list,
         },
     });
     let txt = serde_json::to_string_pretty(&layout)?;
@@ -3387,10 +3541,11 @@ fn cmd_export_layout_runtime(
         "export-layout-runtime: screen={screen_name} objets={n_objects} (sprites statiques={n_sprites}) \
          scripts={} | MenuState: objets={} mutés[matched={n_matched_total} (statique={n_matched} \
          + onglets={n_tabs}) hidden={n_hidden} sprite={n_sprite_mut} text={n_text_mut} listItems={total_list_items}] \
-         | cmds connus={total_known} inconnus_distincts={} | visibles={n_visible} -> {} ({} octets)",
+         | cmds connus={total_known} inconnus_menu={} inconnus_generales={} | visibles={n_visible} -> {} ({} octets)",
         scripts.len(),
         merged_objs.len(),
         unknown_cmds.len(),
+        unknown_general_cmds.len(),
         out.display(),
         txt.len()
     );
@@ -3476,7 +3631,11 @@ fn fill_parallelogram(
             continue;
         }
         // frac : 0 en haut, 1 en bas.
-        let frac = if h > 1 { f64::from(r) / f64::from(h - 1) } else { 0.0 };
+        let frac = if h > 1 {
+            f64::from(r) / f64::from(h - 1)
+        } else {
+            0.0
+        };
         let left = x_bottom + (f64::from(slant) * (1.0 - frac)).round() as i32;
         let col = [
             lerp_u8(top[0], bot[0], frac),
@@ -3499,7 +3658,9 @@ fn fill_parallelogram(
 
 /// Interpolation linéaire `a→b` (octets) au facteur `t∈[0,1]`.
 fn lerp_u8(a: u8, b: u8, t: f64) -> u8 {
-    (f64::from(a) + (f64::from(b) - f64::from(a)) * t).round().clamp(0.0, 255.0) as u8
+    (f64::from(a) + (f64::from(b) - f64::from(a)) * t)
+        .round()
+        .clamp(0.0, 255.0) as u8
 }
 
 /// Pose la RANGÉE D'ICÔNES centrale du menu principal sur `canvas` (`cw×ch`) — FIDÉLITÉ VISUELLE.
@@ -3553,8 +3714,18 @@ fn paint_main_menu_icon_row(game_dir: &Path, canvas: &mut [u8], (cw, ch): (u32, 
         let x_bottom = FIRST_X + i as i32 * STEP;
         let selected = i == 0;
         // 1) Tuile bleue penchée (dégradé). Toujours dessinée, même si la région échoue.
-        let (top, bot) = if selected { (SEL_TOP, SEL_BOT) } else { (TILE_TOP, TILE_BOT) };
-        fill_parallelogram(canvas, (cw, ch), (x_bottom, ROW_Y, TILE_W, TILE_H, SLANT), top, bot);
+        let (top, bot) = if selected {
+            (SEL_TOP, SEL_BOT)
+        } else {
+            (TILE_TOP, TILE_BOT)
+        };
+        fill_parallelogram(
+            canvas,
+            (cw, ch),
+            (x_bottom, ROW_Y, TILE_W, TILE_H, SLANT),
+            top,
+            bot,
+        );
 
         // 2) Glyphe blanc centré sur la tuile (à mi-hauteur, slant/2).
         let center_x = x_bottom + SLANT / 2 + TILE_W as i32 / 2;
@@ -3580,7 +3751,13 @@ fn paint_main_menu_icon_row(game_dir: &Path, canvas: &mut [u8], (cw, ch): (u32, 
         if scaled.is_empty() {
             continue;
         }
-        blit_over(canvas, (cw, ch), &scaled, (ICON_W, ICON_H), (icon_x, icon_y));
+        blit_over(
+            canvas,
+            (cw, ch),
+            &scaled,
+            (ICON_W, ICON_H),
+            (icon_x, icon_y),
+        );
         posed += 1;
     }
     posed
@@ -3594,13 +3771,19 @@ fn cmd_menu(game_dir: &Path, screen: &str, png_out: &Path, from_setting: bool) -
     // settings), enfin on retombe sur le préfixe d'objbin pour les écrans sans setting.
     let _ = from_setting; // le mode setting est désormais l'essai prioritaire dans tous les cas.
     let try_set = |name: &str| {
-        build_sprite_list_from_setting(game_dir, name).ok().filter(|s| !s.is_empty())
+        build_sprite_list_from_setting(game_dir, name)
+            .ok()
+            .filter(|s| !s.is_empty())
     };
     let sprites = try_set(screen)
         .or_else(|| {
-            (!screen.ends_with("_menu")).then(|| try_set(&format!("{screen}_menu"))).flatten()
+            (!screen.ends_with("_menu"))
+                .then(|| try_set(&format!("{screen}_menu")))
+                .flatten()
         })
-        .or_else(|| build_sprite_list(game_dir, screen.strip_suffix("_menu").unwrap_or(screen)).ok())
+        .or_else(|| {
+            build_sprite_list(game_dir, screen.strip_suffix("_menu").unwrap_or(screen)).ok()
+        })
         .unwrap_or_default();
     let n_sprites = sprites.len();
 
@@ -3614,7 +3797,12 @@ fn cmd_menu(game_dir: &Path, screen: &str, png_out: &Path, from_setting: bool) -
     // autres écrans (ex. title02, fond = scène 3D / key-art) gardent le canvas transparent d'origine
     // pour ne pas régresser leur plancher SSIM.
     let mut canvas = if screen == "main_menu" {
-        menu::compose_over(paint_menu_background(1280, 720), 1280, 720, &composite_sprites)
+        menu::compose_over(
+            paint_menu_background(1280, 720),
+            1280,
+            720,
+            &composite_sprites,
+        )
     } else {
         menu::compose(1280, 720, &composite_sprites)
     };
@@ -3623,7 +3811,10 @@ fn cmd_menu(game_dir: &Path, screen: &str, png_out: &Path, from_setting: bool) -
     // fidélité visuelle au vrai jeu (crops statiques de l'atlas `icon_list_tab`, aucun driver Lua).
     if screen == "main_menu" {
         let n = paint_main_menu_icon_row(game_dir, &mut canvas, (1280, 720));
-        info!("main_menu : {n}/{} onglets d'icônes posés", MAIN_MENU_ICON_TABS.len());
+        info!(
+            "main_menu : {n}/{} onglets d'icônes posés",
+            MAIN_MENU_ICON_TABS.len()
+        );
     }
 
     let png_bytes = encoder_rgba_png(&canvas, 1280, 720)?;
@@ -4247,7 +4438,10 @@ impl winit::application::ApplicationHandler for AppFenetre {
                 let winit::keyboard::PhysicalKey::Code(code) = event.physical_key else {
                     return;
                 };
-                debug!("touche {code:?} état={:?} repeat={}", event.state, event.repeat);
+                debug!(
+                    "touche {code:?} état={:?} repeat={}",
+                    event.state, event.repeat
+                );
                 // L'état des touches est suivi en continu : c'est lui qui dirige le joueur
                 // pendant un match, là où les menus réagissent aux appuis.
                 if let Some(jeu) = &mut self.jeu {

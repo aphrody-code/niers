@@ -24,6 +24,8 @@ use mlua::{Lua, MultiValue, Value, Variadic};
 
 use crate::{LuaError, is_lua52_bytecode};
 
+type IncludeResolver = Box<dyn Fn(&str) -> Option<Vec<u8>>>;
+
 /// Options d'exécution.
 #[derive(Debug, Clone)]
 pub struct ExecOptions {
@@ -60,6 +62,10 @@ pub struct ExecOutput {
     pub returned: Vec<String>,
     /// Globals hôtes touchés mais non définis — la surface d'API que ce script attend du moteur.
     pub missing_host_calls: Vec<String>,
+    /// Chemins d'API hôte imbriqués touchés par les stubs (`LISTVIEW.Set...`, par exemple).
+    pub missing_host_paths: Vec<String>,
+    /// Modules demandés par `INCLUDE` mais absents du résolveur VFS.
+    pub missing_includes: Vec<String>,
     /// Durée d'exécution en millisecondes.
     pub duration_ms: u64,
 }
@@ -107,7 +113,11 @@ pub fn install_print_capture(lua: &Lua, sink: Rc<RefCell<Vec<String>>>) -> mlua:
     let f = lua.create_function(move |_, args: Variadic<Value>| {
         // `print` sépare ses arguments par une tabulation — on reproduit, pour que la sortie
         // corresponde à ce qu'un terminal aurait montré.
-        let line = args.iter().map(value_to_string).collect::<Vec<_>>().join("\t");
+        let line = args
+            .iter()
+            .map(value_to_string)
+            .collect::<Vec<_>>()
+            .join("\t");
         sink.borrow_mut().push(line);
         Ok(())
     })?;
@@ -128,16 +138,25 @@ pub fn install_host_stubs(lua: &Lua) -> mlua::Result<()> {
     lua.load(
         r#"
         _HOST_MISSING = {}
-        local function stub()
+        _HOST_MISSING_PATHS = {}
+        local function note(path)
+            _HOST_MISSING_PATHS[path] = true
+        end
+        local function stub(path)
             return setmetatable({}, {
-                __call = function() return stub() end,
-                __index = function() return stub() end,
+                __call = function() note(path .. "()"); return stub(path .. "()") end,
+                __index = function(_, k)
+                    local child = path .. "." .. tostring(k)
+                    note(child)
+                    return stub(child)
+                end,
             })
         end
         setmetatable(_G, {
             __index = function(_, k)
                 _HOST_MISSING[k] = true
-                return stub()
+                note(k)
+                return stub(k)
             end,
         })
         "#,
@@ -154,11 +173,52 @@ pub fn install_host_stubs(lua: &Lua) -> mlua::Result<()> {
 /// erreur de cette fonction : elle est rendue dans [`ExecOutput::error`], parce que voir le
 /// message d'erreur EST le résultat attendu quand on met au point un script.
 pub fn execute(data: &[u8], options: &ExecOptions) -> Result<ExecOutput, LuaError> {
+    execute_inner(data, options, None)
+}
+
+/// Exécute un chunk avec un résolveur `INCLUDE` branché sur le VFS appelant.
+///
+/// Les modules sont chargés et exécutés dans la même VM que le chunk principal, comme le
+/// moteur du jeu : leurs globals, fonctions et retours restent donc visibles pendant toute
+/// l'exécution. Le résolveur peut renvoyer du bytecode Lua 5.2 ou de la source Lua.
+pub fn execute_with_include<F>(
+    data: &[u8],
+    options: &ExecOptions,
+    resolver: F,
+) -> Result<ExecOutput, LuaError>
+where
+    F: Fn(&str) -> Option<Vec<u8>> + 'static,
+{
+    execute_inner(data, options, Some(Box::new(resolver)))
+}
+
+fn execute_inner(
+    data: &[u8],
+    options: &ExecOptions,
+    resolver: Option<IncludeResolver>,
+) -> Result<ExecOutput, LuaError> {
     let lua = crate::new_vm();
     let started = std::time::Instant::now();
 
     let stdout = Rc::new(RefCell::new(Vec::new()));
     install_print_capture(&lua, Rc::clone(&stdout))?;
+
+    // Global moteur requis par les includes et disponible même sans le host de menu.
+    let crc32 =
+        lua.create_function(|_, value: String| Ok(f64::from(crate::crc32(value.as_bytes()))))?;
+    lua.globals().set("CRC32", crc32)?;
+
+    let missing_includes = Rc::new(RefCell::new(Vec::<String>::new()));
+    if let Some(resolver) = resolver {
+        let missing = Rc::clone(&missing_includes);
+        crate::install_include(&lua, move |name| match resolver(name) {
+            Some(bytes) => Some(bytes),
+            None => {
+                missing.borrow_mut().push(name.to_string());
+                None
+            }
+        })?;
+    }
 
     if options.with_menu_host {
         crate::install_menu_host(&lua)?;
@@ -183,7 +243,11 @@ pub fn execute(data: &[u8], options: &ExecOptions) -> Result<ExecOutput, LuaErro
         })?;
     }
 
-    let mode = if is_lua52_bytecode(data) { mlua::ChunkMode::Binary } else { mlua::ChunkMode::Text };
+    let mode = if is_lua52_bytecode(data) {
+        mlua::ChunkMode::Binary
+    } else {
+        mlua::ChunkMode::Text
+    };
     let result = lua
         .load(data)
         .set_name(options.chunk_name.clone())
@@ -212,6 +276,22 @@ pub fn execute(data: &[u8], options: &ExecOptions) -> Result<ExecOutput, LuaErro
         names.dedup();
         out.missing_host_calls = names;
     }
+    if let Ok(missing) = lua
+        .globals()
+        .get::<mlua::Table>("_HOST_MISSING_PATHS")
+    {
+        let mut paths: Vec<String> = missing
+            .pairs::<String, Value>()
+            .filter_map(Result::ok)
+            .map(|(path, _)| path)
+            .collect();
+        paths.sort_unstable();
+        paths.dedup();
+        out.missing_host_paths = paths;
+    }
+    out.missing_includes = missing_includes.borrow().clone();
+    out.missing_includes.sort_unstable();
+    out.missing_includes.dedup();
 
     Ok(out)
 }
@@ -236,11 +316,30 @@ pub struct GlobalEntry {
 #[must_use]
 pub fn list_globals(lua: &Lua, include_stdlib: bool) -> Vec<GlobalEntry> {
     const STDLIB: [&str; 17] = [
-        "_G", "_VERSION", "assert", "collectgarbage", "coroutine", "debug", "error", "io", "math",
-        "os", "package", "pcall", "print", "string", "table", "type", "xpcall",
+        "_G",
+        "_VERSION",
+        "assert",
+        "collectgarbage",
+        "coroutine",
+        "debug",
+        "error",
+        "io",
+        "math",
+        "os",
+        "package",
+        "pcall",
+        "print",
+        "string",
+        "table",
+        "type",
+        "xpcall",
     ];
 
-    let Ok(globals) = lua.globals().pairs::<String, Value>().collect::<mlua::Result<Vec<_>>>() else {
+    let Ok(globals) = lua
+        .globals()
+        .pairs::<String, Value>()
+        .collect::<mlua::Result<Vec<_>>>()
+    else {
         return Vec::new();
     };
 
@@ -284,7 +383,11 @@ pub fn eval_expression(lua: &Lua, expr: &str) -> Result<String, LuaError> {
 
     Ok(match result {
         Ok(values) if values.is_empty() => String::new(),
-        Ok(values) => values.iter().map(value_to_string).collect::<Vec<_>>().join("\t"),
+        Ok(values) => values
+            .iter()
+            .map(value_to_string)
+            .collect::<Vec<_>>()
+            .join("\t"),
         Err(e) => format!("erreur : {e}"),
     })
 }
@@ -295,8 +398,11 @@ mod tests {
 
     #[test]
     fn capture_la_sortie_et_les_retours() {
-        let out = execute(b"print('bonjour', 42) return 7, 'x'", &ExecOptions::default())
-            .expect("exécution");
+        let out = execute(
+            b"print('bonjour', 42) return 7, 'x'",
+            &ExecOptions::default(),
+        )
+        .expect("exécution");
         assert_eq!(out.stdout, vec!["bonjour\t42".to_string()]);
         assert_eq!(out.returned, vec!["7".to_string(), "x".to_string()]);
         assert!(out.error.is_none(), "erreur inattendue : {:?}", out.error);
@@ -312,7 +418,10 @@ mod tests {
     /// Une boucle infinie doit être coupée par la limite d'instructions, pas figer l'appelant.
     #[test]
     fn interrompt_une_boucle_infinie() {
-        let options = ExecOptions { instruction_limit: Some(100_000), ..Default::default() };
+        let options = ExecOptions {
+            instruction_limit: Some(100_000),
+            ..Default::default()
+        };
         let out = execute(b"while true do end", &options).expect("exécution");
         let msg = out.error.expect("la limite devait interrompre le script");
         assert!(msg.contains("limite d'exécution"), "message : {msg}");
@@ -321,23 +430,72 @@ mod tests {
     /// Un appel à une fonction moteur inexistante ne doit pas arrêter le script, mais être relevé.
     #[test]
     fn releve_les_appels_hote_manquants() {
-        let out = execute(b"MENU_OPEN('titre') SOME_ENGINE_CALL()", &ExecOptions::default())
-            .expect("exécution");
+        let out = execute(
+            b"MENU_OPEN('titre') SOME_ENGINE_CALL()",
+            &ExecOptions::default(),
+        )
+        .expect("exécution");
         assert!(out.error.is_none(), "erreur inattendue : {:?}", out.error);
         assert!(out.missing_host_calls.contains(&"MENU_OPEN".to_string()));
-        assert!(out.missing_host_calls.contains(&"SOME_ENGINE_CALL".to_string()));
+        assert!(
+            out.missing_host_calls
+                .contains(&"SOME_ENGINE_CALL".to_string())
+        );
+        assert!(out.missing_host_paths.contains(&"MENU_OPEN()".to_string()));
+        assert!(
+            out.missing_host_paths
+                .contains(&"SOME_ENGINE_CALL()".to_string())
+        );
+    }
+
+    #[test]
+    fn crc32_est_fourni_au_runtime_generique() {
+        let out =
+            execute(b"return CRC32('general_win')", &ExecOptions::default()).expect("exécution");
+        assert_eq!(out.returned, vec!["292844459"]);
+        assert!(!out.missing_host_calls.iter().any(|name| name == "CRC32"));
+    }
+
+    #[test]
+    fn execute_with_include_partage_la_vm_avec_le_module() {
+        let out = execute_with_include(
+            b"INCLUDE('COMMON'); return included_value, CRC32('general_win')",
+            &ExecOptions::default(),
+            |name| (name == "COMMON").then(|| b"included_value = 41".to_vec()),
+        )
+        .expect("exécution");
+        assert_eq!(out.returned, vec!["41", "292844459"]);
+        assert!(!out.missing_host_calls.iter().any(|name| name == "INCLUDE"));
+        assert!(out.missing_includes.is_empty());
+    }
+
+    #[test]
+    fn execute_with_include_signale_un_module_absent() {
+        let out = execute_with_include(
+            b"INCLUDE('ABSENT'); return 7",
+            &ExecOptions::default(),
+            |_name| None,
+        )
+        .expect("exécution");
+        assert_eq!(out.returned, vec!["7"]);
+        assert_eq!(out.missing_includes, vec!["ABSENT"]);
     }
 
     #[test]
     fn liste_et_evalue_les_globals() {
         let lua = crate::new_vm();
-        lua.load("mavaleur = 3 matable = {a=1, b=2}").exec().expect("préparation");
+        lua.load("mavaleur = 3 matable = {a=1, b=2}")
+            .exec()
+            .expect("préparation");
 
         let globals = list_globals(&lua, false);
         let names: Vec<&str> = globals.iter().map(|g| g.name.as_str()).collect();
         assert!(names.contains(&"mavaleur"), "globals : {names:?}");
 
-        let table = globals.iter().find(|g| g.name == "matable").expect("matable");
+        let table = globals
+            .iter()
+            .find(|g| g.name == "matable")
+            .expect("matable");
         assert_eq!(table.type_name, "table");
         assert_eq!(table.len, Some(2));
 
