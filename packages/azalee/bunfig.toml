@@ -6,6 +6,6 @@
 preload = [
 	"../nie-plugin/src/register.ts",
 	"../nie-plugin/src/happydom.ts",
-	"../azalee-outils/test/preload.ts",
+	"../azalee-tools/test/preload.ts",
 ]
 coverage = false

@@ -14,7 +14,7 @@ use std::path::{Path, PathBuf};
 use parking_lot::Mutex;
 use rusqlite::{Connection, OpenFlags};
 
-use crate::erreur::ErreurSite;
+use crate::error::ErreurSite;
 
 /// Poignée vers le miroir, rouverte automatiquement quand le lien bascule.
 #[derive(Debug)]

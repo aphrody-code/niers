@@ -5,7 +5,7 @@
  * lui donne (`setDatabaseProvider`). Le wiki y injecte son client Supabase.
  *
  * Le client SQLite et la résolution du miroir ont quitté cette porte au lot J2 — ils vivent
- * dans `@niers/azalee-outils`, hors du chemin d'une page. Tant qu'ils étaient exportés ici,
+ * dans `@niers/azalee-tools`, hors du chemin d'une page. Tant qu'ils étaient exportés ici,
  * une page pouvait les atteindre par mégarde et lire un fichier qui n'existe pas en
  * serverless : la panne se voyait alors sous forme de page vide, jamais d'erreur.
  */

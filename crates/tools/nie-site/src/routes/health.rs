@@ -7,7 +7,7 @@ use axum::Json;
 use axum::extract::State;
 use serde::Serialize;
 
-use crate::etat::{Capacites, EtatSite};
+use crate::state::{Capacites, EtatSite};
 
 /// Corps de `/healthz`.
 #[derive(Debug, Serialize)]

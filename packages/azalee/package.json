@@ -62,7 +62,7 @@
 		"registry": "https://registry.npmjs.org"
 	},
 	"scripts": {
-		"build": "bun --bun tsc -p tsconfig.build.json && bun --bun ../azalee-outils/scripts/copy-data.ts",
+		"build": "bun --bun tsc -p tsconfig.build.json && bun --bun ../azalee-tools/scripts/copy-data.ts",
 		"test": "bun test",
 		"lint": "bunx oxlint -c ../../.oxlintrc.json -A style -A pedantic -A restriction src",
 		"lint:fix": "bunx oxlint -c ../../.oxlintrc.json -A style -A pedantic -A restriction --fix src",
@@ -79,7 +79,7 @@
 		"commander": "catalog:",
 		"drizzle-orm": "^0.45.2",
 		"wanakana": "catalog:",
-		"@niers/jeu": "workspace:*"
+		"@niers/game": "workspace:*"
 	},
 	"devDependencies": {
 		"@rosegriffon/config": "workspace:*",
@@ -87,7 +87,7 @@
 		"@types/node": "catalog:",
 		"oxlint": "catalog:",
 		"typescript": "catalog:",
-		"@niers/azalee-outils": "workspace:*"
+		"@niers/azalee-tools": "workspace:*"
 	},
 	"engines": {
 		"bun": ">=1.3.14"

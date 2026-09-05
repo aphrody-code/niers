@@ -18,9 +18,9 @@ use axum::Json;
 use axum::extract::{Path, Query, State};
 use serde::Serialize;
 
-use crate::erreur::ErreurSite;
-use crate::etat::EtatSite;
-use crate::index_vfs::{Fichier, VUES, Vue};
+use crate::error::ErreurSite;
+use crate::state::EtatSite;
+use crate::vfs_index::{Fichier, VUES, Vue};
 use crate::routes::{DemandePage, Page};
 
 /// Table du miroir dont sont tirés les personnages. Constante de la crate : jamais un nom de
@@ -53,7 +53,7 @@ pub struct SanteApi {
     /// Version de la crate.
     pub version: &'static str,
     /// Capacités mesurées.
-    pub capacites: crate::etat::Capacites,
+    pub capacites: crate::state::Capacites,
     /// Nombre de chemins retenus par chaque filtre enregistré, dans l'ordre de [`VUES`].
     pub vues: Vec<VueResume>,
 }

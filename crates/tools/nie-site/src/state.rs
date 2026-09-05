@@ -13,8 +13,8 @@ use moka::future::Cache;
 use serde::Serialize;
 
 use crate::config::Config;
-use crate::gisement::Gisement;
-use crate::index_vfs::IndexVfs;
+use crate::dataset::Gisement;
+use crate::vfs_index::IndexVfs;
 
 /// Une réponse d'amont mise en cache, avec son ETag déjà calculé.
 #[derive(Debug, Clone)]

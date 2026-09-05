@@ -13,7 +13,7 @@ use axum::routing::get;
 use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
 
-use crate::etat::EtatSite;
+use crate::state::EtatSite;
 
 /// La politique de sécurité du contenu servie par Aphrody.
 ///

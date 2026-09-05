@@ -4,7 +4,7 @@
 // ## Ce module n'invente rien : il rebranche
 //
 // Les règles de jeu (83 formations réelles aux coordonnées `f32` décodées par `nie-data`, facteur
-// de poste, synergies d'élément, code de partage) vivent déjà dans `@niers/jeu/game`,
+// de poste, synergies d'élément, code de partage) vivent déjà dans `@niers/game/game`,
 // écrit explicitement pour servir « le CLI, le wiki web et une éventuelle GUI Tauri ». Les
 // réécrire ici en ferait une seconde vérité qui dériverait au premier ajustement. On les IMPORTE.
 //
@@ -24,8 +24,8 @@
 //   `minCount` du wiki le neutralise en silence — l'utilisatrice croit filtrer. Il n'est pas
 //   porté ; le style de jeu reste affiché sur l'encadrement, où il est réellement renseigné.
 
-import { FORMATIONS, type Formation } from "@niers/jeu/game/formations";
-import type { TeamMember } from "@niers/jeu/game/team-types";
+import { FORMATIONS, type Formation } from "@niers/game/game/formations";
+import type { TeamMember } from "@niers/game/game/team-types";
 
 import type { LigneRoster } from "@/lib/wikiQueries";
 
@@ -134,7 +134,7 @@ export function versJoueurDepuisJeu(c: {
   };
 }
 
-/** Postes FR du miroir → codes courts attendus par `@niers/jeu/game`. */
+/** Postes FR du miroir → codes courts attendus par `@niers/game/game`. */
 const CODE_POSTE: Record<string, string> = {
   Gardien: "GK",
   Défenseur: "DF",

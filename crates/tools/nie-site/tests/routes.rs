@@ -13,8 +13,8 @@ use axum::http::{Request, StatusCode, header};
 use http_body_util::BodyExt as _;
 use nie_site::app::{NB_ENTETES_SECURITE, ROUTES, entetes_securite_liste};
 use nie_site::config::{Config, PER_PAGE_MAX};
-use nie_site::etat::EtatSite;
-use nie_site::index_vfs::IndexVfs;
+use nie_site::state::EtatSite;
+use nie_site::vfs_index::IndexVfs;
 use tower::ServiceExt as _;
 
 /// Les chemins de l'index injecté : 4 textures, 2 modèles, 2 sons, 1 vidéo, 1 sans extension.
@@ -273,7 +273,7 @@ async fn f_sert_les_octets_et_gere_le_304() {
     // Un dump sert les chemins LOGIQUES du jeu : `data/<relatif>`, comme un montage par packs.
     let note = "data/common/misc/note.txt";
     assert!(index.contient(note), "chemin logique attendu");
-    assert_eq!(index.compte_vue(nie_site::index_vfs::Vue::Textures), 1);
+    assert_eq!(index.compte_vue(nie_site::vfs_index::Vue::Textures), 1);
 
     let etat = EtatSite::nouveau(config_nue());
     etat.poser_vfs(Some(std::sync::Arc::new(vfs)), std::sync::Arc::new(index), true);

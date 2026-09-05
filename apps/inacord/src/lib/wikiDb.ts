@@ -5,7 +5,7 @@
 // TELLES QUELLES depuis `crates/tools/nie-wiki/src/query.rs` (`search_characters`/`search_skills`)
 // — même vérité SQL, juste un moteur d'exécution différent.
 import Database from "@tauri-apps/plugin-sql";
-import { japaneseToRomaji } from "@niers/jeu/text";
+import { japaneseToRomaji } from "@niers/game/text";
 
 import { dedoublonnerParNom, type EntreeNoms } from "@/lib/traduction";
 import {

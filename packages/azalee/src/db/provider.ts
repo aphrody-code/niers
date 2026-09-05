@@ -3,7 +3,7 @@
  *
  * L'hôte injecte le client qu'il veut : `apps/azalee` fournit son client
  * Supabase, l'outillage hors ligne fournit le client du miroir SQLite
- * (`@niers/azalee-outils`).
+ * (`@niers/azalee-tools`).
  *
  * ## Pourquoi il n'y a plus de défaut (lot J2, 2026-09-05)
  *
@@ -26,7 +26,7 @@ let defaut: DatabaseClientFactory | null = null;
  * Pose la source de SECOURS, celle qui s'applique quand aucune fabrique explicite n'est
  * injectée.
  *
- * Elle n'existe que si un hôte la fournit : `@niers/azalee-outils` y met le miroir SQLite,
+ * Elle n'existe que si un hôte la fournit : `@niers/azalee-tools` y met le miroir SQLite,
  * parce qu'une CLI ou une suite hors ligne lit légitimement un fichier local. Le wiki
  * serverless, lui, n'en pose aucune — sans injection explicite, ses lectures lèvent, ce qui
  * est le but du lot J2.
@@ -63,7 +63,7 @@ export async function createClient(): Promise<SupabaseClient> {
 		throw new Error(
 			"Aucun client de données injecté : appelez setDatabaseProvider() avant toute lecture. " +
 				"Le wiki injecte son client Supabase (apps/azalee/lib/azalee-runtime), " +
-				"l'outillage hors ligne celui du miroir (@niers/azalee-outils).",
+				"l'outillage hors ligne celui du miroir (@niers/azalee-tools).",
 		);
 	}
 	return await choisie();

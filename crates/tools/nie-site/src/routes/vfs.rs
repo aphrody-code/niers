@@ -19,9 +19,9 @@ use axum::response::Response;
 use axum::Json;
 use bytes::Bytes;
 
-use crate::erreur::ErreurSite;
-use crate::etat::{EtatSite, ReponseCachee};
-use crate::index_vfs::Dossier;
+use crate::error::ErreurSite;
+use crate::state::{EtatSite, ReponseCachee};
+use crate::vfs_index::Dossier;
 use crate::routes::DemandePage;
 use crate::routes::static_files::{Encodage, etiquette, reponse_octets};
 

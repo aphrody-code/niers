@@ -32,7 +32,7 @@ const DISABLE_SUPABASE_JWT_BRIDGE = process.env.DISABLE_SUPABASE_JWT_BRIDGE !== 
  * tables : c'est cette dualité qui a produit le faux vert du 2026-09-05.
  *
  * Le cache local reste disponible pour l'outillage hors ligne, dans
- * `@niers/azalee-outils` — jamais dans le chemin d'une page.
+ * `@niers/azalee-tools` — jamais dans le chemin d'une page.
  */
 export const createClient = async (): Promise<SupabaseClient> => {
 	let accessToken: string | undefined;

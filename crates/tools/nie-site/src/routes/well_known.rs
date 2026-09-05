@@ -9,7 +9,7 @@ use axum::extract::State;
 use axum::http::{StatusCode, header};
 use axum::response::{IntoResponse, Response};
 
-use crate::etat::EtatSite;
+use crate::state::EtatSite;
 
 /// Une URL du plan de site.
 #[derive(Debug, Clone)]

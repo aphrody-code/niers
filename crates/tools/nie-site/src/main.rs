@@ -10,7 +10,7 @@
 use anyhow::Context as _;
 use clap::Parser as _;
 use nie_site::config::Options;
-use nie_site::etat::EtatSite;
+use nie_site::state::EtatSite;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

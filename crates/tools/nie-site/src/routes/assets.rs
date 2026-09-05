@@ -15,8 +15,8 @@ use axum::extract::{Path, RawQuery, State};
 use axum::http::HeaderMap;
 use axum::response::{IntoResponse, Response};
 
-use crate::erreur::ErreurSite;
-use crate::etat::{EtatSite, ReponseCachee};
+use crate::error::ErreurSite;
+use crate::state::{EtatSite, ReponseCachee};
 use crate::routes::static_files::{Encodage, etiquette, reponse_octets};
 
 /// `Cache-Control` des rendus d'amont : le décodage d'un chemin donné est déterministe, mais

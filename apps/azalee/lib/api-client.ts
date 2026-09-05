@@ -35,7 +35,7 @@ function getSupabase(): ReturnType<typeof createClient> {
 	// lot J2 : le fichier n'existe pas sur Vercel, le repli était donc pris à chaque requête,
 	// et il reposait sur la comparaison d'un MESSAGE d'erreur. Deux sources de vérité pour les
 	// mêmes tables, c'est ce qui a produit le faux vert du 2026-09-05. Le cache local reste
-	// dans `@niers/azalee-outils`, hors du chemin d'une page.
+	// dans `@niers/azalee-tools`, hors du chemin d'une page.
 	_supabase = createClient(url, key);
 
 	return _supabase;

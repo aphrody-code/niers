@@ -1,5 +1,5 @@
 {
-  "name": "@niers/azalee-outils",
+  "name": "@niers/azalee-tools",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "@rosegriffon/azalee": "workspace:*",
-    "@niers/jeu": "workspace:*",
+    "@niers/game": "workspace:*",
     "@rosegriffon/db": "workspace:*",
     "@rosegriffon/inagle": "workspace:*",
     "@niers/catalog": "workspace:*",

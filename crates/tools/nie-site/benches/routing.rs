@@ -11,8 +11,8 @@ use axum::body::Body;
 use axum::http::Request;
 use criterion::{Criterion, criterion_group, criterion_main};
 use nie_site::config::Config;
-use nie_site::etat::EtatSite;
-use nie_site::index_vfs::IndexVfs;
+use nie_site::state::EtatSite;
+use nie_site::vfs_index::IndexVfs;
 use tower::ServiceExt as _;
 
 /// Index synthétique de taille réaliste : 20 000 chemins, dont un quart de textures.

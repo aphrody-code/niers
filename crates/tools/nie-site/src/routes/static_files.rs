@@ -20,7 +20,7 @@ use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use bytes::Bytes;
 
-use crate::etat::{EtatSite, ReponseCachee};
+use crate::state::{EtatSite, ReponseCachee};
 
 /// Taille au-delà de laquelle un fichier statique n'est plus gardé en mémoire (il est relu
 /// depuis le disque à chaque requête, ce que le cache de pages du noyau absorbe très bien).

@@ -9,7 +9,7 @@
 
 import { describe, expect, test } from "bun:test";
 
-import { resolveMirrorPath } from "@niers/azalee-outils/config";
+import { resolveMirrorPath } from "@niers/azalee-tools/config";
 import { wikiService } from "../src/wiki/service";
 import { getShop, getShopsList } from "../src/wiki/shops";
 import { getTeamDetail, getTeamsList } from "../src/wiki/teams";

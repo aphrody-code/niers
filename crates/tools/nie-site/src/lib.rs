@@ -15,7 +15,7 @@
 //!   deux CSP s'additionnent et la plus stricte gagne).
 //!
 //! Le service **démarre toujours**, même sans VFS, sans miroir et sans amont : chaque capacité
-//! absente se signale en `503` avec un message explicite (cf. [`etat::Capacites`]). Un serveur
+//! absente se signale en `503` avec un message explicite (cf. [`state::Capacites`]). Un serveur
 //! qui refuse de démarrer parce qu'un gisement manque est un serveur qu'on ne peut pas
 //! diagnostiquer.
 
@@ -23,16 +23,16 @@
 
 pub mod app;
 pub mod config;
-pub mod erreur;
-pub mod etat;
-pub mod gisement;
-pub mod index_vfs;
+pub mod dataset;
+pub mod error;
 pub mod routes;
+pub mod state;
+pub mod vfs_index;
 
 pub use app::routeur;
 pub use config::Config;
-pub use erreur::ErreurSite;
-pub use etat::EtatSite;
+pub use error::ErreurSite;
+pub use state::EtatSite;
 
 /// Version de la crate, telle qu'annoncée par `/healthz` et `/api/v1/health`.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

@@ -11,7 +11,7 @@
     "typecheck": "bunx tsc --noEmit"
   },
   "dependencies": {
-    "@niers/jeu": "workspace:*",
+    "@niers/game": "workspace:*",
     "react": "catalog:",
     "react-dom": "catalog:"
   },

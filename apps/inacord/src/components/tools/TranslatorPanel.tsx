@@ -28,7 +28,7 @@ import {
   type ResultatTraduction,
   type TypeEntite,
 } from "@/lib/traduction";
-import { japaneseToRomaji } from "@niers/jeu/text";
+import { japaneseToRomaji } from "@niers/game/text";
 
 import { api } from "@/lib/api";
 import { useSettings } from "@/lib/settings";

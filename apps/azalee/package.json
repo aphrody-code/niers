@@ -15,9 +15,9 @@
 		"test": "bun test lib src tests",
 		"test:run": "bun --bun vitest run",
 		"create-draft": "bun scripts/create-draft.ts",
-		"backup:supabase": "bun --bun ../../packages/azalee-outils/scripts-app/ops/backup-supabase-to-sqlite.ts",
-		"sync:supabase": "bun --bun ../../packages/azalee-outils/scripts-app/ops/sync-supabase-to-sqlite.ts",
-		"sync:full": "bun --bun ../../packages/azalee-outils/scripts-app/ops/sync-supabase-to-sqlite.ts --full --deletes",
+		"backup:supabase": "bun --bun ../../packages/azalee-tools/scripts-app/ops/backup-supabase-to-sqlite.ts",
+		"sync:supabase": "bun --bun ../../packages/azalee-tools/scripts-app/ops/sync-supabase-to-sqlite.ts",
+		"sync:full": "bun --bun ../../packages/azalee-tools/scripts-app/ops/sync-supabase-to-sqlite.ts --full --deletes",
 		"typecheck": "bun --bun tsc --noEmit"
 	},
 	"dependencies": {

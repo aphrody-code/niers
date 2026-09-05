@@ -34,7 +34,7 @@ linker = "isolated"       # pnpm-style strict node_modules
 preload = [
 	"./packages/nie-plugin/src/register.ts",
 	"./packages/nie-plugin/src/happydom.ts",
-	"./packages/azalee-outils/test/preload.ts",
+	"./packages/azalee-tools/test/preload.ts",
 ]
 coverage = false
 

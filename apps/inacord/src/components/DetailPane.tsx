@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { save, confirm } from "@tauri-apps/plugin-dialog";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { toast } from "sonner";
-import { formatDescription, translateEffect } from "@niers/jeu/text";
+import { formatDescription, translateEffect } from "@niers/game/text";
 import { api, type ExportFormat } from "@/lib/api";
 import { useSettings, type Locale } from "@/lib/settings";
 import { b64ToBytes, bytesToB64, hexLines, humanSize } from "@/lib/bytes";

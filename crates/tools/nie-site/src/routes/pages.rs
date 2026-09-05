@@ -12,7 +12,7 @@ use axum::extract::State;
 use axum::http::{StatusCode, Uri, header};
 use axum::response::{Html, IntoResponse, Response};
 
-use crate::etat::EtatSite;
+use crate::state::EtatSite;
 
 /// Couleur de cadrage de la DA du jeu (`#295B9F`), mesurée sur le menu principal.
 pub const COULEUR_THEME: &str = "#295B9F";

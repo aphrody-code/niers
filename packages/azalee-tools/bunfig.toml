@@ -1,5 +1,5 @@
 # Bun lit le `bunfig.toml` du répertoire COURANT, sans hériter de celui de la racine : sans ce
-# fichier, `cd packages/azalee-outils && bun test` perd le plugin de formats du jeu.
+# fichier, `cd packages/azalee-tools && bun test` perd le plugin de formats du jeu.
 #
 # `test/preload.ts` pose le miroir comme source de SECOURS. Il ne perturbe pas `db.test.ts`,
 # qui vérifie qu'aucune fabrique explicite n'est injectée au départ : un défaut n'en est pas

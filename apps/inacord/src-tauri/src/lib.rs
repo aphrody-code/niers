@@ -138,7 +138,7 @@ fn mods_migrations() -> Vec<Migration> {
             // plusieurs compositions NOMMÉES persistantes sans réseau ni authentification.
             //
             // `members` est le JSON `Record<créneau, TeamMember>` de
-            // `@niers/jeu/game/team-types` — la MÊME forme que le wiki persiste, pour
+            // `@niers/game/game/team-types` — la MÊME forme que le wiki persiste, pour
             // que le code de partage reste interchangeable entre les deux surfaces.
             version: 4,
             description: "teams (compositions d'équipe locales, sans session)",
