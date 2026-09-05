@@ -115,7 +115,7 @@ export function Catalogue({ vue }: { vue: VueCatalogue }) {
 							{/* Pour les sons, le conteneur n'est PAS un lien : un clic sur « lire »
 							    declencherait la navigation au lieu de la lecture. */}
 							<a
-								href={vue === "sons" ? undefined : source.urlFichier(t.chemin)}
+								href={vue === "sons" || vue === "videos" ? undefined : source.urlFichier(t.chemin)}
 								style={{
 									display: "block",
 									background: "var(--jeu-fond-nuit)",
@@ -128,7 +128,20 @@ export function Catalogue({ vue }: { vue: VueCatalogue }) {
 							>
 								{/* La vignette est produite par l'hôte : URL HTTP ici, `data:` sur le
 								    desktop. `loading="lazy"` évite de décoder 60 images d'un coup. */}
-								{vue === "sons" && source.urlAudio ? (
+								{vue === "videos" && source.urlVideo ? (
+									// Meme raison que pour l'audio : `preload="none"`, sinon ouvrir la page
+									// tirerait 60 videos. `playsInline` evite que Safari mobile ne passe en
+									// plein ecran des la lecture, ce qui sort l'utilisateur du catalogue.
+									// biome-ignore lint/a11y/useMediaCaption: une cinematique du jeu n'a pas
+									// de piste de sous-titres separee, et en inventer une serait faux.
+									<video
+										controls
+										preload="none"
+										playsInline
+										src={source.urlVideo(t.chemin)}
+										style={{ width: "100%", aspectRatio: "16/9", background: "var(--jeu-fond-abysse)" }}
+									/>
+								) : vue === "sons" && source.urlAudio ? (
 									// `preload="none"` : 60 lecteurs sur une page ne doivent pas declencher
 									// 60 telechargements. Le navigateur n'ira chercher les octets qu'au
 									// premier clic sur « lire ».
