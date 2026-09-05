@@ -77,10 +77,10 @@ fn json(corps: &[u8]) -> serde_json::Value {
 }
 
 #[tokio::test]
-async fn les_douze_routes_repondent() {
+async fn les_treize_routes_repondent() {
     let etat = etat();
     // Une instance concrète par route déclarée, dans le même ordre que `ROUTES`.
-    let instances: [(&str, &[u16]); 12] = [
+    let instances: [(&str, &[u16]); 13] = [
         ("/healthz", &[200]),
         ("/robots.txt", &[200]),
         ("/.well-known/security.txt", &[200]),
@@ -92,9 +92,13 @@ async fn les_douze_routes_repondent() {
         ("/b", &[200]),
         ("/b/data/dx11/menu", &[200]),
         ("/assets/data/x.g4tx", &[502]), // amont clos
+        // Catalogue des episodes : la base n'est pas la dans l'etat de test, et le serveur le
+        // DIT plutot que de rendre une liste vide qu'un client prendrait pour un catalogue a
+        // jour. C'est la porte de mise a jour des Inacord installes.
+        ("/api/v1/episodes", &[503]),
         ("/", &[200]),
     ];
-    assert_eq!(ROUTES.len(), 12);
+    assert_eq!(ROUTES.len(), 13);
     assert_eq!(instances.len(), ROUTES.len(), "une instance par route declaree");
     let mut vus = 0;
     for (uri, attendus) in instances {
@@ -106,7 +110,7 @@ async fn les_douze_routes_repondent() {
         );
         vus += 1;
     }
-    assert_eq!(vus, 12);
+    assert_eq!(vus, 13);
 }
 
 #[tokio::test]

@@ -19,6 +19,9 @@ pub const AMONT_DEFAUT: &str = "http://127.0.0.1:8790";
 /// Bundle statique par défaut, produit par `bun run build` dans `apps/nie-web`.
 pub const STATIQUE_DEFAUT: &str = "apps/nie-web/dist";
 
+/// Catalogue des épisodes par défaut — le gisement `anime` du dépôt.
+pub const EPISODES_DEFAUT: &str = "data/anime/episodes.db";
+
 /// Nombre maximal d'éléments par page d'API. Le catalogue complet (250 800 fichiers, 53 126
 /// textures) n'est **jamais** servi d'un coup : c'est une borne, pas une suggestion.
 pub const PER_PAGE_MAX: u32 = 200;
@@ -36,6 +39,11 @@ pub struct Config {
     pub amont: String,
     /// Racine du bundle statique (`NIE_SITE_STATIC_DIR`).
     pub statique: PathBuf,
+    /// Catalogue des épisodes de la série (`NIE_SITE_EPISODES`), lu en lecture seule.
+    ///
+    /// C'est la base que le cron du VPS rafraîchit chaque nuit, et la source de
+    /// `/api/v1/episodes` — la porte par laquelle les Inacord déjà installés se mettent à jour.
+    pub episodes: PathBuf,
     /// Délai maximal d'un appel vers l'amont.
     pub delai_amont: Duration,
     /// Nombre d'appels simultanés autorisés vers l'amont.
@@ -57,6 +65,7 @@ impl Default for Config {
             db: PathBuf::from(DB_DEFAUT),
             amont: AMONT_DEFAUT.to_owned(),
             statique: PathBuf::from(STATIQUE_DEFAUT),
+            episodes: PathBuf::from(EPISODES_DEFAUT),
             delai_amont: Duration::from_secs(10),
             concurrence_amont: 16,
             taille_max_amont: 32 * 1024 * 1024,
@@ -87,6 +96,9 @@ pub struct Options {
     /// Racine du bundle statique (défaut `apps/nie-web/dist`).
     #[arg(long, env = "NIE_SITE_STATIC_DIR")]
     pub bundle_dir: Option<PathBuf>,
+    /// Catalogue des épisodes de la série (défaut `data/anime/episodes.db`).
+    #[arg(long, env = "NIE_SITE_EPISODES")]
+    pub episodes: Option<PathBuf>,
     /// Origine publique annoncée dans `sitemap.xml` et les balises `og:`.
     #[arg(long, env = "NIE_SITE_ORIGIN")]
     pub origin: Option<String>,
@@ -118,6 +130,9 @@ impl Options {
         }
         if let Some(b) = self.bundle_dir.filter(|p| !p.as_os_str().is_empty()) {
             cfg.statique = b;
+        }
+        if let Some(e) = self.episodes.filter(|p| !p.as_os_str().is_empty()) {
+            cfg.episodes = e;
         }
         if let Some(o) = self.origin.filter(|s| !s.trim().is_empty()) {
             cfg.origine = o.trim().trim_end_matches('/').to_owned();

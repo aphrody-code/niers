@@ -2,6 +2,7 @@
 
 pub mod api_v1;
 pub mod assets;
+pub mod episodes;
 pub mod health;
 pub mod pages;
 pub mod static_files;
