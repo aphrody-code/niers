@@ -197,6 +197,23 @@ else
 	sauter "aucune feuille de style dans le bundle (l'interface n'en produit pas encore)"
 fi
 
+# La pré-compression : `nie-site` sait servir un `.br` posé à côté du fichier, et le build de
+# `nie-web` les produit désormais. Vérifier les deux bouts ensemble est le seul moyen de voir
+# qu'une capacité écrite est réellement utilisée — elle a dormi inutilisée jusqu'au 2026-09-05.
+if [ -n "$SCRIPT_SRC" ]; then
+	brut="$(curl -sS -o /dev/null -w '%{size_download}' "$BASE$SCRIPT_SRC")"
+	compresse="$(curl -sS -o /dev/null -H 'Accept-Encoding: br' -w '%{size_download}' "$BASE$SCRIPT_SRC")"
+	verifier "le JS est servi en brotli" "br" "$(entete "$SCRIPT_SRC" content-encoding -H 'Accept-Encoding: br')"
+	verifier "Vary annonce la négociation" "Accept-Encoding" "$(entete "$SCRIPT_SRC" vary -H 'Accept-Encoding: br')"
+	VERIFS+=1
+	if [ "$compresse" -lt "$brut" ] 2>/dev/null; then
+		LIGNES+=("  $(couleur '32' 'ok')    brotli allège le point d'entrée = $brut -> $compresse o")
+	else
+		ECHECS+=1
+		LIGNES+=("  $(couleur '31' 'ECHEC') brotli n'allège rien : $brut -> $compresse o")
+	fi
+fi
+
 verifier "l'index n'est PAS figé dans les caches" \
 	"public, max-age=60, stale-while-revalidate=600" "$(entete / cache-control)"
 
@@ -298,6 +315,24 @@ if [ "$(jq -r '.capacites.gisement' <<<"$SANTE")" = "true" ]; then
 		"$(jq -r '[.elements[] | select(.internal_code != null)] | length' <"$CORPS")"
 else
 	sauter "miroir SQLite absent : /api/v1/chara n'est pas éprouvé ici"
+fi
+
+# --- 13 bis. Le catalogue des épisodes ---------------------------------------------------------
+# C'est la porte par laquelle les Inacord DÉJÀ INSTALLÉS se mettent à jour. Si elle disparaît,
+# ces clients se figent sans erreur visible — leur repli lit un 503 comme « ce serveur ne
+# moissonne pas la série ». Elle mérite donc d'être éprouvée à chaque passage.
+read -r code _ <<<"$(req '/api/v1/episodes?limit=3')"
+if [ "$code" = "200" ]; then
+	verifier "/api/v1/episodes : éléments rendus" "3" "$(jq -r '.elements | length' <"$CORPS")"
+	au_moins "/api/v1/episodes : date de moisson rendue" 1 \
+		"$(jq -r 'if .dernier_moissonne then 1 else 0 end' <"$CORPS")"
+	# Le delta est ce qui rend la mise à jour bon marché : un client à jour ne retélécharge rien.
+	req '/api/v1/episodes?since=99999999999999' >/dev/null
+	verifier "/api/v1/episodes : delta vide pour un client à jour" "0" "$(jq -r '.total' <"$CORPS")"
+elif [ "$code" = "503" ]; then
+	sauter "catalogue des épisodes absent de cette machine (503 explicite, pas une liste vide)"
+else
+	verifier "/api/v1/episodes" "200 ou 503" "$code"
 fi
 
 # --- 14. Distinction des espaces sur une route inconnue ---------------------------------------
