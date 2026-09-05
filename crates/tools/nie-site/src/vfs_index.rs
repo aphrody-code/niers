@@ -155,6 +155,52 @@ impl IndexVfs {
             .collect()
     }
 
+    /// Une page d'une vue, restreinte aux chemins contenant `motif`.
+    ///
+    /// La comparaison est insensible à la casse et porte sur le CHEMIN entier, pas sur le seul
+    /// nom : chercher `chr/` ou `title` doit fonctionner, et le rangement des fichiers du jeu
+    /// porte autant de sens que leur nom.
+    ///
+    /// Sans elle, atteindre un fichier parmi 143 246 demandait de parcourir jusqu'à 904 pages.
+    #[must_use]
+    pub fn page_vue_filtree(
+        &self,
+        vue: Vue,
+        motif: &str,
+        offset: usize,
+        limite: usize,
+    ) -> Vec<Fichier> {
+        let motif = motif.to_lowercase();
+        self.vues[rang(vue)]
+            .iter()
+            .filter(|i| {
+                self.chemins
+                    .get(**i as usize)
+                    .is_some_and(|c| c.to_lowercase().contains(&motif))
+            })
+            .skip(offset)
+            .take(limite)
+            .filter_map(|i| self.fichier(*i as usize))
+            .collect()
+    }
+
+    /// Nombre de chemins d'une vue qui contiennent `motif`.
+    ///
+    /// Compté séparément de la page : le total conditionne la pagination, et le déduire du
+    /// nombre d'éléments rendus donnerait une dernière page qui ne finit jamais.
+    #[must_use]
+    pub fn compte_vue_filtree(&self, vue: Vue, motif: &str) -> usize {
+        let motif = motif.to_lowercase();
+        self.vues[rang(vue)]
+            .iter()
+            .filter(|i| {
+                self.chemins
+                    .get(**i as usize)
+                    .is_some_and(|c| c.to_lowercase().contains(&motif))
+            })
+            .count()
+    }
+
     /// Contenu direct d'un préfixe. Le préfixe vide décrit la racine du VFS.
     ///
     /// Les sous-dossiers sont rendus en entier (ils sont peu nombreux à chaque niveau) ; seuls

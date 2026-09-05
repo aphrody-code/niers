@@ -66,9 +66,17 @@ async function lire<T>(url: string, signal?: AbortSignal): Promise<T> {
 /** Une page d'un catalogue. `per_page` est borne a 200 par le serveur. */
 export function catalogue(
 	vue: VueCatalogue,
-	{ page = 1, parPage = 60, signal }: { page?: number; parPage?: number; signal?: AbortSignal } = {},
+	{
+		page = 1,
+		parPage = 60,
+		q,
+		signal,
+	}: { page?: number; parPage?: number; q?: string; signal?: AbortSignal } = {},
 ): Promise<Page<Fichier>> {
-	return lire(`/api/v1/${vue}?page=${page}&per_page=${parPage}`, signal);
+	// `q` est comparé sans casse au chemin ENTIER côté serveur : chercher `chr/` fonctionne
+	// autant qu'un nom de fichier. Encodé, parce qu'un chemin du jeu contient des `/`.
+	const filtre = q?.trim() ? `&q=${encodeURIComponent(q.trim())}` : "";
+	return lire(`/api/v1/${vue}?page=${page}&per_page=${parPage}${filtre}`, signal);
 }
 
 /** L'etat du serveur. */

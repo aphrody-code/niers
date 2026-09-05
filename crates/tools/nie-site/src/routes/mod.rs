@@ -18,18 +18,20 @@ use crate::config::Pagination;
 /// Les deux champs sont optionnels et **bornés** par [`Pagination::borner`] : une demande
 /// absurde ne provoque pas d'erreur, elle est ramenée dans les bornes et la réponse annonce ce
 /// qui a été appliqué.
-#[derive(Debug, Default, Clone, Copy, Deserialize)]
+#[derive(Debug, Default, Clone, Deserialize)]
 pub struct DemandePage {
     /// Numéro de page, à partir de 1.
     pub page: Option<u32>,
     /// Nombre d'éléments par page, plafonné à [`crate::config::PER_PAGE_MAX`].
     pub per_page: Option<u32>,
+    /// Motif de recherche, comparé sans casse au chemin ENTIER. Vide ou absent : aucun filtre.
+    pub q: Option<String>,
 }
 
 impl DemandePage {
     /// Bornes effectives de la demande.
     #[must_use]
-    pub fn bornee(self) -> Pagination {
+    pub fn bornee(&self) -> Pagination {
         Pagination::borner(self.page, self.per_page)
     }
 }

@@ -53,12 +53,20 @@ export function Catalogue({ vue }: { vue: VueCatalogue }) {
 	const [page, setPage] = useState(1);
 	// Changer de vue ramene a la page 1 : garder la page 900 en passant d'un catalogue de 904
 	// pages a un catalogue de 4 afficherait un vide que rien n'expliquerait.
-	useEffect(() => setPage(1), [vue]);
+	useEffect(() => {
+		setPage(1);
+		setSaisie("");
+		setFiltre("");
+	}, [vue]);
 	const [elements, setElements] = useState<EntreeVfs[]>([]);
 	const [total, setTotal] = useState(0);
 	const [pages, setPages] = useState(0);
 	const [erreur, setErreur] = useState<string | null>(null);
 	const [charge, setCharge] = useState(false);
+	// `saisie` suit le champ, `filtre` ce qui a ete envoye : sans ce decalage, chaque frappe
+	// declencherait une requete sur 143 246 chemins.
+	const [saisie, setSaisie] = useState("");
+	const [filtre, setFiltre] = useState("");
 
 	useEffect(() => {
 		// `catalogue` est OPTIONNEL dans le contrat : un hôte qui ne sait pas paginer sur un jeu
@@ -68,7 +76,7 @@ export function Catalogue({ vue }: { vue: VueCatalogue }) {
 		setCharge(false);
 		setErreur(null);
 		source
-			.catalogue(vue, { page, parPage: PAR_PAGE, signal: ac.signal })
+			.catalogue(vue, { page, parPage: PAR_PAGE, q: filtre, signal: ac.signal })
 			.then((p) => {
 				if (ac.signal.aborted) return;
 				setElements(p.elements);
@@ -80,7 +88,7 @@ export function Catalogue({ vue }: { vue: VueCatalogue }) {
 				if (!ac.signal.aborted) setErreur(e instanceof Error ? e.message : String(e));
 			});
 		return () => ac.abort();
-	}, [source, capacites?.vfs, page, vue]);
+	}, [source, capacites?.vfs, page, vue, filtre]);
 
 	if (!capacites) return <Callout>Mesure des capacités…</Callout>;
 	if (!capacites.vfs) {
@@ -96,6 +104,45 @@ export function Catalogue({ vue }: { vue: VueCatalogue }) {
 			<TitleBand>
 				{LIBELLES[vue]} {total ? <Badge>{total.toLocaleString("fr")}</Badge> : null}
 			</TitleBand>
+
+			<form
+				onSubmit={(e) => {
+					e.preventDefault();
+					setPage(1);
+					setFiltre(saisie);
+				}}
+				style={{ display: "flex", gap: "var(--jeu-espace-s)", margin: "var(--jeu-espace-m) 0" }}
+			>
+				<input
+					type="search"
+					value={saisie}
+					onChange={(e) => setSaisie(e.target.value)}
+					placeholder="Chercher dans les chemins…"
+					aria-label={`Chercher dans ${LIBELLES[vue]}`}
+					style={{
+						flex: 1,
+						padding: "var(--jeu-espace-s)",
+						background: "var(--jeu-fond-abysse)",
+						border: "1px solid rgb(99 216 252 / 30%)",
+						borderRadius: "var(--jeu-rayon)",
+						color: "var(--jeu-texte-vif)",
+						font: "inherit",
+					}}
+				/>
+				<button type="submit">Chercher</button>
+				{filtre ? (
+					<button
+						type="button"
+						onClick={() => {
+							setSaisie("");
+							setFiltre("");
+							setPage(1);
+						}}
+					>
+						Effacer
+					</button>
+				) : null}
+			</form>
 
 			{!charge ? (
 				<Callout>Chargement…</Callout>

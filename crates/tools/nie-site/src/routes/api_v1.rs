@@ -108,8 +108,20 @@ pub async fn vue(
     })?;
     let index = etat.index()?;
     let p = demande.bornee();
-    let elements = index.page_vue(vue, p.offset(), p.per_page as usize);
-    Ok(Json(Page::nouvelle(elements, p, index.compte_vue(vue))))
+    // `?q=` restreint la vue. Vide ou absent, la vue entière est rendue — un filtre qui ne
+    // filtre rien ne doit pas coûter un parcours de plus.
+    let motif = demande.q.as_deref().map(str::trim).filter(|m| !m.is_empty());
+    let (elements, total) = match motif {
+        Some(m) => (
+            index.page_vue_filtree(vue, m, p.offset(), p.per_page as usize),
+            index.compte_vue_filtree(vue, m),
+        ),
+        None => (
+            index.page_vue(vue, p.offset(), p.per_page as usize),
+            index.compte_vue(vue),
+        ),
+    };
+    Ok(Json(Page::nouvelle(elements, p, total)))
 }
 
 /// Un personnage, tel que le miroir le décrit. Aucune colonne n'est inventée : ce sont les

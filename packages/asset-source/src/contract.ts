@@ -60,6 +60,8 @@ export interface ContenuDossier {
 export interface OptionsPage {
 	page?: number;
 	parPage?: number;
+	/** Motif de recherche, comparé sans casse au chemin entier. Absent : aucun filtre. */
+	q?: string;
 	signal?: AbortSignal;
 }
 
