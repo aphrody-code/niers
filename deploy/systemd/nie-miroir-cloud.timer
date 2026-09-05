@@ -1,0 +1,15 @@
+[Unit]
+Description=Chargement quotidien du miroir vers Supabase Cloud
+
+[Timer]
+# 04:40, soit trente minutes apres `nie-miroir.timer` (04:10). L'ecart couvre la republication
+# locale : demarrer trop tot chargerait l'instantane de la veille, et rien ne le signalerait.
+#
+# `Requires=nie-miroir.service` dans l'unite garantit l'ordre si les deux se rejoignent quand
+# meme ; ce decalage evite simplement de compter dessus.
+OnCalendar=*-*-* 04:40:00
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

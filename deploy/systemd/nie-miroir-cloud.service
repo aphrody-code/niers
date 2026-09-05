@@ -1,0 +1,68 @@
+[Unit]
+# Prolonge `nie-miroir.service` : une fois le miroir SQLite republié dans `var/`, ce service
+# charge ses tables `inagle_*` vers Supabase Cloud, puis demande au wiki de revalider ses pages.
+#
+# POURQUOI UNE UNITÉ SÉPARÉE PLUTÔT QU'UN `ExecStartPost`
+#
+# `nie-miroir.service` a déjà un `ExecStartPost` qui redémarre `nie-model-serve`. Y greffer un
+# chargement réseau ferait échouer la republication locale — pourtant réussie — dès que Supabase
+# Cloud est injoignable, et `nie-model-serve` ne serait pas redémarré. Deux responsabilités, deux
+# unités : le miroir local reste souverain, et sa republication ne dépend pas d'un réseau.
+#
+# NON INSTALLÉE. `systemctl daemon-reload` et `enable` exigent un go explicite de l'utilisateur.
+# Pour la poser :
+#   sudo cp deploy/systemd/nie-miroir-cloud.{service,timer} /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now nie-miroir-cloud.timer
+Description=Miroir inagle -> Supabase Cloud, puis revalidation du wiki
+Documentation=file:///home/ubuntu/niers/PLAN.md
+# Ne démarre qu'après la republication du miroir : charger l'instantané précédent donnerait un
+# Cloud en retard d'un jour sans que rien ne le signale.
+After=network-online.target nie-miroir.service
+Wants=network-online.target
+Requires=nie-miroir.service
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/niers
+# Les identifiants vivent hors du dépôt, en 600, jamais commités :
+# `donnees.env` porte la chaîne Postgres locale, `supabase.env` le projet Cloud et sa clé de
+# service, `vercel.env` le jeton de revalidation. Le `-` initial rend le fichier facultatif —
+# une machine qui n'a pas le secret ne fait pas échouer le démarrage, elle échoue à l'étape qui
+# en a besoin, avec un message qui la nomme.
+EnvironmentFile=-/home/ubuntu/.config/niers/donnees.env
+EnvironmentFile=-/home/ubuntu/.config/niers/supabase.env
+EnvironmentFile=-/home/ubuntu/.config/niers/vercel.env
+Environment=PATH=/home/ubuntu/.bun/bin:/usr/local/bin:/usr/bin:/bin
+
+# 1. Charger le miroir vers Supabase Cloud. Le script compare les colonnes des deux côtés et
+#    saute les tables discordantes plutôt que d'écrire de travers.
+ExecStart=/home/ubuntu/niers/scripts/ops/load-mirror-to-cloud.sh
+
+# 2. Demander au wiki de revalider ses pages.
+#
+#    `-` en tête : un échec ici ne doit PAS marquer l'unité en erreur. Les données sont déjà
+#    chargées à ce stade ; une revalidation manquée se rattrape au prochain passage ou par
+#    l'expiration naturelle de l'ISR (une heure). Faire échouer l'unité ferait croire que le
+#    chargement a échoué, ce qui enverrait chercher le problème au mauvais endroit.
+ExecStartPost=-/usr/bin/curl --fail --silent --show-error --max-time 60 \
+    -X POST "${WIKI_REVALIDATE_URL}" \
+    -H "Authorization: Bearer ${WIKI_REVALIDATE_TOKEN}"
+
+# Le chargement lit un SQLite de plusieurs dizaines de Mo et écrit en réseau : quinze minutes
+# couvrent largement le cas normal et bornent un blocage.
+TimeoutStartSec=900
+
+# Durcissement : ce service lit le dépôt et parle au réseau, rien d'autre.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/ubuntu/niers/var
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target
