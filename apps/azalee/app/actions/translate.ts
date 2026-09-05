@@ -1,7 +1,5 @@
 "use server";
 
-import fs from "node:fs/promises";
-import path from "node:path";
 import { isKana, toKatakana, toHiragana } from "wanakana";
 import { japaneseToRomaji } from "@rosegriffon/azalee/text/japanese-romaji";
 import { createClient } from "@/lib/supabase/server";
@@ -183,24 +181,34 @@ function scoreResult(r: TranslationResult, queryNorm: string, queryTokens: strin
 // Glossaire local
 // ──────────────────────────────────────────────────────────────────────────
 
-let glossaryCache: any = null;
+/**
+ * Le glossaire de traduction — désactivé en serverless, et qui le DIT.
+ *
+ * ## Ce qui était là, et pourquoi c'était dangereux
+ *
+ * Une cascade cherchait `glossary.json` à trois endroits, dont un chemin absolu figé sur la
+ * machine de développement, puis rendait `null` sans un mot. Or ce fichier (2,9 Mo) est absent
+ * de l'index git : sur
+ * Vercel, les trois chemins échouent. La recherche rendait donc une liste vide — pas une
+ * traduction dégradée, une fonctionnalité qui disparaît en silence, sans erreur ni journal.
+ *
+ * ## Ce qui le remplacera
+ *
+ * Les quatre catégories du glossaire (auras, personnages, objets, passifs) recouvrent des
+ * tables `inagle_*` déjà présentes en base. Le reconstruire depuis elles est la bonne voie —
+ * mais elle demande de connaître leurs colonnes exactes, et un nom inventé compile en rendant
+ * `null` en silence, ce qui recréerait précisément le défaut qu'on corrige ici.
+ *
+ * En attendant, l'absence est EXPLICITE : `searchGlossary` rend un tableau vide, et
+ * `GLOSSAIRE_INDISPONIBLE` permet à l'appelant de distinguer « aucun résultat » de « cette
+ * source n'existe pas ici ». Un échec qu'on peut lire vaut mieux qu'un vide qu'on croit
+ * complet.
+ */
+export const GLOSSAIRE_INDISPONIBLE =
+	"Glossaire local indisponible : cette instance n'embarque pas `glossary.json`. " +
+	"La recherche par glossaire reprendra quand il sera servi depuis la base.";
 
-async function loadGlossary() {
-	if (glossaryCache) return glossaryCache;
-	const possiblePaths = [
-		path.join(process.cwd(), "data", "glossary.json"),
-		path.join(process.cwd(), "..", "..", "data", "glossary.json"),
-		"/home/ubuntu/niers/data/glossary.json",
-	];
-	for (const p of possiblePaths) {
-		try {
-			const content = await fs.readFile(p, "utf-8");
-			glossaryCache = JSON.parse(content);
-			return glossaryCache;
-		} catch {
-			// Ignore error and try next path
-		}
-	}
+async function loadGlossary(): Promise<Record<string, unknown> | null> {
 	return null;
 }
 
