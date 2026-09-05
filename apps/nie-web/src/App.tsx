@@ -16,6 +16,7 @@ import {
 import "@niers/inacord-ui/shell/game-tokens.css";
 import { useEffect, useMemo, useState } from "react";
 import { Catalogue } from "./pages/Catalogue";
+import { Explorateur } from "./pages/Explorateur";
 
 /**
  * Coquille d'Aphrody.
@@ -38,6 +39,12 @@ export function App() {
 /** Les quatre filtres enregistrés, dans l'ordre où `nie-site` les publie. */
 const VUES = ["textures", "modeles", "sons", "videos"] as const;
 
+/** L'explorateur n'est pas un filtre : il montre la STRUCTURE, pas une selection. */
+const EXPLORATEUR = "explorateur";
+
+/** Les entrees du menu. Annotee, sinon le spread elargit le type a `string[]`. */
+const ENTREES: readonly (VueCatalogue | typeof EXPLORATEUR)[] = [...VUES, EXPLORATEUR];
+
 /**
  * Ce que le serveur déclare savoir servir, ici et maintenant.
  *
@@ -48,7 +55,7 @@ function Accueil() {
 	const capacites = useCapacites();
 	const erreur = useErreurSource();
 	const [etat, setEtat] = useState<SanteApi | null>(null);
-	const [vue, setVue] = useState<VueCatalogue>(VUES[0]);
+	const [vue, setVue] = useState<VueCatalogue | typeof EXPLORATEUR>(VUES[0]);
 
 	useEffect(() => {
 		const ac = new AbortController();
@@ -83,7 +90,7 @@ function Accueil() {
 					<TitleBand>Catalogues</TitleBand>
 					<div style={{ marginTop: "var(--jeu-espace-m)" }}>
 						<TileRow>
-							{VUES.map((nom) => {
+							{ENTREES.map((nom) => {
 								const total = totaux.get(nom);
 								return (
 									<SkewTile
@@ -119,7 +126,7 @@ function Accueil() {
 						</Callout>
 					) : (
 						<>
-							<Catalogue vue={vue} />
+							{vue === EXPLORATEUR ? <Explorateur /> : <Catalogue vue={vue} />}
 						</>
 					)}
 				</main>
