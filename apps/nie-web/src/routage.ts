@@ -48,8 +48,23 @@ export function separerLangue(chemin: string): CheminSepare {
 	return { prefixe: "", route: chemin === "" ? "/" : chemin };
 }
 
-/** Le chemin canonique d'une entrée, dans la langue courante. */
+/**
+ * L'accueil — le menu principal — n'est pas une entrée comme les autres : il vit à la RACINE.
+ *
+ * Le jeton existe pour que l'état de l'application ait toujours une valeur, y compris sur `/`.
+ * Sans lui, l'accueil serait `null`, et chaque lecture devrait décider ce que `null` veut dire
+ * — ce qui finit toujours par diverger d'un endroit à l'autre.
+ */
+export const ACCUEIL = "accueil";
+
+/**
+ * Le chemin canonique d'une entrée, dans la langue courante.
+ *
+ * L'accueil rend `/` (ou `/ja`) et non `/accueil` : le menu principal EST la racine du site, et
+ * lui donner un second chemin dédoublerait la page d'accueil aux yeux d'un moteur.
+ */
 export function cheminPourEntree(prefixe: string, entree: string): string {
+	if (entree === ACCUEIL) return prefixe || "/";
 	return `${prefixe}/${entree}`;
 }
 

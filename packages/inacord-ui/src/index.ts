@@ -38,3 +38,50 @@ export {
 	type Salon,
 	TabBar,
 } from "./shell/inacord";
+
+// --- L'ecran de menu principal : ses formes, et le rendu d'un layout exporte ---------------
+//
+// Les formes (`ecran-menu`) sont posees par l'appelant en coordonnees du canevas ; le layout
+// (`layout-jeu` + `layout-render`) vient du jeu et n'est jamais reecrit a la main. Les deux se
+// montent dans le MEME `GameCanvas`, donc dans le meme repere.
+export {
+	CanvasItem,
+	CenterPlate,
+	CornerChip,
+	GLYPHES,
+	HeroPanel,
+	IconTile,
+	KeyCap,
+	type NomGlyphe,
+	NoticeCard,
+	RibbonBand,
+	TileStrip,
+} from "./shell/ecran-menu";
+export {
+	auCentreParDefaut,
+	type BilanLayout,
+	bilanLayout,
+	type CanvasLayout,
+	cheminVfsSprite,
+	dansCanvas,
+	echellePourZone,
+	estMuet,
+	type LayoutJeu,
+	lireLayout,
+	type ObjetLayout,
+	objetsTries,
+	type SegmentTexte,
+	segmentsTexte,
+	type SlotTexte,
+	type SpriteLayout,
+	styleObjet,
+	tailleObjet,
+	texteNu,
+	type TransformLayout,
+} from "./shell/layout-jeu";
+export {
+	GameCanvas,
+	LayoutRender,
+	type ProprietesLayout,
+	useEchelleCanvas,
+} from "./shell/layout-render";

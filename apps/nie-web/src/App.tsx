@@ -17,7 +17,8 @@ import "@niers/inacord-ui/shell/game-tokens.css";
 import { useEffect, useMemo, useState } from "react";
 import { Catalogue } from "./pages/Catalogue";
 import { Explorateur } from "./pages/Explorateur";
-import { cheminPourEntree, entreeDemandee, separerLangue } from "./routage";
+import { MenuPrincipal } from "./pages/MenuPrincipal";
+import { ACCUEIL, cheminPourEntree, entreeDemandee, separerLangue } from "./routage";
 
 /**
  * Coquille d'Aphrody.
@@ -43,8 +44,16 @@ const VUES = ["textures", "modeles", "sons", "videos"] as const;
 /** L'explorateur n'est pas un filtre : il montre la STRUCTURE, pas une selection. */
 const EXPLORATEUR = "explorateur";
 
-/** Les entrees du menu. Annotee, sinon le spread elargit le type a `string[]`. */
+/**
+ * Les entrées reconnues dans l'URL.
+ *
+ * L'accueil n'en fait PAS partie : il vit à la racine, et `entreeDemandee` rend `null` pour
+ * elle. Y ajouter `accueil` créerait un second chemin vers la même page.
+ */
 const ENTREES: readonly (VueCatalogue | typeof EXPLORATEUR)[] = [...VUES, EXPLORATEUR];
+
+/** Ce que l'application peut afficher. */
+type Vue = VueCatalogue | typeof EXPLORATEUR | typeof ACCUEIL;
 
 /**
  * Ce que le serveur déclare savoir servir, ici et maintenant.
@@ -66,10 +75,13 @@ function Accueil() {
 	// langue est une navigation entiere, servie par nie-site, pas un changement d'etat local.
 	const prefixe = useMemo(() => separerLangue(window.location.pathname).prefixe, []);
 
-	const [vue, setVueEtat] = useState<VueCatalogue | typeof EXPLORATEUR>(() => {
+	// La racine rend le MENU PRINCIPAL, pas le premier catalogue. C'est le recadrage : Aphrody
+	// est un site d'outils dont l'accueil est un menu ; lister des fichiers est le métier
+	// d'Inacord.
+	const [vue, setVueEtat] = useState<Vue>(() => {
 		const routeServeur = document.getElementById("racine")?.dataset.route;
 		const demandee = entreeDemandee(ENTREES as readonly string[], window.location, routeServeur);
-		return (demandee as VueCatalogue | typeof EXPLORATEUR | null) ?? VUES[0];
+		return (demandee as Vue | null) ?? ACCUEIL;
 	});
 
 	// Une ancienne URL `?vue=` doit continuer a fonctionner, mais pas a subsister : elle est
@@ -86,7 +98,7 @@ function Accueil() {
 	}, [prefixe, vue]);
 
 	/** Change de vue ET d'URL, sans recharger la page. */
-	const setVue = (suivante: VueCatalogue | typeof EXPLORATEUR) => {
+	const setVue = (suivante: Vue) => {
 		setVueEtat(suivante);
 		const url = new URL(window.location.href);
 		url.pathname = cheminPourEntree(prefixe, suivante);
@@ -94,13 +106,13 @@ function Accueil() {
 		window.history.pushState({ vue: suivante }, "", url);
 	};
 
-	// Le bouton « precedent » doit ramener a la vue precedente, pas sortir du site.
+	// Le bouton « precedent » doit ramener a la vue precedente, pas sortir du site. Une URL qui
+	// ne designe aucune entree est l'accueil — c'est aussi ce qui ramene au menu depuis un
+	// catalogue.
 	useEffect(() => {
 		const surRetour = () => {
 			const demandee = entreeDemandee(ENTREES as readonly string[], window.location);
-			if (demandee) {
-				setVueEtat(demandee as VueCatalogue | typeof EXPLORATEUR);
-			}
+			setVueEtat((demandee as Vue | null) ?? ACCUEIL);
 		};
 		window.addEventListener("popstate", surRetour);
 		return () => window.removeEventListener("popstate", surRetour);
@@ -118,6 +130,24 @@ function Accueil() {
 
 	const totaux = new Map(etat?.vues.map((v) => [v.nom, v.total]) ?? []);
 
+	// L'accueil occupe tout l'écran : le menu principal EST la page, pas un panneau dedans.
+	if (vue === ACCUEIL) {
+		return (
+			// `fixed; inset: 0` et non `height: 100vh` : la seconde forme depend de la hauteur de
+			// tous ses ancetres, et il suffit qu'un seul ne la propage pas pour que la zone mesuree
+			// soit plus courte que la fenetre. Le canevas se met alors a l'echelle d'une hauteur
+			// qu'il n'a pas, et laisse une bande vide en bas — sans qu'aucune valeur soit fausse.
+			<div style={{ position: "fixed", inset: 0, background: "var(--jeu-ciel-clair)" }}>
+				<MenuPrincipal
+					vue={vue}
+					onChoisir={(suivante) => setVue(suivante as Vue)}
+					etat={etat}
+					vfsPret={Boolean(capacites?.vfs)}
+				/>
+			</div>
+		);
+	}
+
 	return (
 		<div
 			style={{
@@ -130,7 +160,26 @@ function Accueil() {
 			}}
 		>
 			<HeaderBanner
-				titre="Aphrody"
+				titre={
+					// Le titre ramène au menu : sans ce chemin de retour, on n'atteint l'accueil
+					// qu'en réécrivant l'URL à la main.
+					<button
+						type="button"
+						onClick={() => setVue(ACCUEIL)}
+						style={{
+							border: 0,
+							background: "transparent",
+							color: "inherit",
+							font: "inherit",
+							fontWeight: 800,
+							letterSpacing: "var(--jeu-titre-espacement)",
+							cursor: "pointer",
+							padding: 0,
+						}}
+					>
+						← Aphrody
+					</button>
+				}
 				actions={etat ? <VersionChip version={`${etat.service} ${etat.version || "—"}`} /> : null}
 			/>
 
@@ -173,10 +222,10 @@ function Accueil() {
 							L'index du VFS n'est pas encore monté. Les catalogues apparaîtront dès qu'il sera
 							prêt.
 						</Callout>
+					) : vue === EXPLORATEUR ? (
+						<Explorateur />
 					) : (
-						<>
-							{vue === EXPLORATEUR ? <Explorateur /> : <Catalogue vue={vue} />}
-						</>
+						<Catalogue vue={vue} />
 					)}
 				</main>
 			</div>

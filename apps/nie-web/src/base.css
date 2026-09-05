@@ -1,0 +1,38 @@
+/*
+ * La remise a zero minimale de l'hote web.
+ *
+ * ## Pourquoi elle existe
+ *
+ * Le menu principal est un canevas de 1280x720 mis a l'echelle de la fenetre. Avec la marge de
+ * 8 px que les navigateurs posent par defaut sur `<body>`, le document mesure `100vh + 16 px` :
+ * la page defile de quelques pixels, la zone mesuree n'est plus celle de la fenetre, et le
+ * canevas se calcule sur une hauteur qu'il n'a pas. Le defaut est discret — un bandeau clair en
+ * bas, un decalage de huit pixels — donc il survit longtemps.
+ *
+ * ## Ce qu'elle NE fait pas
+ *
+ * Elle ne cache rien et ne repositionne rien : `#racine` porte, avant que le bundle ne se
+ * charge, le contenu que `nie-site` a rendu pour les moteurs (titre, description, liens vers
+ * les catalogues et les langues). Une regle qui le masquerait ferait disparaitre ce contenu
+ * pour tout ce qui n'execute pas de JavaScript, sans qu'aucune page ne change d'apparence.
+ */
+
+html,
+body,
+#racine {
+	height: 100%;
+}
+
+body {
+	margin: 0;
+	font-family: system-ui, sans-serif;
+	background: var(--jeu-ciel-clair, #f9fcfc);
+	color: var(--jeu-nuit-profonde, #0a2f66);
+}
+
+/* Le contenu servi par le serveur reste lisible tant que le bundle n'a pas pris la main. */
+#racine > main {
+	max-width: 60rem;
+	margin: 0 auto;
+	padding: 2rem 1rem;
+}

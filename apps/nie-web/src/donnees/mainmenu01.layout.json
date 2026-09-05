@@ -1,0 +1,1091 @@
+{
+  "canvas": {
+    "h": 720,
+    "w": 1280
+  },
+  "generatedBy": "runtime-lua",
+  "locale": "fr",
+  "objects": [
+    {
+      "anim": {
+        "close": "0xA15F1DEE",
+        "open": "0x5FEC8E4E"
+      },
+      "camera": "0x02D8FB06",
+      "charModel": null,
+      "drawPriority": 300,
+      "drawType": 0,
+      "name": "mainmenu01_06_base_button_guide_description",
+      "parent": null,
+      "primitive": null,
+      "runtime": null,
+      "sprite": {
+        "h": 92,
+        "logicalPath": "dx11/menu/100_mainmenu/mainmenu01/mainmenu01_06/mainmenu01_06.g4tx",
+        "pngUrl": "/dx11/menu/100_mainmenu/mainmenu01/mainmenu01_06/mainmenu01_06.png",
+        "w": 4
+      },
+      "text": [
+        {
+          "slot": "_text_guide02",
+          "text": "Photos commémoratives disponibles après."
+        }
+      ],
+      "transform": {
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "rot": 0.0,
+        "scaleX": 1.0,
+        "scaleY": 1.0,
+        "x": 640.0,
+        "y": 360.0
+      },
+      "visible": true
+    },
+    {
+      "anim": {
+        "close": null,
+        "open": null
+      },
+      "camera": "0x02D8FB06",
+      "charModel": null,
+      "drawPriority": 307,
+      "drawType": 0,
+      "name": "mainmenu01_14_decide_button_guide",
+      "parent": null,
+      "primitive": null,
+      "runtime": null,
+      "sprite": {
+        "h": 68,
+        "logicalPath": "dx11/menu/100_mainmenu/mainmenu01/mainmenu01_14/mainmenu01_14.g4tx",
+        "pngUrl": "/dx11/menu/100_mainmenu/mainmenu01/mainmenu01_14/mainmenu01_14.png",
+        "w": 304
+      },
+      "text": null,
+      "transform": {
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "rot": 0.0,
+        "scaleX": 0.6666666865348816,
+        "scaleY": 0.6666666865348816,
+        "x": 538.6666870117188,
+        "y": 337.3333435058594
+      },
+      "visible": true
+    },
+    {
+      "anim": {
+        "close": null,
+        "open": null
+      },
+      "camera": "0x02D8FB06",
+      "charModel": null,
+      "drawPriority": 452,
+      "drawType": 0,
+      "name": "mainmenu01_16_left_bottom_with_attach_button_guide",
+      "parent": null,
+      "primitive": null,
+      "runtime": null,
+      "sprite": null,
+      "text": null,
+      "transform": {
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "rot": 0.0,
+        "scaleX": 1.0,
+        "scaleY": 1.0,
+        "x": 640.0,
+        "y": 360.0
+      },
+      "visible": true
+    },
+    {
+      "anim": {
+        "close": null,
+        "open": null
+      },
+      "camera": "0x02D8FB06",
+      "charModel": null,
+      "drawPriority": 452,
+      "drawType": 0,
+      "name": "mainmenu01_17_left_bottom_with_attach_button_item_icon",
+      "parent": null,
+      "primitive": null,
+      "runtime": null,
+      "sprite": {
+        "h": 68,
+        "logicalPath": "dx11/menu/100_mainmenu/mainmenu01/mainmenu01_17/mainmenu01_17.g4tx",
+        "pngUrl": "/dx11/menu/100_mainmenu/mainmenu01/mainmenu01_17/mainmenu01_17.png",
+        "w": 44
+      },
+      "text": null,
+      "transform": {
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "rot": 0.0,
+        "scaleX": 1.0,
+        "scaleY": 1.0,
+        "x": 640.0,
+        "y": 360.0
+      },
+      "visible": true
+    },
+    {
+      "anim": {
+        "close": null,
+        "open": null
+      },
+      "camera": "0x02D8FB06",
+      "charModel": null,
+      "drawPriority": 453,
+      "drawType": 0,
+      "name": "mainmenu01_15_button_guide",
+      "parent": null,
+      "primitive": null,
+      "runtime": null,
+      "sprite": {
+        "h": 56,
+        "logicalPath": "dx11/menu/100_mainmenu/mainmenu01/mainmenu01_15/mainmenu01_15.g4tx",
+        "pngUrl": "/dx11/menu/100_mainmenu/mainmenu01/mainmenu01_15/mainmenu01_15.png",
+        "w": 68
+      },
+      "text": null,
+      "transform": {
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "rot": 0.0,
+        "scaleX": 1.0,
+        "scaleY": 1.0,
+        "x": 640.0,
+        "y": 360.0
+      },
+      "visible": true
+    },
+    {
+      "anim": {
+        "close": null,
+        "open": null
+      },
+      "camera": "0x02D8FB06",
+      "charModel": null,
+      "drawPriority": 520,
+      "drawType": 0,
+      "name": "mainmenu01_19_show_common_drop_chara_build_type_guide",
+      "parent": null,
+      "primitive": null,
+      "runtime": null,
+      "sprite": {
+        "h": 192,
+        "logicalPath": "dx11/menu/100_mainmenu/mainmenu01/mainmenu01_19/mainmenu01_19.g4tx",
+        "pngUrl": "/dx11/menu/100_mainmenu/mainmenu01/mainmenu01_19/mainmenu01_19.png",
+        "w": 200
+      },
+      "text": null,
+      "transform": {
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "rot": 0.0,
+        "scaleX": 0.6666667461395264,
+        "scaleY": 0.472222238779068,
+        "x": 454.6666564941406,
+        "y": 238.66665649414062
+      },
+      "visible": true
+    },
+    {
+      "anim": {
+        "close": "0xA15F1DEE",
+        "open": "0x5FEC8E4E"
+      },
+      "camera": "0x02D8FB06",
+      "charModel": null,
+      "drawPriority": 650,
+      "drawType": 1,
+      "name": "mainmenu01_00_background",
+      "parent": null,
+      "primitive": null,
+      "runtime": null,
+      "sprite": null,
+      "text": null,
+      "transform": {
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "rot": 0.0,
+        "scaleX": 1.0,
+        "scaleY": 1.0,
+        "x": 640.0,
+        "y": 360.0
+      },
+      "visible": true
+    },
+    {
+      "anim": {
+        "close": "0xA15F1DEE",
+        "open": "0x5FEC8E4E"
+      },
+      "camera": "0x02D8FB06",
+      "charModel": null,
+      "drawPriority": 650,
+      "drawType": 0,
+      "name": "mainmenu01_06_base_button_guide_left",
+      "parent": null,
+      "primitive": null,
+      "runtime": null,
+      "sprite": {
+        "h": 92,
+        "logicalPath": "dx11/menu/100_mainmenu/mainmenu01/mainmenu01_06/mainmenu01_06.g4tx",
+        "pngUrl": "/dx11/menu/100_mainmenu/mainmenu01/mainmenu01_06/mainmenu01_06.png",
+        "w": 4
+      },
+      "text": null,
+      "transform": {
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "rot": 0.0,
+        "scaleX": 1.0,
+        "scaleY": 1.0,
+        "x": 640.0,
+        "y": 360.0
+      },
+      "visible": true
+    },
+    {
+      "anim": {
+        "close": "0xA15F1DEE",
+        "open": "0x5FEC8E4E"
+      },
+      "camera": "0x02D8FB06",
+      "charModel": null,
+      "drawPriority": 650,
+      "drawType": 0,
+      "name": "mainmenu01_06_base_button_guide_right",
+      "parent": null,
+      "primitive": null,
+      "runtime": null,
+      "sprite": {
+        "h": 92,
+        "logicalPath": "dx11/menu/100_mainmenu/mainmenu01/mainmenu01_06/mainmenu01_06.g4tx",
+        "pngUrl": "/dx11/menu/100_mainmenu/mainmenu01/mainmenu01_06/mainmenu01_06.png",
+        "w": 4
+      },
+      "text": null,
+      "transform": {
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "rot": 0.0,
+        "scaleX": 1.0,
+        "scaleY": 1.0,
+        "x": 640.0,
+        "y": 360.0
+      },
+      "visible": true
+    },
+    {
+      "anim": {
+        "close": "0xA15F1DEE",
+        "open": "0x5FEC8E4E"
+      },
+      "camera": "0x02D8FB06",
+      "charModel": null,
+      "drawPriority": 650,
+      "drawType": 0,
+      "name": "mainmenu01_06_base_button_guide_right_attach_mainmenu01_13l",
+      "parent": null,
+      "primitive": null,
+      "runtime": null,
+      "sprite": {
+        "h": 92,
+        "logicalPath": "dx11/menu/100_mainmenu/mainmenu01/mainmenu01_06/mainmenu01_06.g4tx",
+        "pngUrl": "/dx11/menu/100_mainmenu/mainmenu01/mainmenu01_06/mainmenu01_06.png",
+        "w": 4
+      },
+      "text": null,
+      "transform": {
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "rot": 0.0,
+        "scaleX": 1.0,
+        "scaleY": 1.0,
+        "x": 640.0,
+        "y": 360.0
+      },
+      "visible": true
+    },
+    {
+      "anim": {
+        "close": "0xA15F1DEE",
+        "open": "0x5FEC8E4E"
+      },
+      "camera": "0x02D8FB06",
+      "charModel": null,
+      "drawPriority": 651,
+      "drawType": 0,
+      "name": "mainmenu01_01_base_info",
+      "parent": null,
+      "primitive": null,
+      "runtime": null,
+      "sprite": null,
+      "text": null,
+      "transform": {
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "rot": 0.0,
+        "scaleX": 1.0,
+        "scaleY": 1.0,
+        "x": 640.0,
+        "y": 360.0
+      },
+      "visible": true
+    },
+    {
+      "anim": {
+        "close": "0xA15F1DEE",
+        "open": "0x5FEC8E4E"
+      },
+      "camera": "0x02D8FB06",
+      "charModel": null,
+      "drawPriority": 651,
+      "drawType": 0,
+      "name": "mainmenu01_02_base_chara_status",
+      "parent": null,
+      "primitive": null,
+      "runtime": null,
+      "sprite": null,
+      "text": null,
+      "transform": {
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "rot": 0.0,
+        "scaleX": 1.0,
+        "scaleY": 1.0,
+        "x": 640.0,
+        "y": 360.0
+      },
+      "visible": true
+    },
+    {
+      "anim": {
+        "close": "0xA15F1DEE",
+        "open": "0x5FEC8E4E"
+      },
+      "camera": "0x02D8FB06",
+      "charModel": null,
+      "drawPriority": 651,
+      "drawType": 1,
+      "name": "mainmenu01_03_chara_status",
+      "parent": null,
+      "primitive": null,
+      "runtime": null,
+      "sprite": null,
+      "text": null,
+      "transform": {
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "rot": 0.0,
+        "scaleX": 1.0,
+        "scaleY": 1.0,
+        "x": 640.0,
+        "y": 360.0
+      },
+      "visible": true
+    },
+    {
+      "anim": {
+        "close": "0xA15F1DEE",
+        "open": "0x5FEC8E4E"
+      },
+      "camera": "0x02D8FB06",
+      "charModel": null,
+      "drawPriority": 651,
+      "drawType": 0,
+      "name": "mainmenu01_04_menu_list",
+      "parent": null,
+      "primitive": null,
+      "runtime": null,
+      "sprite": null,
+      "text": null,
+      "transform": {
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "rot": 0.0,
+        "scaleX": 1.0,
+        "scaleY": 1.0,
+        "x": 640.0,
+        "y": 360.0
+      },
+      "visible": true
+    },
+    {
+      "anim": {
+        "close": "0xA15F1DEE",
+        "open": "0x5FEC8E4E"
+      },
+      "camera": "0x02D8FB06",
+      "charModel": null,
+      "drawPriority": 652,
+      "drawType": 0,
+      "name": "mainmenu01_03_2_chara_status",
+      "parent": null,
+      "primitive": null,
+      "runtime": null,
+      "sprite": null,
+      "text": null,
+      "transform": {
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "rot": 0.0,
+        "scaleX": 1.0,
+        "scaleY": 1.0,
+        "x": 640.0,
+        "y": 360.0
+      },
+      "visible": true
+    },
+    {
+      "anim": {
+        "close": "0xA15F1DEE",
+        "open": "0x5FEC8E4E"
+      },
+      "camera": "0x02D8FB06",
+      "charModel": null,
+      "drawPriority": 652,
+      "drawType": 0,
+      "name": "mainmenu01_05_menu_list_button",
+      "parent": null,
+      "primitive": null,
+      "runtime": null,
+      "sprite": null,
+      "text": null,
+      "transform": {
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "rot": 0.0,
+        "scaleX": 1.0,
+        "scaleY": 1.0,
+        "x": 640.0,
+        "y": 360.0
+      },
+      "visible": true
+    },
+    {
+      "anim": {
+        "close": "0xA15F1DEE",
+        "open": "0x5FEC8E4E"
+      },
+      "camera": "0x02D8FB06",
+      "charModel": null,
+      "drawPriority": 654,
+      "drawType": 0,
+      "name": "mainmenu01_06_base_button_guide",
+      "parent": null,
+      "primitive": null,
+      "runtime": null,
+      "sprite": {
+        "h": 92,
+        "logicalPath": "dx11/menu/100_mainmenu/mainmenu01/mainmenu01_06/mainmenu01_06.g4tx",
+        "pngUrl": "/dx11/menu/100_mainmenu/mainmenu01/mainmenu01_06/mainmenu01_06.png",
+        "w": 4
+      },
+      "text": null,
+      "transform": {
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "rot": 0.0,
+        "scaleX": 1.0,
+        "scaleY": 1.0,
+        "x": 640.0,
+        "y": 360.0
+      },
+      "visible": true
+    },
+    {
+      "anim": {
+        "close": "0xA15F1DEE",
+        "open": "0x5FEC8E4E"
+      },
+      "camera": "0x02D8FB06",
+      "charModel": null,
+      "drawPriority": 654,
+      "drawType": 0,
+      "name": "mainmenu01_06_base_button_guide_center_additional",
+      "parent": null,
+      "primitive": null,
+      "runtime": null,
+      "sprite": {
+        "h": 92,
+        "logicalPath": "dx11/menu/100_mainmenu/mainmenu01/mainmenu01_06/mainmenu01_06.g4tx",
+        "pngUrl": "/dx11/menu/100_mainmenu/mainmenu01/mainmenu01_06/mainmenu01_06.png",
+        "w": 4
+      },
+      "text": null,
+      "transform": {
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "rot": 0.0,
+        "scaleX": 1.0,
+        "scaleY": 1.0,
+        "x": 640.0,
+        "y": 360.0
+      },
+      "visible": true
+    },
+    {
+      "anim": {
+        "close": "0xA15F1DEE",
+        "open": "0x5FEC8E4E"
+      },
+      "camera": "0x02D8FB06",
+      "charModel": null,
+      "drawPriority": 654,
+      "drawType": 0,
+      "name": "mainmenu01_06_base_button_guide_pair_right",
+      "parent": null,
+      "primitive": null,
+      "runtime": null,
+      "sprite": {
+        "h": 92,
+        "logicalPath": "dx11/menu/100_mainmenu/mainmenu01/mainmenu01_06/mainmenu01_06.g4tx",
+        "pngUrl": "/dx11/menu/100_mainmenu/mainmenu01/mainmenu01_06/mainmenu01_06.png",
+        "w": 4
+      },
+      "text": null,
+      "transform": {
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "rot": 0.0,
+        "scaleX": 1.0,
+        "scaleY": 1.0,
+        "x": 640.0,
+        "y": 360.0
+      },
+      "visible": true
+    },
+    {
+      "anim": {
+        "close": "0xA15F1DEE",
+        "open": "0x5FEC8E4E"
+      },
+      "camera": "0x02D8FB06",
+      "charModel": null,
+      "drawPriority": 655,
+      "drawType": 0,
+      "name": "mainmenu01_06_base_button_guide_right_chara_bank_remove",
+      "parent": null,
+      "primitive": null,
+      "runtime": null,
+      "sprite": {
+        "h": 92,
+        "logicalPath": "dx11/menu/100_mainmenu/mainmenu01/mainmenu01_06/mainmenu01_06.g4tx",
+        "pngUrl": "/dx11/menu/100_mainmenu/mainmenu01/mainmenu01_06/mainmenu01_06.png",
+        "w": 4
+      },
+      "text": null,
+      "transform": {
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "rot": 0.0,
+        "scaleX": 1.0,
+        "scaleY": 1.0,
+        "x": 640.0,
+        "y": 360.0
+      },
+      "visible": true
+    },
+    {
+      "anim": {
+        "close": "0xA15F1DEE",
+        "open": "0x5FEC8E4E"
+      },
+      "camera": "0x02D8FB06",
+      "charModel": null,
+      "drawPriority": 655,
+      "drawType": 0,
+      "name": "mainmenu01_07_button_guide",
+      "parent": null,
+      "primitive": null,
+      "runtime": null,
+      "sprite": {
+        "h": 16,
+        "logicalPath": "dx11/menu/100_mainmenu/mainmenu01/mainmenu01_07/mainmenu01_07.g4tx",
+        "pngUrl": "/dx11/menu/100_mainmenu/mainmenu01/mainmenu01_07/mainmenu01_07.png",
+        "w": 16
+      },
+      "text": null,
+      "transform": {
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "rot": 0.0,
+        "scaleX": 1.0,
+        "scaleY": 1.0,
+        "x": 640.0,
+        "y": 360.0
+      },
+      "visible": true
+    },
+    {
+      "anim": {
+        "close": "0xA15F1DEE",
+        "open": "0x5FEC8E4E"
+      },
+      "camera": "0x02D8FB06",
+      "charModel": null,
+      "drawPriority": 655,
+      "drawType": 0,
+      "name": "mainmenu01_07b_double_button_guide",
+      "parent": null,
+      "primitive": null,
+      "runtime": null,
+      "sprite": {
+        "h": 16,
+        "logicalPath": "dx11/menu/100_mainmenu/mainmenu01/mainmenu01_07b/mainmenu01_07b.g4tx",
+        "pngUrl": "/dx11/menu/100_mainmenu/mainmenu01/mainmenu01_07b/mainmenu01_07b.png",
+        "w": 16
+      },
+      "text": null,
+      "transform": {
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "rot": 0.0,
+        "scaleX": 1.0,
+        "scaleY": 1.0,
+        "x": 640.0,
+        "y": 360.0
+      },
+      "visible": true
+    },
+    {
+      "anim": {
+        "close": "0xA15F1DEE",
+        "open": "0x5FEC8E4E"
+      },
+      "camera": "0x02D8FB06",
+      "charModel": null,
+      "drawPriority": 655,
+      "drawType": 0,
+      "name": "mainmenu01_07c_button_guide",
+      "parent": null,
+      "primitive": null,
+      "runtime": null,
+      "sprite": {
+        "h": 132,
+        "logicalPath": "dx11/menu/100_mainmenu/mainmenu01/mainmenu01_07c/mainmenu01_07c.g4tx",
+        "pngUrl": "/dx11/menu/100_mainmenu/mainmenu01/mainmenu01_07c/mainmenu01_07c.png",
+        "w": 224
+      },
+      "text": null,
+      "transform": {
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "rot": 0.0,
+        "scaleX": 1.0,
+        "scaleY": 1.0,
+        "x": 640.0,
+        "y": 360.0
+      },
+      "visible": true
+    },
+    {
+      "anim": {
+        "close": "0xA15F1DEE",
+        "open": "0x5FEC8E4E"
+      },
+      "camera": "0x00000000",
+      "charModel": null,
+      "drawPriority": 655,
+      "drawType": 4,
+      "name": "mainmenu01_08_chara_3d_shadow",
+      "parent": null,
+      "primitive": null,
+      "runtime": null,
+      "sprite": {
+        "h": 64,
+        "logicalPath": "dx11/menu/100_mainmenu/mainmenu01/mainmenu01_08/mainmenu01_08.g4tx",
+        "pngUrl": "/dx11/menu/100_mainmenu/mainmenu01/mainmenu01_08/mainmenu01_08.png",
+        "w": 64
+      },
+      "text": null,
+      "transform": {
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "rot": 0.0,
+        "scaleX": 1.0,
+        "scaleY": 1.0,
+        "x": 640.0,
+        "y": 360.0
+      },
+      "visible": true
+    },
+    {
+      "anim": {
+        "close": null,
+        "open": null
+      },
+      "camera": "0x02D8FB06",
+      "charModel": null,
+      "drawPriority": 655,
+      "drawType": 0,
+      "name": "mainmenu01_10_return_arrow_button_guide",
+      "parent": null,
+      "primitive": null,
+      "runtime": null,
+      "sprite": {
+        "h": 68,
+        "logicalPath": "dx11/menu/100_mainmenu/mainmenu01/mainmenu01_10/mainmenu01_10.g4tx",
+        "pngUrl": "/dx11/menu/100_mainmenu/mainmenu01/mainmenu01_10/mainmenu01_10.png",
+        "w": 136
+      },
+      "text": null,
+      "transform": {
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "rot": 0.0,
+        "scaleX": 0.6666666865348816,
+        "scaleY": 0.6666666865348816,
+        "x": 732.0,
+        "y": 1705.3333740234375
+      },
+      "visible": true
+    },
+    {
+      "anim": {
+        "close": null,
+        "open": null
+      },
+      "camera": "0x02D8FB06",
+      "charModel": null,
+      "drawPriority": 655,
+      "drawType": 0,
+      "name": "mainmenu01_11_save_button_guide",
+      "parent": null,
+      "primitive": null,
+      "runtime": null,
+      "sprite": {
+        "h": 68,
+        "logicalPath": "dx11/menu/100_mainmenu/mainmenu01/mainmenu01_11/mainmenu01_11.g4tx",
+        "pngUrl": "/dx11/menu/100_mainmenu/mainmenu01/mainmenu01_11/mainmenu01_11.png",
+        "w": 156
+      },
+      "text": [
+        {
+          "slot": "_text_btn02",
+          "text": "Sauvegarder"
+        }
+      ],
+      "transform": {
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "rot": 0.0,
+        "scaleX": 0.6666666865348816,
+        "scaleY": 0.6666666865348816,
+        "x": 1054.0,
+        "y": 2389.33349609375
+      },
+      "visible": true
+    },
+    {
+      "anim": {
+        "close": null,
+        "open": null
+      },
+      "camera": "0x02D8FB06",
+      "charModel": null,
+      "drawPriority": 655,
+      "drawType": 0,
+      "name": "mainmenu01_12_next_button_guide",
+      "parent": null,
+      "primitive": null,
+      "runtime": null,
+      "sprite": {
+        "h": 68,
+        "logicalPath": "dx11/menu/100_mainmenu/mainmenu01/mainmenu01_12/mainmenu01_12.g4tx",
+        "pngUrl": "/dx11/menu/100_mainmenu/mainmenu01/mainmenu01_12/mainmenu01_12.png",
+        "w": 304
+      },
+      "text": [
+        {
+          "slot": "_text_btn02",
+          "text": "Suivant"
+        }
+      ],
+      "transform": {
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "rot": 0.0,
+        "scaleX": 0.6666666865348816,
+        "scaleY": 0.6666666865348816,
+        "x": 2975.33349609375,
+        "y": 1742.0
+      },
+      "visible": true
+    },
+    {
+      "anim": {
+        "close": null,
+        "open": null
+      },
+      "camera": "0x02D8FB06",
+      "charModel": null,
+      "drawPriority": 655,
+      "drawType": 0,
+      "name": "mainmenu01_13_right_bottom_no_icon_button_guide",
+      "parent": null,
+      "primitive": null,
+      "runtime": null,
+      "sprite": {
+        "h": 68,
+        "logicalPath": "dx11/menu/100_mainmenu/mainmenu01/mainmenu01_13l/mainmenu01_13l.g4tx",
+        "pngUrl": "/dx11/menu/100_mainmenu/mainmenu01/mainmenu01_13l/mainmenu01_13l.png",
+        "w": 76
+      },
+      "text": [
+        {
+          "slot": "_text_guide01",
+          "text": "Exclure plusieurs joueurs"
+        }
+      ],
+      "transform": {
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "rot": 0.0,
+        "scaleX": 0.5614035129547119,
+        "scaleY": 0.6274510025978088,
+        "x": 642.6666870117188,
+        "y": 372.0
+      },
+      "visible": true
+    },
+    {
+      "anim": {
+        "close": null,
+        "open": null
+      },
+      "camera": "0x02D8FB06",
+      "charModel": null,
+      "drawPriority": 655,
+      "drawType": 0,
+      "name": "mainmenu01_13_right_bottom_with_icon_button_guide",
+      "parent": null,
+      "primitive": null,
+      "runtime": null,
+      "sprite": {
+        "h": 64,
+        "logicalPath": "dx11/menu/100_mainmenu/mainmenu01/mainmenu01_13/mainmenu01_13.g4tx",
+        "pngUrl": "/dx11/menu/100_mainmenu/mainmenu01/mainmenu01_13/mainmenu01_13.png",
+        "w": 64
+      },
+      "text": null,
+      "transform": {
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "rot": 0.0,
+        "scaleX": 0.6666666865348816,
+        "scaleY": 0.6666666865348816,
+        "x": 4298.6669921875,
+        "y": 2390.666748046875
+      },
+      "visible": true
+    },
+    {
+      "anim": {
+        "close": null,
+        "open": null
+      },
+      "camera": "0x02D8FB06",
+      "charModel": null,
+      "drawPriority": 655,
+      "drawType": 0,
+      "name": "mainmenu01_13b_right_bottom_with_icon_button_guide_count",
+      "parent": null,
+      "primitive": null,
+      "runtime": null,
+      "sprite": {
+        "h": 28,
+        "logicalPath": "dx11/menu/100_mainmenu/mainmenu01/mainmenu01_13b/mainmenu01_13b.g4tx",
+        "pngUrl": "/dx11/menu/100_mainmenu/mainmenu01/mainmenu01_13b/mainmenu01_13b.png",
+        "w": 20
+      },
+      "text": null,
+      "transform": {
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "rot": 0.0,
+        "scaleX": 0.6666666865348816,
+        "scaleY": 0.6666666865348816,
+        "x": 3098.0,
+        "y": 1720.0
+      },
+      "visible": true
+    },
+    {
+      "anim": {
+        "close": null,
+        "open": null
+      },
+      "camera": "0x02D8FB06",
+      "charModel": null,
+      "drawPriority": 655,
+      "drawType": 0,
+      "name": "mainmenu01_13l_left_with_icon_button_guide_count",
+      "parent": null,
+      "primitive": null,
+      "runtime": null,
+      "sprite": {
+        "h": 68,
+        "logicalPath": "dx11/menu/100_mainmenu/mainmenu01/mainmenu01_13l/mainmenu01_13l.g4tx",
+        "pngUrl": "/dx11/menu/100_mainmenu/mainmenu01/mainmenu01_13l/mainmenu01_13l.png",
+        "w": 76
+      },
+      "text": [
+        {
+          "slot": "_text_guide01",
+          "text": "Fusion rapide"
+        }
+      ],
+      "transform": {
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "rot": 0.0,
+        "scaleX": 0.5614035129547119,
+        "scaleY": 0.6274510025978088,
+        "x": 642.6666870117188,
+        "y": 372.0
+      },
+      "visible": true
+    },
+    {
+      "anim": {
+        "close": null,
+        "open": null
+      },
+      "camera": "0x02D8FB06",
+      "charModel": null,
+      "drawPriority": 655,
+      "drawType": 0,
+      "name": "mainmenu01_14_chara_list_button_guide",
+      "parent": null,
+      "primitive": null,
+      "runtime": null,
+      "sprite": {
+        "h": 68,
+        "logicalPath": "dx11/menu/100_mainmenu/mainmenu01/mainmenu01_14/mainmenu01_14.g4tx",
+        "pngUrl": "/dx11/menu/100_mainmenu/mainmenu01/mainmenu01_14/mainmenu01_14.png",
+        "w": 304
+      },
+      "text": [
+        {
+          "slot": "_text_guide01",
+          "text": "Personnages disponibles"
+        }
+      ],
+      "transform": {
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "rot": 0.0,
+        "scaleX": 0.6666666865348816,
+        "scaleY": 0.6666666865348816,
+        "x": 538.6666870117188,
+        "y": 337.3333435058594
+      },
+      "visible": true
+    },
+    {
+      "anim": {
+        "close": null,
+        "open": null
+      },
+      "camera": "0x02D8FB06",
+      "charModel": null,
+      "drawPriority": 655,
+      "drawType": 0,
+      "name": "mainmenu01_18_team_parameter_button_guide",
+      "parent": null,
+      "primitive": null,
+      "runtime": null,
+      "sprite": {
+        "h": 16,
+        "logicalPath": "dx11/menu/100_mainmenu/mainmenu01/mainmenu01_18/mainmenu01_18.g4tx",
+        "pngUrl": "/dx11/menu/100_mainmenu/mainmenu01/mainmenu01_18/mainmenu01_18.png",
+        "w": 16
+      },
+      "text": [
+        {
+          "slot": "_text_btn01",
+          "text": "12"
+        },
+        {
+          "slot": "_text_guide01",
+          "text": "[CTEAMPARAM01]Bonus d'équipe[C]"
+        }
+      ],
+      "transform": {
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "rot": 0.0,
+        "scaleX": 1.0,
+        "scaleY": 1.0,
+        "x": 640.0,
+        "y": 360.0
+      },
+      "visible": true
+    },
+    {
+      "anim": {
+        "close": null,
+        "open": null
+      },
+      "camera": "0x02D8FB06",
+      "charModel": null,
+      "drawPriority": 745,
+      "drawType": 0,
+      "name": "mainmenu01_12b_next_button_guide",
+      "parent": null,
+      "primitive": null,
+      "runtime": null,
+      "sprite": {
+        "h": 16,
+        "logicalPath": "dx11/menu/100_mainmenu/mainmenu01/mainmenu01_12b/mainmenu01_12b.g4tx",
+        "pngUrl": "/dx11/menu/100_mainmenu/mainmenu01/mainmenu01_12b/mainmenu01_12b.png",
+        "w": 16
+      },
+      "text": [
+        {
+          "slot": "_text_btn02",
+          "text": "Suivant"
+        }
+      ],
+      "transform": {
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "rot": 0.0,
+        "scaleX": 1.0,
+        "scaleY": 1.0,
+        "x": 640.0,
+        "y": 360.0
+      },
+      "visible": true
+    }
+  ],
+  "runtimeSummary": {
+    "callbacksDefinis": [],
+    "callbacksNonJoues": [],
+    "distinctVisibilityIndexes": 0,
+    "headerTabsAdded": 0,
+    "knownCmdCalls": 0,
+    "knownCmdsByName": {},
+    "layersTouched": 0,
+    "listItemsRecorded": 0,
+    "objectsHidden": 0,
+    "objectsHiddenByMerge": 0,
+    "objectsInMenuState": 0,
+    "objectsMatched": 0,
+    "objectsMatchedTotal": 0,
+    "objectsWithIndexedVisibility": 0,
+    "regionRects": 0,
+    "scripts": [],
+    "spritesMutated": 0,
+    "spritesNamed": 0,
+    "textsMutated": 0,
+    "unknownCmds": []
+  },
+  "screen": "mainmenu01"
+}

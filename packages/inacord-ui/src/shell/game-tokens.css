@@ -46,6 +46,29 @@
 	--jeu-texte-vif: #fdfefe;
 	--jeu-texte-doux: #5ca2e2;
 
+	/* --- Menu principal : le CIEL et les TUILES (mesures le 2026-09-05) --------------------
+	 *
+	 * Les tokens ci-dessus decrivent une ambiance sombre ; l'ecran du menu principal, lui, est
+	 * CLAIR — fond blanc bleute, tuiles bleues, texte blanc cercle. Les valeurs viennent d'une
+	 * quantification de la reference archivee, par region et non sur l'image entiere : quantifier
+	 * les 2497x1414 d'un coup noie la rangee de tuiles (~13 % de la surface) dans le fond blanc,
+	 * et rend une palette ou aucun des bleus reels n'apparait.
+	 *
+	 * Rejouable, region par region :
+	 *   convert data/design/aphrody-ui-ref-mainmenu-7.1.2.png -crop 2200x180+150+740 +repage \
+	 *     -colors 8 -unique-colors txt:
+	 */
+	--jeu-ciel-clair: #f9fcfc;
+	--jeu-ciel-brume: #a5e1f6;
+	--jeu-nuit-profonde: #0a2f66;
+	--jeu-tuile-haut: #5898dd;
+	--jeu-tuile-bas: #2a5b9f;
+	--jeu-tuile-bord: #4076c1;
+	--jeu-tuile-active-haut: #5eb1ff;
+	--jeu-tuile-active-bas: #2b93ff;
+	--jeu-plaque-bleu: #0542e1;
+	--jeu-lisere-or: #e3ac2b;
+
 	/* --- Coquille InaCord (decision produit, PLAN.md J5) ---------------------------------- */
 	--inacord-panneau: #323544;
 	--inacord-panneau-clair: #374d5b;
