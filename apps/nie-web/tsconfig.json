@@ -1,0 +1,14 @@
+{
+	"extends": "../../packages/config/tsconfig-base.json",
+	"compilerOptions": {
+		"noEmit": true,
+		"declaration": false,
+		"jsx": "react-jsx",
+		"types": ["vite/client"],
+		"lib": ["ESNext", "DOM", "DOM.Iterable"],
+		"allowImportingTsExtensions": true,
+		"moduleDetection": "force"
+	},
+	"include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts"],
+	"exclude": ["src/legacy/**"]
+}

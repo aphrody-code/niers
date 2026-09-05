@@ -1,0 +1,25 @@
+{
+  "name": "nie-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Aphrody sur le web : l'hote Vite de l'interface partagee avec Inacord, servi par la crate nie-site.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "bunx tsc --noEmit"
+  },
+  "dependencies": {
+    "@niers/jeu": "workspace:*",
+    "react": "catalog:",
+    "react-dom": "catalog:"
+  },
+  "devDependencies": {
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "^4",
+    "typescript": "catalog:",
+    "vite": "^6.0.3"
+  }
+}
