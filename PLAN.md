@@ -60,8 +60,29 @@ Chaque ligne porte son compte, et chaque compte a été rejoué sur cette machin
 | **J4** | contrat `asset-source`, socle `inacord-ui`, renommage Inacord | **0** Tauri dans le socle, 45 primitives |
 | **J5** | crate `nie-site`, suite E2E, DA du jeu, Aphrody monté | 13 routes, 44 tests, **E2E 62/62** |
 | **J7** | pré-compression du bundle, baseline `criterion` | JS **202 541 → 54 959 o** en brotli |
+| **J5+** | **Aphrody est EN LIGNE** — `nie-site` installé, vhost appliqué | `aphrody.com` **502 → 200**, TTFB **16 ms** |
+| **J5+** | i18n fr/en/ja, hreflang, JSON-LD, contenu rendu côté serveur, `llms.txt`, PWA | routes **13 → 18**, tests **44 → 72**, `/textures` **8 → 60** liens |
+| **J5+** | `nie.` et `api.` branchés sur les services du dépôt | 11 hôtes avant, **11 après**, 0 perdu |
+| **J5+** | `nie-model-serve` réparé et borné | ne répondait plus en 30 s → **0,37 ms** |
+| **J5+** | audit de couverture du serving d'assets | octets bruts **255 308 / 255 308 = 100 %** |
 
 ### Ce qui reste, et à qui
+
+**Un blocage mesuré de J6, découvert le 2026-09-05 au soir.** Le build d'Azalée échoue, et il
+échouera de la même façon sur Vercel. Deux causes distinctes, la première corrigée :
+
+1. `lib/og-logo.ts` fetchait son PNG par `fetch(new URL(…, import.meta.url))` — `file:` n'est pas
+   un schéma que `fetch` doit servir, et Bun le refuse (« not implemented... yet... »). Le build
+   s'arrêtait **avant toute page** : 0/117. Corrigé par une constante embarquée → 87/117.
+2. Il s'arrête maintenant au prérendu de `/` : `Error: Connection terminated due to connection
+   timeout`. `app/page.tsx` et **16 autres fichiers** du domaine éditorial ouvrent une connexion
+   Postgres **directe vers `127.0.0.1`**. Cela passe sur le VPS, jamais depuis Vercel.
+   `DATABASE_URL` devra viser le pooler Supabase Cloud — c'est la décision 1 ci-dessous.
+
+Mesuré en servant le wiki avec Postgres injoignable : `/chara` **200 liens**, `/skill` 60,
+`/item` 48, `/equipe` 208 — les pages de données du jeu sont serverless-safe. Mais `/news` rend
+**200 avec 0 lien** et `/api/tags/popular` rend `[]` en **5,05 s**, sur **6** « Connection
+terminated » au journal et **aucune** page en erreur. Le domaine éditorial se vide en silence.
 
 **Deux décisions de l'utilisateur**, sans lesquelles rien n'avance :
 
@@ -84,6 +105,13 @@ Chaque ligne porte son compte, et chaque compte a été rejoué sur cette machin
 installés : leur repli lit un 503 comme « ce serveur ne moissonne pas la série », donc sans
 erreur visible. `nie-site` sert désormais `/api/v1/episodes` — vérifié contre les 1 141 lignes
 réelles, delta compris.
+
+**Neuf fichiers étaient hors du dépôt.** `git check-ignore -v` le dit : la règle `*.txt`
+(ligne 208) faisait sortir les **quatre templates askama de `nie-site`** — dont `robots.txt` et
+`security.txt`, écrits à J5 et jamais versionnés. askama résout ses templates à la
+**compilation** : sur un clone frais, la crate ne compilait pas. Et côté Azalée,
+`public/ads.txt` : absent, la régie publicitaire s'arrête sans message. Réinclusions explicites,
+vérifiées fichier par fichier.
 
 **Ce que la session a appris.** Les défauts les plus coûteux ne se signalent pas : un bundle
 jamais chargé sous 42 tests verts, une capacité de compression écrite et inutilisée, trois URL
