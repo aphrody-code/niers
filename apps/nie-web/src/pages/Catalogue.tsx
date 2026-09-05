@@ -112,8 +112,10 @@ export function Catalogue({ vue }: { vue: VueCatalogue }) {
 				>
 					{elements.map((t) => (
 						<li key={t.chemin}>
+							{/* Pour les sons, le conteneur n'est PAS un lien : un clic sur « lire »
+							    declencherait la navigation au lieu de la lecture. */}
 							<a
-								href={source.urlFichier(t.chemin)}
+								href={vue === "sons" ? undefined : source.urlFichier(t.chemin)}
 								style={{
 									display: "block",
 									background: "var(--jeu-fond-nuit)",
@@ -126,7 +128,19 @@ export function Catalogue({ vue }: { vue: VueCatalogue }) {
 							>
 								{/* La vignette est produite par l'hôte : URL HTTP ici, `data:` sur le
 								    desktop. `loading="lazy"` évite de décoder 60 images d'un coup. */}
-								{vue === "textures" && source.urlTexture ? (
+								{vue === "sons" && source.urlAudio ? (
+									// `preload="none"` : 60 lecteurs sur une page ne doivent pas declencher
+									// 60 telechargements. Le navigateur n'ira chercher les octets qu'au
+									// premier clic sur « lire ».
+									// biome-ignore lint/a11y/useMediaCaption: un effet sonore du jeu n'a pas
+									// de piste de sous-titres, et en inventer une serait faux.
+									<audio
+										controls
+										preload="none"
+										src={source.urlAudio(t.chemin)}
+										style={{ width: "100%", height: 32 }}
+									/>
+								) : vue === "textures" && source.urlTexture ? (
 									<img
 										src={source.urlTexture(t.chemin)}
 										alt=""
