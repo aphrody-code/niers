@@ -32,7 +32,7 @@ ExecStart=/home/ubuntu/niers/target/release/nie-model-serve \
     --asset-cross-ref /home/ubuntu/niers/data/asset-cross-reference.json \
     --menu-cfg-dir /home/ubuntu/niers/data/common/gamedata/menu/cfg \
     --db /home/ubuntu/niers/var/mirror.sqlite \
-    --port 8790 --threads 2 --http-threads 4 --http-queue 128 --memory-cache-mib 128
+    --port 8790 --threads 2 --http-threads 8 --http-queue 128 --memory-cache-mib 128
 Environment=RUST_LOG=info
 Environment=NIE_CPK_CACHE_BUDGET_GIB=8
 Restart=always
@@ -70,8 +70,8 @@ TasksMax=1024
 # Le preload global de 6 387 modèles créait un cache disque de 14 Gio et une
 # pointe de plusieurs Gio au démarrage. Les modèles sont désormais chargés à la
 # demande ; le cache disque reste borné séparément par scripts/ops/prune-runtime.ts.
-MemoryHigh=5G
-MemoryMax=7G
+MemoryHigh=7G
+MemoryMax=9G
 MemorySwapMax=1G
 CPUWeight=80
 IOWeight=100
