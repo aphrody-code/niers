@@ -1,4 +1,4 @@
-import { creerWebSource } from "@niers/asset-source";
+import { creerWebSource, type VueCatalogue } from "@niers/asset-source";
 import { type SanteApi, sante } from "@niers/asset-source/nie-site";
 import {
 	AssetSourceProvider,
@@ -15,7 +15,7 @@ import {
 } from "@niers/inacord-ui";
 import "@niers/inacord-ui/shell/game-tokens.css";
 import { useEffect, useMemo, useState } from "react";
-import { Textures } from "./pages/Textures";
+import { Catalogue } from "./pages/Catalogue";
 
 /**
  * Coquille d'Aphrody.
@@ -48,7 +48,7 @@ function Accueil() {
 	const capacites = useCapacites();
 	const erreur = useErreurSource();
 	const [etat, setEtat] = useState<SanteApi | null>(null);
-	const [vue, setVue] = useState<string>(VUES[0]);
+	const [vue, setVue] = useState<VueCatalogue>(VUES[0]);
 
 	useEffect(() => {
 		const ac = new AbortController();
@@ -119,20 +119,7 @@ function Accueil() {
 						</Callout>
 					) : (
 						<>
-							{vue === "textures" ? (
-								<Textures />
-							) : (
-								<>
-									<TitleBand>{vue}</TitleBand>
-									{/* Les trois autres vues attendent leur portage : le dire vaut mieux que
-									    montrer une page vide qui passerait pour un catalogue sans contenu. */}
-									<Callout>
-										Cette vue n'est pas encore portée. {etat?.vues.find((v) => v.nom === vue)?.total
-											? `${etat.vues.find((v) => v.nom === vue)?.total?.toLocaleString("fr")} fichiers l'attendent.`
-											: ""}
-									</Callout>
-								</>
-							)}
+							<Catalogue vue={vue} />
 						</>
 					)}
 				</main>

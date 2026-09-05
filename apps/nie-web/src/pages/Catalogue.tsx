@@ -1,12 +1,22 @@
 /**
- * `/textures` — le catalogue des textures du jeu, porté du wiki vers Aphrody.
+ * Les quatre catalogues du jeu — textures, modèles, sons, vidéos — portés du wiki vers Aphrody.
  *
- * ## Ce qui change par rapport à la page d'origine
+ * ## Une page pour quatre vues, et pourquoi
  *
- * L'ancienne (`legacy/app/textures/[[...path]]/page.tsx`, 337 lignes) parlait au VFS par la
- * couche `cpk/live` du wiki, elle-même adossée au disque du VPS. Celle-ci ne connaît que le
- * contrat : elle demande une page de catalogue à `AssetSource`, et l'hôte décide d'où elle
- * vient. Aphrody la sert par `/api/v1/textures`, Inacord la servirait par sa recherche native.
+ * Les quatre pages d'origine (`legacy/app/{textures,modeles,sons,videos}`, ~1 500 lignes à
+ * elles quatre) faisaient la même chose : lister un filtre du VFS, paginer, afficher une
+ * vignette. Elles divergeaient sur des détails d'affichage et sur rien d'autre — quatre copies
+ * d'une même logique, qui dérivaient chacune de leur côté.
+ *
+ * Ici, la vue est un PARAMÈTRE. Ce qui diffère vraiment entre un son et une texture — la
+ * présence d'un aperçu visuel — se lit dans les capacités de l'hôte, pas dans quatre fichiers.
+ *
+ * ## Ce qui change par rapport aux pages d'origine
+ *
+ * Elles parlaient au VFS par la couche `cpk/live` du wiki, adossée au disque du VPS. Celle-ci
+ * ne connaît que le contrat : elle demande une page de catalogue à `AssetSource`, et l'hôte
+ * décide d'où elle vient. Aphrody la sert par `/api/v1/<vue>`, Inacord par sa recherche
+ * native.
  *
  * ## La vue est un FILTRE, jamais un dossier
  *
@@ -15,7 +25,7 @@
  * adresse complète et verbatim — c'est lui qu'on passe à `urlFichier()` ou `vignette()`, jamais
  * un chemin reconstruit à partir du nom.
  */
-import type { EntreeVfs } from "@niers/asset-source";
+import type { EntreeVfs, VueCatalogue } from "@niers/asset-source";
 import { Badge, Callout, TitleBand, useAssetSource, useCapacites } from "@niers/inacord-ui";
 import { useEffect, useState } from "react";
 
@@ -29,10 +39,21 @@ function taille(octets: number): string {
 	return `${(octets / (1024 * 1024)).toFixed(1)} Mo`;
 }
 
-export function Textures() {
+/** Libellés affichés, au singulier près — le code du jeu ne les porte pas. */
+const LIBELLES: Record<VueCatalogue, string> = {
+	textures: "Textures",
+	modeles: "Modèles",
+	sons: "Sons",
+	videos: "Vidéos",
+};
+
+export function Catalogue({ vue }: { vue: VueCatalogue }) {
 	const source = useAssetSource();
 	const capacites = useCapacites();
 	const [page, setPage] = useState(1);
+	// Changer de vue ramene a la page 1 : garder la page 900 en passant d'un catalogue de 904
+	// pages a un catalogue de 4 afficherait un vide que rien n'expliquerait.
+	useEffect(() => setPage(1), [vue]);
 	const [elements, setElements] = useState<EntreeVfs[]>([]);
 	const [total, setTotal] = useState(0);
 	const [pages, setPages] = useState(0);
@@ -47,7 +68,7 @@ export function Textures() {
 		setCharge(false);
 		setErreur(null);
 		source
-			.catalogue("textures", { page, parPage: PAR_PAGE, signal: ac.signal })
+			.catalogue(vue, { page, parPage: PAR_PAGE, signal: ac.signal })
 			.then((p) => {
 				if (ac.signal.aborted) return;
 				setElements(p.elements);
@@ -59,7 +80,7 @@ export function Textures() {
 				if (!ac.signal.aborted) setErreur(e instanceof Error ? e.message : String(e));
 			});
 		return () => ac.abort();
-	}, [source, capacites?.vfs, page]);
+	}, [source, capacites?.vfs, page, vue]);
 
 	if (!capacites) return <Callout>Mesure des capacités…</Callout>;
 	if (!capacites.vfs) {
@@ -73,7 +94,7 @@ export function Textures() {
 	return (
 		<section>
 			<TitleBand>
-				Textures {total ? <Badge>{total.toLocaleString("fr")}</Badge> : null}
+				{LIBELLES[vue]} {total ? <Badge>{total.toLocaleString("fr")}</Badge> : null}
 			</TitleBand>
 
 			{!charge ? (
@@ -105,7 +126,7 @@ export function Textures() {
 							>
 								{/* La vignette est produite par l'hôte : URL HTTP ici, `data:` sur le
 								    desktop. `loading="lazy"` évite de décoder 60 images d'un coup. */}
-								{source.urlTexture ? (
+								{vue === "textures" && source.urlTexture ? (
 									<img
 										src={source.urlTexture(t.chemin)}
 										alt=""
