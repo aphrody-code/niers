@@ -625,6 +625,20 @@ alors que 77 `.py` versionnés existent déjà.
   comme en local. Pour sortir d'EAC, lancer `nie.exe` directement, sans `GameBootstrapper`/`EACLauncher`.
 - Le dépôt du VPS porte des **modifications non commitées** d'une autre session : ne jamais y `git pull`.
 
+## Écrans du jeu — la disposition s'exporte, elle ne se dessine pas
+
+- `nie-game --runtime --menu <écran> --export-layout <json>` rend la disposition **réelle** :
+  pour `mainmenu01`, un canevas 1280×720 et **34 objets** avec `transform` (x, y, ancre,
+  échelle, rotation), `drawPriority`, `sprite.logicalPath` et les textes déjà traduits.
+  `--compose-layout` compose ce JSON en PNG, et il est **répétable** : un écran empile
+  plusieurs calques.
+- **Le nom d'écran des calques n'est pas celui du script.** `mainmenu01` = 34 objets et
+  `scripts=0` (aucun `.lua.bin` ne porte ce nom) ; `kizuna_town_mainmenu` = 0 objet statique
+  mais `scripts=1`, 66 commandes runtime reconnues. La disposition et le comportement viennent
+  de deux écrans distincts, à empiler.
+- L'URL d'une texture de menu : `/assets/tex/<chemin VFS sans .g4tx>.png`. Le `logicalPath` du
+  JSON n'a **pas** le préfixe `data/`, l'URL en a besoin.
+
 ## Base de connaissance (`var/niers.sqlite`)
 
 > **Mesuré sur le VPS le 2026-09-02 — la base d'ici n'est PAS ancrée sur la cible.**
@@ -657,8 +671,35 @@ alors que 77 `.py` versionnés existent déjà.
 - Vérité terrain régénérable, jamais recopiée d'un document : `nie-forge report` (part produite),
   `niers vfs stats` (histogramme du VFS), `niers coverage --db var/niers.sqlite`.
 
+## Services du VPS — un plafond qui en contredit un autre fige le service
+
+- **Le budget d'un cache doit rester SOUS `MemoryHigh`.** `nie-model-serve` avait
+  `NIE_CPK_CACHE_BUDGET_GIB=8` pour un `MemoryHigh=7G` : le cache remplissait jusqu'à un
+  plafond que le cgroup lui interdisait, le noyau le mettait en reclaim permanent, et le
+  service ne répondait plus **sans une seule requête entrante**. Symptômes trompeurs — 67 % de
+  CPU, `/health` muet, workers « saturés » : on accuse la charge, la cause est la configuration.
+- **Le diagnostic se lit, il ne se devine pas** :
+  `for t in /proc/<pid>/task/*; do cat $t/wchan; done | grep -c over_high`. Un thread dans
+  `__mem_cgroup_handle_over_high` est bloqué par le throttling cgroup, pas par son travail.
+  `grep RssAnon /proc/<pid>/status` dit si la mémoire est du cache anonyme.
+- Monter un plafond ne réserve rien, mais un cache **utilise ce qu'on lui donne** : passer le
+  budget à 12 GiB a fait monter le RSS à 12,9 Gio en minutes. Mesurer `free -h` après, pas avant.
+
 ## Pièges d’édition
 
+- **Un test qui appelle le HANDLER ne teste pas le ROUTEUR.** `/en/manifest.webmanifest`
+  rendait du HTML pendant que le test unitaire, qui appelait la fonction avec une URI, était
+  vert : le handler savait lire le préfixe, le routeur ne connaissait pas l'URL. Un manifeste
+  servi en `text/html` n'échoue pas, il est ignoré. Tester par le routeur, et asserter le
+  `Content-Type` autant que le corps.
+- **Dans un audit HTTP, une connexion perdue (`code 0`) n'est PAS un échec.** Comptée comme
+  telle, elle mesure la saturation du service et la présente comme sa couverture : `.usm` a été
+  annoncé à 0 % de décodage alors que les cinq mesures étaient des connexions perdues. Compter
+  `indéterminé` à part, réessayer une fois — mais croire un code HTTP du premier coup, c'est
+  une réponse.
+- **Extraire des noms de table par `from\s+(\w+)` sur du TypeScript** rend « next », « react »,
+  « lucide » : les `import … from` l'emportent en nombre sur le SQL. Ne garder que les blocs
+  portant un verbe SQL avant de chercher la table.
 - Ne jamais écrire un fichier Rust via un heredoc Python : un `\0` littéral finit dans la source
   (`file` la voit comme `data`). Utiliser Write/Edit.
 - Ne pas nommer un script du scratchpad comme un module stdlib (`dis.py` casse numpy et capstone).
@@ -696,6 +737,10 @@ le suivant. C'est le mode d'échec le plus cher du dépôt, et il s'est répét�
 - **La dernière règle qui matche l'emporte** : une ré-inclusion posée avant une règle large
   (`*.md`, ligne 166 à l'époque) ne sert à rien. Vérifier **chaque** cas par
   `git check-ignore -v <fichier>`, jamais au raisonnement.
+- **askama résout ses templates à la COMPILATION.** La règle `*.txt` faisait sortir du dépôt
+  les quatre templates de `nie-site` — dont `robots.txt` et `security.txt`, écrits à J5 et
+  jamais versionnés : sur un clone frais, la crate ne compilait pas. Même piège que les
+  `CMakeLists.txt`. Vérifier tout nouveau fichier non-code par `git check-ignore -v`.
 - Depuis le 2026-09-05, **tout le markdown du dépôt est versionné**, sans liste d'exceptions :
   elle avait fait disparaître `AGENTS.md`, les 5 sous-agents et 5 skills du plugin `niers` (un
   livrable) et les README des OC. Restent dehors, chacun pour une raison mesurée : les

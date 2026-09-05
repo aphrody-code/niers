@@ -131,3 +131,25 @@ Migration 2026-02-06 (cf. `CHANGELOG.md`) : tous les PNG de `data/images/menu/` 
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
+
+## Supabase Cloud — mesuré le 2026-09-05
+
+- **Ne pas deviner l'hôte du pooler.** L'API Management le publie :
+  `curl -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" https://api.supabase.com/v1/projects/<ref>/config/database/pooler`.
+  Ici c'est `aws-1-eu-west-3` — **pas** `aws-0`, la forme qu'on écrit spontanément.
+- **Deux ports, deux usages.** `6543` = mode transaction, pour les requêtes courtes des
+  fonctions serverless. `5432` = mode session, **obligatoire pour le DDL** — le DDL ne passe
+  pas en mode transaction. Connexion depuis le VPS : 146 ms.
+- **Le schéma était à moitié migré.** Cloud portait 224 tables, toutes `inagle_*`, et **aucune**
+  du domaine éditorial. Rien ne le montrait sur le VPS, où `127.0.0.1` répond. Le build
+  échouait au prérendu de `/` sur « Connection terminated », et l'on accusait `DATABASE_URL`.
+- **RLS activée + 0 policy refuse TOUT**, y compris au service. C'est l'état dans lequel
+  arrivent des tables créées par `pg_dump` interrompu : sûr, inutilisable, et silencieux.
+  Vérifier `pg_policy` après toute création, pas seulement l'existence de la table.
+- **Une FK vers `auth.users` fait échouer le fichier ENTIER** sous `ON_ERROR_STOP`
+  (`auth.users` n'est pas migré, décision du PLAN). Idem pour un déclencheur vers
+  `rg_realtime_notify()`, la fonction du realtime auto-hébergé du VPS.
+- Migration rejouable : `scripts/ops/migrer-editorial-vers-cloud.sh --compter`.
+- **`fetch()` sur une URL `file:` n'est pas implémenté par Bun** (« not implemented... yet... ») :
+  `fetch(new URL("./x.png", import.meta.url))` arrête le build avant toute page. Embarquer la
+  ressource en constante, cf. `lib/og-logo-data.ts`.
