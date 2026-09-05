@@ -15,6 +15,7 @@ import {
 } from "@niers/inacord-ui";
 import "@niers/inacord-ui/shell/game-tokens.css";
 import { useEffect, useMemo, useState } from "react";
+import { Textures } from "./pages/Textures";
 
 /**
  * Coquille d'Aphrody.
@@ -118,13 +119,20 @@ function Accueil() {
 						</Callout>
 					) : (
 						<>
-							<TitleBand>{vue}</TitleBand>
-							<dl style={{ marginTop: "var(--jeu-espace-m)", color: "var(--jeu-surface-craie)" }}>
-								<dt>Entrées indexées</dt>
-								<dd>{etat?.capacites.vfs_entrees.toLocaleString("fr") ?? "—"}</dd>
-								<dt>Gisement</dt>
-								<dd>{capacites.wiki ? "ouvert" : "absent"}</dd>
-							</dl>
+							{vue === "textures" ? (
+								<Textures />
+							) : (
+								<>
+									<TitleBand>{vue}</TitleBand>
+									{/* Les trois autres vues attendent leur portage : le dire vaut mieux que
+									    montrer une page vide qui passerait pour un catalogue sans contenu. */}
+									<Callout>
+										Cette vue n'est pas encore portée. {etat?.vues.find((v) => v.nom === vue)?.total
+											? `${etat.vues.find((v) => v.nom === vue)?.total?.toLocaleString("fr")} fichiers l'attendent.`
+											: ""}
+									</Callout>
+								</>
+							)}
 						</>
 					)}
 				</main>
