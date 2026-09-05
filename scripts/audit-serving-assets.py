@@ -64,8 +64,18 @@ class Resultat:
     brut_echecs: list[tuple[str, str]] = field(default_factory=list)
     decode_ok: int = 0
     decode_echecs: list[tuple[str, str]] = field(default_factory=list)
+    # Les requetes qui n'ont jamais abouti : service sature, connexion refusee, delai
+    # depasse. Elles ne disent RIEN de la capacite a decoder, et les compter comme des
+    # echecs a produit un faux negatif le 2026-09-05 (`.usm` annonce a 0 % alors que les
+    # cinq mesures etaient des connexions perdues, pas des refus).
+    indetermines: int = 0
     decodage_attendu: bool = False
     ms_median_brut: float = 0.0
+
+    @property
+    def mesures(self) -> int:
+        """Requetes qui ont abouti : le seul denominateur honnete."""
+        return self.echantillon - self.indetermines
 
     @property
     def taux_brut(self) -> float:
@@ -73,7 +83,7 @@ class Resultat:
 
     @property
     def taux_decode(self) -> float:
-        return 100.0 * self.decode_ok / self.echantillon if self.echantillon else 0.0
+        return 100.0 * self.decode_ok / self.mesures if self.mesures else 0.0
 
 
 def histogramme() -> list[tuple[str, int]]:
@@ -112,17 +122,27 @@ def echantillonner(ext: str, combien: int) -> list[str]:
     return chemins
 
 
-def demander(url: str) -> tuple[int, int, float]:
-    """`(code, octets, millisecondes)`. Code 0 quand la connexion elle-meme echoue."""
-    debut = time.monotonic()
-    try:
-        with urllib.request.urlopen(url, timeout=DELAI) as r:  # noqa: S310 - hote local fixe
-            corps = r.read()
-            return r.status, len(corps), (time.monotonic() - debut) * 1000
-    except urllib.error.HTTPError as e:
-        return e.code, 0, (time.monotonic() - debut) * 1000
-    except Exception:  # noqa: BLE001 - toute panne reseau se compte pareil
-        return 0, 0, (time.monotonic() - debut) * 1000
+def demander(url: str, essais: int = 2) -> tuple[int, int, float]:
+    """`(code, octets, millisecondes)`. Code 0 quand la connexion elle-meme echoue.
+
+    Reessaie une fois : `nie-model-serve` a un pool de workers borne, et une requete lourde
+    en cours peut faire perdre la suivante. Un seul essai mesure alors l'occupation du
+    service, pas sa capacite — ce qui est exactement le contraire de ce qu'on cherche.
+    """
+    for tentative in range(essais):
+        debut = time.monotonic()
+        try:
+            with urllib.request.urlopen(url, timeout=DELAI) as r:  # noqa: S310 - hote local
+                corps = r.read()
+                return r.status, len(corps), (time.monotonic() - debut) * 1000
+        except urllib.error.HTTPError as e:
+            # Un code HTTP est une REPONSE : le service a tranche, on le croit du premier coup.
+            return e.code, 0, (time.monotonic() - debut) * 1000
+        except Exception:  # noqa: BLE001 - panne reseau : on retente une fois
+            if tentative + 1 >= essais:
+                return 0, 0, (time.monotonic() - debut) * 1000
+            time.sleep(1.0)
+    return 0, 0, 0.0
 
 
 def auditer(ext: str, total: int, chemins: list[str]) -> Resultat:
@@ -146,6 +166,10 @@ def auditer(ext: str, total: int, chemins: list[str]) -> Resultat:
             code, octets, _ = demander(url)
             if code == 200 and octets > 0:
                 res.decode_ok += 1
+            elif code == 0:
+                # Le service n'a pas repondu : indetermine, jamais un echec de decodage.
+                res.indetermines += 1
+                res.decode_echecs.append((chemin, "INDETERMINE (aucune reponse)"))
             else:
                 res.decode_echecs.append((chemin, f"HTTP {code}, {octets} o"))
 
@@ -184,7 +208,14 @@ def main() -> int:
     print(f"\n{'ext':<10} {'fichiers':>9} {'ech.':>5} {'brut':>7} {'decode':>8} {'ms':>7}")
     print("-" * 52)
     for r in sorted(resultats, key=lambda x: -x.total_vfs):
-        decode = f"{r.taux_decode:.0f}%" if r.decodage_attendu else "—"
+        if not r.decodage_attendu:
+            decode = "—"
+        elif r.mesures == 0:
+            decode = "?"
+        elif r.indetermines:
+            decode = f"{r.taux_decode:.0f}%*"
+        else:
+            decode = f"{r.taux_decode:.0f}%"
         brut = f"{r.taux_brut:.0f}%" if r.echantillon else "0 tire"
         print(
             f"{r.extension:<10} {r.total_vfs:>9} {r.echantillon:>5} {brut:>7} {decode:>8} "
@@ -195,6 +226,12 @@ def main() -> int:
     print(f"{'TOTAL':<10} {total_vfs:>9}")
     print(f"\nOctets bruts servis a 100 % : {couvert_brut} fichiers sur {total_vfs} "
           f"({100.0 * couvert_brut / total_vfs:.1f} %)")
+
+    incertains = [r for r in resultats if r.indetermines]
+    if incertains:
+        print("\n* taux calcule sur les seules requetes qui ont abouti. Non concluant sur :")
+        for r in incertains:
+            print(f"  .{r.extension} — {r.indetermines}/{r.echantillon} sans reponse du service")
 
     fautifs = [r for r in resultats if r.echantillon and r.taux_brut < 100.0]
     if fautifs:
@@ -222,6 +259,8 @@ def main() -> int:
                         "decodage_attendu": r.decodage_attendu,
                         "decode_ok": r.decode_ok,
                         "taux_decode": round(r.taux_decode, 1),
+                        "indetermines": r.indetermines,
+                        "mesures": r.mesures,
                         "ms_median_brut": round(r.ms_median_brut, 1),
                         "brut_echecs": r.brut_echecs[:10],
                         "decode_echecs": r.decode_echecs[:10],
