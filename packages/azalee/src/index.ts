@@ -4,7 +4,7 @@
  *
  * **Cette racine est client-safe** : uniquement des types, des règles de jeu
  * pures, la résolution d'URLs CDN, le glossaire de traduction et la recherche
- * floue. Aucun `bun:sqlite`, aucun `node:fs` — elle se bundle donc dans une
+ * floue. Aucun pilote SQLite, aucun accès disque — elle se bundle donc dans une
  * webview Tauri, un navigateur ou un worker.
  *
  * L'accès réel aux données (miroir SQLite, index CPK, index de texte, API HTTP)

@@ -1,7 +1,7 @@
 /**
  * Helpers client-safe pour les stats de personnage (croissance).
  *
- * Aucune dépendance Node/bun:sqlite : ce module est importable depuis un îlot
+ * Aucune dépendance Node ni SQLite : ce module est importable depuis un îlot
  * « use client ». La résolution LIVE des stats (fetch CDN /cfg) vit dans le
  * pendant serveur `chara-stats.ts`.
  *

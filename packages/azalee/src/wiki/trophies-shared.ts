@@ -2,7 +2,7 @@
  * @file lib/wiki/trophies-shared.ts
  * @description Types et helpers PURS (client-safe) de la section « Succès ».
  *
- * Aucun accès DB / `bun:sqlite` ici : ce module est importable depuis un îlot
+ * Aucun accès à une base ici : ce module est importable depuis un îlot
  * `"use client"`. L'accès data réel vit dans `wiki/trophies.ts` (serveur).
  *
  * Source : table `inagle_trophies` (228 lignes). Le `code` encode la catégorie via

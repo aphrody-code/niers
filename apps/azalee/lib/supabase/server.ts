@@ -4,7 +4,6 @@ import { auth } from "@/lib/auth";
 import { mintSupabaseJwt } from "@/lib/supabase/jwt";
 import { cleAnonSupabase, origineSupabase } from "@/lib/supabase/url";
 import type { Database } from "@rosegriffon/db";
-import { createSqliteClient } from "@rosegriffon/azalee/db";
 
 // Résolution unique, partagée par les quatre modules du chemin de requête : cf. `./url`.
 // Le jeton anonyme en dur qui servait de repli ici a disparu avec la cascade — un secret
@@ -18,12 +17,22 @@ const supabaseAnonKey = cleAnonSupabase();
 // Défaut: true. Pour réactiver le bridge après avoir resyncé le secret: DISABLE_SUPABASE_JWT_BRIDGE=false.
 const DISABLE_SUPABASE_JWT_BRIDGE = process.env.DISABLE_SUPABASE_JWT_BRIDGE !== "false";
 
-let _hasWarnedMissingBun = false;
-
 /**
- * Creates a Supabase server client.
- * If a Better Auth session exists AND the JWT bridge is enabled, mints a JWT so
- * auth.uid() works in RLS. Otherwise returns an anon client.
+ * Rend un client Supabase serveur. Si une session Better Auth existe ET que le pont JWT est
+ * actif, un jeton est frappé pour qu'`auth.uid()` fonctionne dans les RLS ; sinon le client
+ * est anonyme.
+ *
+ * ## Ce qui a été retiré ici, et pourquoi (lot J2, 2026-09-05)
+ *
+ * Le client était enveloppé dans un `Proxy` qui détournait `from("inagle_*")` vers un cache
+ * SQLite local, avec repli Postgres quand `bun:sqlite` manquait. Cette bifurcation n'a plus
+ * de sens en serverless : le fichier n'existe pas sur Vercel, le repli était donc pris à
+ * *chaque* requête — au prix d'un `try/catch` sur un message d'erreur, ce qui est une
+ * détection fragile. Surtout, elle faisait exister deux sources de vérité pour les mêmes
+ * tables : c'est cette dualité qui a produit le faux vert du 2026-09-05.
+ *
+ * Le cache local reste disponible pour l'outillage hors ligne, dans
+ * `@niers/azalee-outils` — jamais dans le chemin d'une page.
  */
 export const createClient = async (): Promise<SupabaseClient> => {
 	let accessToken: string | undefined;
@@ -57,37 +66,5 @@ export const createClient = async (): Promise<SupabaseClient> => {
 		) as unknown as SupabaseClient;
 	}
 
-	const sqliteClient = createSqliteClient();
-
-	return new Proxy(pgClient, {
-		get(target, prop, receiver) {
-			if (prop === "from") {
-				return (table: string) => {
-					if (table.startsWith("inagle_")) {
-						try {
-							return sqliteClient.from(table);
-						} catch (e: unknown) {
-							const msg = e instanceof Error ? e.message : String(e);
-							if (
-								msg.includes("Cannot find module 'bun:sqlite'") ||
-								msg.includes("Failed to load external module bun:sqlite")
-							) {
-								if (!_hasWarnedMissingBun) {
-									console.log(
-										"[SQLite Cache] SQLite database cache is unavailable in this environment (falling back to Postgres)."
-									);
-									_hasWarnedMissingBun = true;
-								}
-							} else {
-								console.warn(`[SQLite Cache] Fallback to Postgres for table ${table}:`, e);
-							}
-							return target.from(table);
-						}
-					}
-					return target.from(table);
-				};
-			}
-			return Reflect.get(target, prop, receiver);
-		},
-	}) as unknown as SupabaseClient;
+	return pgClient;
 };

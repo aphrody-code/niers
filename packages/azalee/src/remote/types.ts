@@ -11,7 +11,7 @@
  *
  * Tous les imports sont **`import type`** : ils sont intégralement effacés à la
  * compilation, ce module reste donc bundlable pour le navigateur alors même
- * qu'il référence des modules `bun:sqlite`.
+ * qu'il référence le pilote SQLite de Bun.
  */
 
 import type { categoryStats, searchText } from "../game-text/index";

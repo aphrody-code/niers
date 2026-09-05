@@ -5,12 +5,14 @@
  * niers — le **telop** (nom rendu, g4tx→png), le **modèle 3D** du cut-in (`chr/_waza`, assemblé
  * serveur depuis g4pkm→g4md + g4mg + texture g4tx embarquée) et la **texture** (`dx11/chr/_waza`,
  * g4tx→png). Données : `skills-cutin.json`.
+ *
+ * La **scène 3D** (R3F + timeline + export MP4) a quitté le wiki au lot J2 : elle lisait des
+ * fichiers du jeu en local, ce qu'une page servie sans serveur ne peut plus faire. Elle vit
+ * désormais dans Aphrody, et cette section n'en garde qu'un lien — actif seulement si
+ * `NEXT_PUBLIC_TOOLS_ORIGIN` est renseignée, pour ne jamais pointer dans le vide.
  */
 import { useState } from "react";
 import { Icon } from "@/components/ui/Icon";
-// Viewer cut-in composé (scène R3F + timeline + export MP4). C'est lui qui gère le
-// `next/dynamic { ssr:false }` de la scène et le repli `<CharacterModelViewer>` interne.
-import { CutinViewer } from "@/components/wiki/cutin/CutinViewer";
 import { cpkAssetUrl } from "@rosegriffon/azalee/cpk/shared";
 import { getSkillTelopUrl } from "@rosegriffon/azalee/images";
 import { downloadName } from "@rosegriffon/azalee/text/download-filename";
@@ -54,6 +56,8 @@ export function SkillCutinSection({
 	// `getSkillImageUrl`, contre le même index, et rend `null` quand rien n'existe
 	// (pas de placeholder : il n'a rien à faire dans une section « assets »).
 	const telopUrl = getSkillTelopUrl(skillCode);
+	// Vide tant qu'Aphrody n'est pas en ligne : le lien disparaît plutôt que de casser.
+	const outilsOrigin = process.env.NEXT_PUBLIC_TOOLS_ORIGIN;
 	const textureUrl = cpkAssetUrl(cutin.texture_g4tx);
 
 	return (
@@ -86,12 +90,20 @@ export function SkillCutinSection({
 			    chargement lazy de la scène R3F + le repli model-viewer. */}
 			{assetsAvailable && (
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-					<div>
-						<p className="text-xs text-on-surface-variant mb-1">
-							Scène cut-in (modèle 3D composé · timeline · export MP4)
-						</p>
-						<CutinViewer cutin={cutin} skillName={skillName} />
-					</div>
+					{outilsOrigin && (
+						<div>
+							<p className="text-xs text-on-surface-variant mb-1">
+								Scène cut-in (modèle 3D composé · timeline · export MP4)
+							</p>
+							<a
+								href={`${outilsOrigin}/cutin/${encodeURIComponent(skillCode)}`}
+								className="inline-flex items-center gap-1.5 rounded-full bg-surface-container-high px-3 py-1.5 text-sm font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest transition-colors"
+								rel="noreferrer"
+							>
+								<Icon name="open_in_new" size={14} /> Ouvrir la scène dans Aphrody
+							</a>
+						</div>
+					)}
 					{textureUrl && (
 						<div>
 							<div className="flex items-center justify-between mb-1">

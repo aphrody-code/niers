@@ -11,12 +11,10 @@ import { unstable_cache } from "next/cache";
 import { getPgPool } from "@/lib/db/pg";
 import { getMiximaxImageUrl, resolveAssetUrl, resolveAuraTelopUrl } from "@rosegriffon/azalee/images";
 
-import { createSqliteClient } from "@rosegriffon/azalee/db";
-import { origineSupabase } from "@/lib/supabase/url";
+import { cleAnonSupabase, origineSupabase } from "@/lib/supabase/url";
 
 // Lazy getter for Supabase to prevent top-level execution during build
 let _supabase: ReturnType<typeof createClient> | null = null;
-let _hasWarnedMissingBun = false;
 
 function getSupabase(): ReturnType<typeof createClient> {
 	if (_supabase) {
@@ -27,47 +25,18 @@ function getSupabase(): ReturnType<typeof createClient> {
 	// désormais la MÊME origine — la branche `typeof window` faisait diverger les deux.
 	const url = origineSupabase();
 
-	const key =
-		process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
-		!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.startsWith("{")
-			? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-			: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzYmthZWx0dWJxaXR0eXdpYmVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYwNjk0MzAsImV4cCI6MjA2MTY0NTQzMH0.N4l07k3V_X5I8iW0n_D6K9-O4v5l7l6s6MYGpJIXRW_rB8zc45k7chqi8Ljl_CLiLc=";
+	// Une seule règle pour la clé comme pour l'origine (cf. `lib/supabase/url`). La clé en dur
+	// qui servait de repli ici désignait un AUTRE projet Supabase que le Cloud cible : un repli
+	// qui vise le mauvais projet ne protège de rien, il déplace la panne vers des données
+	// silencieusement fausses — et un secret écrit dans la source est une fuite, même public.
+	const key = cleAnonSupabase();
 
-	const baseClient = createClient(url, key);
-	const sqliteClient = createSqliteClient();
-
-	_supabase = new Proxy(baseClient, {
-		get(target, prop, receiver) {
-			if (prop === "from") {
-				return (table: string) => {
-					if (table.startsWith("inagle_")) {
-						try {
-							return sqliteClient.from(table);
-						} catch (e: unknown) {
-							const msg = e instanceof Error ? e.message : String(e);
-							if (
-								msg.includes("Cannot find module 'bun:sqlite'") ||
-								msg.includes("Failed to load external module bun:sqlite") ||
-								msg.includes("No SQLite database backup found")
-							) {
-								if (!_hasWarnedMissingBun) {
-									console.log(
-										"[api-client] SQLite database cache is unavailable (falling back to Postgres)."
-									);
-									_hasWarnedMissingBun = true;
-								}
-							} else {
-								console.warn(`[api-client] Fallback to Postgres for table ${table}:`, e);
-							}
-							return target.from(table);
-						}
-					}
-					return target.from(table);
-				};
-			}
-			return Reflect.get(target, prop, receiver);
-		},
-	}) as unknown as ReturnType<typeof createClient>;
+	// Le `Proxy` qui détournait `from("inagle_*")` vers un cache SQLite local a été retiré au
+	// lot J2 : le fichier n'existe pas sur Vercel, le repli était donc pris à chaque requête,
+	// et il reposait sur la comparaison d'un MESSAGE d'erreur. Deux sources de vérité pour les
+	// mêmes tables, c'est ce qui a produit le faux vert du 2026-09-05. Le cache local reste
+	// dans `@niers/azalee-outils`, hors du chemin d'une page.
+	_supabase = createClient(url, key);
 
 	return _supabase;
 }

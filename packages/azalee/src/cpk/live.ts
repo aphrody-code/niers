@@ -7,7 +7,7 @@
  * `nie_explore::listing`) — exactement la vue qu'affiche l'explorateur desktop Tauri, sur le
  * VFS réellement monté (250 805 entrées, 921 CPK).
  *
- * ⚠ Module **client-safe** : `fetch` seul, ni `bun:sqlite` ni `node:fs`. Importable depuis un
+ * ⚠ Module **client-safe** : `fetch` seul, ni pilote SQLite ni accès disque. Importable depuis un
  * composant `"use client"` comme depuis une page serveur — contrairement à `cpk/index.ts`.
  *
  * L'index figé reste en place et reste le repli : si le CDN ne répond pas, une page qui sait
