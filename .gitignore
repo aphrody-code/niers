@@ -218,6 +218,18 @@ __pycache__/
 !crates/forge/nie-trace/recettes/*.txt
 !data/oc/**/*.txt
 
+# ATTENTION, meme piege que les CMakeLists ci-dessous, paye le 2026-09-05 : `*.txt` faisait
+# sortir du depot les templates askama de `nie-site` — dont `robots.txt` et `security.txt`,
+# qui existaient depuis J5 sans avoir JAMAIS ete versionnes. askama resout ses templates a la
+# COMPILATION : sur un clone frais, la crate ne compilait pas du tout. Ce sont des sources.
+!crates/tools/nie-site/templates/*.txt
+
+# Les documents publics d'Azalee. `ads.txt` autorise la regie publicitaire — absent, le revenu
+# s'arrete sans message ; `llms*.txt` sont les documents destines aux agents ; le fichier au
+# nom hexadecimal est un jeton de verification de propriete de domaine, public par nature
+# (il est servi a tout le monde) et inutile s'il n'est pas deploye.
+!apps/azalee/public/*.txt
+
 # ATTENTION : `*.txt` ci-dessus ignorait AUSSI tous les CMakeLists.txt — c'est-a-dire
 # l'integralite de la chaine de build C++ (13 fichiers : racine, src/, cli/, tests/,
 # ffi/, decomp/, driver/, third_party/). Ils sont re-inclus explicitement.

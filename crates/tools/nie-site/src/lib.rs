@@ -25,6 +25,7 @@ pub mod app;
 pub mod config;
 pub mod dataset;
 pub mod error;
+pub mod i18n;
 pub mod routes;
 pub mod state;
 pub mod vfs_index;
@@ -32,6 +33,7 @@ pub mod vfs_index;
 pub use app::routeur;
 pub use config::Config;
 pub use error::ErreurSite;
+pub use i18n::Langue;
 pub use state::EtatSite;
 
 /// Version de la crate, telle qu'annoncée par `/healthz` et `/api/v1/health`.

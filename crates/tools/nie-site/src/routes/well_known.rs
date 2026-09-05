@@ -3,18 +3,26 @@
 //! Les trois sont rendus par `askama` depuis l'origine configurée : rien n'est codé en dur, un
 //! déploiement sur une autre origine (preview, machine de développement) rend des documents
 //! cohérents avec lui-même.
+//!
+//! ## Le plan de site est trilingue
+//!
+//! Chaque route de navigation y figure **trois fois** — une par langue — et chaque entrée porte
+//! le groupe `xhtml:link` complet de ses traductions. C'est la seule forme qu'un moteur sait
+//! lire pour associer trois URL au même contenu depuis un plan de site, et elle double le
+//! `hreflang` du `<head>` sans le contredire : les deux se calculent depuis la même route nue.
 
 use askama::Template;
 use axum::extract::State;
 use axum::http::{StatusCode, header};
 use axum::response::{IntoResponse, Response};
 
+use crate::i18n::{Alternative, Langue, alternatives};
 use crate::state::EtatSite;
 
-/// Une URL du plan de site.
+/// Une route de navigation publiée au plan de site, avant traduction.
 #[derive(Debug, Clone)]
 pub struct UrlPlan {
-    /// Chemin absolu, commençant par `/`.
+    /// Chemin absolu **nu**, sans préfixe de langue, commençant par `/`.
     pub chemin: &'static str,
     /// Fréquence de mise à jour annoncée.
     pub frequence: &'static str,
@@ -32,9 +40,108 @@ pub const PLAN: [UrlPlan; 5] = [
     UrlPlan { chemin: "/videos", frequence: "weekly", priorite: "0.6" },
 ];
 
+/// Une entrée rendue du plan : son URL absolue et le groupe de ses traductions.
+pub struct EntreePlan {
+    /// URL absolue de cette version.
+    pub loc: String,
+    /// Fréquence annoncée.
+    pub frequence: &'static str,
+    /// Priorité annoncée.
+    pub priorite: &'static str,
+    /// Les trois langues plus `x-default`, identiques pour les trois entrées d'une route.
+    pub alternatives: Vec<Alternative>,
+}
+
+/// Développe [`PLAN`] dans les trois langues.
+///
+/// L'ordre est *route par route*, langues groupées : les trois versions d'une même page se
+/// suivent, ce qui rend le document lisible et le diff d'une modification local.
+#[must_use]
+pub fn plan_trilingue(origine: &str) -> Vec<EntreePlan> {
+    let mut entrees = Vec::with_capacity(PLAN.len() * Langue::TOUTES.len());
+    for u in &PLAN {
+        let groupe = alternatives(origine, u.chemin);
+        for langue in Langue::TOUTES {
+            entrees.push(EntreePlan {
+                loc: langue.url(origine, u.chemin),
+                frequence: u.frequence,
+                priorite: u.priorite,
+                alternatives: groupe.clone(),
+            });
+        }
+    }
+    entrees
+}
+
+/// Les chemins que `robots.txt` autorise explicitement — les routes, dans les trois langues.
+///
+/// Sans eux, `/en/textures` n'est couvert par aucun `Allow` : il resterait indexable (rien ne
+/// l'interdit), mais l'intention du document ne se lirait pas, et un `Disallow` ajouté plus tard
+/// l'emporterait sans qu'on y pense.
+#[must_use]
+pub fn chemins_autorises() -> Vec<String> {
+    let mut v = Vec::new();
+    for u in &PLAN {
+        for langue in Langue::TOUTES {
+            let chemin = langue.url("", u.chemin);
+            // La racine de chaque langue : `/` est déjà couvert par `Allow: /$`.
+            if chemin.is_empty() {
+                continue;
+            }
+            v.push(chemin);
+        }
+    }
+    v
+}
+
+/// Les agents auxquels `robots.txt` ouvre l'API JSON.
+///
+/// Un agent qui vient lire des données n'a rien à faire dans le HTML : l'API rend la même chose
+/// déjà structurée, paginée et bornée. Les nommer un par un plutôt que d'ouvrir `/api/` à tout
+/// le monde garde le budget de crawl des moteurs de recherche sur les pages, qui est ce qu'ils
+/// savent indexer.
+///
+/// La liste est **ouverte, pas restrictive** : un agent absent d'ici garde l'accès complet aux
+/// pages par la règle générale. Elle ne bloque personne — elle donne un raccourci.
+pub const AGENTS_IA: [&str; 19] = [
+    "GPTBot",
+    "ChatGPT-User",
+    "OAI-SearchBot",
+    "ClaudeBot",
+    "Claude-Web",
+    "Claude-SearchBot",
+    "anthropic-ai",
+    "Google-Extended",
+    "PerplexityBot",
+    "Perplexity-User",
+    "CCBot",
+    "Bytespider",
+    "Amazonbot",
+    "Applebot",
+    "Applebot-Extended",
+    "cohere-ai",
+    "FacebookBot",
+    "Meta-ExternalAgent",
+    "MistralAI-User",
+];
+
 #[derive(Template)]
 #[template(path = "robots.txt")]
 struct Robots<'a> {
+    origine: &'a str,
+    chemins: Vec<String>,
+    agents: &'a [&'a str],
+}
+
+#[derive(Template)]
+#[template(path = "llms.txt")]
+struct Llms<'a> {
+    origine: &'a str,
+}
+
+#[derive(Template)]
+#[template(path = "llms-full.txt")]
+struct LlmsComplet<'a> {
     origine: &'a str,
 }
 
@@ -48,8 +155,8 @@ struct Securite<'a> {
 #[derive(Template)]
 #[template(path = "sitemap.xml")]
 struct Plan<'a> {
-    origine: &'a str,
-    urls: &'a [UrlPlan],
+    urls: &'a [EntreePlan],
+    lastmod: Option<String>,
 }
 
 fn texte(corps: Result<String, askama::Error>, type_contenu: &'static str) -> Response {
@@ -72,7 +179,15 @@ fn texte(corps: Result<String, askama::Error>, type_contenu: &'static str) -> Re
 
 /// `/robots.txt`.
 pub async fn robots(State(etat): State<EtatSite>) -> Response {
-    texte(Robots { origine: &etat.config.origine }.render(), "text/plain; charset=utf-8")
+    texte(
+        Robots {
+            origine: &etat.config.origine,
+            chemins: chemins_autorises(),
+            agents: &AGENTS_IA,
+        }
+        .render(),
+        "text/plain; charset=utf-8",
+    )
 }
 
 /// `/.well-known/security.txt`.
@@ -87,12 +202,39 @@ pub async fn security(State(etat): State<EtatSite>) -> Response {
     )
 }
 
+/// `/llms.txt` — l'index, au format de <https://llmstxt.org>.
+///
+/// Servi en `text/plain` : c'est ce que la convention demande, et c'est ce qu'un agent obtient
+/// sans négocier. Le document est court **par construction** — il oriente, il ne documente pas.
+pub async fn llms(State(etat): State<EtatSite>) -> Response {
+    texte(Llms { origine: &etat.config.origine }.render(), "text/plain; charset=utf-8")
+}
+
+/// `/llms-full.txt` — la référence complète : conventions d'URL, formats, limites, exemples.
+pub async fn llms_complet(State(etat): State<EtatSite>) -> Response {
+    texte(LlmsComplet { origine: &etat.config.origine }.render(), "text/plain; charset=utf-8")
+}
+
 /// `/sitemap.xml`.
 pub async fn sitemap(State(etat): State<EtatSite>) -> Response {
+    let urls = plan_trilingue(&etat.config.origine);
     texte(
-        Plan { origine: &etat.config.origine, urls: &PLAN }.render(),
+        Plan { urls: &urls, lastmod: lastmod_du_gisement(&etat.config.db) }.render(),
         "application/xml; charset=utf-8",
     )
+}
+
+/// Date de dernière modification annoncée : celle du gisement, pas celle du démarrage.
+///
+/// Un `lastmod` posé à `maintenant()` à chaque requête est un mensonge que les moteurs
+/// apprennent à ignorer — et une fois ignoré, il ne revient pas. Quand le fichier est
+/// introuvable, l'attribut est **omis** : ne rien dire vaut mieux que dire faux.
+fn lastmod_du_gisement(db: &std::path::Path) -> Option<String> {
+    let modifie = std::fs::metadata(db).ok()?.modified().ok()?;
+    let secondes = modifie.duration_since(std::time::UNIX_EPOCH).ok()?.as_secs();
+    // Le jour suffit : un plan de site n'a pas de sémantique à la seconde, et une date nue
+    // évite d'annoncer une fraîcheur que le contenu n'a pas.
+    Some(iso8601_utc(secondes).chars().take(10).collect())
 }
 
 /// Horodatage ISO 8601 UTC, un an après maintenant, sans dépendance de calendrier.
@@ -134,17 +276,104 @@ mod tests {
     #[test]
     fn plan_complet() {
         assert_eq!(PLAN.len(), 5);
-        let rendu = Plan { origine: "https://aphrody.com", urls: &PLAN }.render().unwrap();
-        assert_eq!(rendu.matches("<url>").count(), 5);
+        let urls = plan_trilingue("https://aphrody.com");
+        assert_eq!(urls.len(), 15, "5 routes x 3 langues");
+        let rendu = Plan { urls: &urls, lastmod: Some("2026-09-05".to_owned()) }.render().unwrap();
+        assert_eq!(rendu.matches("<url>").count(), 15);
         assert!(rendu.starts_with("<?xml"));
         assert!(rendu.contains("https://aphrody.com/textures"));
+        assert!(rendu.contains("https://aphrody.com/ja/textures"));
+        assert!(rendu.contains("https://aphrody.com/en/videos"));
+        // Chaque entrée porte son groupe complet : 15 x 4 liens alternatifs.
+        assert_eq!(rendu.matches("xhtml:link").count(), 60);
+        assert_eq!(rendu.matches("hreflang=\"x-default\"").count(), 15);
+        assert_eq!(rendu.matches("<lastmod>2026-09-05</lastmod>").count(), 15);
+        // L'espace de noms xhtml doit être déclaré, sinon les `xhtml:link` sont du bruit.
+        assert!(rendu.contains("xmlns:xhtml=\"http://www.w3.org/1999/xhtml\""));
+    }
+
+    #[test]
+    fn un_gisement_absent_n_invente_pas_de_date() {
+        let urls = plan_trilingue("https://aphrody.com");
+        let rendu = Plan { urls: &urls, lastmod: None }.render().unwrap();
+        assert!(!rendu.contains("<lastmod>"), "mieux vaut rien que faux");
+        assert_eq!(lastmod_du_gisement(std::path::Path::new("/nonexistent/x.sqlite")), None);
     }
 
     #[test]
     fn robots_pointe_le_plan() {
-        let r = Robots { origine: "https://aphrody.com" }.render().unwrap();
+        let r = Robots {
+            origine: "https://aphrody.com",
+            chemins: chemins_autorises(),
+            agents: &AGENTS_IA,
+        }
+        .render()
+        .unwrap();
         assert!(r.contains("Sitemap: https://aphrody.com/sitemap.xml"));
-        assert_eq!(r.matches("Disallow:").count(), 5);
+        // 9 : les 5 du regime general, plus les 4 que le regime des agents repete. Un
+        // `Disallow` pose dans un bloc ne vaut QUE pour ce bloc — l'oublier dans le second
+        // ouvrirait les 255 000 fichiers aux agents.
+        assert_eq!(r.matches("Disallow:").count(), 9);
+    }
+
+    #[test]
+    fn robots_autorise_les_trois_langues() {
+        let chemins = chemins_autorises();
+        // 5 routes x 3 langues, moins la racine française déjà couverte par `Allow: /$`.
+        assert_eq!(chemins.len(), 14);
+        for attendu in ["/textures", "/en/textures", "/ja/textures", "/en", "/ja"] {
+            assert!(chemins.iter().any(|c| c == attendu), "{attendu} non autorisé");
+        }
+        let r = Robots { origine: "https://aphrody.com", chemins, agents: &AGENTS_IA }
+            .render()
+            .unwrap();
+        // 20 : 14 chemins + `/$` + `/llms.txt` pour le regime general, puis les 4 du regime
+        // des agents (`/`, `/llms.txt`, `/llms-full.txt`, `/api/v1/`).
+        assert_eq!(r.matches("Allow: ").count(), 20, "les deux regimes, chemin par chemin");
+        assert!(r.contains("Allow: /$"));
+    }
+
+    #[test]
+    fn les_agents_ont_leur_propre_regime() {
+        let r = Robots {
+            origine: "https://aphrody.com",
+            chemins: chemins_autorises(),
+            agents: &AGENTS_IA,
+        }
+        .render()
+        .unwrap();
+        // Un `User-agent:` par agent, plus le bloc general.
+        assert_eq!(r.matches("User-agent:").count(), AGENTS_IA.len() + 1);
+        for agent in ["GPTBot", "ClaudeBot", "PerplexityBot", "Google-Extended"] {
+            assert!(r.contains(&format!("User-agent: {agent}")), "{agent} absent");
+        }
+        // Le regime general FERME l'API, celui des agents l'OUVRE : les deux doivent coexister.
+        assert!(r.contains("Disallow: /api/"), "l'API reste fermee aux moteurs");
+        assert!(r.contains("Allow: /api/v1/"), "l'API est ouverte aux agents");
+        // Les 255 000 fichiers restent hors de portee des deux regimes.
+        assert_eq!(r.matches("Disallow: /f/").count(), 2);
+        assert_eq!(r.matches("Disallow: /b/").count(), 2);
+        assert!(r.contains("Allow: /llms.txt"));
+    }
+
+    #[test]
+    fn les_documents_pour_agents_citent_l_origine_configuree() {
+        let court = Llms { origine: "https://exemple.test" }.render().unwrap();
+        let complet = LlmsComplet { origine: "https://exemple.test" }.render().unwrap();
+        // Aucune origine en dur : un deploiement de preview doit se decrire lui-meme.
+        for doc in [&court, &complet] {
+            assert!(!doc.contains("aphrody.com"), "origine codee en dur");
+            assert!(doc.contains("https://exemple.test"));
+        }
+        assert!(court.starts_with("# Aphrody"), "llms.txt commence par son titre");
+        assert!(court.contains("> "), "llms.txt porte son resume");
+        // Le court oriente vers le complet, sinon personne ne le trouve.
+        assert!(court.contains("/llms-full.txt"));
+        // Le complet dit les trois langues et les deux espaces de fichiers.
+        for attendu in ["/en/", "/ja/", "/f/", "/b/", "per_page"] {
+            assert!(complet.contains(attendu), "{attendu} absent de llms-full.txt");
+        }
+        assert!(complet.len() > court.len(), "le complet doit etre plus complet");
     }
 
     #[test]

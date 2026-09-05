@@ -1,0 +1,84 @@
+# Aphrody — full reference for automated clients
+
+> Everything an agent needs to read this site without guessing a URL. Every convention below is
+> enforced by the server, not by habit: a wrong shape returns an error rather than an empty page.
+
+Origin: {{ origine }}
+
+## 1. Languages
+
+One origin, three languages, distinguished by the first path segment.
+
+| Language | Prefix       | Example                          |
+|----------|--------------|----------------------------------|
+| French   | *(none)*     | `{{ origine }}/textures`         |
+| English  | `/en`        | `{{ origine }}/en/textures`      |
+| Japanese | `/ja`        | `{{ origine }}/ja/textures`      |
+
+`/fr/...` is understood but answers `308` to the unprefixed form — the French version has one
+canonical URL, not two. Every page declares the full `hreflang` group, including `x-default`,
+which points at the French root.
+
+The language changes the interface text. It does not change which files exist.
+
+## 2. JSON API
+
+Base: `{{ origine }}/api/v1`
+
+| Endpoint            | Returns                                                       |
+|---------------------|---------------------------------------------------------------|
+| `/health`           | service name, version, and which capabilities are live         |
+| `/chara`            | characters, with `name_fr`, `name_en`, `name_ja`               |
+| `/{catalogue}`      | files of one catalogue: `textures`, `modeles`, `sons`, `videos` |
+| `/episodes`         | the animated series catalogue                                  |
+
+Pagination, on every list: `?page=` (1-based) and `?per_page=` (default 50, maximum 200). A
+value above the maximum is clamped, not rejected. Each response carries the total count, so the
+number of pages is known from the first request.
+
+`/health` is the honest starting point: a capability may be absent on a given instance (the
+virtual filesystem takes time to index at startup), and the field says so instead of letting a
+later request fail without explanation.
+
+## 3. Files, by their in-game path
+
+    {{ origine }}/f/<path>      one file
+    {{ origine }}/b/<prefix>    one directory listing
+
+The path is a **segment**, never a query parameter, and the game's extension is preserved. This
+is deliberate: the identifier of a file here is the identifier the game uses, so a path found in
+a decompiled resource can be pasted directly.
+
+Notes that save a round trip:
+
+- Roughly 255 000 files exist. Neither `robots.txt` nor the sitemap lists them.
+- `/b/` with no prefix lists the roots.
+- Responses carry a `blake3` ETag; `If-None-Match` is honoured and answers `304`.
+- Files are cached for a day and revalidate in the background.
+- A path that escapes the tree is refused, not normalised.
+
+## 4. Conversion
+
+`/assets/...` proxies the decoding service: textures become PNG, audio becomes playable, models
+become exportable. Conversion is bounded — a maximum size, a timeout, and a limited number of
+simultaneous conversions. When the upstream is down the site still answers, and says which
+capability is missing rather than returning an empty result.
+
+## 5. Response conventions
+
+- Errors are JSON under `/api`, `/assets/`, `/f/` and `/b/`; HTML elsewhere.
+- Every response carries the same five security headers, including a content security policy.
+- `HEAD` answers exactly like `GET`, without a body. Any other method answers `405`.
+- Requests are cut off after 15 seconds.
+
+## 6. What is not here
+
+- No account, no session, no write path. The whole site is read-only.
+- No search endpoint yet; select through a catalogue and paginate.
+- No bulk archive. Fetch files individually, or use the repository tooling.
+
+## 7. Provenance
+
+The data is decoded from the game's own files rather than transcribed from a wiki. Names come
+from the game's text tables, which carry French, English and Japanese for the same identifier.
+Where a field is missing, it is reported as missing rather than filled with a guess.

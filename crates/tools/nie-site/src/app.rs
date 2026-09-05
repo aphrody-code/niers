@@ -58,9 +58,11 @@ pub const DELAI_REQUETE: Duration = Duration::from_secs(15);
 
 /// Les routes exposées, dans l'ordre où elles sont déclarées. Sert de contrat vérifiable : les
 /// tests comptent cette liste et interrogent chacune de ses entrées.
-pub const ROUTES: [&str; 13] = [
+pub const ROUTES: [&str; 15] = [
     "/healthz",
     "/robots.txt",
+    "/llms.txt",
+    "/llms-full.txt",
     "/.well-known/security.txt",
     "/sitemap.xml",
     "/api/v1/health",
@@ -82,6 +84,8 @@ pub fn routeur(etat: EtatSite) -> Router {
     Router::new()
         .route("/healthz", get(crate::routes::health::healthz))
         .route("/robots.txt", get(crate::routes::well_known::robots))
+        .route("/llms.txt", get(crate::routes::well_known::llms))
+        .route("/llms-full.txt", get(crate::routes::well_known::llms_complet))
         .route("/.well-known/security.txt", get(crate::routes::well_known::security))
         .route("/sitemap.xml", get(crate::routes::well_known::sitemap))
         .route("/api/v1/health", get(crate::routes::api_v1::health))
@@ -140,7 +144,7 @@ mod tests {
 
     #[test]
     fn contrat_de_routes() {
-        assert_eq!(ROUTES.len(), 13);
+        assert_eq!(ROUTES.len(), 15);
         for r in ROUTES {
             assert!(r.starts_with('/'), "{r}");
             assert!(!r.contains(":{"), "syntaxe axum 0.7 interdite: {r}");

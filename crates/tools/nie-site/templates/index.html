@@ -1,28 +1,56 @@
 <!doctype html>
-<html lang="fr">
+<html lang="{{ lang }}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{ titre }}</title>
 <meta name="description" content="{{ description }}">
 <link rel="canonical" href="{{ url }}">
-<meta property="og:type" content="{{ type_og }}">
+{# Les trois langues plus `x-default`, sur CHAQUE page et calcules depuis la meme route nue :
+   c'est ce qui rend le groupe reciproque. Un groupe non reciproque est ignore en entier, et
+   rien ne le signale. `ja` est le code de langue ; `jp` est un code pays et serait ignore. #}
+{% for a in alternatives %}<link rel="alternate" hreflang="{{ a.hreflang }}" href="{{ a.url }}">
+{% endfor %}<meta property="og:type" content="{{ type_og }}">
 <meta property="og:site_name" content="Aphrody">
-<meta property="og:locale" content="fr_FR">
-<meta property="og:title" content="{{ titre }}">
+<meta property="og:locale" content="{{ og_locale }}">
+{% for l in og_locales_alternes %}<meta property="og:locale:alternate" content="{{ l }}">
+{% endfor %}<meta property="og:title" content="{{ titre }}">
 <meta property="og:description" content="{{ description }}">
 <meta property="og:url" content="{{ url }}">
 {% if let Some(img) = image %}<meta property="og:image" content="{{ img }}">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="{{ img }}">
 {% else %}<meta name="twitter:card" content="summary">
-{% endif %}{# Palette MESUREE du menu principal du jeu (docs/stack/web-platform.md) : la DA
+{% endif %}<meta name="twitter:title" content="{{ titre }}">
+<meta name="twitter:description" content="{{ description }}">
+{# Palette MESUREE du menu principal du jeu (docs/stack/web-platform.md) : la DA
    d'Aphrody est celle de nie, pas Material Design. `theme-color` n'accepte pas de variable CSS. #}
 <meta name="theme-color" content="{{ couleur_theme }}">
 {% if let Some(css) = feuille %}<link rel="stylesheet" href="{{ css }}">
-{% endif %}</head>
+{% endif %}<script type="application/ld+json">{{ jsonld|safe }}</script>
+</head>
 <body>
-<div id="racine" data-route="{{ route }}"></div>
+{# Le contenu ci-dessous vit DANS `#racine` : React le remplace au montage. Un visiteur voit
+   l'application, un robot — ou un apercu Discord, Slack, Twitter, qui n'executent aucun
+   JavaScript — lit un titre, une description et une navigation reelle. #}
+<div id="racine" data-route="{{ route }}" data-langue="{{ lang }}">
+<main>
+<h1>{{ titre }}</h1>
+<p>{{ description }}</p>
+<nav aria-label="{{ libelle_catalogues }}">
+<h2>{{ libelle_catalogues }}</h2>
+<ul>
+{% for c in catalogues %}<li><a href="{{ c.href }}">{{ c.libelle }}</a></li>
+{% endfor %}</ul>
+</nav>
+<nav aria-label="{{ libelle_langues }}">
+<h2>{{ libelle_langues }}</h2>
+<ul>
+{% for l in langues %}<li><a href="{{ l.href }}" hreflang="{{ l.hreflang }}" lang="{{ l.hreflang }}">{{ l.libelle }}</a></li>
+{% endfor %}</ul>
+</nav>
+</main>
+</div>
 {% if let Some(js) = script %}<script type="module" src="{{ js }}"></script>
-{% endif %}<noscript>Aphrody a besoin de JavaScript pour afficher les assets du jeu. Les données restent accessibles sous /api/v1/ et /f/.</noscript>
-</body>
+{% endif %}</body>
 </html>

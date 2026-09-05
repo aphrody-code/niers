@@ -8,7 +8,8 @@
 		"dev": "vite",
 		"build": "tsc -b && vite build && bun --bun scripts/precompresser.ts",
 		"preview": "vite preview",
-		"typecheck": "bunx tsc --noEmit"
+		"typecheck": "bunx tsc --noEmit",
+		"test": "bun test src/"
 	},
 	"dependencies": {
 		"@niers/game": "workspace:*",
@@ -18,6 +19,7 @@
 		"@niers/inacord-ui": "workspace:*"
 	},
 	"devDependencies": {
+		"@types/bun": "catalog:",
 		"@types/react": "catalog:",
 		"@types/react-dom": "catalog:",
 		"@vitejs/plugin-react": "^4",

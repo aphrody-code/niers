@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-{% for u in urls %}  <url><loc>{{ origine }}{{ u.chemin }}</loc><changefreq>{{ u.frequence }}</changefreq><priority>{{ u.priorite }}</priority></url>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+{% for u in urls %}  <url><loc>{{ u.loc }}</loc>{% if let Some(lm) = lastmod %}<lastmod>{{ lm }}</lastmod>{% endif %}<changefreq>{{ u.frequence }}</changefreq><priority>{{ u.priorite }}</priority>
+{% for a in u.alternatives %}    <xhtml:link rel="alternate" hreflang="{{ a.hreflang }}" href="{{ a.url }}"/>
+{% endfor %}  </url>
 {% endfor %}</urlset>

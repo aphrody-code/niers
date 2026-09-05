@@ -1,0 +1,13 @@
+/* TEAM */
+
+Développeur & fondateur : yoyo
+X / Twitter : https://x.com/yoyo__goat
+Rôle : conception, développement full-stack, architecture
+
+/* SITE */
+
+Nom : Azalée — Wiki Inazuma Eleven: Victory Road
+URL : https://azalee.rosegriffon.fr
+Association : Rose Griffon (https://rosegriffon.fr)
+Stack : Next.js, React, Bun, TypeScript
+Langue : fr-FR

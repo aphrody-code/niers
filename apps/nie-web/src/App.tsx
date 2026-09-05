@@ -17,6 +17,7 @@ import "@niers/inacord-ui/shell/game-tokens.css";
 import { useEffect, useMemo, useState } from "react";
 import { Catalogue } from "./pages/Catalogue";
 import { Explorateur } from "./pages/Explorateur";
+import { cheminPourEntree, entreeDemandee, separerLangue } from "./routage";
 
 /**
  * Coquille d'Aphrody.
@@ -61,26 +62,43 @@ function Accueil() {
 	// navigateur quitte le site au lieu de revenir a la vue precedente, et un rechargement perd
 	// ou l'on etait. Une interface qui ne se laisse pas mettre en signet oblige a refaire le
 	// chemin a chaque visite.
+	// Le prefixe de langue de l'URL courante. Il ne change pas pendant la session : changer de
+	// langue est une navigation entiere, servie par nie-site, pas un changement d'etat local.
+	const prefixe = useMemo(() => separerLangue(window.location.pathname).prefixe, []);
+
 	const [vue, setVueEtat] = useState<VueCatalogue | typeof EXPLORATEUR>(() => {
-		const demandee = new URLSearchParams(window.location.search).get("vue");
-		return (ENTREES as readonly string[]).includes(demandee ?? "")
-			? (demandee as VueCatalogue | typeof EXPLORATEUR)
-			: VUES[0];
+		const routeServeur = document.getElementById("racine")?.dataset.route;
+		const demandee = entreeDemandee(ENTREES as readonly string[], window.location, routeServeur);
+		return (demandee as VueCatalogue | typeof EXPLORATEUR | null) ?? VUES[0];
 	});
+
+	// Une ancienne URL `?vue=` doit continuer a fonctionner, mais pas a subsister : elle est
+	// reecrite vers la forme canonique en `replaceState`, donc sans ajouter d'entree
+	// d'historique — sinon le bouton « precedent » ramenerait a la meme page.
+	useEffect(() => {
+		if (!new URLSearchParams(window.location.search).get("vue")) {
+			return;
+		}
+		const url = new URL(window.location.href);
+		url.searchParams.delete("vue");
+		url.pathname = cheminPourEntree(prefixe, vue);
+		window.history.replaceState({ vue }, "", url);
+	}, [prefixe, vue]);
 
 	/** Change de vue ET d'URL, sans recharger la page. */
 	const setVue = (suivante: VueCatalogue | typeof EXPLORATEUR) => {
 		setVueEtat(suivante);
 		const url = new URL(window.location.href);
-		url.searchParams.set("vue", suivante);
+		url.pathname = cheminPourEntree(prefixe, suivante);
+		url.searchParams.delete("vue");
 		window.history.pushState({ vue: suivante }, "", url);
 	};
 
 	// Le bouton « precedent » doit ramener a la vue precedente, pas sortir du site.
 	useEffect(() => {
 		const surRetour = () => {
-			const demandee = new URLSearchParams(window.location.search).get("vue");
-			if ((ENTREES as readonly string[]).includes(demandee ?? "")) {
+			const demandee = entreeDemandee(ENTREES as readonly string[], window.location);
+			if (demandee) {
 				setVueEtat(demandee as VueCatalogue | typeof EXPLORATEUR);
 			}
 		};

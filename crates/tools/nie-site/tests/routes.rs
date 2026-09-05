@@ -77,16 +77,18 @@ fn json(corps: &[u8]) -> serde_json::Value {
 }
 
 #[tokio::test]
-async fn les_treize_routes_repondent() {
+async fn les_quinze_routes_repondent() {
     let etat = etat();
     // Une instance concrète par route déclarée, dans le même ordre que `ROUTES`.
-    let instances: [(&str, &[u16]); 13] = [
+    let instances: [(&str, &[u16]); 15] = [
         ("/healthz", &[200]),
         ("/robots.txt", &[200]),
         ("/.well-known/security.txt", &[200]),
         ("/sitemap.xml", &[200]),
         ("/api/v1/health", &[200]),
         ("/api/v1/chara", &[503]), // miroir absent : capacité dégradée, pas une panne
+        ("/llms.txt", &[200]),
+        ("/llms-full.txt", &[200]),
         ("/api/v1/textures", &[200]),
         ("/f/data/dx11/menu/title/a.g4tx", &[503]), // index sans contenu
         ("/b", &[200]),
@@ -98,7 +100,7 @@ async fn les_treize_routes_repondent() {
         ("/api/v1/episodes", &[503]),
         ("/", &[200]),
     ];
-    assert_eq!(ROUTES.len(), 13);
+    assert_eq!(ROUTES.len(), 15);
     assert_eq!(instances.len(), ROUTES.len(), "une instance par route declaree");
     let mut vus = 0;
     for (uri, attendus) in instances {
@@ -110,7 +112,7 @@ async fn les_treize_routes_repondent() {
         );
         vus += 1;
     }
-    assert_eq!(vus, 13);
+    assert_eq!(vus, 15);
 }
 
 #[tokio::test]
@@ -153,7 +155,22 @@ async fn documents_well_known() {
     assert_eq!(entetes[header::CONTENT_TYPE], "text/plain; charset=utf-8");
     let texte = String::from_utf8(corps).unwrap();
     assert!(texte.contains("Sitemap: https://exemple.test/sitemap.xml"));
-    assert_eq!(texte.matches("Disallow:").count(), 5);
+    // 9 : 5 pour le regime general, 4 repetes pour celui des agents.
+    assert_eq!(texte.matches("Disallow:").count(), 9);
+    assert!(texte.contains("User-agent: GPTBot"), "les agents ont leur bloc");
+    assert!(texte.contains("Allow: /api/v1/"), "l'API leur est ouverte");
+
+    // Les deux documents destines aux agents repondent, en texte brut, et se citent l'origine
+    // configuree — pas `aphrody.com` en dur, sinon une preview oriente vers la production.
+    for (uri, debut) in [("/llms.txt", "# Aphrody"), ("/llms-full.txt", "# Aphrody")] {
+        let (statut, entetes, corps) = reponse(&etat, uri).await;
+        assert_eq!(statut, StatusCode::OK, "{uri}");
+        assert_eq!(entetes[header::CONTENT_TYPE], "text/plain; charset=utf-8", "{uri}");
+        let doc = String::from_utf8(corps).unwrap();
+        assert!(doc.starts_with(debut), "{uri} ne commence pas par son titre");
+        assert!(doc.contains("https://exemple.test"), "{uri} : origine");
+        assert!(!doc.contains("aphrody.com"), "{uri} : origine codee en dur");
+    }
 
     let (statut, _, corps) = reponse(&etat, "/.well-known/security.txt").await;
     assert_eq!(statut, StatusCode::OK);
@@ -167,8 +184,20 @@ async fn documents_well_known() {
     assert_eq!(entetes[header::CONTENT_TYPE], "application/xml; charset=utf-8");
     let texte = String::from_utf8(corps).unwrap();
     assert!(texte.starts_with("<?xml"));
-    assert_eq!(texte.matches("<url>").count(), 5);
-    assert_eq!(texte.matches("https://exemple.test/").count(), 5);
+    // 5 routes x 3 langues, et chaque entree porte le groupe complet de ses traductions.
+    assert_eq!(texte.matches("<url>").count(), 15);
+    assert_eq!(texte.matches("<loc>").count(), 15);
+    assert_eq!(texte.matches("xhtml:link").count(), 60, "4 alternates par entree");
+    assert_eq!(texte.matches(r#"hreflang="x-default""#).count(), 15);
+    // Sans la declaration de l'espace de noms, les `xhtml:link` ne sont que du bruit.
+    assert!(texte.contains(r#"xmlns:xhtml="http://www.w3.org/1999/xhtml""#));
+    for attendu in [
+        "<loc>https://exemple.test/textures</loc>",
+        "<loc>https://exemple.test/en/textures</loc>",
+        "<loc>https://exemple.test/ja/textures</loc>",
+    ] {
+        assert!(texte.contains(attendu), "{attendu} absent du plan");
+    }
 }
 
 #[tokio::test]
@@ -404,8 +433,11 @@ async fn la_coquille_porte_les_balises_og_de_la_route() {
     assert_eq!(statut, StatusCode::OK);
     assert_eq!(entetes[header::CONTENT_TYPE], "text/html; charset=utf-8");
     let html = String::from_utf8(corps).unwrap();
-    assert_eq!(html.matches("<meta property=\"og:").count(), 6, "og: sans vignette");
+    // 8 sans vignette : type, site_name, locale, 2 locale:alternate, title, description, url.
+    assert_eq!(html.matches("<meta property=\"og:").count(), 8, "og: sans vignette");
+    assert_eq!(html.matches("og:locale:alternate").count(), 2, "les deux autres langues");
     assert!(html.contains("data-route=\"/\""));
+    assert!(html.contains("data-langue=\"fr\""));
 
     let (statut, _, corps) = reponse(&etat, "/textures").await;
     assert_eq!(statut, StatusCode::OK, "route du bundle : la coquille repond");
@@ -413,6 +445,32 @@ async fn la_coquille_porte_les_balises_og_de_la_route() {
     assert!(html.contains("<title>Textures — Aphrody</title>"));
     assert!(html.contains("og:url\" content=\"https://aphrody.com/textures\""));
     assert!(html.contains("data-route=\"/textures\""));
+
+    // La meme route dans les deux autres langues : titre traduit, canonical prefixe, et le
+    // MEME groupe hreflang des trois cotes — c'est la reciprocite qui rend le groupe valide.
+    for (chemin, titre, lang) in [
+        ("/en/textures", "Textures — Aphrody", "en"),
+        ("/ja/textures", "\u{30c6}\u{30af}\u{30b9}\u{30c1}\u{30e3} — Aphrody", "ja"),
+    ] {
+        let (statut, _, corps) = reponse(&etat, chemin).await;
+        assert_eq!(statut, StatusCode::OK, "{chemin}");
+        let html = String::from_utf8(corps).unwrap();
+        assert!(html.contains(&format!("<html lang=\"{lang}\">")), "{chemin} : lang");
+        assert!(html.contains(&format!("<title>{titre}</title>")), "{chemin} : titre");
+        assert!(
+            html.contains(&format!("rel=\"canonical\" href=\"https://aphrody.com{chemin}\"")),
+            "{chemin} : canonical"
+        );
+        assert_eq!(html.matches("rel=\"alternate\"").count(), 4, "{chemin} : hreflang");
+        assert!(html.contains("hreflang=\"x-default\""), "{chemin} : x-default");
+    }
+
+    // `/fr/...` est compris mais renvoye vers la forme canonique, sans prefixe.
+    let (statut, entetes, _) = reponse(&etat, "/fr/textures").await;
+    // 308 et non 301 : la redirection preserve la methode, et un 301 se grave dans le cache
+    // du navigateur de facon quasi irreversible (meme choix qu'`apps/azalee/next.config.ts`).
+    assert_eq!(statut, StatusCode::PERMANENT_REDIRECT, "/fr/ n'est pas canonique");
+    assert_eq!(entetes[header::LOCATION], "/textures");
 }
 
 #[tokio::test]
@@ -504,7 +562,9 @@ async fn coquille_charge_le_bundle() {
         let feuille = format!(r#"<link rel="stylesheet" href="/{dossier}/index-RXLrxaJS.css">"#);
         assert!(html.contains(&script), "bundle dans {dossier}/ non charge : {html}");
         assert!(html.contains(&feuille), "feuille de {dossier}/ non chargee");
-        assert_eq!(html.matches("<script").count(), 1, "un seul point d'entree attendu");
+        // Deux `<script>` : les donnees structurees, puis le point d'entree du bundle.
+        assert_eq!(html.matches("<script").count(), 2, "json-ld + un seul point d'entree");
+        assert_eq!(html.matches("<script type=\"module\"").count(), 1);
 
         // Et les fichiers annoncés doivent réellement être servis, empreintés donc immuables.
         let (statut, entetes, _) = reponse(&etat, &format!("/{dossier}/index-RXLrxaJS.js")).await;
@@ -520,6 +580,14 @@ async fn coquille_charge_le_bundle() {
     let (statut, _, corps) = reponse(&etat, "/").await;
     assert_eq!(statut, StatusCode::OK);
     let html = String::from_utf8(corps).unwrap();
-    assert_eq!(html.matches("<script").count(), 0);
-    assert!(html.contains("<noscript>"));
+    // Seul subsiste le bloc de donnees structurees : aucun module a charger.
+    assert_eq!(html.matches("<script type=\"module\"").count(), 0);
+    assert_eq!(html.matches("<script").count(), 1, "json-ld seul");
+    // Le `<noscript>` a cede la place a un contenu REEL : sans bundle comme sans JavaScript,
+    // la page porte son titre, sa description et sa navigation.
+    assert!(html.contains("<main>"));
+    assert!(html.contains("<h1>"));
+    for segment in ["textures", "modeles", "sons", "videos"] {
+        assert!(html.contains(&format!("href=\"/{segment}\"")), "lien /{segment} absent");
+    }
 }

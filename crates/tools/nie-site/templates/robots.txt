@@ -1,0 +1,29 @@
+# Un moteur de recherche indexe des PAGES ; un agent lit des DONNEES. Les deux ne veulent pas
+# la meme chose du meme site, et leur servir la meme regle dessert les deux : le moteur gaspille
+# son budget de crawl sur du JSON, l'agent extrait peniblement d'un HTML ce que l'API rend deja
+# structure. D'ou deux regimes distincts ci-dessous.
+
+User-agent: *
+Allow: /$
+{% for c in chemins %}Allow: {{ c }}
+{% endfor %}Allow: /llms.txt
+Disallow: /api/
+Disallow: /assets/
+Disallow: /f/
+Disallow: /b/
+Disallow: /healthz
+
+{# Les agents, eux, PEUVENT lire l'API : c'est la voie la plus courte vers la donnee, et elle
+   epargne au site le rendu de pages entieres. `/f/` et `/b/` restent fermes — 255 000 fichiers
+   noieraient n'importe quel crawler, et `/llms.txt` dit comment les adresser un par un. #}
+{% for agent in agents %}User-agent: {{ agent }}
+{% endfor %}Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /api/v1/
+Disallow: /assets/
+Disallow: /f/
+Disallow: /b/
+Disallow: /healthz
+
+Sitemap: {{ origine }}/sitemap.xml
