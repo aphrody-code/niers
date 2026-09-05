@@ -128,6 +128,20 @@ clippy sans avertissement avant d'activer nginx. Aphrody et Inacord sont **la m�
 interface** (`packages/inacord-ui`, contrat `packages/asset-source`) : rien ne se réécrit d'un
 côté.
 
+**État au 2026-09-05 — ces paquets EXISTENT, ils ne sont plus à faire.** `nie-site` sert
+13 routes (44 tests, clippy 0), `scripts/e2e-site.sh` rend 65 vérifications sans échec contre le
+binaire réel, et Aphrody monte l'interface partagée : 4 catalogues cherchables sur
+143 246 fichiers, navigation `/b`, lecture audio et vidéo, `/api/v1/episodes`. Deux règles en
+découlent pour qui reprend :
+
+- **Ne jamais écrire de condition sur l'hôte dans un composant.** Sur les 147 commandes du
+  desktop, ~66 sont portables et 81 ne le seront jamais ; c'est le contrat qui porte
+  l'asymétrie, et `capacites()` qui la MESURE au lieu de l'affirmer.
+- **`apps/nie-web/src/legacy/` est un sas, pas une bibliothèque.** Exclu du `tsconfig`, il
+  garde le code sorti du wiki jusqu'à sa réécriture contre `/f`, `/b` et `/api/v1`. Ses
+  mentions Rose Griffon disparaîtront avec lui — les toiletter avant serait travailler sur du
+  code condamné.
+
 **Propriété.** Seule Azalée est un produit **Rose Griffon**. Aphrody, Inacord et nie sont des
 projets **`aphrody-dev`** : aucune marque, mention, URL `rosegriffon.fr`, paquet
 `@rosegriffon/*` ni compte partagé dans `nie-site`, `nie-web`, `inacord-ui`, `apps/inacord`.
