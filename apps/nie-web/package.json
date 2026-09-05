@@ -6,7 +6,7 @@
 	"description": "Aphrody sur le web : l'hote Vite de l'interface partagee avec Inacord, servi par la crate nie-site.",
 	"scripts": {
 		"dev": "vite",
-		"build": "tsc -b && vite build",
+		"build": "tsc -b && vite build && bun --bun scripts/precompresser.ts",
 		"preview": "vite preview",
 		"typecheck": "bunx tsc --noEmit"
 	},
