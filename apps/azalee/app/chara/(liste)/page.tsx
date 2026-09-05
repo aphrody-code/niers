@@ -56,8 +56,16 @@ export async function generateMetadata({
 	};
 }
 
-const DEFAULT_PER_PAGE = 200;
-const ALLOWED_PER_PAGE = new Set([50, 200]);
+// 60 par defaut, et non 200.
+//
+// Mesure du 2026-09-05 en production : `/chara` rendait **2 355 397 octets** de HTML pour 620
+// liens. L'essentiel de ce poids est du balisage repete, que le navigateur doit analyser avant
+// d'afficher quoi que ce soit — sur un telephone, cette page coutait plusieurs secondes pour
+// montrer une grille dont l'utilisateur ne voit que la premiere rangee.
+//
+// 200 reste accessible par `?perPage=200` : le choix n'est pas retire, il cesse d'etre impose.
+const DEFAULT_PER_PAGE = 60;
+const ALLOWED_PER_PAGE = new Set([50, 60, 100, 200]);
 
 export default async function PlayersPage({
 	searchParams,
