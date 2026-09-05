@@ -318,13 +318,13 @@ EAC actif n'est pas dans le cadre du projet.
 
 ```bash
 # Front
-cd apps/nie-explorer && ./node_modules/.bin/tsc --noEmit -p tsconfig.json && ./node_modules/.bin/vite build
+cd apps/inacord && ./node_modules/.bin/tsc --noEmit -p tsconfig.json && ./node_modules/.bin/vite build
 
 # Backend Tauri (les tests n'y démarrent pas sur ce poste : STATUS_ENTRYPOINT_NOT_FOUND)
-cd apps/nie-explorer/src-tauri && cargo check --lib && cargo clippy --lib --tests
+cd apps/inacord/src-tauri && cargo check --lib && cargo clippy --lib --tests
 
 # Bindings TypeScript, après toute commande ajoutée — jamais édités à la main
-cd apps/nie-explorer/src-tauri && cargo run --bin export-bindings --features dev-bindings
+cd apps/inacord/src-tauri && cargo run --bin export-bindings --features dev-bindings
 
 # Opérations de modding, sur le vrai jeu
 cargo run -p nie-viola --example valider_reel --release

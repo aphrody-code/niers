@@ -5,8 +5,8 @@
 # Recherche personnage/technique par NOM LOCALISÉ (FR/EN/JA), depuis deux sources combinées et
 # JAMAIS bloquantes l'une sur l'autre : le miroir local (si présent, hors-ligne, `sqlite3` stdlib
 # — mêmes requêtes SQL EXACTES que `nie_wiki::query::{search_characters, search_skills}` et
-# `apps/nie-explorer/src/lib/wikiDb.ts`) et le GraphQL azalee (toujours tenté, mêmes requêtes que
-# `apps/nie-explorer/src-tauri/src/lib.rs::{remote_search_chara, remote_search_waza}` — un échec
+# `apps/inacord/src/lib/wikiDb.ts`) et le GraphQL azalee (toujours tenté, mêmes requêtes que
+# `apps/inacord/src-tauri/src/lib.rs::{remote_search_chara, remote_search_waza}` — un échec
 # réseau devient une notice, jamais un blocage). Un résultat perso/technique se résout en un clic
 # vers ses VRAIS fichiers VFS (`niers vfs find <code>`), eux-mêmes importables directement : noms
 # FR/EN/JA → fichiers réels → import Blender, en trois clics.
@@ -118,7 +118,7 @@ def resolve_wiki_db(context) -> Path | None:
     (mêmes variables que `nie-explorer`/`nie-wiki`) > préférence explicite (`wiki_db_path`) >
     fichier `supabase-*.sqlite` le plus récent (tri lexicographique du nom, horodaté) sous
     `<racine du jeu>/var/wiki-mirror/` — même logique que `default_wiki_db`/`latest_sqlite_in`
-    côté Rust (`apps/nie-explorer/src-tauri/src/lib.rs`). `None` si rien de trouvé — la recherche
+    côté Rust (`apps/inacord/src-tauri/src/lib.rs`). `None` si rien de trouvé — la recherche
     perso/technique retombe alors sur azalee seul, jamais une erreur bloquante."""
     for var in ("NIE_WIKI_DB", "SQLITE_DB_PATH"):
         v = os.environ.get(var)
@@ -206,7 +206,7 @@ def _azalee_base(url: str) -> str:
 
 
 def _graphql_query(base_url: str, query: str, variables: dict, timeout: float = 15.0) -> dict:
-    """Même endpoint/forme de requête que `graphql_query` (`apps/nie-explorer/src-tauri/src/
+    """Même endpoint/forme de requête que `graphql_query` (`apps/inacord/src-tauri/src/
     lib.rs`) : POST JSON `{query, variables}` sur `<base>/api/graphql`, `data`/`errors` en sortie."""
     url = f"{_azalee_base(base_url)}/api/graphql"
     payload = json.dumps({"query": query, "variables": variables}).encode("utf-8")
@@ -222,7 +222,7 @@ def _graphql_query(base_url: str, query: str, variables: dict, timeout: float = 
 
 
 def search_chara_azalee(base_url: str, query: str) -> list[dict]:
-    """Même requête GraphQL que `remote_search_chara` (`apps/nie-explorer/src-tauri/src/lib.rs`)."""
+    """Même requête GraphQL que `remote_search_chara` (`apps/inacord/src-tauri/src/lib.rs`)."""
     data = _graphql_query(
         base_url,
         "query($q: String) { characters(q: $q, limit: 20) { id internalCode name { fr en ja } "

@@ -2,7 +2,7 @@
 //!
 //! Le dépôt n'accepte un FAIT que validé sur le réel : un test à fixtures synthétiques n'a jamais
 //! prouvé qu'un pack se recharge ni qu'un dump extrait les bons octets. Cet exemple s'exécute
-//! (contrairement aux tests de `apps/nie-explorer/src-tauri`, qui ne démarrent pas sur ce poste).
+//! (contrairement aux tests de `apps/inacord/src-tauri`, qui ne démarrent pas sur ce poste).
 //!
 //! ```text
 //! cargo run -p nie-viola --example valider_reel --release

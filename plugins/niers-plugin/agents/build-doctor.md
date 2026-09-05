@@ -47,7 +47,7 @@ Lancer les commandes longues en tâche de fond quand plusieurs sont indépendant
    Windows la bibliothèque s'appelle `nie_ffi.dll`, **sans** préfixe `lib`.
 2. **`cargo build -p nie-ffi` → « Accès refusé (os error 5) »** — un process Bun a chargé la DLL
    et la verrouille. Le tuer, ne pas relancer le build en boucle.
-3. **`cargo test` dans `apps/nie-explorer/src-tauri` → `STATUS_ENTRYPOINT_NOT_FOUND`** — le
+3. **`cargo test` dans `apps/inacord/src-tauri` → `STATUS_ENTRYPOINT_NOT_FOUND`** — le
    harnais ne démarre pas sur cette machine, avant tout test. Le prouver avec un filtre qui ne
    matche rien, puis se rabattre sur `cargo check`.
 4. **Un crate étranger casse le build** — le dépôt peut être réorganisé par un travail parallèle.

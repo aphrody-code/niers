@@ -120,6 +120,21 @@ pub fn decode(data: &[u8]) -> Option<Decoded> {
                 .and_then(|v| serde_json::to_vec(&v).ok()),
             "navm",
         ),
+        FileFormat::Awb => done(
+            crate::cri_audio::Awb::parse(data).ok().and_then(|awb| {
+                // Un AWB est un conteneur : exporter sa table de matières est utile même
+                // lorsque ses entrées HCA sont chiffrées et nécessitent la sous-clé par banque.
+                serde_json::to_vec(&serde_json::json!({
+                    "subkey": awb.subkey,
+                    "entries": awb.entries.iter().map(|entry| serde_json::json!({
+                        "cue_id": entry.cue_id,
+                        "offset": entry.offset,
+                        "size": entry.size,
+                    })).collect::<Vec<_>>(),
+                })).ok()
+            }),
+            "awb",
+        ),
         // Un `G4MG` ne se décode PAS seul : sa géométrie n'a de sens qu'avec le `G4MD` frère,
         // qui porte la description des sous-maillages et des attributs de sommet. Le reconnaître
         // sans prétendre le décoder est la seule réponse honnête — le compter « non reconnu »

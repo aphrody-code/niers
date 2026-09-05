@@ -20,7 +20,7 @@
  * Lancement, depuis la racine du dépôt :
  *
  * ```sh
- * bun --bun apps/nie-explorer/src/lib/verification-migration.ts [chemin/vers/miroir.sqlite]
+ * bun --bun apps/inacord/src/lib/verification-migration.ts [chemin/vers/miroir.sqlite]
  * ```
  *
  * Sortie non nulle au premier échec. Un contrôle qui ne peut pas s'exécuter (miroir absent,

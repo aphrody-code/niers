@@ -73,7 +73,7 @@ Membres : `crates/forge/*`, `crates/engine/*`, `crates/tools/*`.
 | `packages/nie` | `nie` | Bindings FFI de `libnie_ffi` — la porte d'entrée TS vers Rust |
 | `packages/nie-bridge` | `@niers/bridge` | Protocole de contrôle MCP ↔ explorateur |
 | `packages/nie-plugin` | `nie-plugin` | Plugin Bun d'import des formats (préchargé) |
-| `apps/nie-explorer` | `nie-explorer` | Explorateur/éditeur Tauri (React + Rust) |
+| `apps/inacord` | `nie-explorer` | Explorateur/éditeur Tauri (React + Rust) |
 | `apps/nie-mcp` | `@niers/nie-mcp` | Serveur MCP `niers-game` |
 
 Détail des conventions, des catalogues de versions et des pièges : skill `niers-monorepo`.

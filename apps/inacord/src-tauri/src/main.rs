@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    nie_explorer_lib::run()
+    inacord_lib::run()
 }

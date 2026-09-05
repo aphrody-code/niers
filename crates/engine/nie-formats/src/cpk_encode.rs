@@ -1,5 +1,5 @@
 //! Encodeur CPK/@UTF — contrepartie écriture de [`crate::cpk`] (roadmap
-//! `apps/nie-explorer/ROADMAP.md` §1.2, « Encodeur CPK (pack) »).
+//! `apps/inacord/ROADMAP.md` §1.2, « Encodeur CPK (pack) »).
 //!
 //! Portée volontairement **restreinte et honnête**, pas une reconstruction générale :
 //!
@@ -19,7 +19,7 @@
 //!   new`] sur `content_offset = toc_offset` sinon).
 //!
 //! Vérifié par round-trip réel contre le lecteur DÉJÀ validé sur le vrai jeu
-//! ([`crate::cpk::CpkReader`], `apps/nie-explorer` `open_raw_cpk`/`RawCpkView`) : encoder →
+//! ([`crate::cpk::CpkReader`], `apps/inacord` `open_raw_cpk`/`RawCpkView`) : encoder →
 //! `CpkReader::new` → `extract` de chaque entrée → mêmes octets que l'entrée (cf. `mod tests`).
 //! **Non vérifié en revanche par chargement réel dans `nie.exe`** — contrairement à
 //! `encode_rdbn`/`encode_g4tx_single_texture`, il n'existe aucun moyen de charger un CPK

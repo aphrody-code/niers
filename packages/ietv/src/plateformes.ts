@@ -33,7 +33,7 @@ export type Plateforme = "youtube" | "dailymotion" | "page";
 /**
  * Langue d'une source, dans le vocabulaire du catalogue.
  *
- * Les clés reprennent celles de `apps/nie-explorer/src/lib/sources.ts` — le
+ * Les clés reprennent celles de `apps/inacord/src/lib/sources.ts` — le
  * sélecteur de langue y déclare déjà les familles `vo`, `vf`, `vostfr`, `en`,
  * `es` : les faire diverger obligerait à traduire dans les deux sens.
  * `unknown` n'est PAS une langue, c'est l'absence de renseignement.

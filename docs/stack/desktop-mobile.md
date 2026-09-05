@@ -6,7 +6,7 @@
 
 ## Décision
 
-L'explorateur s'appelle **Inacord** (`apps/inacord`, ex `apps/nie-explorer`) et reste une
+L'explorateur s'appelle **Inacord** (`apps/inacord`, ex `apps/inacord`) et reste une
 application React/Vite. Son interface est extraite dans `packages/inacord-ui`, montée par
 deux hôtes : `Tauri 2` pour le bureau (et plus tard Android/iOS), `apps/nie-web` pour le
 site **Aphrody** (`aphrody.com`) servi par `nie-site`. Les deux implémentent le même contrat

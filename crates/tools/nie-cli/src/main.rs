@@ -4578,7 +4578,7 @@ fn vfs_cat(
     ///
     /// `cridecoder` alloue ses tables de synthèse HCA sur la pile : sur le thread principal
     /// Windows (1 Mio en debug) il déborde avant de produire le moindre échantillon. Même
-    /// contournement que `apps/nie-explorer/src-tauri`.
+    /// contournement que `apps/inacord/src-tauri`.
     fn decoder_wav(data: Vec<u8>) -> Option<Vec<u8>> {
         std::thread::Builder::new()
             .stack_size(16 * 1024 * 1024)

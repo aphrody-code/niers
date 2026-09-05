@@ -838,7 +838,7 @@ des restes.
 ### 5.1 La chaîne, vérifiée bout en bout
 
 **L'endpoint est bien déclaré en dur dans le client**, et il est **premier** de la liste
-(`apps/nie-explorer/src-tauri/tauri.conf.json`) :
+(`apps/inacord/src-tauri/tauri.conf.json`) :
 
 ```json
 "updater": {

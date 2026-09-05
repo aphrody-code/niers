@@ -44,7 +44,7 @@ autre machine, et une bonne moitié des pièges ci-dessous n'y existe pas.
 - Style : technique, direct, orienté résultats. Zéro politesse inutile, zéro digression.
 - Communiquer exclusivement en **français**.
 
-Plan maître : `docs/PLAN.md` + `docs/FORGE.md` + `apps/nie-explorer/ROADMAP.md`.  
+Plan maître : `docs/PLAN.md` + `docs/FORGE.md` + `apps/inacord/ROADMAP.md`.  
 Le reverse-engineering de `nie.exe` est le **moyen**. Le moteur Rust est la **fin**.  
 La **forge** (`docs/FORGE.md`) est le **juge** : elle produit `nie.exe` et mesure, à l'octet, la part
 réellement générée par le dépôt. Un portage qui n'y bouge rien n'a rien prouvé.
@@ -222,7 +222,7 @@ Un seul lockfile, à la racine. Bibliothèque → `packages/`, application avec 
 | `packages/db`, `types`, `auth`, `config`, `ui`, `assets`, `mcp` | Le socle partagé du wiki |
 | `apps/azalee` | Le site du wiki (Next.js 15, App Router) |
 | `apps/bxc` | La passerelle vers `@aphrody/bxc` et le workflow de scrapping unifié |
-| `apps/nie-explorer` | Explorateur/éditeur Tauri (React + Rust, `src-tauri` hors workspace Cargo) |
+| `apps/inacord` | Explorateur/éditeur Tauri (React + Rust, `src-tauri` hors workspace Cargo) |
 | `apps/nie-mcp` | Serveur MCP `niers-game` — VFS, assets, KB RE, pilotage de l'explorateur |
 
 ```bash
@@ -240,7 +240,7 @@ bun run lint
   en direct, le MCP l'atteint par `packages/nie` (FFI). Ne pas réimplémenter d'un côté ce que
   l'autre fait déjà.
 - Régénérer les bindings Tauri sans ouvrir de fenêtre :
-  `cd apps/nie-explorer/src-tauri && cargo run --bin export-bindings --features dev-bindings`.
+  `cd apps/inacord/src-tauri && cargo run --bin export-bindings --features dev-bindings`.
 - **`nie` est aussi un paquet du registre npm.** Sans `bun install` à la racine, `import … from "nie"`
   résout vers `nie@1.2.7` du cache et non vers `packages/nie` — erreur trompeuse
   `Export named 'decode' not found`. Le `dlopen` de `nie_ffi.dll` n'est que la cause *suivante*.
@@ -249,7 +249,7 @@ bun run lint
   `kysely` de rg, Bun dédoublonne `better-auth` sous un nom généré que Next ne résout plus.
 - Un paquet dont `exports` pointe sur `./dist/*` ne résout pas sans build : le repointer sur
   `./src/index.ts`, Bun lit le TypeScript.
-- **`apps/nie-explorer/src-tauri` est en édition 2021**, quand le workspace est en 2024 : les
+- **`apps/inacord/src-tauri` est en édition 2021**, quand le workspace est en 2024 : les
   let-chains n'y compilent pas — écrire des `if let` imbriqués.
 - **Une commande `#[tauri::command]` synchrone tourne sur le THREAD PRINCIPAL** : tout
   `tokio::spawn` dedans panique « there is no reactor running », et cette panique, en contexte
@@ -302,7 +302,7 @@ bun --bun packages/nie-catalog/src/cli.ts cherche "Mark"
 - Un gisement **présent peut être vide** : `etat()` mesure le contenu, pas l'existence du fichier.
 - **Trois de ces bases voyagent avec l'installeur de `nie-explorer`** : `var/mirror.sqlite`,
   `var/niers.sqlite` et `data/anime/episodes.db`, compressées par
-  `scripts/packager-bases-explorer.sh` vers `apps/nie-explorer/src-tauri/resources/db/*.gz` (~35 Mo)
+  `scripts/packager-bases-explorer.sh` vers `apps/inacord/src-tauri/resources/db/*.gz` (~35 Mo)
   puis décompressées dans `%APPDATA%\dev.niers.explorer\db\` au premier lancement. `release-desktop.sh`
   appelle le packager en étape 5/8, **avant** le build : après, le bundler a déjà lu `bundle.resources`.
 - Les rapatrier depuis le VPS : `scp ovh-vps-direct:/home/ubuntu/niers/var/miroir/inagle-*.sqlite`
@@ -383,7 +383,7 @@ csharp/             IECODE.Core / IECODE.CLI / IECODE.Core.Tests (.NET 10, `IECO
   chercher ailleurs. Sur Windows rustc produit **`nie_ffi.dll`, sans préfixe `lib`**.
 - Un process Bun ayant chargé la DLL la **verrouille** : `cargo build -p nie-ffi` échoue alors sur
   « Accès refusé (os error 5) ». Tuer le process, pas relancer le build.
-- `cargo test` dans `apps/nie-explorer/src-tauri` **ne démarre pas** (`STATUS_ENTRYPOINT_NOT_FOUND`,
+- `cargo test` dans `apps/inacord/src-tauri` **ne démarre pas** (`STATUS_ENTRYPOINT_NOT_FOUND`,
   avant tout test). Le prouver avec un filtre qui ne matche rien avant d'accuser son code ;
   `cargo check` reste fiable.
 - `bun` ne résout pas les chemins MSYS (`/tmp/…`) : utiliser un chemin Windows.

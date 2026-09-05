@@ -19,7 +19,7 @@
 set -euo pipefail
 
 RACINE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-CIBLE="$RACINE/apps/nie-explorer/src-tauri/resources/db"
+CIBLE="$RACINE/apps/inacord/src-tauri/resources/db"
 FORCE="${1:-}"
 
 mkdir -p "$CIBLE"

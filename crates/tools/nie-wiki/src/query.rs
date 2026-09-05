@@ -350,6 +350,24 @@ fn get_auras_for_character(
 /// Recherche des skills par ID ou nom.
 pub fn search_skills(conn: &Connection, query: &str) -> anyhow::Result<Vec<SkillProfile>> {
     let q = sanitize_filter(query);
+    // Quand le CLI demande seulement des filtres (catégorie/élément), une
+    // recherche vide ne doit pas tronquer le corpus aux 20 premières lignes :
+    // les filtres sont appliqués après cette fonction.
+    if q.is_empty() {
+        return query_rows(
+            conn,
+            "SELECT id, name_fr, name_en, name_ja,
+                    category, element,
+                    power_max, power_min, tp_cost,
+                    description_fr, description_en,
+                    internal_code, is_hyper,
+                    data, sheet_data
+             FROM inagle_skills
+             ORDER BY name_fr ASC",
+            &[],
+            skill_row_map,
+        );
+    }
     let like_pat = format!("%{}%", q);
 
     query_rows(

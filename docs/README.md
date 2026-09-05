@@ -58,7 +58,7 @@ pas de journal, pas d'historique daté — l'état vient des outils, l'histoire 
 
 ## Ailleurs dans le dépôt
 
-`../CLAUDE.md` et `../AGENTS.md` (règles de travail) · `../apps/nie-explorer/ROADMAP.md`
+`../CLAUDE.md` et `../AGENTS.md` (règles de travail) · `../apps/inacord/ROADMAP.md`
 (app desktop) · `../plugins/niers-plugin/` (plugin et skills) · `../CHANGELOG.md`,
 `../NOTICE`, `../SECURITY.md`.
 

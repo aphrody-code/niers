@@ -66,7 +66,7 @@ un lot sans matrice n'est pas promu.
 
 ```bash
 rg -l '@tauri-apps' packages/inacord-ui/           # attendu : 0
-rg -l 'apps/nie-explorer' --glob '!docs/**' --glob '!*.md'   # attendu : 0 (l'app est apps/inacord)
+rg -l 'apps/inacord' --glob '!docs/**' --glob '!*.md'   # attendu : 0 (l'app est apps/inacord)
 bun run typecheck                                  # 5 workspaces + inacord-ui + asset-source
 ( cd apps/inacord/src-tauri && cargo check )       # l'hôte Tauri compile toujours
 bun run --filter inacord build                     # le bundle de bureau se construit

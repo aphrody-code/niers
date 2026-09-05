@@ -76,7 +76,7 @@ export class IETVCache {
 	 * nombre de langues connues aujourd'hui.
 	 *
 	 * `episodes` n'est pas touchée pour autant : l'explorateur
-	 * (`apps/nie-explorer/src/lib/animeDb.ts`) lit ses colonnes une par une, et
+	 * (`apps/inacord/src/lib/animeDb.ts`) lit ses colonnes une par une, et
 	 * la vue Cinéma doit continuer de fonctionner sans rien connaître d'ici. La
 	 * ligne `episodes` reste la MEILLEURE source de l'épisode ; la table ci-
 	 * dessous les porte toutes.

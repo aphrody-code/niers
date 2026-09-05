@@ -228,7 +228,7 @@ Further reading: [`docs/PLAN.md`](docs/PLAN.md) (the plan, with numbers) ·
 [`docs/FORGE.md`](docs/FORGE.md) (producing the binary) ·
 [`docs/RE.md`](docs/RE.md) (the target and the loop) ·
 [`docs/FORMATS.md`](docs/FORMATS.md) (file formats) ·
-[`apps/nie-explorer/ROADMAP.md`](apps/nie-explorer/ROADMAP.md) (desktop app).
+[`apps/inacord/ROADMAP.md`](apps/inacord/ROADMAP.md) (desktop app).
 
 ## Roadmap
 

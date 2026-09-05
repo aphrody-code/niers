@@ -10,7 +10,7 @@ Les chemins ci-dessous sont relatifs à la racine NIE, pas au répertoire du plu
 | Décodage navigateur | `crates/engine/nie-wasm/src/lib.rs` | `detect_format`, `g4tx_info_json`, `g4pk_parse_json`, `model_to_glb`. Vérifier signature et exports générés. `model_to_glb` reçoit géométrie et métadonnées ; ne pas le présenter comme un assemblage complet de personnage. |
 | Rendu de contrôle | `crates/engine/nie-render3d/src/main.rs`, `glb.rs`, `render.rs` | GLB vers PNG/MP4 ; les textures PNG embarquées sont lues par `glb.rs`. La structure chargée ne démontre pas la prise en charge de tout glTF. |
 | Édition de scène | `crates/tools/nie-editor/src/main.rs` et `crates/engine/nie-render3d/src/document.rs` | Éditeur natif utilisant `nie-render3d` ; options `--glb`, `--project`, `--backend`. Réutiliser le document et le moteur existants. |
-| Explorateur | `apps/nie-explorer` et `apps/nie-mcp` | Inspecter les commandes courantes de prévisualisation et le pont disponible avant pilotage. |
+| Explorateur | `apps/inacord` et `apps/nie-mcp` | Inspecter les commandes courantes de prévisualisation et le pont disponible avant pilotage. |
 
 ## Commandes de rendu
 

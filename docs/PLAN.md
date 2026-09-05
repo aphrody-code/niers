@@ -383,13 +383,13 @@ les contrôleurs de caméra. `nie-lua` exécute les vrais scripts et les analyse
 dont la fusion **au champ** des `.cfg.bin`, que les outils amont ne peuvent pas faire faute de
 comprendre les formats.
 
-### L'application — `apps/nie-explorer`
+### L'application — `apps/inacord`
 
 Explorateur du VFS, éditeur de données, atelier de modding et boîte à outils de reverse, en Tauri.
 Elle ne réimplémente rien : elle appelle les mêmes crates que `niers`, en process. C'est aussi le
 banc d'essai le plus exigeant du portage — un format mal parsé s'y voit immédiatement.
 
-État, limites assumées et écarts restants : [`apps/nie-explorer/ROADMAP.md`](../apps/nie-explorer/ROADMAP.md).
+État, limites assumées et écarts restants : [`apps/inacord/ROADMAP.md`](../apps/inacord/ROADMAP.md).
 
 `crates/archive/nie-engine` est **hors du workspace** : 15 000 lignes portées des fichiers C
 décompilés, mais consommées par aucune crate vivante et redondantes avec les crates byte-exactes.

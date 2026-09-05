@@ -7,7 +7,7 @@
 //! qu'aucun onglet de l'encyclopédie ne soit livré sans avoir décodé une seule ligne.
 //!
 //! `cargo run --bin verif-familles --features dev-bindings`
-use nie_explorer_lib::game_data;
+use inacord_lib::game_data;
 use nie_formats::vfs::Vfs;
 
 fn main() {

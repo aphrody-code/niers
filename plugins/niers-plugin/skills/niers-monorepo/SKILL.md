@@ -16,7 +16,7 @@ Deux arbres cohabitent, avec des règles distinctes.
 | `crates/tools/*` | Outillage | `nie-cli`, `nie-wiki`, `nie-steam`, `nie-model-serve`, `nie-tasks` |
 | `crates/archive/*` | **Hors build**, référence seule | `nie-engine` |
 
-`apps/nie-explorer/src-tauri` est un package Cargo **volontairement hors du workspace** (table
+`apps/inacord/src-tauri` est un package Cargo **volontairement hors du workspace** (table
 `[workspace]` vide) : il réutilise 14 crates niers par chemin relatif. Les exclusions y sont
 documentées et vérifiées — notamment tout ce qui dépend de `rusqlite` (conflit de lien natif
 `links = "sqlite3"` avec le `sqlx-sqlite` de `tauri-plugin-sql`). Ne pas « réparer » ces
@@ -29,7 +29,7 @@ exclusions sans relire le commentaire.
 | `packages/nie` | Bindings Bun FFI de `libnie_ffi` — la porte d'entrée TS vers les crates Rust |
 | `packages/nie-bridge` | Protocole de contrôle partagé entre le serveur MCP et l'explorateur |
 | `packages/nie-plugin` | Plugin Bun d'import des formats de jeu (préchargé par `bunfig.toml`) |
-| `apps/nie-explorer` | Explorateur/éditeur Tauri |
+| `apps/inacord` | Explorateur/éditeur Tauri |
 | `apps/nie-mcp` | Serveur MCP `niers-game` |
 
 Règle d'emplacement : **une bibliothèque va dans `packages/`, une application avec un `bin` va
@@ -57,7 +57,7 @@ cargo test -p nie-data --test <fam>_golden
 just forge                        # split → lift → cc → build → verify → report
 
 # Bindings Tauri, sans ouvrir de fenêtre
-cd apps/nie-explorer/src-tauri && cargo run --bin export-bindings --features dev-bindings
+cd apps/inacord/src-tauri && cargo run --bin export-bindings --features dev-bindings
 ```
 
 Python : **toujours** `uv run`. Jamais `python` ni `python3`.
@@ -79,7 +79,7 @@ Python : **toujours** `uv run`. Jamais `python` ni `python3`.
   rapport avec le jeu. Construire la lib avant de chercher ailleurs.
 - Un process Bun ayant chargé la DLL la **verrouille** : `cargo build -p nie-ffi` échoue alors
   sur « Accès refusé (os error 5) ». Tuer le process, pas relancer le build.
-- `cargo test` dans `apps/nie-explorer/src-tauri` **ne démarre pas** sur la machine de
+- `cargo test` dans `apps/inacord/src-tauri` **ne démarre pas** sur la machine de
   développement (`STATUS_ENTRYPOINT_NOT_FOUND`, avant tout test). Le vérifier avec un filtre qui
   ne matche rien avant d'accuser son propre code ; `cargo check` reste fiable.
 - Le dépôt peut être réorganisé **pendant** une session par un travail parallèle : si un build

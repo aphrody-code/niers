@@ -1,5 +1,5 @@
 //! Assemble un GLB texturé (g4md+g4mg+g4tx) et l'écrit sur disque — même recette que
-//! `apps/nie-explorer/src-tauri/src/lib.rs::vfs_glb_preview_png_b64` (bouton « Aperçu 3D »
+//! `apps/inacord/src-tauri/src/lib.rs::vfs_glb_preview_png_b64` (bouton « Aperçu 3D »
 //! de niers-explorer), en CLI pour vérification/scripting hors app.
 //! Usage : `cargo run -p nie-formats --example model_glb_preview -- <mesh.g4md> <mesh.g4mg> <mesh.g4tx> <out.glb>`
 //! Rendu ensuite en PNG via : `cargo run -p nie-render3d -- --glb <out.glb> --out <out.png> --frames 1`

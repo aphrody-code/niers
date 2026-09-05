@@ -5,7 +5,7 @@
 [workspace]
 
 [package]
-name = "nie-explorer"
+name = "inacord"
 description = "Explorateur/éditeur du VFS (CPK) d'Inazuma Eleven: Victory Road — UI native Windows (Fluent/Mica)"
 version = "0.5.9"
 authors = ["niers"]
@@ -14,7 +14,7 @@ edition = "2021"
 # `cargo run` SANS `--bin`, ce qui echouait en « could not determine which binary to run »
 # avant meme d'ouvrir la fenetre. `required-features` sur `export-bindings` ne suffit pas :
 # cargo compte les cibles declarees, pas celles que les features activent.
-default-run = "nie-explorer"
+default-run = "inacord"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -22,7 +22,7 @@ default-run = "nie-explorer"
 # The `_lib` suffix may seem redundant but it is necessary
 # to make the lib name unique and wouldn't conflict with the bin name.
 # This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
-name = "nie_explorer_lib"
+name = "inacord_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 # `export-bindings` est un OUTIL DE DEVELOPPEMENT, pas un livrable. Sans cette declaration il est
@@ -31,7 +31,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 # une signature minisign parfaitement valide. `required-features` le sort du build par defaut ;
 # il reste lancable par `cargo run --bin export-bindings --features dev-bindings`.
 [[bin]]
-name = "nie-explorer"
+name = "inacord"
 path = "src/main.rs"
 
 [[bin]]
@@ -112,7 +112,7 @@ tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
 
 # Crates niers réutilisées telles quelles (mêmes décodeurs que `niers vfs`, cf. CLAUDE.md
-# anti-doublon) — chemins relatifs depuis apps/nie-explorer/src-tauri/, hors du workspace
+# anti-doublon) — chemins relatifs depuis apps/inacord/src-tauri/, hors du workspace
 # racine (members = ["crates/*"]), donc pinnées ici plutôt que via [workspace.dependencies].
 #
 # Inventaire COMPLET des 26 crates `crates/*` face à ce binaire (audit 2026-08-08, cf. `docs/
@@ -233,7 +233,7 @@ tokio = { version = "1", features = ["rt"] }
 # `IECODE.Core`/`IECODE.CLI` (C# .NET 10, `IECODE.sln` racine, `csharp/IECODE.Core*`) : référence
 # de portage externe (cf. `docs/PLAN.md` intro « le moyen ≠ la fin »), PAS une crate Cargo — un
 # projet .NET ne se « package » pas comme dépendance Rust. Utilisée en cross-vérification
-# manuelle lors du portage d'encodeurs (`cpk_encode`/`g4tx_encode`, cf. `apps/nie-explorer/
+# manuelle lors du portage d'encodeurs (`cpk_encode`/`g4tx_encode`, cf. `apps/inacord/
 # ROADMAP.md` §1.1/§1.2 et le commit `8eccadc`), jamais exécutée ni embarquée par ce binaire.
 
 # `winreg` : lecture registre `HKLM\...\Valve\Steam` pour la VRAIE détection du dossier de jeu.

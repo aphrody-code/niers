@@ -58,7 +58,7 @@ pub struct McpInstallDto {
 
 /// Racine du repo niers, déduite de l'exécutable puis du répertoire courant.
 ///
-/// En dev (`cargo tauri dev`) le binaire est dans `apps/nie-explorer/src-tauri/target/debug` ;
+/// En dev (`cargo tauri dev`) le binaire est dans `apps/inacord/src-tauri/target/debug` ;
 /// en release il est installé ailleurs, et c'est alors le dossier du jeu (= racine du repo sur
 /// l'installation Steam) qui fait référence.
 fn repo_root() -> PathBuf {

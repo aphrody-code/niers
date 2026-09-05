@@ -3,7 +3,8 @@
 //! Ordre de résolution (identique à l'azalee CLI TS) :
 //! 1. Flag `--db` (prioritaire, passé en argument)
 //! 2. Variable d'environnement `NIE_WIKI_DB` ou `SQLITE_DB_PATH`
-//! 3. Fichier `supabase-*.sqlite` le plus récent dans `data/backups`
+//! 3. Fichier `supabase-*.sqlite` ou `inagle-*.sqlite` le plus récent dans
+//!    `var/miroir` ou `data/backups`
 
 use std::path::{Path, PathBuf};
 
@@ -50,11 +51,15 @@ pub fn resolve(db_override: Option<&Path>) -> anyhow::Result<PathBuf> {
     }
 
     // 3. Répertoire de backups : fichier supabase-*.sqlite le plus récent (tri lexicographique)
-    let backups_dir = PathBuf::from("data/backups");
-    if backups_dir.is_dir()
-        && let Some(latest) = latest_sqlite_in(&backups_dir) {
-            return Ok(latest);
+    let mut candidates = Vec::new();
+    for dir in [PathBuf::from("var/miroir"), PathBuf::from("data/backups")] {
+        if dir.is_dir() {
+            candidates.extend(latest_sqlite_in(&dir));
         }
+    }
+    if let Some(latest) = candidates.into_iter().max() {
+        return Ok(latest);
+    }
 
     bail!(
         "aucun miroir SQLite trouvé — utilisez --db, NIE_WIKI_DB ou placez un fichier \
@@ -62,7 +67,7 @@ pub fn resolve(db_override: Option<&Path>) -> anyhow::Result<PathBuf> {
     )
 }
 
-/// Trouve le fichier `supabase-*.sqlite` le plus récent non-vide (tri lexicographique DESC).
+/// Trouve les fichiers `supabase-*.sqlite` et `inagle-*.sqlite` non vides.
 ///
 /// Les fichiers 0-octet (en cours de création par le backup) sont ignorés.
 fn latest_sqlite_in(dir: &Path) -> Option<PathBuf> {
@@ -74,7 +79,7 @@ fn latest_sqlite_in(dir: &Path) -> Option<PathBuf> {
             p.extension().is_some_and(|ext| ext == "sqlite")
                 && p.file_name()
                     .and_then(|n| n.to_str())
-                    .is_some_and(|n| n.starts_with("supabase-"))
+                    .is_some_and(|n| n.starts_with("supabase-") || n.starts_with("inagle-"))
                 // Ignorer les fichiers vides (en cours de création)
                 && p.metadata().is_ok_and(|m| m.len() > 0)
         })

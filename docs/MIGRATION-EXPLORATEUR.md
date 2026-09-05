@@ -1,7 +1,7 @@
 # Migration du wiki vers l'explorateur — outils et galerie
 
 Depuis la fusion (`docs/FUSION.md`), le site du wiki (`apps/azalee`), sa bibliothèque
-(`packages/azalee`) et l'explorateur Tauri (`apps/nie-explorer`) vivent sous la même racine. Ce
+(`packages/azalee`) et l'explorateur Tauri (`apps/inacord`) vivent sous la même racine. Ce
 document décrit le passage des **six outils** (`/tools`) et de la **galerie** (`/gallery`) du web
 vers l'application de bureau : ce qui a été refait, où, sur quelle source de données — et ce qui,
 côté `apps/azalee`, devient redondant.
@@ -13,7 +13,7 @@ monté). Aucune n'est recopiée d'un document antérieur.
 
 ## 1. Ce qui change : la source, pas le dossier
 
-|  | `apps/azalee` (web) | `apps/nie-explorer` (bureau) |
+|  | `apps/azalee` (web) | `apps/inacord` (bureau) |
 |---|---|---|
 | Fichiers du jeu | HTTP vers `cdn.rosegriffon.fr` | **en direct**, `nie-formats` via `src/lib/api.ts` |
 | Données extraites | Supabase / PostgREST (`wikiService`) | `src/lib/wikiDb.ts` — `tauri-plugin-sql` sur le miroir |
@@ -49,7 +49,7 @@ faveur du bureau :
 
 | Vue | Fichier | Remplace |
 |---|---|---|
-| **Outils** (5 onglets) | `apps/nie-explorer/src/components/ToolsView.tsx` | `apps/azalee/app/tools/page.tsx` |
+| **Outils** (5 onglets) | `apps/inacord/src/components/ToolsView.tsx` | `apps/azalee/app/tools/page.tsx` |
 | Traducteur | `src/components/tools/TranslatorPanel.tsx` | `components/tools/TranslatorClient.tsx` + `app/actions/translate.ts` |
 | Calculateur de stats | `src/components/tools/StatCalculator.tsx` | `components/wiki/StatCalculator.tsx` |
 | Comparateur | `src/components/tools/ComparatorPanel.tsx` | `components/wiki/CharacterComparator.tsx` + `app/tools/compare/page.tsx` |
@@ -90,7 +90,7 @@ connecté, le bouton « Créer » n'apparaît pas et il ne reste qu'un brouillon
 (`azalee-my-team`). Le bureau n'a ni compte ni session — mais il a un disque.
 
 **Choix retenu : table `teams` de `mods.db`**, migration **v4** ajoutée à
-`apps/nie-explorer/src-tauri/src/lib.rs` (`mods_migrations`), même convention que `modsDb`,
+`apps/inacord/src-tauri/src/lib.rs` (`mods_migrations`), même convention que `modsDb`,
 `jobsDb` et `vfsIndexDb`, qui partagent déjà ce fichier — une seule base à migrer, une seule à
 sauvegarder. `src/lib/teamsDb.ts` en est la façade : plusieurs compositions **nommées**,
 persistées, listées, rechargées, supprimées, hors ligne. C'est plus que ce que le web offre à un
@@ -128,11 +128,11 @@ consignés pour la suite :
   plafonnées au mébioctet** : un CPK de 3 Go s'y affiche « 3072.00 Mo ». `formatBytes` de
   `apps/azalee/components/save/SaveUploader.tsx:35` est une quatrième forme, `formatOctets` de
   `@niers/catalog/jeu` (réexporté par `packages/azalee/src/cpk/video.ts:48`) une cinquième.
-  **La meilleure est `apps/nie-explorer/src/lib/bytes.ts:14`** : elle gère les gibioctets et adapte
+  **La meilleure est `apps/inacord/src/lib/bytes.ts:14`** : elle gère les gibioctets et adapte
   le nombre de décimales. C'est elle qui devrait survivre — mais elle vit dans l'application de
   bureau, donc le web devrait plutôt converger vers `formatOctets` de `@niers/catalog`, déjà
   client-safe et déjà la source unique des conventions du serveur.
-* **Le rendu hexadécimal existe quatre fois.** `hexLines` de `apps/nie-explorer/src/lib/bytes.ts`
+* **Le rendu hexadécimal existe quatre fois.** `hexLines` de `apps/inacord/src/lib/bytes.ts`
   d'un côté ; `CpkHexViewer.tsx`, `CpkBytesPreview.tsx` et `CpkFormationViewer.tsx` d'azalée de
   l'autre. Aucune n'a été touchée : la galerie et les outils n'affichent pas d'octets.
 
@@ -203,7 +203,7 @@ navigation** :
 ### 4.3 Ce qui reste vrai côté web — à NE PAS toucher
 
 * **`apps/azalee/app/tools/niers/latest.json/route.ts` est l'endpoint de mise à jour de
-  l'explorateur.** `apps/nie-explorer/src-tauri/tauri.conf.json:35` le déclare en **premier**
+  l'explorateur.** `apps/inacord/src-tauri/tauri.conf.json:35` le déclare en **premier**
   endpoint (`https://azalee.rosegriffon.fr/tools/niers/latest.json`), GitHub Releases n'étant qu'un
   repli. Le déplacer, le renommer ou casser la route coupe la mise à jour automatique de **toutes
   les installations déjà déployées**.
@@ -227,7 +227,7 @@ Un `ilike` PostgREST transposé en SQLite, une table renommée entre Supabase et
 colonne vide — tout cela compile parfaitement et rend un cadre vide.
 
 ```sh
-bun --bun apps/nie-explorer/src/lib/verification-migration.ts
+bun --bun apps/inacord/src/lib/verification-migration.ts
 ```
 
 Le script rejoue sur les vraies données exactement ce que les vues envoient. Sortie du
@@ -263,10 +263,10 @@ gallery_config ↔ VFS          360/360 illustrations retrouvées
 Contrôles de conformité :
 
 ```sh
-cd apps/nie-explorer && bunx tsc --noEmit          # propre
-cd apps/nie-explorer && bunx vite build            # ✓ built
-cd apps/nie-explorer/src-tauri && cargo check      # Finished, exit 0
-bunx oxlint -c .oxlintrc.json -A style -A pedantic -A restriction apps/nie-explorer/src
+cd apps/inacord && bunx tsc --noEmit          # propre
+cd apps/inacord && bunx vite build            # ✓ built
+cd apps/inacord/src-tauri && cargo check      # Finished, exit 0
+bunx oxlint -c .oxlintrc.json -A style -A pedantic -A restriction apps/inacord/src
                                                    # 49 avertissements, exactement le compte
                                                    # d'avant le chantier — aucun nouveau
 ```

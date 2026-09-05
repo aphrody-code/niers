@@ -1,6 +1,6 @@
 //! Régénère `src/lib/bindings.ts` depuis les signatures Rust, sans ouvrir de fenêtre.
 //!
-//! `cargo run --bin export-bindings` depuis `apps/nie-explorer/src-tauri`.
+//! `cargo run --bin export-bindings` depuis `apps/inacord/src-tauri`.
 //!
 //! `export_bindings` est gaté `#[cfg(debug_assertions)]` — la réflexion specta n'a rien à faire
 //! dans un binaire distribué. Ce binaire doit donc l'être aussi, sinon `cargo build --release`
@@ -8,7 +8,7 @@
 
 #[cfg(debug_assertions)]
 fn main() {
-    match nie_explorer_lib::export_bindings() {
+    match inacord_lib::export_bindings() {
         Ok(()) => println!("bindings TypeScript régénérés : ../src/lib/bindings.ts"),
         Err(e) => {
             eprintln!("échec de l'export des bindings : {e}");

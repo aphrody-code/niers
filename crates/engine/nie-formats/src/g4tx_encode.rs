@@ -1,5 +1,5 @@
 //! Encodeur G4TX/DDS — contrepartie écriture de [`crate::g4tx`]/[`crate::g4tx_decode`] (roadmap
-//! `apps/nie-explorer/ROADMAP.md` §2.2, « Éditeur d'image (textures) »).
+//! `apps/inacord/ROADMAP.md` §2.2, « Éditeur d'image (textures) »).
 //!
 //! Portée volontairement **restreinte et honnête**, pas une reconstruction générale :
 //!

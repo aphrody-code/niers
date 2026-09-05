@@ -26,7 +26,7 @@ semaine ; mobile et Steam sont **hors semaine**, gelés tels que documentés.
 |---|---|---|---|---|
 | Le wiki | **Azalée** | fiches, articles, actualités — `azalee.rosegriffon.fr` | `apps/azalee`, `packages/azalee` | **Rose Griffon** : les 109 tokens M3 de `app/globals.css` (primaire `#f2a93b` / `#ffc66c`), inchangés |
 | Le site d'outils et d'assets | **Aphrody** | 250 800 fichiers, 53 126 textures, 6 236 modèles, sons, vidéos, avatar — `aphrody.com` | `crates/tools/nie-site` (serveur) + `apps/nie-web` (bundle) | **le vrai jeu** : la référence est le **menu principal** du jeu (`mainmenu01`, capture ver. 7.1.2 fournie par l'utilisateur le 2026-09-05, `data/design/`, hors dépôt) — tuiles en parallélogramme, blanc et cyan, icônes blanches ; tokens extraits des données (palette `FONT_COLOR`, textures de menu, atlas d'icônes, fonte du jeu) |
-| L'application de bureau et mobile | **Inacord** | l'explorateur/éditeur Tauri, aujourd'hui `productName: "niers"` v0.5.9 | `apps/inacord` (ex `apps/nie-explorer`) | **le vrai jeu** : **InaCord** (イナコード), l'application de messagerie du téléphone du mode histoire, d'où vient le nom — panneaux sombres, accent turquoise, motif hexagonal (référence officielle `inazuma.jp`, archivée dans `data/design/`, hors dépôt) |
+| L'application de bureau et mobile | **Inacord** | l'explorateur/éditeur Tauri, aujourd'hui `productName: "niers"` v0.5.9 | `apps/inacord` (ex `apps/inacord`) | **le vrai jeu** : **InaCord** (イナコード), l'application de messagerie du téléphone du mode histoire, d'où vient le nom — panneaux sombres, accent turquoise, motif hexagonal (référence officielle `inazuma.jp`, archivée dans `data/design/`, hors dépôt) |
 | Le jeu | **nie** | le moteur Rust et ses hôtes (natif, headless, WASM) | `crates/engine/*`, `nie-*` | le jeu lui-même |
 | L'interface partagée | — | écrans, composants, hooks communs à Inacord et Aphrody | `packages/inacord-ui` + contrat `packages/asset-source` | un jeu de composants, **deux coquilles du jeu** : `shell/main-menu/` (Aphrody), `shell/inacord/` (Inacord) |
 
@@ -103,7 +103,7 @@ apps/inacord (Tauri 2) ── même packages/inacord-ui, packages/asset-source (
    dossier, `PLAN.md`.
 2. **J2** — sortir du wiki tout ce qui lit un fichier ; premier déploiement Vercel *preview*.
 3. **J3** — poids de `/chara` et ISR ; matrice de latence avant/après.
-4. **J4** — extraction `packages/asset-source` + `packages/inacord-ui` ; `apps/nie-explorer`
+4. **J4** — extraction `packages/asset-source` + `packages/inacord-ui` ; `apps/inacord`
    devient `apps/inacord` et redevient vert.
 5. **J5** — `apps/nie-web` + `crates/tools/nie-site` + thème du jeu ; vhost `aphrody.com`
    basculé de `:8083` à `:8085` (go de l'utilisateur).

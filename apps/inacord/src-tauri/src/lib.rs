@@ -3815,7 +3815,7 @@ fn bind_preview_textures(
 
 /// Même logique que [`assemble_glb_for_preview`] (résolution de frères g4mg/g4tx + assemblage
 /// GLB), mais scopée aux entrées d'un CPK brut ouvert ([`RawCpkState`]) plutôt qu'au VFS complet
-/// — ferme le gap documenté `apps/nie-explorer/ROADMAP.md` §6 (« parité RawCpkView/DetailPane »,
+/// — ferme le gap documenté `apps/inacord/ROADMAP.md` §6 (« parité RawCpkView/DetailPane »,
 /// aperçu 3D listé « hors de portée pour un CPK ouvert hors VFS » faute d'un « résolveur de
 /// frères scopé au seul CPK courant »). Correspondance par (dossier, basename) au lieu d'un
 /// chemin VFS complet : un CPK brut ouvert hors VFS n'a pas de préfixe `data/...` fiable, mais

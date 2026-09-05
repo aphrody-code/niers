@@ -1,6 +1,6 @@
 //! Lecture mémoire **live** du process `nie.exe`/`nie_eacpatched.exe` — façade IPC au-dessus de
 //! `nie-trace` (RE en direct, cf. `crates/forge/nie-trace/src/lib.rs`). Décision utilisatrice tranchée
-//! (câblage explicitement demandé, cf. `apps/nie-explorer/ROADMAP.md` §4.3/§5) : RE single-player
+//! (câblage explicitement demandé, cf. `apps/inacord/ROADMAP.md` §4.3/§5) : RE single-player
 //! offline d'un jeu possédé, cadrée par l'accord `RG-L5-VR-2026-001` (cf. `CLAUDE.md`).
 //!
 //! Surface **lecture et écriture** : [`read_exact`](nie_trace::read_exact) /
