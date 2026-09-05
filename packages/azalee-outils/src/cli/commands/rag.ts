@@ -2,7 +2,7 @@
 
 import type { Command } from "commander";
 
-import { queryRag } from "../../rag";
+import { queryRag } from "@rosegriffon/azalee/rag";
 import { colors, errorMessage, getOrReadInput, reportError, restoreLogs, suppressLogs } from "../context";
 import { exitUnlessRepl } from "../repl-state";
 import type { RagOptions } from "../types";

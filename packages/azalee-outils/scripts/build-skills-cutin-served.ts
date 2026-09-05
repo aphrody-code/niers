@@ -18,7 +18,7 @@
 import { gunzipSync } from "node:zlib";
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { resolveDataFile } from "../src/config";
+import { resolveDataFile } from "@rosegriffon/azalee/config";
 
 /** Données figées du package (`packages/azalee/src/data`). */
 const DATA_DIR = path.resolve(import.meta.dir, "../src/data");

@@ -9,8 +9,8 @@
 
 import type { Command } from "commander";
 
-import { LEGACY_FORMATIONS, type PositionCoord } from "../../game/formations";
-import { decodeTeamCode, encodeTeamCode } from "../../game/team-code";
+import { LEGACY_FORMATIONS, type PositionCoord } from "@rosegriffon/azalee/game/formations";
+import { decodeTeamCode, encodeTeamCode } from "@rosegriffon/azalee/game/team-code";
 import {
 	colors,
 	createPgClient,

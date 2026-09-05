@@ -2,7 +2,7 @@
 
 import type { Command } from "commander";
 
-import { interpolateVariantStats } from "../../game/stats-interpolation";
+import { interpolateVariantStats } from "@rosegriffon/azalee/game/stats-interpolation";
 import { colors, errorMessage, getOrReadInput, reportError, restoreLogs, suppressLogs } from "../context";
 import { createInagleService } from "../inagle";
 import { renderCharaProfile } from "../render";

@@ -4,8 +4,8 @@ import type { Command } from "commander";
 
 import { buildAuraHashSet } from "@rosegriffon/inagle/skills/mapper-aura";
 
-import { interpolateVariantStats } from "../../game/stats-interpolation";
-import type { CharaStats } from "../../wiki/chara-stats-shared";
+import { interpolateVariantStats } from "@rosegriffon/azalee/game/stats-interpolation";
+import type { CharaStats } from "@rosegriffon/azalee/wiki/chara-stats-shared";
 import { colors, errorMessage, reportError, restoreLogs, suppressLogs } from "../context";
 import { createInagleService, getSkillDetails, type InagleService, type SkillDetails } from "../inagle";
 import { exitUnlessRepl } from "../repl-state";

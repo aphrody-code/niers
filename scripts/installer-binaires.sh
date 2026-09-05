@@ -53,7 +53,7 @@ echo
 echo "CLI Bun (lanceurs) :"
 for spec in \
     "nie-catalog:packages/nie-catalog/src/cli.ts" \
-    "niers-azalee:packages/azalee/src/cli.ts" \
+    "niers-azalee:packages/azalee-outils/src/cli.ts" \
     "niers-inagle:packages/inagle/src/cli.ts" \
     "niers-mcp:packages/mcp/src/cli.ts" \
     "niers-bxc:apps/bxc/src/cli.ts"; do

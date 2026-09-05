@@ -11,9 +11,9 @@
 
 import { buildAuraHashSet } from "@rosegriffon/inagle/skills/mapper-aura";
 
-import { PERSONALITY_NAMES } from "../game/personality";
-import { getItemCategoryLabel } from "../game/item-categories";
-import { interpolateVariantStats } from "../game/stats-interpolation";
+import { PERSONALITY_NAMES } from "@rosegriffon/azalee/game/personality";
+import { getItemCategoryLabel } from "@rosegriffon/azalee/game/item-categories";
+import { interpolateVariantStats } from "@rosegriffon/azalee/game/stats-interpolation";
 import { colors } from "./context";
 import { getAuraMetadataFromDb, getAurasForChara, getSkillName, type InagleService, type ResolvedAura } from "./inagle";
 

@@ -20,7 +20,7 @@ import {
 	resolveDataDir,
 	resolveDataFile,
 	resolveMirrorPath,
-} from "../src/config";
+} from "@rosegriffon/azalee/config";
 
 /** Sauvegarde/restauration des variables d'environnement lues par le module. */
 const ENV_KEYS = ["AZALEE_DATA_DIR", "AZALEE_CACHE_DIR", "SQLITE_DB_PATH"] as const;

@@ -21,9 +21,6 @@
     "directory": "packages/azalee"
   },
   "type": "module",
-  "bin": {
-    "azalee": "./src/cli.ts"
-  },
   "files": [
     "src",
     "dist",
@@ -66,11 +63,7 @@
     "registry": "https://registry.npmjs.org"
   },
   "scripts": {
-    "build": "bun --bun tsc -p tsconfig.build.json && bun scripts/copy-data.ts",
-    "cli": "bun src/cli.ts",
-    "compile": "bun scripts/build-standalone.ts",
-    "serve": "bun src/cli.ts serve",
-    "sync:entries": "bun scripts/sync-inagle-entries.ts",
+    "build": "bun --bun tsc -p tsconfig.build.json && bun --bun ../azalee-outils/scripts/copy-data.ts",
     "test": "bun test",
     "lint": "bunx oxlint -c ../../.oxlintrc.json -A style -A pedantic -A restriction src",
     "lint:fix": "bunx oxlint -c ../../.oxlintrc.json -A style -A pedantic -A restriction --fix src",

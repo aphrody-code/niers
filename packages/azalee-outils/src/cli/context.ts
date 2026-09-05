@@ -15,7 +15,7 @@
 import { SQL } from "bun";
 import { Database } from "bun:sqlite";
 
-import { resolveMirrorPath } from "../config";
+import { resolveMirrorPath } from "@rosegriffon/azalee/config";
 
 // ─── Couleurs ────────────────────────────────────────────────────────
 

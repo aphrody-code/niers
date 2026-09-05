@@ -24,12 +24,12 @@ import { CommanderError, type Command } from "commander";
 import { CLI_NAME, CLI_VERSION, createAzaleeProgram } from "../src/cli/program";
 import { parseReplArgs } from "../src/cli/commands/shell";
 import { renderAsciiTable } from "../src/cli/context";
-import { LEGACY_FORMATIONS } from "../src/game/formations";
-import { getItemCategoryLabel, ITEM_CATEGORY_LABELS_FR } from "../src/game/item-categories";
-import { getPersonalityName, PERSONALITY_NAMES } from "../src/game/personality";
-import { interpolateVariantStats } from "../src/game/stats-interpolation";
-import { base64ToUtf8, decodeTeamCode, encodeTeamCode, utf8ToBase64 } from "../src/game/team-code";
-import { containsJapanese, escapeRegExp, stripRubyAnnotations } from "../src/text/japanese-detect";
+import { LEGACY_FORMATIONS } from "@rosegriffon/azalee/game/formations";
+import { getItemCategoryLabel, ITEM_CATEGORY_LABELS_FR } from "@rosegriffon/azalee/game/item-categories";
+import { getPersonalityName, PERSONALITY_NAMES } from "@rosegriffon/azalee/game/personality";
+import { interpolateVariantStats } from "@rosegriffon/azalee/game/stats-interpolation";
+import { base64ToUtf8, decodeTeamCode, encodeTeamCode, utf8ToBase64 } from "@rosegriffon/azalee/game/team-code";
+import { containsJapanese, escapeRegExp, stripRubyAnnotations } from "@rosegriffon/azalee/text/japanese-detect";
 
 /** Chemin du binaire CLI (exécuté tel quel par Bun). */
 const CLI_ENTRY = path.resolve(import.meta.dir, "../src/cli.ts");

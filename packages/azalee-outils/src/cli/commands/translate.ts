@@ -3,7 +3,7 @@
 import type { Command } from "commander";
 
 import { colors, errorMessage, getOrReadInput, renderAsciiTable, reportError, restoreLogs, suppressLogs } from "../context";
-import { containsJapanese } from "../../text/japanese-detect";
+import { containsJapanese } from "@rosegriffon/azalee/text/japanese-detect";
 import {
 	searchDatabaseTranslate,
 	searchGlossaryTranslate,

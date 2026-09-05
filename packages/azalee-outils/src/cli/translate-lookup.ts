@@ -13,8 +13,8 @@ import { Database } from "bun:sqlite";
 import path from "node:path";
 import { isKana, toHiragana, toKatakana } from "wanakana";
 
-import { containsJapanese, escapeRegExp, stripRubyAnnotations } from "../text/japanese-detect";
-import { japaneseToRomaji } from "../text/japanese-romaji";
+import { containsJapanese, escapeRegExp, stripRubyAnnotations } from "@rosegriffon/azalee/text/japanese-detect";
+import { japaneseToRomaji } from "@rosegriffon/azalee/text/japanese-romaji";
 import { createPgClient, getSqlitePath } from "./context";
 
 /** Entité trouvée dans la base ou le glossaire, telle qu'affichée. */

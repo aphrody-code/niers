@@ -11,8 +11,8 @@
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { Database } from "bun:sqlite";
-import { configureAzalee, resetAzaleeConfig } from "../src/config";
-import { createSqliteClient } from "../src/db/sqlite-client";
+import { configureAzalee, resetAzaleeConfig } from "@rosegriffon/azalee/config";
+import { createSqliteClient } from "@rosegriffon/azalee/db/sqlite-client";
 
 const BAC = `${import.meta.dir}/.bac-miroir`;
 

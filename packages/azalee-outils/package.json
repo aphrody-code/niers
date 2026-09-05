@@ -1,0 +1,33 @@
+{
+  "name": "@niers/azalee-outils",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Outillage HORS LIGNE du wiki : CLI `azalee`, scripts de manifestes et de miroir. Lit le disque et les bases locales — n'est JAMAIS deploye sur Vercel.",
+  "bin": {
+    "azalee": "./src/cli.ts"
+  },
+  "scripts": {
+    "cli": "bun --bun src/cli.ts",
+    "serve": "bun --bun src/cli.ts serve",
+    "compile": "bun --bun scripts/build-standalone.ts",
+    "sync:entries": "bun --bun scripts/sync-inagle-entries.ts",
+    "test": "bun test",
+    "typecheck": "bun --bun tsc --noEmit"
+  },
+  "dependencies": {
+    "@rosegriffon/azalee": "workspace:*",
+    "@niers/jeu": "workspace:*",
+    "@rosegriffon/db": "workspace:*",
+    "@rosegriffon/inagle": "workspace:*",
+    "@niers/catalog": "workspace:*",
+    "@supabase/supabase-js": "catalog:",
+    "commander": "catalog:",
+    "drizzle-orm": "^0.45.2",
+    "wanakana": "catalog:"
+  },
+  "devDependencies": {
+    "typescript": "catalog:",
+    "@types/bun": "catalog:"
+  }
+}

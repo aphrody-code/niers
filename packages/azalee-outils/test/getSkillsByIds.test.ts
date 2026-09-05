@@ -23,10 +23,10 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { createClient as createSupabaseClient, type SupabaseClient } from "@supabase/supabase-js";
 
-import { resolveMirrorPath } from "../src/config";
-import { setDatabaseProvider } from "../src/db/provider";
-import { createSqliteClient } from "../src/db/sqlite-client";
-import { wikiService } from "../src/wiki/service";
+import { resolveMirrorPath } from "@rosegriffon/azalee/config";
+import { setDatabaseProvider } from "@rosegriffon/azalee/db/provider";
+import { createSqliteClient } from "@rosegriffon/azalee/db/sqlite-client";
+import { wikiService } from "@rosegriffon/azalee/wiki/service";
 
 /** 5 fiches qui échouaient réellement au build (`Failed to build … after 3
  * attempts`, log `/tmp/gate-vercel.log`, 2026-09-05) + 20 fiches choisies au

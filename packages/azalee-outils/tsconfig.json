@@ -1,0 +1,28 @@
+{
+	"extends": "../config/tsconfig-base.json",
+	"compilerOptions": {
+		"noEmit": true,
+		"declaration": false,
+		"noUncheckedIndexedAccess": false,
+		"types": [
+			"bun"
+		],
+		"lib": [
+			"ESNext",
+			"DOM",
+			"DOM.Iterable"
+		],
+		"allowImportingTsExtensions": true,
+		"baseUrl": ".",
+		"moduleDetection": "force"
+	},
+	"include": [
+		"src/**/*.ts",
+		"test/**/*.ts",
+		"scripts/**/*.ts"
+	],
+	"exclude": [
+		"node_modules",
+		"dist"
+	]
+}
