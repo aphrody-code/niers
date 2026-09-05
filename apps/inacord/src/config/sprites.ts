@@ -12,7 +12,7 @@ export const SPRITE_SHEET_SRC = "/icon_common2.webp";
 
 // Class/position icons spritesheet (73x73 grid) — servi via CDN local depuis 2026-05.
 export const CLASS_SPRITE_SHEET_SRC =
-	"https://cdn.rosegriffon.fr/static/azalee/menu/200_icon/06_icon_class/icon_class_s.webp";
+	"https://aphrody.com/static/azalee/menu/200_icon/06_icon_class/icon_class_s.webp";
 export const CLASS_SPRITE_SIZE = 73;
 
 export const SPRITES = {

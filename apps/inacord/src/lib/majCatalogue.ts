@@ -27,7 +27,7 @@
 import { animeDb, type LotCatalogue } from "./animeDb";
 
 /** Base par défaut — le wiki, qui tourne sur le même VPS que la moisson. */
-const BASE_DEFAUT = "https://azalee.rosegriffon.fr";
+const BASE_DEFAUT = "https://aphrody.com";
 
 /** Réglage local, pour viser un autre serveur (développement, instance privée). */
 const CLE_URL = "nie-explorer:cinema:catalogue-url";

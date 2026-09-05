@@ -138,7 +138,7 @@ fn mods_migrations() -> Vec<Migration> {
             // plusieurs compositions NOMMÉES persistantes sans réseau ni authentification.
             //
             // `members` est le JSON `Record<créneau, TeamMember>` de
-            // `@rosegriffon/azalee/game/team-types` — la MÊME forme que le wiki persiste, pour
+            // `@niers/jeu/game/team-types` — la MÊME forme que le wiki persiste, pour
             // que le code de partage reste interchangeable entre les deux surfaces.
             version: 4,
             description: "teams (compositions d'équipe locales, sans session)",
@@ -4909,7 +4909,7 @@ impl specta::Type for RawJson {
 //     d'une save (miroir serveur, aucun ID inventé) : `app/api/save/resolve-roster/route.ts`.
 // Testé en direct (`curl`) le 2026-08-07 : les deux endpoints répondent en production.
 
-const AZALEE_DEFAULT_URL: &str = "https://azalee.rosegriffon.fr";
+const AZALEE_DEFAULT_URL: &str = "https://aphrody.com";
 
 fn azalee_base(base_url: &str) -> &str {
     let b = base_url.trim();
@@ -5003,7 +5003,7 @@ fn remote_resolve_roster(base_url: String, ids: Vec<String>) -> Result<RawJson, 
 // Le service de modèles possède l'assemblage des couches de visage, les recettes de corps et le
 // renderer de menus. Le desktop transporte ses artefacts finis vers le viewport WebGL, sans en
 // créer une seconde implémentation. Les requêtes sortent du thread UI.
-const MODEL_SERVICE_DEFAULT_URL: &str = "https://cdn.rosegriffon.fr";
+const MODEL_SERVICE_DEFAULT_URL: &str = "https://aphrody.com";
 
 fn model_service_base(base_url: &str) -> Result<&str, String> {
     let base = if base_url.trim().is_empty() {

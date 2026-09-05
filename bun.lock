@@ -183,11 +183,7 @@
         "@base-ui/react": "^1.7.0",
         "@monaco-editor/react": "^4.7.0",
         "@niers/bridge": "workspace:*",
-        "@rosegriffon/auth": "^0.1.1",
-        "@rosegriffon/azalee": "^1.0.0",
-        "@rosegriffon/inagle": "^2.0.2",
-        "@rosegriffon/types": "^0.2.1",
-        "@rosegriffon/ui": "^0.2.1",
+        "@niers/jeu": "workspace:*",
         "@spacedrive/primitives": "^0.2.3",
         "@spacedrive/tokens": "^0.2.3",
         "@tailwindcss/vite": "^4.3.3",
@@ -300,6 +296,7 @@
       },
       "dependencies": {
         "@niers/catalog": "workspace:*",
+        "@niers/jeu": "workspace:*",
         "@rosegriffon/db": "workspace:*",
         "@rosegriffon/inagle": "workspace:*",
         "@supabase/supabase-js": "catalog:",
@@ -469,6 +466,17 @@
     "packages/nie-catalog": {
       "name": "@niers/catalog",
       "version": "0.1.0",
+      "devDependencies": {
+        "@types/bun": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
+    "packages/nie-jeu": {
+      "name": "@niers/jeu",
+      "version": "0.1.0",
+      "dependencies": {
+        "wanakana": "catalog:",
+      },
       "devDependencies": {
         "@types/bun": "catalog:",
         "typescript": "catalog:",
@@ -1331,6 +1339,8 @@
     "@niers/bxc": ["@niers/bxc@workspace:apps/bxc"],
 
     "@niers/catalog": ["@niers/catalog@workspace:packages/nie-catalog"],
+
+    "@niers/jeu": ["@niers/jeu@workspace:packages/nie-jeu"],
 
     "@niers/nie-mcp": ["@niers/nie-mcp@workspace:apps/nie-mcp"],
 

@@ -255,6 +255,7 @@ pub fn format_name(data: &[u8]) -> &'static str {
         FileFormat::G4pk => "g4pk",
         FileFormat::CfgBin => "cfg.bin",
         FileFormat::Cpk => "cpk",
+        FileFormat::Awb => "awb",
         FileFormat::Unknown => "inconnu",
         _ => "autre",
     }

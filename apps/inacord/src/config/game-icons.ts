@@ -36,7 +36,7 @@ export interface GameIcon {
 	nameFr: string;
 }
 
-// Atlas disponibles (téléchargés depuis cdn.rosegriffon.fr/tex/<vfs>.png puis
+// Atlas disponibles (téléchargés depuis aphrody.com/assets/tex/<vfs>.png puis
 // convertis en masque webp : convert in.png -channel A -evaluate multiply 5
 // +channel -fill white -colorize 100 out.webp).
 export const GAME_ICON_ATLASES = {

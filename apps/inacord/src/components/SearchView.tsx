@@ -46,7 +46,7 @@ export function SearchView({ onOpenFile }: { onOpenFile: (path: string) => void 
     const rows: Row[] = [];
     const notes: string[] = [];
 
-    // Azalee (GraphQL, `https://azalee.rosegriffon.fr` par défaut) — toujours disponible,
+    // Azalee (GraphQL, `https://aphrody.com` par défaut) — toujours disponible,
     // aucune config requise.
     try {
       if (kind === "chara") {

@@ -1,13 +1,2 @@
-/**
- * Nom de fichier de téléchargement lisible à partir d'un nom affiché (perso/technique/etc.) —
- * jamais le code interne du jeu (évite d'exposer `c01001900.glb`, `wks042.png`, …).
- */
-export function downloadName(name: string, fallback = "fichier"): string {
-	const slug = name
-		.toLowerCase()
-		.normalize("NFD")
-		.replaceAll(/[\u0300-\u036f]/g, "")
-		.replaceAll(/[^a-z0-9]+/g, "-")
-		.replaceAll(/^-+|-+$/g, "");
-	return slug || fallback;
-}
+// Deplace dans @niers/jeu (paquet neutre, 2026-09-05) — re-export pour ne rien casser.
+export * from "@niers/jeu/text/download-filename";

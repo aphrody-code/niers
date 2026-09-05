@@ -285,7 +285,7 @@ export function CustomPassiveCard({ passive }: { passive: CustomPassiveData }) {
 // ── Nie-data Passive Family Card ──
 
 const ELEMENT_COLORS: Record<string, string> = {
-	// Tokens `element-*` de `@rosegriffon/ui` : les teintes du JEU, relevées sur
+	// Tokens `element-*` de la bibliothèque UI web du wiki : les teintes du JEU, relevées sur
 	// ses icônes officielles. Les classes Tailwind en dur d'avant divergeaient
 	// d'un écran à l'autre — le vent y était bleu ici, vert ailleurs.
 	fire: "bg-element-feu/15 text-element-feu border-element-feu/40",

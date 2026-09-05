@@ -1,5 +1,5 @@
 // Images des composants du wiki, résolues **dans le VFS local** — remplace
-// `@rosegriffon/azalee/images` pour les composants portés dans `components/wiki/`.
+// `la couche images du wiki` pour les composants portés dans `components/wiki/`.
 //
 // ## Pourquoi ne pas importer le module du wiki
 //

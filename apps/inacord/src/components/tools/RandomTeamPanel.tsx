@@ -12,7 +12,7 @@
 //  2. **les filtres ignorés sont annoncés.** Le wiki abandonne un filtre trop restrictif sans
 //     rien dire ; ici, `filtrerVivier` rend la liste des filtres écartés et la vue l'affiche.
 //  3. **les 91 formations réelles**, pas douze écrites à la main. `FORMATIONS` de
-//     `@rosegriffon/azalee/game` porte 8 dispositions héritées et 83 décodées du jeu par
+//     `@niers/jeu/game` porte 8 dispositions héritées et 83 décodées du jeu par
 //     `nie-data` (`formation_config`), coordonnées `f32` comprises.
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
@@ -35,7 +35,7 @@ import { Badge } from "@/components/ui/badge";
 import { Icon } from "@/components/ui/Icon";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { encodeTeamCode } from "@rosegriffon/azalee/game/team-code";
+import { encodeTeamCode } from "@niers/jeu/game/team-code";
 
 /** Éléments proposés — libellés FR du miroir, ce sont les valeurs réellement stockées. */
 const ELEMENTS = ["Feu", "Vent", "Forêt", "Montagne"];

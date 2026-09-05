@@ -10,7 +10,7 @@
 // qu'UN brouillon en `localStorage`. L'explorateur n'a ni compte ni session — mais il a un
 // disque : `teamsDb` (table `teams` de `mods.db`, migration v4) garde autant de compositions
 // NOMMÉES qu'on veut, hors ligne. Et le pont avec le wiki n'est pas perdu pour autant : le code
-// de partage est celui de `@rosegriffon/azalee/game/team-code`, donc une composition faite ici se
+// de partage est celui de `@niers/jeu/game/team-code`, donc une composition faite ici se
 // colle dans l'URL du site, et réciproquement.
 //
 // ## Glisser-déposer sans dépendance
@@ -22,7 +22,7 @@
 // présent sur le wiki, reste la voie principale.
 //
 // Les règles de jeu — facteur de poste, synergies d'élément, recalcul par niveau — sont IMPORTÉES
-// de `@rosegriffon/azalee/game/team-rules`, jamais recopiées.
+// de `@niers/jeu/game/team-rules`, jamais recopiées.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { readText, writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { toast } from "sonner";
@@ -30,9 +30,9 @@ import { toast } from "sonner";
 import {
   calculateElementSynergies,
   recalculateMemberStats,
-} from "@rosegriffon/azalee/game/team-rules";
-import { ROLE_COLORS, ROLE_LABELS } from "@rosegriffon/azalee/game/formations";
-import { decodeTeamCode, encodeTeamCode } from "@rosegriffon/azalee/game/team-code";
+} from "@niers/jeu/game/team-rules";
+import { ROLE_COLORS, ROLE_LABELS } from "@niers/jeu/game/formations";
+import { decodeTeamCode, encodeTeamCode } from "@niers/jeu/game/team-code";
 
 import {
   FORMATIONS,

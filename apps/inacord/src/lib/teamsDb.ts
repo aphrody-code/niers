@@ -15,10 +15,10 @@
 // seule à sauvegarder.
 //
 // Ce qui n'est PAS ici : le format d'échange. Une composition se partage par le code de
-// `@rosegriffon/azalee/game/team-code`, identique à celui des URLs du wiki — cf. `equipe.ts`.
+// `@niers/jeu/game/team-code`, identique à celui des URLs du wiki — cf. `equipe.ts`.
 import Database from "@tauri-apps/plugin-sql";
 
-import type { TeamMember } from "@rosegriffon/azalee/game/team-types";
+import type { TeamMember } from "@niers/jeu/game/team-types";
 
 /** Une composition enregistrée, telle que la table la stocke. */
 export interface LigneEquipe {

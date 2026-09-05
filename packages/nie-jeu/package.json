@@ -1,0 +1,17 @@
+{
+	"name": "@niers/jeu",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"description": "Logique de jeu pure d'Inazuma Eleven: Victory Road (formations, codes d'equipe, regles, texte) — sans marque, sans I/O.",
+	"exports": {
+		".": "./src/index.ts",
+		"./game": "./src/game/index.ts",
+		"./game/*": "./src/game/*.ts",
+		"./text": "./src/text/index.ts",
+		"./text/*": "./src/text/*.ts"
+	},
+	"scripts": { "typecheck": "bunx tsc --noEmit" },
+	"dependencies": { "wanakana": "catalog:" },
+	"devDependencies": { "typescript": "catalog:", "@types/bun": "catalog:" }
+}

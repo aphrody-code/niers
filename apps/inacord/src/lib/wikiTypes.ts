@@ -1,6 +1,6 @@
 // Types et libellés des cartes du wiki, définis **localement** pour l'application de bureau.
 //
-// ## Pourquoi ne pas importer `@rosegriffon/azalee/wiki/*`
+// ## Pourquoi ne pas importer `les modules wiki/* du site`
 //
 // Une raison de fond et une raison mesurée :
 //

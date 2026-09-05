@@ -61,8 +61,8 @@ import {
   type LigneNoms,
   type LigneRoster,
 } from "@/lib/wikiQueries";
-import { decodeTeamCode, encodeTeamCode } from "@rosegriffon/azalee/game/team-code";
-import { japaneseToRomaji } from "@rosegriffon/azalee/text";
+import { decodeTeamCode, encodeTeamCode } from "@niers/jeu/game/team-code";
+import { japaneseToRomaji } from "@niers/jeu/text";
 
 /* eslint-disable no-console */
 

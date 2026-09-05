@@ -310,9 +310,9 @@ export const api = {
   clipboardReadFileList: () => commands.clipboardReadFileList(),
   trashAppdataFiles: (appdataRelPaths: string[]) => unwrap<null>(commands.trashAppdataFiles(appdataRelPaths)),
 
-  // Résolveur distant azalee — contrat RÉEL confirmé (`https://azalee.rosegriffon.fr`,
+  // Résolveur distant azalee — contrat RÉEL confirmé (`https://aphrody.com`,
   // GraphQL `graphql-yoga` sans auth + REST `/api/cpk`/`/api/save/resolve-roster`), pas une
-  // convention devinée. `baseUrl` vide → azalee.rosegriffon.fr (défaut côté Rust). Les 3 renvoient
+  // convention devinée. `baseUrl` vide → aphrody.com (défaut côté Rust). Les 3 renvoient
   // du JSON libre côté Rust (`RawJson`, exporté `unknown` — `serde_json::Value` est récursif,
   // cf. commentaire `RawJson` dans `lib.rs`) : la forme réelle est fixée ici par ces interfaces,
   // comme avant (l'ancien `invoke<T>()` ne la vérifiait pas non plus au runtime).

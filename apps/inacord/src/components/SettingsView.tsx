@@ -553,7 +553,7 @@ export function SettingsView() {
             GraphQL <code>/api/graphql</code> (sans authentification) + REST <code>/api/cpk</code> /{" "}
             <code>/api/save/resolve-roster</code> — contrat réel confirmé depuis les sources du service.
             Utilisé en <strong>bonus</strong> de l'index local (personnages/techniques/roster de save) ;
-            les fichiers du jeu restent toujours résolus en local d'abord. Vide = azalee.rosegriffon.fr.
+            les fichiers du jeu restent toujours résolus en local d'abord. Vide = aphrody.com.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -561,7 +561,7 @@ export function SettingsView() {
             <Label>URL de base</Label>
             <Input
               value={settings.azaleeUrl}
-              placeholder="https://azalee.rosegriffon.fr"
+              placeholder="https://aphrody.com"
               onChange={(e) => setSettings({ azaleeUrl: e.target.value })}
             />
           </div>
@@ -569,10 +569,10 @@ export function SettingsView() {
             <Label>Service de modèles 3D</Label>
             <Input
               value={settings.modelServiceUrl}
-              placeholder="https://cdn.rosegriffon.fr"
+              placeholder="https://aphrody.com"
               onChange={(e) => setSettings({ modelServiceUrl: e.target.value })}
             />
-            <p className="type-body-small text-tertiary">Avatar assemblé et rendu de menus. Vide = CDN Rose Griffon.</p>
+            <p className="type-body-small text-tertiary">Avatar assemblé et rendu de menus. Vide = CDN Aphrody.</p>
           </div>
         </CardContent>
       </Card>
@@ -582,7 +582,7 @@ export function SettingsView() {
           <CardTitle>Mises à jour</CardTitle>
           <CardDescription>
             Vérifie/télécharge/installe les nouvelles versions de niers. Endpoints (dans l'ordre) :{" "}
-            <code>azalee.rosegriffon.fr/tools/niers</code> (page dédiée niers) puis, en repli, la
+            <code>aphrody.com/downloads/inacord</code> (page dédiée niers) puis, en repli, la
             dernière release GitHub (<code>latest.json</code>). Binaires signés (minisign), version
             actuelle : <Badge variant="secondary">v0.4.0</Badge>.
           </CardDescription>
