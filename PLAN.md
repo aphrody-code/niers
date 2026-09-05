@@ -48,6 +48,50 @@ un chiffre, jamais une intention. Astra a reçu son identité `astra@aphrody-cod
 | `Cargo.lock` | `axum` **absent** ; `tokio` 1.53.1, `tower` 0.5.3, `tower-http` 0.6.11, `rusqlite` 0.37.0, `reqwest` 0.13.4, `wgpu` 29.0.3 présents | `awk` sur le lock |
 | Sécurité self-host | RPC anonyme destructif, `anon` écrit sur 129 tables, 2 105 lignes `discord_members` publiques, JWT lisible, SSH root par mot de passe | `docs/SECURITE-BASCULE.md`, `4f53936` |
 
+## Où en est la semaine — mesuré le 2026-09-05
+
+Chaque ligne porte son compte, et chaque compte a été rejoué sur cette machine. Ce qui n'a pas
+été fait est dit tel quel, avec sa raison.
+
+| Journée | Fait | Compte |
+|---|---|---|
+| **J2** | gate serverless, Proxy SQLite retiré, assets sortis, dix 308 écrites | gate **76 → 5** fichiers |
+| **J3** | pagination `/chara`, ISR (déjà en place), unité miroir→Cloud écrite | 60 par page ; **3/3** |
+| **J4** | contrat `asset-source`, socle `inacord-ui`, renommage Inacord | **0** Tauri dans le socle, 45 primitives |
+| **J5** | crate `nie-site`, suite E2E, DA du jeu, Aphrody monté | 13 routes, 44 tests, **E2E 62/62** |
+| **J7** | pré-compression du bundle, baseline `criterion` | JS **202 541 → 54 959 o** en brotli |
+
+### Ce qui reste, et à qui
+
+**Deux décisions de l'utilisateur**, sans lesquelles rien n'avance :
+
+1. **Rotation du mot de passe Postgres.** `lib/auth.ts` portait les identifiants de production
+   en dur comme repli. Retirés — mais le secret doit être considéré comme exposé. Il n'a jamais
+   été commité (`git log -S` rend 0) : la portée est cette machine, pas le dépôt.
+2. **Le glossaire de traduction** (2,9 Mo, absent de l'index git) : le porter en base engage un
+   schéma, le verser dans le dépôt engage son historique, rendre son absence bruyante corrige le
+   silence sans satisfaire la gate. Aucune voie n'est neutre.
+
+**Trois gestes qui touchent la production**, tous prêts, tous en attente d'un go :
+
+- `deploy/systemd/nie-miroir-cloud.{service,timer}` — écrites, `daemon-reload` non fait ;
+- les dix redirections vers Aphrody — écrites, inactives tant que `NEXT_PUBLIC_TOOLS_ORIGIN`
+  n'est pas posée ;
+- la suppression des pages `/tools/*` — `docs/MIGRATION-EXPLORATEUR.md` §4 la qualifie
+  lui-même de « décision de mise en ligne ». Les rediriger est réversible, les supprimer non.
+
+**Un risque levé en cours de route.** Sortir `app/api/ietv` du wiki aurait figé les Inacord déjà
+installés : leur repli lit un 503 comme « ce serveur ne moissonne pas la série », donc sans
+erreur visible. `nie-site` sert désormais `/api/v1/episodes` — vérifié contre les 1 141 lignes
+réelles, delta compris.
+
+**Ce que la session a appris.** Les défauts les plus coûteux ne se signalent pas : un bundle
+jamais chargé sous 42 tests verts, une capacité de compression écrite et inutilisée, trois URL
+d'assets fausses par déduction plausible, un identifiant de production actif dès que la
+configuration manquait, une navigation qui se serait vidée au deuxième niveau. Aucun n'aurait
+produit un message d'erreur. Tous ont été trouvés en lançant le binaire réel plutôt qu'en
+relisant le code.
+
 ## Jour par jour
 
 ### J1 — samedi 2026-09-05 — trancher, geler, prouver
