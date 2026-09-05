@@ -442,7 +442,6 @@
         "@base-ui/react": "^1.7.0",
         "@niers/asset-source": "workspace:*",
         "@niers/game": "workspace:*",
-        "@rosegriffon/azalee": "workspace:*",
         "class-variance-authority": "catalog:",
         "clsx": "catalog:",
         "cmdk": "catalog:",
