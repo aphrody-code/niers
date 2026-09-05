@@ -65,11 +65,26 @@ Chaque ligne porte son compte, et chaque compte a été rejoué sur cette machin
 | **J5+** | `nie.` et `api.` branchés sur les services du dépôt | 11 hôtes avant, **11 après**, 0 perdu |
 | **J5+** | `nie-model-serve` réparé et borné | ne répondait plus en 30 s → **0,37 ms** |
 | **J5+** | audit de couverture du serving d'assets | octets bruts **255 308 / 255 308 = 100 %** |
+| **J6−** | domaine éditorial migré sur Cloud, **build vert contre Cloud** | **117/117** pages, 0 erreur Postgres |
+| **J6−** | `nie-model-serve` : cause racine de ses saturations | `RssAnon` **7,17 Gio → 861 Mio**, reclaim **4/9 → 0** |
+| **J6−** | plafonds relevés pour l'après-bascule | 24 workers ; **24 requêtes simultanées, 24 × 200** |
+| **J6−** | session RE/Lua de Codex intégrée | **+1 890 l.**, 80 tests verts, **66 commandes runtime** reconnues |
 
 ### Ce qui reste, et à qui
 
-**Un blocage mesuré de J6, découvert le 2026-09-05 au soir.** Le build d'Azalée échoue, et il
-échouera de la même façon sur Vercel. Deux causes distinctes, la première corrigée :
+**Le blocage de J6 est LEVÉ — mesuré le 2026-09-05 à 23 h.** `bun run build`, miroir SQLite
+introuvable et `DATABASE_URL` vers le pooler Supabase Cloud : **`EXIT_REEL=0`, 117/117 pages en
+66 s, 0 erreur Postgres**, `server.js` produit. La bascule n'attend plus qu'un go.
+
+Ce qui bloquait n'était pas la configuration mais un **schéma à moitié migré** : Cloud portait
+224 tables, toutes `inagle_*`, et **aucune** table du domaine éditorial. Le wiki n'en interroge
+que cinq ; quatre sont migrées avec **écart 0** (`tweets` 15 300, `patch_notes` 34, `articles` 3,
+`article_series` 0), et `profiles` reste **vide par décision** — 1 821 profils d'utilisateurs ne
+se déplacent pas sans qu'on l'ait voulu. `is_admin()` lit alors une table vide, rend `false`,
+l'administration reste fermée et la lecture publique fonctionne. Rejouable :
+`scripts/ops/migrer-editorial-vers-cloud.sh --compter`.
+
+Le récit d'origine, conservé parce qu'il dit comment le défaut s'est masqué :
 
 1. `lib/og-logo.ts` fetchait son PNG par `fetch(new URL(…, import.meta.url))` — `file:` n'est pas
    un schéma que `fetch` doit servir, et Bun le refuse (« not implemented... yet... »). Le build
