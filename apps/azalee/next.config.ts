@@ -155,7 +155,41 @@ const nextConfig: NextConfig = {
 	},
 
 	async redirects() {
+		// Les dix prefixes qui partent vers Aphrody.
+		//
+		// INACTIFS tant que `NEXT_PUBLIC_TOOLS_ORIGIN` n'est pas posee : sans elle la liste est
+		// vide, et le wiki continue de servir ses pages comme aujourd'hui. C'est ce qui rend le
+		// basculement reversible — une variable, pas un deploiement.
+		//
+		// Des PREFIXES EXPLICITES, jamais une expression reguliere sur `/tools`. La nuance est
+		// tout sauf cosmetique : `/tools/niers/latest.json` est l'endpoint de mise a jour des
+		// Inacord deja installes. Une regle large l'attraperait, et les clients cesseraient de
+		// se mettre a jour sans qu'aucune page ne semble cassee. `/tools` lui-meme n'est donc
+		// PAS redirige, seulement les outils un par un.
+		const origineOutils = process.env.NEXT_PUBLIC_TOOLS_ORIGIN;
+		const versAphrody = origineOutils
+			? [
+					"/tools/translator",
+					"/tools/stats",
+					"/tools/compare",
+					"/tools/random-team",
+					"/tools/my-team",
+					"/gallery",
+					"/textures",
+					"/modeles",
+					"/sons",
+					"/videos",
+				].map((prefixe) => ({
+					// 308 et non 301 : la methode et le corps sont conserves, et le cache des
+					// navigateurs ne fige pas la redirection de facon irreversible.
+					destination: `${origineOutils}${prefixe}/:path*`,
+					permanent: true,
+					source: `${prefixe}/:path*`,
+				}))
+			: [];
+
 		return [
+			...versAphrody,
 			{
 				destination: "/cross",
 				permanent: true,
