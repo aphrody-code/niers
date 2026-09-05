@@ -298,6 +298,18 @@ if [ "$ETAT_VFS" = "pret" ]; then
 	req "/b/data" >/dev/null
 	verifier "/b/<préfixe> rend du JSON" "200" "$(req "/b/data" | cut -d' ' -f1)"
 	au_moins "/b/data : sous-dossiers listés" 1 "$(jq -r '(.dossiers // []) | length' <"$CORPS")"
+
+	# Les sous-dossiers sont des chemins COMPLETS, pas des noms relatifs — un client qui les
+	# concatène au préfixe courant demande `data/data/common` et reçoit un dossier vide, sans
+	# erreur ni trace. Le défaut a existé dans l'explorateur d'Aphrody le 2026-09-05 ; cette
+	# vérification le rend impossible à réintroduire en silence.
+	premier_dossier="$(jq -r '(.dossiers // [])[0] // ""' <"$CORPS")"
+	verifier "/b : les sous-dossiers sont des chemins complets" "1" \
+		"$([ "${premier_dossier#data/}" != "$premier_dossier" ] && echo 1 || echo 0)"
+	# Et ce chemin, rejoué tel quel, doit répondre : c'est la garantie que la navigation marche
+	# de proche en proche.
+	verifier "/b/<sous-dossier tel quel> répond" "200" \
+		"$(req "/b/$premier_dossier" | cut -d' ' -f1)"
 else
 	sauter "VFS non monté ($ETAT_VFS) : /f, /b et les quatre vues ne sont pas éprouvés ici"
 	sauter "gate A3 (échantillon de $ECHANTILLON_VFS chemins) non exécutée"
