@@ -114,9 +114,15 @@ chercher qui pointe dessus **hors du dépôt** :
 
 Décision **gelée le 2026-09-05** (`docs/stack/`, plan d'exécution `/PLAN.md`). Trois noms :
 **Azalée** le wiki (`azalee.rosegriffon.fr`, Vercel, DA Rose Griffon), **Aphrody** le site
-d'outils et d'assets (`aphrody.com`, DA du vrai jeu), **Inacord** l'application de bureau et
-mobile (`apps/inacord`, ex `nie-explorer`) ; le jeu s'appelle **nie** et les crates gardent
-leur préfixe.
+d'outils (`aphrody.com`), **Inacord** l'application de bureau et mobile (`apps/inacord`, ex
+`nie-explorer`) ; le jeu s'appelle **nie** et les crates gardent leur préfixe.
+
+**Aphrody n'est ni un wiki ni un explorateur de fichiers** (précision de l'utilisateur, le
+2026-09-05) : le wiki est Azalée, l'explorateur est Inacord. Son interface **reproduit le menu
+principal du jeu**, et pas de mémoire : `nie-game --runtime --menu <écran> --export-layout`
+rend la disposition réelle — pour `mainmenu01`, un canevas de 1280×720 et 34 objets avec leur
+`transform`, leur `drawPriority`, leur sprite et leurs textes déjà traduits. Une interface
+d'Aphrody qui présente des listes de fichiers a dérivé vers le métier d'Inacord.
 
 Aphrody est servi par la crate `nie-site` **100 % Rust**, `publish = false`, sous
 `crates/tools/` : Axum 0.8, Tokio 1.x, Tower, `askama`, `moka`, `rusqlite` en lecture seule ;

@@ -70,7 +70,7 @@ de données et continuité de l'updater), les URL de l'updater.
 | Hébergement du wiki | **Vercel**, runtime Node, ISR + revalidation on-demand | VPS self-host : couple le wiki à une machine et à un miroir SQLite local — la cause du faux vert du 2026-09-05 |
 | Données du wiki | **Supabase Cloud** `kvnlbhatjqqmhhxaxlbi` (eu-west-3), lecture anonyme sous RLS `lecture_publique` | PostgREST self-host : `127.0.0.1` n'existe pas depuis Vercel ; miroir SQLite : un fichier, donc pas serverless |
 | Comptes utilisateurs | **Pas de migration** des 1 931 lignes `auth.users` ; réinscription = consentement | Copie silencieuse de données personnelles |
-| Domaine du site d'outils | **`aphrody.com`** (+ `www`), site nommé **Aphrody** ; `nie-site` remplace `aphrody-site` (:8083) sur ces deux hôtes seulement | `nie.rosegriffon.fr` : deux marques, deux DA — Rose Griffon est la communauté, Aphrody est l'univers du jeu ; `nie.aphrody.com` : un sous-domaine pour le produit principal |
+| Domaine du site d'outils | **`aphrody.com`** (+ `www`), site nommé **Aphrody** ; `nie-site` remplace `aphrody-site` (:8083) sur ces deux hôtes ; **amendement du 2026-09-05** : `nie.` et `api.` cessent d'être des alternatives rejetées et servent `nie-model-serve` et l'API, en `noindex` | `nie.rosegriffon.fr` : deux marques, deux DA — Rose Griffon est la communauté, Aphrody est l'univers du jeu ; `nie.aphrody.com` : un sous-domaine pour le produit principal |
 | Serveur du site | **`nie-site`**, Axum 0.8 sur `127.0.0.1:8085` derrière nginx, TLS Let's Encrypt déjà émis pour `aphrody.com` | socle `aphrody-web` du dépôt `aphrody` (tokens communs) : la DA d'Aphrody est celle du jeu, pas une charte commune aux vitrines |
 | Interface du site | **`packages/inacord-ui`** (React/Vite, extrait d'Inacord) montée par `apps/nie-web` et par Inacord | **Leptos** : une seconde pile d'UI, 0 ligne partagée avec l'app, mainteneur unique (issue #4707) ; **Dioxus** : même défaut |
 | Données du site | Les trois gisements du VPS (`var/mirror.sqlite`, `var/niers.sqlite`, `data/anime/episodes.db`) lus par **`rusqlite` 0.40** en lecture seule — les fichiers qu'Inacord embarque | **SQLx + PostgreSQL** pour `nie-site` : un saut réseau pour des données servies localement, et des réponses qui divergeraient d'Inacord |
@@ -153,3 +153,28 @@ l'applique ; aucun verdict serverless n'est recevable sans ses comptes.
 - [Benchmarks et mesures](benchmarks.md)
 - [Moteur, mobile, WASM et Steam — gelé, hors semaine](game-platforms.md)
 - [Desktop et mobile Tauri — gelé, hors semaine](desktop-mobile.md)
+
+## Amendement du 2026-09-05 — les sous-domaines servent, et Aphrody est le menu du jeu
+
+Deux corrections apportées par la mise en ligne, contre ce que ce document disait.
+
+**`nie.aphrody.com` n'est plus une alternative rejetée.** Le tableau ci-dessus l'écartait comme
+« un sous-domaine pour le produit principal ». La mesure a montré autre chose : sept
+sous-domaines résolvaient vers cette machine et n'y servaient **rien** — `aphrody.com`, `www`,
+`api`, `downloads`, `cdn`, `nie`, `bot`, `admin`, `bxc`, `n2b` rendaient tous **502**, parce que
+`aphrody-site` (:8083) n'écoutait plus. Le rollback prévu — « repointer sur :8083, `aphrody-site`
+n'est jamais arrêté » — était donc **illusoire** : il n'y avait pas de service à retrouver.
+
+Depuis, `nie.aphrody.com` sert `nie-model-serve` (décodage à la demande, sous `limit_req 10r/s`
+et `limit_conn 8`, car ce service n'a aucune protection propre — il ne lit même pas la méthode
+HTTP), et `api.aphrody.com` sert l'API de `nie-site` **et rien d'autre** : `location / { return
+404; }`, pour que deux origines ne rendent pas le même contenu avec chacune son canonique. Les
+deux sont en `noindex`.
+
+**Aphrody n'est ni un wiki ni un explorateur de fichiers.** Le wiki est Azalée, l'explorateur est
+Inacord. La formule « site d'outils et d'assets » a laissé dériver l'interface vers des listes de
+catalogues, c'est-à-dire vers le métier d'Inacord. L'interface d'Aphrody **reproduit le menu
+principal du jeu**, et la disposition ne se dessine pas de mémoire : `nie-game --runtime --menu
+<écran> --export-layout` la rend depuis le jeu — pour `mainmenu01`, un canevas de 1280×720 et
+34 objets portant leur `transform`, leur `drawPriority`, leur sprite et leurs textes déjà
+traduits.

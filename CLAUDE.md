@@ -726,7 +726,7 @@ le suivant. C'est le mode d'échec le plus cher du dépôt, et il s'est répét�
 ## Aphrody (`aphrody.com`), Inacord, nie — décision gelée le 2026-09-05
 
 Trois noms, fixés par l'utilisateur : **Azalée** le wiki (`azalee.rosegriffon.fr`, Vercel
-serverless, DA Rose Griffon), **Aphrody** le site d'outils et d'assets (`aphrody.com`, DA du
+serverless, DA Rose Griffon), **Aphrody** le site d'outils (`aphrody.com`, ni wiki ni explorateur — DA du
 vrai jeu — référence : le menu principal `mainmenu01`), **Inacord** l'application de bureau
 et mobile (`apps/inacord`, ex `nie-explorer`, identifiant Tauri conservé). Le jeu s'appelle
 **nie**. Aphrody est servi par la crate `nie-site` 100 % Rust sous `crates/tools/` (Axum 0.8,

@@ -232,9 +232,12 @@ Further reading: [`docs/PLAN.md`](docs/PLAN.md) (the plan, with numbers) ·
 
 ## Roadmap
 
-**Aphrody** (`aphrody.com`) is the tools and assets site, served by a `crates/tools/nie-site`
-crate — Axum 0.8, **100 % Rust**, bound to `127.0.0.1:8085` behind nginx and TLS. It hosts
-`apps/nie-web`, the same interface as **Inacord**, the desktop and mobile app (formerly
+**Aphrody** (`aphrody.com`) is the tools site, served by a `crates/tools/nie-site`
+crate — Axum 0.8, **100 % Rust**, bound to `127.0.0.1:8085` behind nginx and TLS. It is
+**neither the wiki nor the file explorer**: the wiki is **Azalée**, the explorer is
+**Inacord**. Its interface reproduces the game's **main menu**, whose real layout is exported
+by `nie-game --runtime --menu <screen> --export-layout` rather than drawn from memory. It
+hosts `apps/nie-web`, the same interface as **Inacord**, the desktop and mobile app (formerly
 `nie-explorer`). Both address resources by their **VFS path**, exactly like the game does:
 no translated slug ever identifies a file. The wiki, **Azalée**, is a separate product and
 moves to Vercel. Only reproducible results and Inazuma Eleven content covered by the

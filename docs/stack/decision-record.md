@@ -28,7 +28,9 @@ une SPA React/Vite de **158 fichiers TS/TSX MESURÉS**, dont **34** seulement im
 ### Les noms
 
 - **Azalée** — le wiki, `azalee.rosegriffon.fr`. Nom, domaine et design inchangés.
-- **Aphrody** — le site d'outils et d'assets, **`aphrody.com`** et `www.aphrody.com`.
+- **Aphrody** — le site d'outils, **`aphrody.com`** et `www.aphrody.com`. **Ni un wiki ni un
+  explorateur de fichiers** : le wiki est Azalée, l'explorateur est Inacord. Son interface
+  reproduit le **menu principal du jeu** (précision de l'utilisateur, 2026-09-05).
 - **Inacord** — l'application de bureau et mobile, ex `nie-explorer` : `apps/inacord`,
   `productName: "Inacord"`, fenêtre titrée `Inacord`. L'identifiant Tauri
   `dev.niers.explorer`, le dossier `%APPDATA%\dev.niers.explorer\` et les deux URL de

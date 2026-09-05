@@ -44,7 +44,7 @@ un chiffre, jamais une intention. Astra a reçu son identité `astra@aphrody-cod
 | Supabase Cloud | 224 tables, 1 478 colonnes, 5 vues, 155 + 64 policies ; 65 tables / 165 277 lignes, 0 écart | `load-mirror-to-cloud.sh`, `84d4a54` |
 | Ce que le wiki lit encore de local | `bun:sqlite` 41 fichiers, `node:fs` 44, `/home/ubuntu` 15, compat Supabase 19 ; 91 pages, 30 routes API | `rg -l`, `apps/azalee` + `packages/azalee` |
 | Explorateur | 158 fichiers TS/TSX, 34 avec `@tauri-apps`, `api.ts` 630 l., `productName: "niers"` 0.5.9, identifiant `dev.niers.explorer` | `rg`, `tauri.conf.json` |
-| `aphrody.com` | DNS → ce VPS, TLS émis, `aphrody-site` :8083 rend 265 o (corps vide), 10 hôtes dans un seul bloc nginx, CSP `default-src 'none'` | `dig`, `curl`, `conf.d/aphrody.com.conf` |
+| `aphrody.com` | DNS → ce VPS, TLS émis, 10 hôtes dans un seul bloc nginx, CSP `default-src 'none'`. **Corrigé le 2026-09-05 au soir** : `aphrody-site` (:8083) n'écoutait plus du tout — les dix hôtes rendaient **502**, pas 265 o | `dig`, `curl`, `ss -ltnp`, `conf.d/aphrody.com.conf` |
 | `Cargo.lock` | `axum` **absent** ; `tokio` 1.53.1, `tower` 0.5.3, `tower-http` 0.6.11, `rusqlite` 0.37.0, `reqwest` 0.13.4, `wgpu` 29.0.3 présents | `awk` sur le lock |
 | Sécurité self-host | RPC anonyme destructif, `anon` écrit sur 129 tables, 2 105 lignes `discord_members` publiques, JWT lisible, SSH root par mot de passe | `docs/SECURITE-BASCULE.md`, `4f53936` |
 
@@ -180,13 +180,19 @@ met à jour une 0.5.9 réelle (Windows) au lieu d'installer à côté — sinon 
 
 ### J5 — mercredi 2026-09-09 — Aphrody : `nie-web`, `nie-site`, la DA du jeu
 
+> **Précision de l'utilisateur, 2026-09-05 :** Aphrody n'est **ni un wiki ni un explorateur de
+> fichiers** — Azalée est le wiki, Inacord l'explorateur. L'interface d'Aphrody **reproduit le
+> menu principal du jeu**. Les listes de catalogues livrées ce jour-là relèvent du métier
+> d'Inacord et sont à reprendre : la disposition réelle s'exporte
+> (`nie-game --runtime --menu mainmenu01 --export-layout`), elle ne se dessine pas.
+
 | Qui | Quoi | Gate |
 |---|---|---|
 | Fable | `crates/tools/nie-site` : `main/app/config/error`, routes `health`, `well_known`, `static_files` (pré-compressé `br`/`zstd`, immuable par empreinte), **`/f/<chemin VFS verbatim>`** (une ressource, extension du jeu conservée) et **`/b/<préfixe VFS>`** (parcours d'un dossier) — amendement A3, chemin en **segment**, jamais en query ; les vues nommées (`/textures`, `/modeles`, `/sons`, `/videos`) sont des **filtres enregistrés** sur ces deux espaces, elles ne désignent jamais un fichier · `api/v1` (`rusqlite` ro, pagination, DTO), `assets` (proxy `nie-model-serve :8790` : `limit`, `timeout` 10 s, taille bornée, cache `moka`, ETag `blake3`), `index.html` via `askama` (titre, `og:` par route), erreurs, `robots.txt`, `security.txt`, `sitemap.xml`, CSP posée par la crate ; tests qui **comptent** ; `benches/routing.rs` · `apps/nie-web` : hôte Vite d'`inacord-ui` + `web-source.ts`, les routes sorties du wiki à J2 · **DA du jeu** : `niers design tokens` → `game-tokens.css` (70 variables), coquille **menu principal** pour Aphrody (`shell/main-menu/` : `SkewTile`, `TileRow`, `HeaderBanner`, `SidePanel`, `TitleBand`, `VersionChip`, `Callout`, `Badge`) sur les textures du jeu servies par `/assets` · coquille **InaCord** pour Inacord (`shell/inacord/` : `PhoneFrame`, `RoomList`, `MessageThread`, `HexBackdrop`, `TabBar` ; panneaux `#323544`/`#374D5B`, accent `#4FAECC`), références archivées dans `data/design/` · `deploy/nie-site.service` (`Restart=always`, `MemoryMax`) · `cargo build --release -p nie-site` | `cargo clippy -p nie-site --all-targets -- -D warnings` = 0 ; `cargo test -p nie-site` compte ; bundle initial **< 300 Ko gz** ; 70 tokens ; TTFB local `/api/v1/textures?page=1` **< 50 ms** |
 | Codex | installer `nie-site.service` (**go**) · appliquer la découpe du vhost et retirer la CSP nginx du bloc Aphrody, `nginx -t`, **reload avec go** · `nie.aphrody.com` → 308 · vérifier les 10 hôtes après | `aphrody.com/healthz` répond `nie-site` ; les 8 autres hôtes répondent **comme avant** (diff des `curl -sI`) ; la CSP vue est celle de `nie-site` |
 | Astra | Gate 5 : `hyperfine --warmup 3` sur `/`, `/api/v1/textures?page=1`, `/f/<une texture>` ; **200 chemins tirés de `niers vfs find` répondent 200 sur `/f/`** sous leur forme VFS exacte, dont une entité nommée `unknown` (gate A3) ; poids du bundle ; **capture `bxc` de `aphrody.com`** posée à côté de `data/design/aphrody-ui-ref-mainmenu-7.1.2.png` pour revue ; les 10 hôtes avant/après | TTFB `/textures` **< 50 ms** (départ 392), `/modeles` **< 50 ms** (départ 229) ; 200/200 chemins VFS ; aucune régression sur `api.`, `mcp.`, `downloads.` |
 
-**Rollback :** vhost `aphrody.com` → `:8083` (une ligne, `aphrody-site` n'est jamais arrêté).
+**Rollback :** restaurer le vhost précédent, ce qui restaure les **502** — car rien n'écoute sur `:8083` et `aphrody-site` n'existe plus comme service. Le rollback écrit ici supposait un repli qui n'existait pas ; le vrai filet est que ces hôtes étaient déjà hors service, donc la bascule ne pouvait rien casser.
 
 ### J6 — jeudi 2026-09-10 — la bascule
 

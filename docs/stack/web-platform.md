@@ -89,6 +89,12 @@ Pas de `rustls` dans la crate : nginx termine le TLS, `nie-site` parle HTTP en c
 
 ## Aphrody : `nie-site` sur `aphrody.com`
 
+**Ce qu'Aphrody n'est pas** (précision de l'utilisateur, 2026-09-05) : ni le wiki — c'est
+Azalée — ni l'explorateur de fichiers — c'est Inacord. Son interface reproduit le **menu
+principal du jeu**. La disposition n'est pas dessinée : `nie-game --runtime --menu <écran>
+--export-layout` l'exporte depuis le jeu, avec pour `mainmenu01` un canevas de 1280×720 et
+34 objets portant `transform`, `drawPriority`, sprite et textes déjà traduits.
+
 ### Ce que le serveur fait
 
 - **Sert** `apps/nie-web` : `index.html` passe par `askama` pour recevoir titre, description
