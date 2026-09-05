@@ -216,8 +216,14 @@ verifier "HEAD ne rend aucun corps" "0" "$taille"
 
 # --- 7. Aucune sortie de la racine -------------------------------------------------------------
 # Quatre formes, dont l'encodée : c'est celle qu'on oublie.
+#
+# `--path-as-is` est INDISPENSABLE et c'est le premier faux positif qu'a produit cette suite :
+# sans lui, curl résout les `../` LUI-MÊME avant d'émettre la requête. Le serveur reçoit alors
+# `/etc/passwd`, une route de navigation inconnue, et rend sa coquille en 200 — ce qui se lit
+# comme une traversée réussie alors qu'aucune n'a été tentée. Seule la forme encodée, que curl
+# ne normalise pas, atteignait réellement le serveur.
 for chemin in "/f/../../etc/passwd" "/f/data/../../../etc/passwd" "/assets/../../etc/passwd" "/f/%2e%2e%2f%2e%2e%2fetc%2fpasswd"; do
-	code="$(req "$chemin" | cut -d' ' -f1)"
+	code="$(req "$chemin" --path-as-is | cut -d' ' -f1)"
 	VERIFS+=1
 	if [ "$code" = "400" ] || [ "$code" = "404" ]; then
 		LIGNES+=("  $(couleur '32' 'ok')    traversée refusée ($chemin) = $code")
