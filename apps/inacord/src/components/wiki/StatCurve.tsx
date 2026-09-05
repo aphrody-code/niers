@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useMemo, useState } from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@niers/inacord-ui/lib/utils";
 
 /**
  * Bloc des 7 stats IEVR à un palier de niveau donné.

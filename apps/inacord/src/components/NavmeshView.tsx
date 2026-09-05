@@ -14,9 +14,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { commands } from "@/lib/bindings";
 import type { ApercuNavmDto } from "@/lib/bindings";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@niers/inacord-ui/components/ui/alert";
+import { Badge } from "@niers/inacord-ui/components/ui/badge";
+import { Button } from "@niers/inacord-ui/components/ui/button";
 
 /** Marge intérieure du tracé, en pixels — évite que le maillage touche les bords. */
 const MARGE = 12;

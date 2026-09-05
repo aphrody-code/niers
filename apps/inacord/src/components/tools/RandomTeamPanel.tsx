@@ -29,12 +29,12 @@ import {
   type Joueur,
   type TeamMember,
 } from "@/lib/equipe";
-import { useSettings } from "@/lib/settings";
-import { useThumbnail } from "@/lib/thumbs";
-import { Badge } from "@/components/ui/badge";
-import { Icon } from "@/components/ui/Icon";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useSettings } from "@niers/inacord-ui/lib/settings";
+import { useThumbnail } from "@niers/inacord-ui/lib/thumbs";
+import { Badge } from "@niers/inacord-ui/components/ui/badge";
+import { Icon } from "@niers/inacord-ui/components/ui/Icon";
+import { ScrollArea } from "@niers/inacord-ui/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@niers/inacord-ui/components/ui/select";
 import { encodeTeamCode } from "@niers/game/game/team-code";
 
 /** Éléments proposés — libellés FR du miroir, ce sont les valeurs réellement stockées. */

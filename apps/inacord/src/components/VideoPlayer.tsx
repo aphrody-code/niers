@@ -29,12 +29,12 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { save } from "@tauri-apps/plugin-dialog";
 import { toast } from "sonner";
 
-import { Icon } from "@/components/ui/Icon";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
+import { Icon } from "@niers/inacord-ui/components/ui/Icon";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@niers/inacord-ui/components/ui/select";
+import { Slider } from "@niers/inacord-ui/components/ui/slider";
 import { api } from "@/lib/api";
 import type { FilmDto } from "@/lib/bindings";
-import { cn } from "@/lib/utils";
+import { cn } from "@niers/inacord-ui/lib/utils";
 
 /** Dérive tolérée entre l'image et le son, en secondes, avant recalage. */
 const DERIVE_MAX = 0.25;

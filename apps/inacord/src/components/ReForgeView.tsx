@@ -13,10 +13,10 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { api, type ForgeBlocker, type ForgeReport } from "@/lib/api";
 import { defaultReDbPath, reDb, type ClasseForge, type StatutForge } from "@/lib/reDb";
-import { useSettings } from "@/lib/settings";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useSettings } from "@niers/inacord-ui/lib/settings";
+import { Button } from "@niers/inacord-ui/components/ui/button";
+import { ScrollArea } from "@niers/inacord-ui/components/ui/scroll-area";
+import { Alert, AlertDescription, AlertTitle } from "@niers/inacord-ui/components/ui/alert";
 
 /** Sépare les milliers à la française — ces nombres se lisent, ils ne se survolent pas. */
 function o(n: number): string {

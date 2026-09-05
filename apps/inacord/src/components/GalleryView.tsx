@@ -34,13 +34,13 @@ import {
   type EnrichissementGalerie,
   type Illustration,
 } from "@/lib/galerie";
-import { useSettings } from "@/lib/settings";
-import { useThumbnail } from "@/lib/thumbs";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Icon } from "@/components/ui/Icon";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { useSettings } from "@niers/inacord-ui/lib/settings";
+import { useThumbnail } from "@niers/inacord-ui/lib/thumbs";
+import { Alert, AlertDescription, AlertTitle } from "@niers/inacord-ui/components/ui/alert";
+import { Badge } from "@niers/inacord-ui/components/ui/badge";
+import { Icon } from "@niers/inacord-ui/components/ui/Icon";
+import { Input } from "@niers/inacord-ui/components/ui/input";
+import { ScrollArea } from "@niers/inacord-ui/components/ui/scroll-area";
 
 /** Illustrations affichées d'un coup — au-delà, un bouton « en afficher plus ». */
 const PAR_PAGE = 60;

@@ -8,9 +8,9 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command";
-import { Icon } from "@/components/ui/Icon";
-import { Shortcut } from "@/components/ui/shortcut";
+} from "@niers/inacord-ui/components/ui/command";
+import { Icon } from "@niers/inacord-ui/components/ui/Icon";
+import { Shortcut } from "@niers/inacord-ui/components/ui/shortcut";
 import { PINNED_PLACES, useRecentPlaces } from "@/lib/places";
 import { useT } from "@/lib/i18n";
 import { VUES } from "@/lib/vues";

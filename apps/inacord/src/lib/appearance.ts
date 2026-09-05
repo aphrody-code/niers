@@ -4,7 +4,7 @@
 // `uiZoom` utilise la propriété CSS `zoom` (Chromium/WebView2 — la cible Windows de niers).
 import { useEffect } from "react";
 import { useTheme } from "next-themes";
-import { ACCENT_THEMES, useSettings } from "@/lib/settings";
+import { ACCENT_THEMES, useSettings } from "@niers/inacord-ui/lib/settings";
 
 const BASE_FONT_SIZE_PX = 16;
 

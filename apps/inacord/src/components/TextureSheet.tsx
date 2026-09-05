@@ -2,11 +2,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { save } from "@tauri-apps/plugin-dialog";
 import { toast } from "sonner";
 import { api, type Texture } from "@/lib/api";
-import { useSettings } from "@/lib/settings";
+import { useSettings } from "@niers/inacord-ui/lib/settings";
 import { humanSize } from "@/lib/bytes";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@niers/inacord-ui/components/ui/button";
+import { Input } from "@niers/inacord-ui/components/ui/input";
+import { Badge } from "@niers/inacord-ui/components/ui/badge";
 
 /** Vignettes décodées en parallèle. 4 : un décodage BC7 est CPU-bound côté Rust, et chaque appel
  * y consomme un thread à pile de 16 Mio — en lancer 80 d'un coup fait tomber la fenêtre dans

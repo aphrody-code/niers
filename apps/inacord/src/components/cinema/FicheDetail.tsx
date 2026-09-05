@@ -17,11 +17,11 @@
 // rien. Le sélecteur de saison est le `Select` du design system, comme partout ailleurs.
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Icon } from "@/components/ui/Icon";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@niers/inacord-ui/components/ui/button";
+import { Dialog, DialogContent, DialogTitle } from "@niers/inacord-ui/components/ui/dialog";
+import { Icon } from "@niers/inacord-ui/components/ui/Icon";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@niers/inacord-ui/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@niers/inacord-ui/components/ui/tabs";
 import { formaterDuree, urlVideo } from "@/components/VideoPlayer";
 import { afficheConnue, poserAffiche } from "@/lib/affiches";
 import {
@@ -34,7 +34,7 @@ import {
 } from "@/lib/cinema";
 import { empreinte } from "@/lib/serie";
 import type { SourceLecture } from "@/lib/sources";
-import { cn } from "@/lib/utils";
+import { cn } from "@niers/inacord-ui/lib/utils";
 
 export interface FicheDetailProps {
   element: ElementCinema;

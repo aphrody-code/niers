@@ -12,12 +12,12 @@ import { useEffect, useState } from "react";
 
 import { api, type CharaPicker, type StatBlock } from "@/lib/api";
 import { useFiltered } from "@/lib/filtrage";
-import { useSettings } from "@/lib/settings";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useSettings } from "@niers/inacord-ui/lib/settings";
+import { Alert, AlertDescription, AlertTitle } from "@niers/inacord-ui/components/ui/alert";
+import { Badge } from "@niers/inacord-ui/components/ui/badge";
+import { Input } from "@niers/inacord-ui/components/ui/input";
+import { ScrollArea } from "@niers/inacord-ui/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@niers/inacord-ui/components/ui/select";
 
 /** `rarityCode` → libellé FR (cf. doc Rust `game_data::calculate_character_stats`). */
 export const RARITY_LABELS: [number, string][] = [

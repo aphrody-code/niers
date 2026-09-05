@@ -14,11 +14,11 @@ import Editor from "@monaco-editor/react";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
 
-import { DataGrid, type DataGridColumn } from "@/components/ui/data-grid";
-import { TreeRows, type TreeRowItem } from "@/components/ui/tree-rows";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { DataGrid, type DataGridColumn } from "@niers/inacord-ui/components/ui/data-grid";
+import { TreeRows, type TreeRowItem } from "@niers/inacord-ui/components/ui/tree-rows";
+import { ToggleGroup, ToggleGroupItem } from "@niers/inacord-ui/components/ui/toggle-group";
 import { installMonacoOffline } from "@/lib/monacoSetup";
-import { cn } from "@/lib/utils";
+import { cn } from "@niers/inacord-ui/lib/utils";
 import {
   cellEditable,
   cellTypeHint,

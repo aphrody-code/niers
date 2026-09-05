@@ -15,23 +15,23 @@ import {
   useSettings,
   type AccentTheme,
   type Locale,
-} from "@/lib/settings";
+} from "@niers/inacord-ui/lib/settings";
 import { useT, LOCALE_LABELS } from "@/lib/i18n";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Slider } from "@/components/ui/slider";
-import { Switch } from "@/components/ui/switch";
-import { Progress } from "@/components/ui/progress";
+import { Input } from "@niers/inacord-ui/components/ui/input";
+import { Label } from "@niers/inacord-ui/components/ui/label";
+import { Button } from "@niers/inacord-ui/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@niers/inacord-ui/components/ui/card";
+import { Badge } from "@niers/inacord-ui/components/ui/badge";
+import { Slider } from "@niers/inacord-ui/components/ui/slider";
+import { Switch } from "@niers/inacord-ui/components/ui/switch";
+import { Progress } from "@niers/inacord-ui/components/ui/progress";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@niers/inacord-ui/components/ui/select";
 
 /** Libellés des variantes de palette — mêmes noms que les fichiers de
  * `var/spaceui/packages/tokens/src/css/themes/`. */

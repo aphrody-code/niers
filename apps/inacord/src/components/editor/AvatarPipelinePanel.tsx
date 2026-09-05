@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { api } from "@/lib/api";
-import { cn } from "@/lib/utils";
+import { cn } from "@niers/inacord-ui/lib/utils";
 
 type Part = { id: string; resource: string; modeles: string[]; modeles2: string[] };
 type Category = { faceSettingType: number; prefixe: string; parts: Part[] };

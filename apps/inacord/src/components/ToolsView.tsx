@@ -27,11 +27,11 @@ import { useEffect, useMemo, useState } from "react";
 
 import { api } from "@/lib/api";
 import { versJoueur, versJoueurDepuisJeu, type Joueur } from "@/lib/equipe";
-import { useSettings } from "@/lib/settings";
+import { useSettings } from "@niers/inacord-ui/lib/settings";
 import { wikiDb } from "@/lib/wikiDb";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription, AlertTitle } from "@niers/inacord-ui/components/ui/alert";
+import { Badge } from "@niers/inacord-ui/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@niers/inacord-ui/components/ui/tabs";
 import { ComparatorPanel } from "@/components/tools/ComparatorPanel";
 import { RandomTeamPanel } from "@/components/tools/RandomTeamPanel";
 import { StatCalculator } from "@/components/tools/StatCalculator";

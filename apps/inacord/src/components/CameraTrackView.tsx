@@ -13,10 +13,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { commands } from "@/lib/bindings";
 import type { ApercuCameraDto, PisteCameraDto } from "@/lib/bindings";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Alert, AlertDescription, AlertTitle } from "@niers/inacord-ui/components/ui/alert";
+import { ScrollArea } from "@niers/inacord-ui/components/ui/scroll-area";
+import { Badge } from "@niers/inacord-ui/components/ui/badge";
+import { ToggleGroup, ToggleGroupItem } from "@niers/inacord-ui/components/ui/toggle-group";
 
 /** Couleur par famille de canal — position, visée, champ de vision. */
 const COULEURS: Record<string, string> = {

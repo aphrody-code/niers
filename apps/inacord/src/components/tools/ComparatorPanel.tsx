@@ -24,16 +24,16 @@ import { useEffect, useMemo, useState } from "react";
 import { api, type StatBlock } from "@/lib/api";
 import { LIBELLE_POSTE, cheminVisage, codePoste, type Joueur } from "@/lib/equipe";
 import { useFiltered } from "@/lib/filtrage";
-import { useSettings } from "@/lib/settings";
-import { useThumbnail } from "@/lib/thumbs";
+import { useSettings } from "@niers/inacord-ui/lib/settings";
+import { useThumbnail } from "@niers/inacord-ui/lib/thumbs";
 import { wikiDb } from "@/lib/wikiDb";
 import type { LigneTechnique } from "@/lib/wikiQueries";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Icon } from "@/components/ui/Icon";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Slider } from "@/components/ui/slider";
+import { Alert, AlertDescription, AlertTitle } from "@niers/inacord-ui/components/ui/alert";
+import { Badge } from "@niers/inacord-ui/components/ui/badge";
+import { Icon } from "@niers/inacord-ui/components/ui/Icon";
+import { Input } from "@niers/inacord-ui/components/ui/input";
+import { ScrollArea } from "@niers/inacord-ui/components/ui/scroll-area";
+import { Slider } from "@niers/inacord-ui/components/ui/slider";
 
 /** Les sept stats, dans l'ordre du jeu, avec la clé du bloc rendu par le moteur. */
 const STATS: { cle: keyof Omit<StatBlock, "total">; libelle: string }[] = [

@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { SpriteIcon } from "@/components/ui/SpriteIcon";
-import type { SpriteKey } from "@/config/sprites";
-import { cn } from "@/lib/utils";
+import { SpriteIcon } from "@niers/inacord-ui/components/ui/SpriteIcon";
+import type { SpriteKey } from "@niers/inacord-ui/config/sprites";
+import { cn } from "@niers/inacord-ui/lib/utils";
 
 export interface StatHeptagonProps {
 	stats: {

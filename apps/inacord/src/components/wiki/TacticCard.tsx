@@ -1,10 +1,10 @@
 "use client";
 
 import { Map } from "lucide-react";
-import { Image } from "@/components/ui/image";
-import { Link } from "@/components/ui/link";
+import { Image } from "@niers/inacord-ui/components/ui/image";
+import { Link } from "@niers/inacord-ui/components/ui/link";
 import { useState } from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@niers/inacord-ui/lib/utils";
 
 export interface TacticCardProps {
 	id: string;

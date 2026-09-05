@@ -7,13 +7,13 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { api, type CapsuleRate, type Drop } from "@/lib/api";
-import { useSettings } from "@/lib/settings";
+import { useSettings } from "@niers/inacord-ui/lib/settings";
 import { conditionLisible } from "@/lib/valeurs";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription, AlertTitle } from "@niers/inacord-ui/components/ui/alert";
+import { Badge } from "@niers/inacord-ui/components/ui/badge";
+import { Input } from "@niers/inacord-ui/components/ui/input";
+import { ScrollArea } from "@niers/inacord-ui/components/ui/scroll-area";
+import { Tabs, TabsList, TabsTrigger } from "@niers/inacord-ui/components/ui/tabs";
 
 type Onglet = "butin" | "capsules";
 

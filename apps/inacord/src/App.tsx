@@ -3,16 +3,16 @@ import { useTheme } from "next-themes";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { toast } from "sonner";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { Toaster } from "@/components/ui/sonner";
+import { Tabs, TabsContent } from "@niers/inacord-ui/components/ui/tabs";
+import { TooltipProvider } from "@niers/inacord-ui/components/ui/tooltip";
+import { Toaster } from "@niers/inacord-ui/components/ui/sonner";
 import { ExplorerView } from "@/components/ExplorerView";
 import { ExplorerTabsBar } from "@/components/ExplorerTabsBar";
 import type { EditorViewState } from "@/components/editor/EditorView";
 import { DetailPane } from "@/components/DetailPane";
 import { CommandPalette } from "@/components/CommandPalette";
 import { Sidebar, type SidebarSection } from "@/components/Sidebar";
-import { Icon } from "@/components/ui/Icon";
+import { Icon } from "@niers/inacord-ui/components/ui/Icon";
 import { TopBar } from "@/components/TopBar";
 import { WindowResizeHandles } from "@/components/ui/window-resize-handles";
 import { useAppMenuShortcuts, type AppMenuActions } from "@/components/AppMenu";
@@ -23,7 +23,9 @@ import { useApplyAppearance } from "@/lib/appearance";
 import { PINNED_PLACES, recordVisit, usePinnedPlaces, useRecentPlaces } from "@/lib/places";
 import { canGoBack, canGoForward, explorerTabs, useExplorerTabs } from "@/lib/explorerTabs";
 import { showPlaceContextMenu } from "@/lib/contextMenu";
-import { getSettings, setSettings, useSettings } from "@/lib/settings";
+import { getSettings, setSettings, useSettings } from "@niers/inacord-ui/lib/settings";
+import { AssetSourceProvider } from "@niers/inacord-ui";
+import { creerDesktopSource } from "./lib/desktop-source";
 import { modsDb } from "@/lib/modsDb";
 import { jobsDb } from "@/lib/jobsDb";
 import { vfsIndexDb } from "@/lib/vfsIndexDb";
@@ -58,7 +60,7 @@ const SIDEBAR_WIDTH = 200;
 /** Clé de persistance du repli de la barre latérale. */
 const CLE_SIDEBAR_REPLIEE = "nie-explorer:sidebar:repliee";
 
-export default function App() {
+function CorpsApp() {
   const t = useT();
   useApplyAppearance();
   // L'Explorateur est la porte d'entrée : il donne immédiatement accès aux fichiers du jeu ;
@@ -628,5 +630,24 @@ export default function App() {
       />
       <Toaster position="bottom-right" />
     </TooltipProvider>
+  );
+}
+
+/**
+ * L'hôte desktop : il construit sa source et la monte, comme Aphrody monte la sienne. Toute
+ * l'interface en dessous vient de `@niers/inacord-ui` et ignore qu'elle tourne dans Tauri.
+ *
+ * La source est mémorisée SUR LA RACINE DU JEU, et pas une fois pour toutes : l'utilisateur
+ * peut la changer depuis les réglages en cours de session. Figée au premier rendu, elle
+ * continuerait d'interroger l'ancien dossier — l'interface montrerait les fichiers d'un jeu
+ * que l'utilisateur croit avoir quitté, sans la moindre erreur pour le signaler.
+ */
+export default function App() {
+  const { gameDir } = useSettings();
+  const source = useMemo(() => creerDesktopSource(gameDir), [gameDir]);
+  return (
+    <AssetSourceProvider source={source}>
+      <CorpsApp />
+    </AssetSourceProvider>
   );
 }

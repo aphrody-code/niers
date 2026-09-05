@@ -1,7 +1,7 @@
 // i18n minimal, sans dépendance (react-i18next serait surdimensionné pour ~80 clés).
 // Dictionnaires FR/EN/JA + hook `useT()` réactif sur `useSettings().locale`.
-import { useSettings } from "@/lib/settings";
-import type { Locale } from "@/lib/settings";
+import { useSettings } from "@niers/inacord-ui/lib/settings";
+import type { Locale } from "@niers/inacord-ui/lib/settings";
 
 type Dict = Record<string, string>;
 

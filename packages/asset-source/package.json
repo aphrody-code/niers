@@ -1,0 +1,17 @@
+{
+	"name": "@niers/asset-source",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"description": "Le contrat d'acces aux ressources du jeu, et son implementation web. Monte par Inacord (Tauri) et par Aphrody (navigateur).",
+	"exports": {
+		".": "./src/index.ts",
+		"./contract": "./src/contract.ts",
+		"./nie-site": "./src/nie-site.ts",
+		"./web-source": "./src/web-source.ts",
+		"./url-conventions": "./src/url-conventions.ts"
+	},
+	"scripts": { "typecheck": "bunx tsc --noEmit", "test": "bun test" },
+	"dependencies": { "@niers/catalog": "workspace:*" },
+	"devDependencies": { "typescript": "catalog:", "@types/bun": "catalog:" }
+}

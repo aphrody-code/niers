@@ -7,7 +7,7 @@
 // réessaie en arrière-plan et l'explorateur fonctionne normalement.
 import { useEffect, useRef, useState } from "react";
 import { connectBridge, type BridgeHandlers } from "@niers/bridge";
-import { getSettings } from "@/lib/settings";
+import { getSettings } from "@niers/inacord-ui/lib/settings";
 
 /** Version annoncée au serveur — celle du `package.json` de l'application. */
 const APP_VERSION = "0.4.0";

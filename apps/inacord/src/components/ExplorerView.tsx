@@ -3,11 +3,11 @@ import { writeText, readText } from "@tauri-apps/plugin-clipboard-manager";
 import { confirm } from "@tauri-apps/plugin-dialog";
 import { toast } from "sonner";
 import { api, type FolderRole, type RawCpkEntry, type VfsDir } from "@/lib/api";
-import { useSettings } from "@/lib/settings";
+import { useSettings } from "@niers/inacord-ui/lib/settings";
 import { humanSize } from "@/lib/bytes";
 import { recordVisit, togglePin, usePinnedPlaces } from "@/lib/places";
 import { codeOf } from "@/lib/vfsIndexDb";
-import { useThumbnail } from "@/lib/thumbs";
+import { useThumbnail } from "@niers/inacord-ui/lib/thumbs";
 import { useResolvedNames } from "@/lib/nameResolve";
 import {
   showExportSelectionMenu,
@@ -16,23 +16,23 @@ import {
   showVfsFolderContextMenu,
 } from "@/lib/contextMenu";
 import { registerFileOps } from "@/lib/editBus";
-import { SplitPane } from "@/components/ui/split-pane";
+import { SplitPane } from "@niers/inacord-ui/components/ui/split-pane";
 import type { ExplorerTab, ExplorerTabPatch } from "@/lib/explorerTabs";
 import { modsDb } from "@/lib/modsDb";
 import { stageReplacement, stageReplacementFromPath } from "@/lib/modWorkspace";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Icon } from "@/components/ui/Icon";
-import { CircleButton } from "@/components/ui/circle-button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Slider } from "@/components/ui/slider";
+import { Input } from "@niers/inacord-ui/components/ui/input";
+import { Badge } from "@niers/inacord-ui/components/ui/badge";
+import { ScrollArea } from "@niers/inacord-ui/components/ui/scroll-area";
+import { Icon } from "@niers/inacord-ui/components/ui/Icon";
+import { CircleButton } from "@niers/inacord-ui/components/ui/circle-button";
+import { Popover, PopoverContent, PopoverTrigger } from "@niers/inacord-ui/components/ui/popover";
+import { ToggleGroup, ToggleGroupItem } from "@niers/inacord-ui/components/ui/toggle-group";
+import { Slider } from "@niers/inacord-ui/components/ui/slider";
 import { useT } from "@/lib/i18n";
 import { DetailPane, type DetailTarget } from "@/components/DetailPane";
 import { PropertyEditor } from "@/components/PropertyEditor";
 import { SelectionBar } from "@/components/SelectionBar";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@niers/inacord-ui/components/ui/tabs";
 
 type SortKey = "name" | "size";
 

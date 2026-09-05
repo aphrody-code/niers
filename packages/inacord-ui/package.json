@@ -1,0 +1,36 @@
+{
+	"name": "@niers/inacord-ui",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"description": "L'interface partagee d'Inacord et d'Aphrody. Aucun acces direct a l'hote : tout passe par AssetSource.",
+	"exports": {
+		".": "./src/index.ts",
+		"./source": "./src/source.tsx",
+		"./components/*": "./src/components/*.tsx",
+		"./config/*": "./src/config/*.ts",
+		"./lib/*": "./src/lib/*.ts"
+	},
+	"scripts": {
+		"typecheck": "bunx tsc --noEmit"
+	},
+	"dependencies": {
+		"@base-ui/react": "^1.7.0",
+		"@niers/asset-source": "workspace:*",
+		"@niers/game": "workspace:*",
+		"@rosegriffon/azalee": "workspace:*",
+		"class-variance-authority": "catalog:",
+		"clsx": "catalog:",
+		"cmdk": "catalog:",
+		"lucide-react": "catalog:",
+		"next-themes": "catalog:",
+		"react": "catalog:",
+		"sonner": "catalog:",
+		"tailwind-merge": "catalog:"
+	},
+	"devDependencies": {
+		"@types/react": "catalog:",
+		"typescript": "catalog:",
+		"@types/bun": "catalog:"
+	}
+}

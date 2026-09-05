@@ -4,7 +4,7 @@ import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { toast } from "sonner";
 import { formatDescription, translateEffect } from "@niers/game/text";
 import { api, type ExportFormat } from "@/lib/api";
-import { useSettings, type Locale } from "@/lib/settings";
+import { useSettings, type Locale } from "@niers/inacord-ui/lib/settings";
 import { b64ToBytes, bytesToB64, hexLines, humanSize } from "@/lib/bytes";
 import { modsDb, type ModRow } from "@/lib/modsDb";
 import { stageReplacement, stageTextureReplacement } from "@/lib/modWorkspace";
@@ -15,18 +15,18 @@ import { AudioBankPanel } from "@/components/AudioBankPanel";
 import { CameraTrackView } from "@/components/CameraTrackView";
 import { NavmeshView } from "@/components/NavmeshView";
 import { ModelPreview } from "@/components/ModelPreview";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@niers/inacord-ui/components/ui/button";
+import { Badge } from "@niers/inacord-ui/components/ui/badge";
+import { Separator } from "@niers/inacord-ui/components/ui/separator";
+import { ScrollArea } from "@niers/inacord-ui/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@niers/inacord-ui/components/ui/tabs";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@niers/inacord-ui/components/ui/select";
 
 // Monaco et ses workers ne sont utiles qu'après le décodage explicite d'un `.cfg.bin`.
 // Les garder hors du chunk de l'Explorateur évite de payer l'éditeur de texte pour chaque dossier.

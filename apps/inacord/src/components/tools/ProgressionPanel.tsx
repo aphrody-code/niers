@@ -5,11 +5,11 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { api, type ExpLevel } from "@/lib/api";
-import { useSettings } from "@/lib/settings";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { useSettings } from "@niers/inacord-ui/lib/settings";
+import { Alert, AlertDescription, AlertTitle } from "@niers/inacord-ui/components/ui/alert";
+import { Badge } from "@niers/inacord-ui/components/ui/badge";
+import { Input } from "@niers/inacord-ui/components/ui/input";
+import { ScrollArea } from "@niers/inacord-ui/components/ui/scroll-area";
 
 /** Borne un niveau saisi à l'intervalle réellement couvert par la table. */
 function borner(v: number, min: number, max: number) {

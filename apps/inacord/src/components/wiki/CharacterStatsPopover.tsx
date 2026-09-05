@@ -3,8 +3,8 @@
 import type { GameCharacterStats } from "@/lib/wikiTypes";
 import { BarChart3 } from "lucide-react";
 // Cf. la note d'AuraCard : jamais la bibliothèque UI web du wiki ici — `process.env` → page blanche.
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "@niers/inacord-ui/components/ui/popover";
+import { cn } from "@niers/inacord-ui/lib/utils";
 
 interface CharacterStatsPopoverProps {
 	stats: GameCharacterStats;

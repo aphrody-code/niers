@@ -27,18 +27,18 @@ import { confirm } from "@tauri-apps/plugin-dialog";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { toast } from "sonner";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Icon } from "@/components/ui/Icon";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@niers/inacord-ui/components/ui/badge";
+import { Button } from "@niers/inacord-ui/components/ui/button";
+import { Icon } from "@niers/inacord-ui/components/ui/Icon";
+import { ScrollArea } from "@niers/inacord-ui/components/ui/scroll-area";
+import { Tabs, TabsList, TabsTrigger } from "@niers/inacord-ui/components/ui/tabs";
 import { api } from "@/lib/api";
 import { humanSize } from "@/lib/bytes";
 import { useResolvedName } from "@/lib/nameResolve";
 import { defaultReDbPath, reDb, toStaticHex, type FunctionRow, type RttiClassRow } from "@/lib/reDb";
-import { useSettings } from "@/lib/settings";
+import { useSettings } from "@niers/inacord-ui/lib/settings";
 import { codeOf, vfsIndexDb } from "@/lib/vfsIndexDb";
-import { cn } from "@/lib/utils";
+import { cn } from "@niers/inacord-ui/lib/utils";
 
 // Même séparation que l'inspecteur : un panneau de propriétés ne charge Monaco qu'au moment où
 // l'utilisateur édite réellement une configuration décodée.

@@ -44,14 +44,14 @@ import {
   type ViewportStats,
 } from "@/components/editor/Viewport3D";
 import { PropertyEditor } from "@/components/PropertyEditor";
-import { CircleButton } from "@/components/ui/circle-button";
-import { Icon } from "@/components/ui/Icon";
-import { SplitPane } from "@/components/ui/split-pane";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CircleButton } from "@niers/inacord-ui/components/ui/circle-button";
+import { Icon } from "@niers/inacord-ui/components/ui/Icon";
+import { SplitPane } from "@niers/inacord-ui/components/ui/split-pane";
+import { Tabs, TabsList, TabsTrigger } from "@niers/inacord-ui/components/ui/tabs";
 import { api, type MotionClips } from "@/lib/api";
-import { useSettings } from "@/lib/settings";
+import { useSettings } from "@niers/inacord-ui/lib/settings";
 import { codeOf } from "@/lib/vfsIndexDb";
-import { cn } from "@/lib/utils";
+import { cn } from "@niers/inacord-ui/lib/utils";
 
 /** Extensions qui ouvrent réellement quelque chose dans le viewport (cf. `assemble_glb_for_preview`
  * : l'assemblage exige le G4MD **et** le G4MG de même nom, l'un ou l'autre servant de point

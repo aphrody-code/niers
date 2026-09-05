@@ -2,13 +2,13 @@ import { useEffect, useState } from "react";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { toast } from "sonner";
 import { api, type RemoteRosterEntry, type SaveBlobInfo, type SaveSummary } from "@/lib/api";
-import { useSettings } from "@/lib/settings";
+import { useSettings } from "@niers/inacord-ui/lib/settings";
 import { b64ToBytes, hexLines, humanSize } from "@/lib/bytes";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@niers/inacord-ui/components/ui/button";
+import { Badge } from "@niers/inacord-ui/components/ui/badge";
+import { ScrollArea } from "@niers/inacord-ui/components/ui/scroll-area";
+import { Card, CardContent, CardHeader, CardTitle } from "@niers/inacord-ui/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@niers/inacord-ui/components/ui/alert";
 
 function formatPlaytime(secs: number | null): string {
   if (secs == null) return "?";

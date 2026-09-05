@@ -14,7 +14,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { api, type VfsStats } from "@/lib/api";
-import { useSettings } from "@/lib/settings";
+import { useSettings } from "@niers/inacord-ui/lib/settings";
 import { wikiDb, type StatsMiroir } from "@/lib/wikiDb";
 import { defaultReDbPath, reDb, type ReStats, type StatutForge } from "@/lib/reDb";
 import { vfsIndexDb, type VfsIndexMeta } from "@/lib/vfsIndexDb";
@@ -22,10 +22,10 @@ import { modsDb } from "@/lib/modsDb";
 import { useT } from "@/lib/i18n";
 import { animeDb, defaultAnimeDbPath } from "@/lib/animeDb";
 import { vue } from "@/lib/vues";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Icon } from "@/components/ui/Icon";
+import { Badge } from "@niers/inacord-ui/components/ui/badge";
+import { Button } from "@niers/inacord-ui/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@niers/inacord-ui/components/ui/card";
+import { Icon } from "@niers/inacord-ui/components/ui/Icon";
 
 /** Disponibilité d'une capacité : ce qui décide de la pastille et du ton de la carte. */
 type Etat = "pret" | "partiel" | "absent";

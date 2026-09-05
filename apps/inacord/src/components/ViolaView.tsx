@@ -13,16 +13,16 @@ import { api } from "@/lib/api";
 import type { ViolaMergeDto, ViolaPackDto, ViolaPlatform } from "@/lib/bindings";
 import { jobsDb } from "@/lib/jobsDb";
 import { humanSize } from "@/lib/bytes";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Progress } from "@/components/ui/progress";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getSettings } from "@/lib/settings";
+import { Button } from "@niers/inacord-ui/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@niers/inacord-ui/components/ui/card";
+import { Input } from "@niers/inacord-ui/components/ui/input";
+import { Label } from "@niers/inacord-ui/components/ui/label";
+import { Badge } from "@niers/inacord-ui/components/ui/badge";
+import { Switch } from "@niers/inacord-ui/components/ui/switch";
+import { Progress } from "@niers/inacord-ui/components/ui/progress";
+import { Alert, AlertDescription, AlertTitle } from "@niers/inacord-ui/components/ui/alert";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@niers/inacord-ui/components/ui/tabs";
+import { getSettings } from "@niers/inacord-ui/lib/settings";
 
 // Les charges utiles d'événements ne passent pas par `tauri-specta` (il n'exporte que les types
 // des signatures de commandes) : on les décrit ici, à l'image de `lib/vfsIndexDb.ts`.

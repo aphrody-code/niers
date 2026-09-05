@@ -5,7 +5,7 @@
  */
 
 import { highlightMatches } from "@/lib/wikiTypes";
-import { cn } from "@/lib/utils";
+import { cn } from "@niers/inacord-ui/lib/utils";
 
 interface SearchResultHighlightProps {
 	text: string;

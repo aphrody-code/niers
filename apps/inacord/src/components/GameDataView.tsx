@@ -52,14 +52,14 @@ import {
   type Trophy,
   type Uniform,
 } from "@/lib/api";
-import { useSettings } from "@/lib/settings";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { DataGrid, type DataGridColumn } from "@/components/ui/data-grid";
-import { Icon } from "@/components/ui/Icon";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { useSettings } from "@niers/inacord-ui/lib/settings";
+import { Alert, AlertDescription, AlertTitle } from "@niers/inacord-ui/components/ui/alert";
+import { Badge } from "@niers/inacord-ui/components/ui/badge";
+import { Button } from "@niers/inacord-ui/components/ui/button";
+import { DataGrid, type DataGridColumn } from "@niers/inacord-ui/components/ui/data-grid";
+import { Icon } from "@niers/inacord-ui/components/ui/Icon";
+import { Input } from "@niers/inacord-ui/components/ui/input";
+import { ScrollArea } from "@niers/inacord-ui/components/ui/scroll-area";
 // Cartes du wiki, migrées dans l'application (`components/wiki/`) : le mode grille de
 // l'encyclopédie rend EXACTEMENT les mêmes composants que les pages du site.
 import { AuraCard } from "@/components/wiki/AuraCard";
@@ -72,7 +72,7 @@ import { TacticCard } from "@/components/wiki/TacticCard";
 import { PropertyEditor } from "@/components/PropertyEditor";
 import { StatCalculator } from "@/components/tools/StatCalculator";
 import { estAbsent } from "@/lib/valeurs";
-import { cn } from "@/lib/utils";
+import { cn } from "@niers/inacord-ui/lib/utils";
 
 /** Valeur affichable d'une cellule — `null` rend une cellule vide, jamais la chaîne « null ». */
 type Cellule = string | number | boolean | null;

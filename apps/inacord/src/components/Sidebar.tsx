@@ -13,11 +13,11 @@
 // actif = `bg-accent`.
 import { useTheme } from "next-themes";
 
-import { CircleButton } from "@/components/ui/circle-button";
-import { Icon } from "@/components/ui/Icon";
+import { CircleButton } from "@niers/inacord-ui/components/ui/circle-button";
+import { Icon } from "@niers/inacord-ui/components/ui/Icon";
 import { JobManagerButton } from "@/components/JobManager";
 import { useT } from "@/lib/i18n";
-import { cn } from "@/lib/utils";
+import { cn } from "@niers/inacord-ui/lib/utils";
 
 export interface SidebarSection {
   /** Intitulé du groupe (`GroupHeader.tsx` amont) — `null` pour un groupe sans titre. */

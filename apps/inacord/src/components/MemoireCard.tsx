@@ -15,10 +15,10 @@ import { useCallback, useEffect, useState } from "react";
 import { commands } from "@/lib/bindings";
 import type { CacheCpkDto } from "@/lib/bindings";
 import { toast } from "sonner";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription, AlertTitle } from "@niers/inacord-ui/components/ui/alert";
+import { Badge } from "@niers/inacord-ui/components/ui/badge";
+import { Button } from "@niers/inacord-ui/components/ui/button";
+import { Progress } from "@niers/inacord-ui/components/ui/progress";
 
 /** Rafraîchissement automatique, en millisecondes. */
 const PERIODE = 5000;

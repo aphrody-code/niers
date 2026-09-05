@@ -1,12 +1,12 @@
 "use client";
 
 import { ClipboardList } from "lucide-react";
-import { Image } from "@/components/ui/image";
-import { Link } from "@/components/ui/link";
+import { Image } from "@niers/inacord-ui/components/ui/image";
+import { Link } from "@niers/inacord-ui/components/ui/link";
 import { useState } from "react";
 import { ElementIcon } from "@/components/wiki/ElementIcon";
-import { getCharacterFaceUrl } from "@/lib/wikiImages";
-import { cn } from "@/lib/utils";
+import { getCharacterFaceUrl } from "@niers/inacord-ui/lib/wikiImages";
+import { cn } from "@niers/inacord-ui/lib/utils";
 
 export interface CoachCardProps {
 	id: number;

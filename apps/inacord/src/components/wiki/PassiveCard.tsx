@@ -1,9 +1,9 @@
 "use client";
 
-import { Link } from "@/components/ui/link";
-import { CommonSpriteIcon } from "@/components/ui/CommonSpriteIcon";
-import type { SpriteCommonKey } from "@/config/sprites-common";
-import { cn } from "@/lib/utils";
+import { Link } from "@niers/inacord-ui/components/ui/link";
+import { CommonSpriteIcon } from "@niers/inacord-ui/components/ui/CommonSpriteIcon";
+import type { SpriteCommonKey } from "@niers/inacord-ui/config/sprites-common";
+import { cn } from "@niers/inacord-ui/lib/utils";
 
 // ── Types nie-data (passives-full.json) ──
 

@@ -1,8 +1,8 @@
 "use client";
 
-import { Image } from "@/components/ui/image";
-import { getSkillIconUrl } from "@/lib/wikiImages";
-import { cn } from "@/lib/utils";
+import { Image } from "@niers/inacord-ui/components/ui/image";
+import { getSkillIconUrl } from "@niers/inacord-ui/lib/wikiImages";
+import { cn } from "@niers/inacord-ui/lib/utils";
 
 interface ElementIconProps {
 	element: string;

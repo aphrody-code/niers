@@ -1,12 +1,12 @@
 "use client";
 
 import { Store } from "lucide-react";
-import { Image } from "@/components/ui/image";
-import { Link } from "@/components/ui/link";
+import { Image } from "@niers/inacord-ui/components/ui/image";
+import { Link } from "@niers/inacord-ui/components/ui/link";
 import { useState } from "react";
-import { Icon } from "@/components/ui/Icon";
-import { getItemIconUrl, PLACEHOLDERS, resolveAssetUrl } from "@/lib/wikiImages";
-import { cn } from "@/lib/utils";
+import { Icon } from "@niers/inacord-ui/components/ui/Icon";
+import { getItemIconUrl, PLACEHOLDERS, resolveAssetUrl } from "@niers/inacord-ui/lib/wikiImages";
+import { cn } from "@niers/inacord-ui/lib/utils";
 
 export interface ItemCardProps {
 	id: string;

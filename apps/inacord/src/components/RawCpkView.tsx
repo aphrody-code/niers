@@ -7,14 +7,14 @@ import { useCallback, useState } from "react";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { toast } from "sonner";
 import { api, type RawCpkEntry } from "@/lib/api";
-import { useSettings } from "@/lib/settings";
+import { useSettings } from "@niers/inacord-ui/lib/settings";
 import { hexLines, humanSize, b64ToBytes } from "@/lib/bytes";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Icon } from "@/components/ui/Icon";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@niers/inacord-ui/components/ui/button";
+import { Input } from "@niers/inacord-ui/components/ui/input";
+import { Badge } from "@niers/inacord-ui/components/ui/badge";
+import { ScrollArea } from "@niers/inacord-ui/components/ui/scroll-area";
+import { Icon } from "@niers/inacord-ui/components/ui/Icon";
+import { Alert, AlertDescription, AlertTitle } from "@niers/inacord-ui/components/ui/alert";
 import { ModelPreview } from "@/components/ModelPreview";
 
 /** Extension en minuscule d'une entrée CPK — pilote l'affichage conditionnel des boutons audio/vidéo. */

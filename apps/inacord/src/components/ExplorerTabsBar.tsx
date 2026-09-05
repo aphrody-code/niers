@@ -1,8 +1,8 @@
 // Rangée d'onglets de l'Explorateur — un onglet = un contexte de navigation complet
 // (`lib/explorerTabs.ts`). Purement présentationnelle : elle ne connaît que le tableau d'onglets
 // et remonte les gestes.
-import { Icon } from "@/components/ui/Icon";
-import { cn } from "@/lib/utils";
+import { Icon } from "@niers/inacord-ui/components/ui/Icon";
+import { cn } from "@niers/inacord-ui/lib/utils";
 import type { ExplorerTab } from "@/lib/explorerTabs";
 
 /** Libellé d'un onglet — dernier segment du préfixe, même règle que la barre latérale. La racine

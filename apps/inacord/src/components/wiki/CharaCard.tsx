@@ -4,9 +4,9 @@
 // Ici le portrait vient du **VFS local** (`data/dx11/menu/200_icon/10_icon_chr/face/<code>_l.g4tx`,
 // décodé par `ui/image.tsx` → `lib/thumbs`), donc hors ligne et à la source. La mise en page
 // reprend celle des autres cartes portées (cadre arrondi, dégradé de survol, pastilles).
-import { Image } from "@/components/ui/image";
-import { getCharacterFaceUrl } from "@/lib/wikiImages";
-import { cn } from "@/lib/utils";
+import { Image } from "@niers/inacord-ui/components/ui/image";
+import { getCharacterFaceUrl } from "@niers/inacord-ui/lib/wikiImages";
+import { cn } from "@niers/inacord-ui/lib/utils";
 
 export interface CharaCardProps {
   /** Code interne (`c01000010`) — sert au portrait ET à l'éditeur de propriétés. */

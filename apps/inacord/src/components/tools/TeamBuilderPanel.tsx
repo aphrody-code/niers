@@ -45,15 +45,15 @@ import {
   type TeamMember,
 } from "@/lib/equipe";
 import { useFiltered } from "@/lib/filtrage";
-import { useSettings } from "@/lib/settings";
+import { useSettings } from "@niers/inacord-ui/lib/settings";
 import { teamsDb, type EquipeEnregistree } from "@/lib/teamsDb";
-import { useThumbnail } from "@/lib/thumbs";
-import { Badge } from "@/components/ui/badge";
-import { Icon } from "@/components/ui/Icon";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
+import { useThumbnail } from "@niers/inacord-ui/lib/thumbs";
+import { Badge } from "@niers/inacord-ui/components/ui/badge";
+import { Icon } from "@niers/inacord-ui/components/ui/Icon";
+import { Input } from "@niers/inacord-ui/components/ui/input";
+import { ScrollArea } from "@niers/inacord-ui/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@niers/inacord-ui/components/ui/select";
+import { Slider } from "@niers/inacord-ui/components/ui/slider";
 
 /** Les sept stats agrégées de la composition, dans l'ordre du jeu. */
 const STATS: { cle: keyof ReturnType<typeof recalculateMemberStats>; libelle: string }[] = [

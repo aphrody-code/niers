@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { open } from "@tauri-apps/plugin-dialog";
 import { toast } from "sonner";
-import { useSettings } from "@/lib/settings";
+import { useSettings } from "@niers/inacord-ui/lib/settings";
 import {
   reDb,
   defaultReDbPath,
@@ -19,12 +19,12 @@ import {
   type XrefRow,
 } from "@/lib/reDb";
 import { api, type ReDumpHit, type ReDumpInfo, type ReTraceDumpStats, type ReTraceProcess, type ReTraceRegion } from "@/lib/api";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Input } from "@niers/inacord-ui/components/ui/input";
+import { Button } from "@niers/inacord-ui/components/ui/button";
+import { Badge } from "@niers/inacord-ui/components/ui/badge";
+import { ScrollArea } from "@niers/inacord-ui/components/ui/scroll-area";
+import { Tabs, TabsList, TabsTrigger } from "@niers/inacord-ui/components/ui/tabs";
+import { Alert, AlertDescription, AlertTitle } from "@niers/inacord-ui/components/ui/alert";
 import { ReForgeView } from "@/components/ReForgeView";
 
 type SubTab = "functions" | "classes" | "forge" | "live" | "aob";

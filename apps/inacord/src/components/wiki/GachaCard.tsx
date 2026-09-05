@@ -1,9 +1,9 @@
 "use client";
 
 import { Gift, Shirt } from "lucide-react";
-import { Link } from "@/components/ui/link";
+import { Link } from "@niers/inacord-ui/components/ui/link";
 import type { CapsulePrize, Costume } from "@/lib/wikiTypes";
-import { cn } from "@/lib/utils";
+import { cn } from "@niers/inacord-ui/lib/utils";
 
 /**
  * Carte d'un lot de capsule (gacha). Le jeu n'expose le contenu qu'à travers des

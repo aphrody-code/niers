@@ -11,9 +11,9 @@
 // une passe CSS et reste lisible dans les deux thèmes.
 import { useState, type ReactNode } from "react";
 
-import { Button } from "@/components/ui/button";
-import { Icon } from "@/components/ui/Icon";
-import { Input } from "@/components/ui/input";
+import { Button } from "@niers/inacord-ui/components/ui/button";
+import { Icon } from "@niers/inacord-ui/components/ui/Icon";
+import { Input } from "@niers/inacord-ui/components/ui/input";
 import {
   degrade,
   ecrireProfilActif,
@@ -26,7 +26,7 @@ import {
   profilPrincipal,
   type Profil,
 } from "@/lib/profils";
-import { cn } from "@/lib/utils";
+import { cn } from "@niers/inacord-ui/lib/utils";
 
 /** L'avatar seul — réemployé par la barre de la vue Cinéma, en petit. */
 export function AvatarProfil({

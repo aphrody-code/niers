@@ -182,8 +182,10 @@
       "dependencies": {
         "@base-ui/react": "^1.7.0",
         "@monaco-editor/react": "^4.7.0",
+        "@niers/asset-source": "workspace:*",
         "@niers/bridge": "workspace:*",
         "@niers/game": "workspace:*",
+        "@niers/inacord-ui": "workspace:*",
         "@spacedrive/primitives": "^0.2.3",
         "@spacedrive/tokens": "^0.2.3",
         "@tailwindcss/vite": "^4.3.3",
@@ -244,7 +246,9 @@
       "name": "nie-web",
       "version": "0.1.0",
       "dependencies": {
+        "@niers/asset-source": "workspace:*",
         "@niers/game": "workspace:*",
+        "@niers/inacord-ui": "workspace:*",
         "react": "catalog:",
         "react-dom": "catalog:",
       },
@@ -277,6 +281,17 @@
     "apps/storage": {
       "name": "storage",
       "version": "0.1.0",
+      "devDependencies": {
+        "@types/bun": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
+    "packages/asset-source": {
+      "name": "@niers/asset-source",
+      "version": "0.1.0",
+      "dependencies": {
+        "@niers/catalog": "workspace:*",
+      },
       "devDependencies": {
         "@types/bun": "catalog:",
         "typescript": "catalog:",
@@ -417,6 +432,29 @@
       "version": "1.0.0",
       "devDependencies": {
         "@types/bun": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
+    "packages/inacord-ui": {
+      "name": "@niers/inacord-ui",
+      "version": "0.1.0",
+      "dependencies": {
+        "@base-ui/react": "^1.7.0",
+        "@niers/asset-source": "workspace:*",
+        "@niers/game": "workspace:*",
+        "@rosegriffon/azalee": "workspace:*",
+        "class-variance-authority": "catalog:",
+        "clsx": "catalog:",
+        "cmdk": "catalog:",
+        "lucide-react": "catalog:",
+        "next-themes": "catalog:",
+        "react": "catalog:",
+        "sonner": "catalog:",
+        "tailwind-merge": "catalog:",
+      },
+      "devDependencies": {
+        "@types/bun": "catalog:",
+        "@types/react": "catalog:",
         "typescript": "catalog:",
       },
     },
@@ -1370,6 +1408,8 @@
 
     "@next/third-parties": ["@next/third-parties@16.3.4", "", { "dependencies": { "third-party-capital": "1.0.20" }, "peerDependencies": { "next": "^13.0.0 || ^14.0.0 || ^15.0.0 || ^16.0.0-beta.0", "react": "^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0" } }, "sha512-DjyyOoBHPHYFgQ0l9VXJFWMeO5FvnFP+bXM9ZC0eGYluVwpNIvMjDPhDhM/VlhK+VK423G+8LMD+y/xwEKAi+w=="],
 
+    "@niers/asset-source": ["@niers/asset-source@workspace:packages/asset-source"],
+
     "@niers/azalee-tools": ["@niers/azalee-tools@workspace:packages/azalee-tools"],
 
     "@niers/bridge": ["@niers/bridge@workspace:packages/nie-bridge"],
@@ -1379,6 +1419,8 @@
     "@niers/catalog": ["@niers/catalog@workspace:packages/nie-catalog"],
 
     "@niers/game": ["@niers/game@workspace:packages/nie-game"],
+
+    "@niers/inacord-ui": ["@niers/inacord-ui@workspace:packages/inacord-ui"],
 
     "@niers/nie-mcp": ["@niers/nie-mcp@workspace:apps/nie-mcp"],
 

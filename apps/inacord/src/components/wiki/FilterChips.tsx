@@ -1,11 +1,11 @@
 "use client";
 
-import { Image } from "@/components/ui/image";
-import { CommonSpriteIcon } from "@/components/ui/CommonSpriteIcon";
-import { Icon } from "@/components/ui/Icon";
-import type { SpriteCommonKey } from "@/config/sprites-common";
+import { Image } from "@niers/inacord-ui/components/ui/image";
+import { CommonSpriteIcon } from "@niers/inacord-ui/components/ui/CommonSpriteIcon";
+import { Icon } from "@niers/inacord-ui/components/ui/Icon";
+import type { SpriteCommonKey } from "@niers/inacord-ui/config/sprites-common";
 import { useFilterNavigation } from "@/lib/hooks/use-filter-navigation";
-import { cn } from "@/lib/utils";
+import { cn } from "@niers/inacord-ui/lib/utils";
 
 export interface FilterOption {
 	label: string;

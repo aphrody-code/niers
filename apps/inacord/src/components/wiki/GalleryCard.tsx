@@ -1,9 +1,9 @@
 "use client";
 
-import { Image } from "@/components/ui/image";
+import { Image } from "@niers/inacord-ui/components/ui/image";
 import { useRef, useState } from "react";
-import { Icon } from "@/components/ui/Icon";
-import { cn } from "@/lib/utils";
+import { Icon } from "@niers/inacord-ui/components/ui/Icon";
+import { cn } from "@niers/inacord-ui/lib/utils";
 
 export interface GalleryCardProps {
 	id: string;

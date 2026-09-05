@@ -2,8 +2,8 @@
 
 import { ChevronDown, Flame, Ghost, Info, Pin, Sparkles } from "lucide-react";
 import { useState } from "react";
-import { Icon } from "@/components/ui/Icon";
-import { cn } from "@/lib/utils";
+import { Icon } from "@niers/inacord-ui/components/ui/Icon";
+import { cn } from "@niers/inacord-ui/lib/utils";
 
 export interface ObtainSource {
 	type: "player-universe" | "chronicle" | "event" | "gacha";

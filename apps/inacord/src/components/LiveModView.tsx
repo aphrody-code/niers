@@ -19,13 +19,13 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import type { LiveHit, LiveMember, LiveStatus } from "@/lib/bindings";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@niers/inacord-ui/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@niers/inacord-ui/components/ui/card";
+import { Input } from "@niers/inacord-ui/components/ui/input";
+import { Label } from "@niers/inacord-ui/components/ui/label";
+import { Badge } from "@niers/inacord-ui/components/ui/badge";
+import { Switch } from "@niers/inacord-ui/components/ui/switch";
+import { Alert, AlertDescription, AlertTitle } from "@niers/inacord-ui/components/ui/alert";
 
 /// Les champs éditables d'un membre, avec leur libellé et leur largeur en octets.
 const CHAMPS: { cle: string; libelle: string; octets: number; aide: string }[] = [

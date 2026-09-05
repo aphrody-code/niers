@@ -5,7 +5,7 @@
 // dossier (compteur, chargement, résultats de recherche) et reste lisible en permanence ; cette
 // barre décrit la SÉLECTION et n'existe que tant qu'elle existe. Les fusionner obligerait à faire
 // disparaître le compte du dossier au moment précis où l'on travaille dessus.
-import { Icon } from "@/components/ui/Icon";
+import { Icon } from "@niers/inacord-ui/components/ui/Icon";
 import { humanSize } from "@/lib/bytes";
 
 export function SelectionBar({

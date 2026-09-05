@@ -14,18 +14,18 @@ import Editor from "@monaco-editor/react";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Icon } from "@/components/ui/Icon";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { SplitPane } from "@/components/ui/split-pane";
-import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@niers/inacord-ui/components/ui/badge";
+import { Button } from "@niers/inacord-ui/components/ui/button";
+import { Icon } from "@niers/inacord-ui/components/ui/Icon";
+import { Input } from "@niers/inacord-ui/components/ui/input";
+import { ScrollArea } from "@niers/inacord-ui/components/ui/scroll-area";
+import { SplitPane } from "@niers/inacord-ui/components/ui/split-pane";
+import { Switch } from "@niers/inacord-ui/components/ui/switch";
+import { Tabs, TabsList, TabsTrigger } from "@niers/inacord-ui/components/ui/tabs";
 import { api, type LuaChunkInfo, type LuaExecResult, type LuaGlobal, type VfsEntry } from "@/lib/api";
 import { humanSize } from "@/lib/bytes";
-import { useSettings } from "@/lib/settings";
-import { cn } from "@/lib/utils";
+import { useSettings } from "@niers/inacord-ui/lib/settings";
+import { cn } from "@niers/inacord-ui/lib/utils";
 
 type Pane = "disasm" | "source" | "console" | "values" | "api";
 

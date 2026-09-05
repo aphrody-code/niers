@@ -7,8 +7,8 @@
 import { useEffect, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
-import { Icon } from "@/components/ui/Icon";
-import { cn } from "@/lib/utils";
+import { Icon } from "@niers/inacord-ui/components/ui/Icon";
+import { cn } from "@niers/inacord-ui/lib/utils";
 
 /** La fenêtre Tauri courante, ou `null` hors de son runtime.
  *

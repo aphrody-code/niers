@@ -58,11 +58,11 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { AvatarProfil, ChoixProfil } from "@/components/cinema/ChoixProfil";
 import { FicheDetail } from "@/components/cinema/FicheDetail";
 import { HerosCarrousel } from "@/components/cinema/HerosCarrousel";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Icon } from "@/components/ui/Icon";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Alert, AlertDescription, AlertTitle } from "@niers/inacord-ui/components/ui/alert";
+import { Button } from "@niers/inacord-ui/components/ui/button";
+import { Icon } from "@niers/inacord-ui/components/ui/Icon";
+import { Input } from "@niers/inacord-ui/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@niers/inacord-ui/components/ui/select";
 import { VideoPlayer, formaterDuree, urlVideo } from "@/components/VideoPlayer";
 import { api } from "@/lib/api";
 import {
@@ -122,8 +122,8 @@ import {
   voisins,
   type LacuneSaison,
 } from "@/lib/serie";
-import { useSettings } from "@/lib/settings";
-import { cn } from "@/lib/utils";
+import { useSettings } from "@niers/inacord-ui/lib/settings";
+import { cn } from "@niers/inacord-ui/lib/utils";
 import type { FilmDto } from "@/lib/bindings";
 
 /** Vues de la navigation principale. Une saison ouverte porte sa propre clé (`s3`). */

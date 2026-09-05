@@ -1,13 +1,13 @@
 "use client";
 
 import { Store } from "lucide-react";
-import { Image } from "@/components/ui/image";
-import { Link } from "@/components/ui/link";
+import { Image } from "@niers/inacord-ui/components/ui/image";
+import { Link } from "@niers/inacord-ui/components/ui/link";
 import { useState } from "react";
-import { CommonSpriteIcon } from "@/components/ui/CommonSpriteIcon";
-import type { SpriteCommonKey } from "@/config/sprites-common";
-import { getSkillImageUrl } from "@/lib/wikiImages";
-import { cn } from "@/lib/utils";
+import { CommonSpriteIcon } from "@niers/inacord-ui/components/ui/CommonSpriteIcon";
+import type { SpriteCommonKey } from "@niers/inacord-ui/config/sprites-common";
+import { getSkillImageUrl } from "@niers/inacord-ui/lib/wikiImages";
+import { cn } from "@niers/inacord-ui/lib/utils";
 
 const ELEMENT_SPRITE: Record<string, SpriteCommonKey> = {
 	Feu: "fire",

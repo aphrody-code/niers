@@ -2,11 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { save } from "@tauri-apps/plugin-dialog";
 import { toast } from "sonner";
 import { api, type AudioBank, type AudioCue } from "@/lib/api";
-import { useSettings } from "@/lib/settings";
+import { useSettings } from "@niers/inacord-ui/lib/settings";
 import { humanSize } from "@/lib/bytes";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@niers/inacord-ui/components/ui/button";
+import { Input } from "@niers/inacord-ui/components/ui/input";
+import { Badge } from "@niers/inacord-ui/components/ui/badge";
 
 /** Pistes montées d'emblée — une banque en déclare jusqu'à 1 512. */
 const PAGE = 80;

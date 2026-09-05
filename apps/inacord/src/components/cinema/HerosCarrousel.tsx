@@ -18,12 +18,12 @@
 // fonctionnent toujours.
 import { useEffect, useRef, useState } from "react";
 
-import { Button } from "@/components/ui/button";
-import { Icon } from "@/components/ui/Icon";
+import { Button } from "@niers/inacord-ui/components/ui/button";
+import { Icon } from "@niers/inacord-ui/components/ui/Icon";
 import { formaterDuree } from "@/components/VideoPlayer";
 import { afficheConnue } from "@/lib/affiches";
 import { formaterOctets, vignetteDe, type ElementCinema } from "@/lib/cinema";
-import { cn } from "@/lib/utils";
+import { cn } from "@niers/inacord-ui/lib/utils";
 
 /** Durée d'affichage d'un titre, en millisecondes. */
 const ROTATION = 9000;
