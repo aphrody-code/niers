@@ -23,14 +23,18 @@ linker = "isolated"       # pnpm-style strict node_modules
 # qui, si un jour un paquet portait ce nom, l'aurait authentifié avec un jeton vide.
 
 [test]
-# Deux préchargements : le plugin de formats du jeu, et les globals DOM (document/window)
-# dont les tests de composants React d'`apps/azalee` et `packages/ui` ont besoin.
+# Trois préchargements : le plugin de formats du jeu, les globals DOM (document/window)
+# dont les tests de composants React d'`apps/azalee` et `packages/ui` ont besoin, et la
+# source de données de la bibliothèque du wiki.
 # `happydom.ts` rend à Bun ses primitives réseau juste après avoir posé le DOM — sans quoi
 # tout `fetch` hors `localhost:3000` échoue en « Cross-Origin Request Blocked » et
 # `Bun.serve` refuse les `Response` de happy-dom. Le détail est dans le fichier.
+# `preload.ts` injecte le client du miroir SQLite : depuis le lot J2, la bibliothèque n'a
+# plus de source par défaut et lève si personne ne lui en donne une (cf. le fichier).
 preload = [
 	"./packages/nie-plugin/src/register.ts",
 	"./packages/nie-plugin/src/happydom.ts",
+	"./packages/azalee-outils/test/preload.ts",
 ]
 coverage = false
 

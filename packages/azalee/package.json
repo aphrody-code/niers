@@ -1,95 +1,95 @@
 {
-  "name": "@rosegriffon/azalee",
-  "version": "1.0.0",
-  "description": "Bibliothèque Bun du wiki Azalée (Inazuma Eleven: Victory Road) — accès données via miroir SQLite, index CPK, index de texte de jeu, résolution d'URLs CDN, recherche floue et CLI.",
-  "keywords": [
-    "azalee",
-    "bun",
-    "cpk",
-    "game-data",
-    "ievr",
-    "inazuma-eleven",
-    "sqlite",
-    "victory-road",
-    "wiki"
-  ],
-  "homepage": "https://azalee.rosegriffon.fr",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/rose-griffon/rg.git",
-    "directory": "packages/azalee"
-  },
-  "type": "module",
-  "files": [
-    "src",
-    "dist",
-    "README.md"
-  ],
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
-  "exports": {
-    ".": "./src/index.ts",
-    "./config": "./src/config.ts",
-    "./db": "./src/db/index.ts",
-    "./db/*": "./src/db/*.ts",
-    "./wiki": "./src/wiki/index.ts",
-    "./wiki/*": "./src/wiki/*.ts",
-    "./cpk": "./src/cpk/index.ts",
-    "./cpk/*": "./src/cpk/*.ts",
-    "./game-text": "./src/game-text/index.ts",
-    "./game-text/*": "./src/game-text/*.ts",
-    "./icon-index": "./src/icon-index/index.ts",
-    "./icon-index/*": "./src/icon-index/*.ts",
-    "./cross": "./src/cross/index.ts",
-    "./cross/*": "./src/cross/*.ts",
-    "./images": "./src/images/index.ts",
-    "./search": "./src/search/index.ts",
-    "./search/*": "./src/search/*.ts",
-    "./text": "./src/text/index.ts",
-    "./text/*": "./src/text/*.ts",
-    "./game": "./src/game/index.ts",
-    "./game/*": "./src/game/*.ts",
-    "./rag": "./src/rag.ts",
-    "./remote": "./src/remote/index.ts",
-    "./remote/*": "./src/remote/*.ts",
-    "./server": "./src/server/index.ts",
-    "./server/*": "./src/server/*.ts",
-    "./data/*": "./src/data/*",
-    "./package.json": "./package.json"
-  },
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://registry.npmjs.org"
-  },
-  "scripts": {
-    "build": "bun --bun tsc -p tsconfig.build.json && bun --bun ../azalee-outils/scripts/copy-data.ts",
-    "test": "bun test",
-    "lint": "bunx oxlint -c ../../.oxlintrc.json -A style -A pedantic -A restriction src",
-    "lint:fix": "bunx oxlint -c ../../.oxlintrc.json -A style -A pedantic -A restriction --fix src",
-    "type-check": "bun --bun tsc --noEmit",
-    "clean": "rm -rf dist *.tsbuildinfo",
-    "prepublishOnly": "bun run build",
-    "typecheck": "bun --bun tsc --noEmit"
-  },
-  "dependencies": {
-    "@niers/catalog": "workspace:*",
-    "@rosegriffon/db": "workspace:*",
-    "@rosegriffon/inagle": "workspace:*",
-    "@supabase/supabase-js": "catalog:",
-    "commander": "catalog:",
-    "drizzle-orm": "^0.45.2",
-    "wanakana": "catalog:",
-    "@niers/jeu": "workspace:*"
-  },
-  "devDependencies": {
-    "@rosegriffon/config": "workspace:*",
-    "@types/bun": "catalog:",
-    "@types/node": "catalog:",
-    "oxlint": "catalog:",
-    "typescript": "catalog:"
-  },
-  "engines": {
-    "bun": ">=1.3.14"
-  }
+	"name": "@rosegriffon/azalee",
+	"version": "1.0.0",
+	"description": "Bibliothèque Bun du wiki Azalée (Inazuma Eleven: Victory Road) — accès données via miroir SQLite, index CPK, index de texte de jeu, résolution d'URLs CDN, recherche floue et CLI.",
+	"keywords": [
+		"azalee",
+		"bun",
+		"cpk",
+		"game-data",
+		"ievr",
+		"inazuma-eleven",
+		"sqlite",
+		"victory-road",
+		"wiki"
+	],
+	"homepage": "https://azalee.rosegriffon.fr",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/rose-griffon/rg.git",
+		"directory": "packages/azalee"
+	},
+	"type": "module",
+	"files": [
+		"src",
+		"dist",
+		"README.md"
+	],
+	"main": "./src/index.ts",
+	"types": "./src/index.ts",
+	"exports": {
+		".": "./src/index.ts",
+		"./config": "./src/config.ts",
+		"./db": "./src/db/index.ts",
+		"./wiki": "./src/wiki/index.ts",
+		"./wiki/*": "./src/wiki/*.ts",
+		"./cpk": "./src/cpk/index.ts",
+		"./cpk/*": "./src/cpk/*.ts",
+		"./game-text": "./src/game-text/index.ts",
+		"./game-text/*": "./src/game-text/*.ts",
+		"./icon-index": "./src/icon-index/index.ts",
+		"./icon-index/*": "./src/icon-index/*.ts",
+		"./cross": "./src/cross/index.ts",
+		"./cross/*": "./src/cross/*.ts",
+		"./images": "./src/images/index.ts",
+		"./search": "./src/search/index.ts",
+		"./search/*": "./src/search/*.ts",
+		"./text": "./src/text/index.ts",
+		"./text/*": "./src/text/*.ts",
+		"./game": "./src/game/index.ts",
+		"./game/*": "./src/game/*.ts",
+		"./rag": "./src/rag.ts",
+		"./remote": "./src/remote/index.ts",
+		"./remote/*": "./src/remote/*.ts",
+		"./server": "./src/server/index.ts",
+		"./server/*": "./src/server/*.ts",
+		"./data/*": "./src/data/*",
+		"./package.json": "./package.json"
+	},
+	"publishConfig": {
+		"access": "public",
+		"registry": "https://registry.npmjs.org"
+	},
+	"scripts": {
+		"build": "bun --bun tsc -p tsconfig.build.json && bun --bun ../azalee-outils/scripts/copy-data.ts",
+		"test": "bun test",
+		"lint": "bunx oxlint -c ../../.oxlintrc.json -A style -A pedantic -A restriction src",
+		"lint:fix": "bunx oxlint -c ../../.oxlintrc.json -A style -A pedantic -A restriction --fix src",
+		"type-check": "bun --bun tsc --noEmit",
+		"clean": "rm -rf dist *.tsbuildinfo",
+		"prepublishOnly": "bun run build",
+		"typecheck": "bun --bun tsc --noEmit"
+	},
+	"dependencies": {
+		"@niers/catalog": "workspace:*",
+		"@rosegriffon/db": "workspace:*",
+		"@rosegriffon/inagle": "workspace:*",
+		"@supabase/supabase-js": "catalog:",
+		"commander": "catalog:",
+		"drizzle-orm": "^0.45.2",
+		"wanakana": "catalog:",
+		"@niers/jeu": "workspace:*"
+	},
+	"devDependencies": {
+		"@rosegriffon/config": "workspace:*",
+		"@types/bun": "catalog:",
+		"@types/node": "catalog:",
+		"oxlint": "catalog:",
+		"typescript": "catalog:",
+		"@niers/azalee-outils": "workspace:*"
+	},
+	"engines": {
+		"bun": ">=1.3.14"
+	}
 }

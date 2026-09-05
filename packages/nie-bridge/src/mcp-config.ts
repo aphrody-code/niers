@@ -30,6 +30,8 @@ export interface McpEntryOptions {
   repoRoot?: string | undefined;
   /** Dossier du jeu, si différent de la racine du repo. */
   gameDir?: string | undefined;
+  /** URL de l'API `nie-site` à transmettre au serveur MCP. */
+  aphrodyApiUrl?: string | undefined;
 }
 
 /**
@@ -44,6 +46,9 @@ export function mcpServerEntry(options: McpEntryOptions = {}): McpServerEntry {
   const env: Record<string, string> = {};
   if (root !== "") env["NIERS_REPO"] = root;
   if (options.gameDir !== undefined && options.gameDir.trim() !== "") env["NIE_GAME_DIR"] = options.gameDir.trim();
+  if (options.aphrodyApiUrl !== undefined && options.aphrodyApiUrl.trim() !== "") {
+    env["NIE_APHRODY_API_URL"] = options.aphrodyApiUrl.trim().replace(/\/+$/, "");
+  }
   return { type: "stdio", command: "bun", args: ["run", entry], env };
 }
 

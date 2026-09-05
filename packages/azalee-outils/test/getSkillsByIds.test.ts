@@ -20,12 +20,12 @@
  * quand `SQLITE_DB_PATH` est introuvable, exactement comme sur Vercel).
  */
 
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { afterAll, afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { createClient as createSupabaseClient, type SupabaseClient } from "@supabase/supabase-js";
 
-import { resolveMirrorPath } from "@rosegriffon/azalee/config";
-import { setDatabaseProvider } from "@rosegriffon/azalee/db/provider";
-import { createSqliteClient } from "@rosegriffon/azalee/db/sqlite-client";
+import { resolveMirrorPath } from "../src/config";
+import { setDatabaseProvider } from "@rosegriffon/azalee/db";
+import { createSqliteClient } from "../src/db/sqlite-client";
 import { wikiService } from "@rosegriffon/azalee/wiki/service";
 
 /** 5 fiches qui échouaient réellement au build (`Failed to build … after 3

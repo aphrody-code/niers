@@ -27,9 +27,9 @@ import {
 	type CpkDir,
 	type CpkFile,
 	type CpkListing,
-} from "./shared";
+} from "@rosegriffon/azalee/cpk/shared";
 
-export type { CpkDir, CpkFile, CpkListing } from "./shared";
+export type { CpkDir, CpkFile, CpkListing } from "@rosegriffon/azalee/cpk/shared";
 
 /** Métadonnées d'un fichier unique (pour `?meta=1`). */
 export interface CpkFileMeta extends CpkFile {

@@ -23,7 +23,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { gunzipSync } from "node:zlib";
-import { resolveDataFile } from "@rosegriffon/azalee/config";
+import { resolveDataFile } from "../src/config";
 
 const DATA_DIR = path.resolve(import.meta.dir, "../src/data");
 const CPK_INDEX = "cpk-index.ndjson.gz";

@@ -13,11 +13,11 @@
  * `handleAzaleeRequest` → 500).
  */
 
-import { afterEach, describe, expect, test } from "bun:test";
+import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
 import { configureAzalee, resetAzaleeConfig, resolveMirrorPath } from "../src/config";
 import { createAzaleeData, inspectLocalData } from "../src/server/source";
-import { setDatabaseProvider } from "../src/db/provider";
+import { setDatabaseProvider } from "@rosegriffon/azalee/db";
 import type { AzaleeTeamList } from "../src/remote/index";
 
 /** Base d'URL distante fictive : aucun appel ne sort, le `fetch` est un double. */

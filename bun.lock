@@ -318,6 +318,7 @@
         "wanakana": "catalog:",
       },
       "devDependencies": {
+        "@niers/azalee-outils": "workspace:*",
         "@rosegriffon/config": "workspace:*",
         "@types/bun": "catalog:",
         "@types/node": "catalog:",

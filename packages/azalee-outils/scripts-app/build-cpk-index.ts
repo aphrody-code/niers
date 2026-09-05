@@ -26,7 +26,7 @@ import { gzipSync } from "node:zlib";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { $ } from "bun";
-import { buildSqliteFromEntries, type CpkEntry } from "@rosegriffon/azalee/cpk/materialize";
+import { buildSqliteFromEntries, type CpkEntry } from "../src/cpk/materialize";
 
 interface Args {
 	outPath: string;

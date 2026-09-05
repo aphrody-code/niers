@@ -1,0 +1,11 @@
+# Bun lit le `bunfig.toml` du répertoire COURANT, sans hériter de celui de la racine : sans ce
+# fichier, `cd packages/azalee && bun test` perd les préchargements du dépôt et 25 tests
+# échouent sur « aucun client de données injecté », alors que la même suite passe depuis la
+# racine. Une suite doit rendre le même verdict d'où qu'on la lance.
+[test]
+preload = [
+	"../nie-plugin/src/register.ts",
+	"../nie-plugin/src/happydom.ts",
+	"../azalee-outils/test/preload.ts",
+]
+coverage = false

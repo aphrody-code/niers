@@ -11,7 +11,7 @@
  * Les mêmes 41 routes sont alors lues à distance au lieu du disque.
  *
  * ```ts
- * import { createAzaleeClient, isAzaleeNotFound } from "@rosegriffon/azalee/remote";
+ * import { createAzaleeClient, isAzaleeNotFound } from "./";
  *
  * const api = createAzaleeClient(); // https://api.rosegriffon.fr/azalee
  * const mark = await api.character("mark-evans");

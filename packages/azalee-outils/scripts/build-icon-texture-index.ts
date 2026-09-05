@@ -34,8 +34,8 @@
 import { gunzipSync, gzipSync } from "node:zlib";
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { parseG4tx } from "@rosegriffon/azalee/icon-index/g4tx-header";
-import type { IconIndexEntry } from "@rosegriffon/azalee/icon-index/shared";
+import { parseG4tx } from "../src/icon-index/g4tx-header";
+import type { IconIndexEntry } from "../src/icon-index/shared";
 
 const REPO_ROOT = path.resolve(import.meta.dir, "../../..");
 const CPK_INDEX = path.join(REPO_ROOT, "apps/azalee/data/cpk-index.ndjson.gz");

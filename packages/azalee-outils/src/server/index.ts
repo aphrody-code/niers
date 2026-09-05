@@ -6,12 +6,12 @@
  */
 
 export * from "../config";
-export * from "../db";
-export * from "../wiki";
+export * from "@rosegriffon/azalee/db";
+export * from "@rosegriffon/azalee/wiki";
 export * from "../cpk";
-export * from "../cross";
+export * from "@rosegriffon/azalee/cross";
 export * from "../game-text";
-export { queryRag, type RagResult } from "../rag";
+export { queryRag, type RagResult } from "@rosegriffon/azalee/rag";
 export { createAzaleeServer, handleAzaleeRequest, type AzaleeServerOptions } from "./serve";
 export {
 	createAzaleeData,

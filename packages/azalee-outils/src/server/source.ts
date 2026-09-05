@@ -25,7 +25,7 @@
 
 import { existsSync } from "node:fs";
 
-import { hasDatabaseProvider } from "../db/provider";
+import { hasDatabaseProvider } from "@rosegriffon/azalee/db";
 import { resolveDataDir, resolveMirrorPath } from "../config";
 import {
 	type AzaleeClient,
@@ -172,7 +172,7 @@ function fallbackTransport(
  * locales.
  *
  * ```ts
- * import { createAzaleeData } from "@rosegriffon/azalee/server";
+ * import { createAzaleeData } from "./";
  *
  * const data = createAzaleeData();          // auto
  * console.log(data.source, data.reason);    // "local" | "remote"

@@ -31,8 +31,8 @@
  */
 import { Database } from "bun:sqlite";
 import path from "node:path";
-import { resolveMirrorPath } from "@rosegriffon/azalee/config";
-import { resolveIconTexture } from "@rosegriffon/azalee/icon-index";
+import { resolveMirrorPath } from "../src/config";
+import { resolveIconTexture } from "../src/icon-index";
 
 const DATA_DIR = path.resolve(import.meta.dir, "../src/data");
 const OUT = path.join(DATA_DIR, "item-image-manifest.json");

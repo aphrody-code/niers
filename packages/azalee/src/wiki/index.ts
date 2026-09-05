@@ -13,7 +13,6 @@ export * from "./chara-stats";
 export * from "./coaches";
 export * from "./drops";
 export * from "./gacha";
-export * from "./game-text";
 export * from "./invocation";
 export * from "./quests";
 export * from "./shops";

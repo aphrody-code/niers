@@ -9,7 +9,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { fileMeta, listDir, listDirPaged, searchFiles, totalFiles } from "../src/cpk/index";
-import { cpkAssetKind, cpkAssetUrl, cpkThumbUrl, normalizeDir } from "../src/cpk/shared";
+import { cpkAssetKind, cpkAssetUrl, cpkThumbUrl, normalizeDir } from "@rosegriffon/azalee/cpk/shared";
 import { resolveDataFile } from "../src/config";
 
 const hasIndex = resolveDataFile("cpk-index.ndjson.gz") !== null || Boolean(process.env.CPK_INDEX_PATH);

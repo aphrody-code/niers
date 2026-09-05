@@ -34,7 +34,7 @@ import {
 } from "@niers/catalog/jeu";
 import type { CatalogueVideo, FilmDto } from "@niers/catalog/jeu";
 
-import { exportUrl } from "./live";
+import { exportUrl } from "@rosegriffon/azalee/cpk/live";
 
 export type {
 	CatalogueVideo,

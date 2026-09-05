@@ -19,7 +19,7 @@ export function registerServeCommand(program: Command): void {
 		.option("--cors <origin>", "Origine CORS autorisée (défaut: *)")
 		.option("-j, --json", "Affiche la table de routage en JSON puis quitte")
 		.action(async (options: ServeOptions) => {
-			const { createAzaleeServer, listRoutes } = await import("@rosegriffon/azalee/server/serve");
+			const { createAzaleeServer, listRoutes } = await import("../../server/serve");
 			if (options.json) {
 				console.log(JSON.stringify({ routes: listRoutes() }, null, 2));
 				process.exit(0);

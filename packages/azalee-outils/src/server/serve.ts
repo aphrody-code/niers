@@ -12,20 +12,20 @@
  */
 
 import { fileMeta, listDirPaged, searchFiles, totalFiles } from "../cpk/index";
-import { getCrossCatalogStats, getCrossTables } from "../cross/data";
+import { getCrossCatalogStats, getCrossTables } from "@rosegriffon/azalee/cross/data";
 import { categoryStats, searchText } from "../game-text/index";
 import { resolveMirrorPath, resolveDataDir } from "../config";
-import { getCapsuleList, getCostumeList } from "../wiki/gacha";
-import { getCoach, getCoachesList } from "../wiki/coaches";
-import { getDropsData } from "../wiki/drops";
-import { getInvocationRates } from "../wiki/invocation";
-import { getQuest, getQuestsList } from "../wiki/quests";
-import { getShop, getShopsList } from "../wiki/shops";
-import { getStadium, getStadiumsList } from "../wiki/stadiums";
-import { getTeamDetail, getTeamsList } from "../wiki/teams";
-import { getTrophiesList, getTrophy } from "../wiki/trophies";
+import { getCapsuleList, getCostumeList } from "@rosegriffon/azalee/wiki/gacha";
+import { getCoach, getCoachesList } from "@rosegriffon/azalee/wiki/coaches";
+import { getDropsData } from "@rosegriffon/azalee/wiki/drops";
+import { getInvocationRates } from "@rosegriffon/azalee/wiki/invocation";
+import { getQuest, getQuestsList } from "@rosegriffon/azalee/wiki/quests";
+import { getShop, getShopsList } from "@rosegriffon/azalee/wiki/shops";
+import { getStadium, getStadiumsList } from "@rosegriffon/azalee/wiki/stadiums";
+import { getTeamDetail, getTeamsList } from "@rosegriffon/azalee/wiki/teams";
+import { getTrophiesList, getTrophy } from "@rosegriffon/azalee/wiki/trophies";
 import { resolveTextAll } from "../wiki/game-text";
-import { wikiService } from "../wiki/service";
+import { wikiService } from "@rosegriffon/azalee/wiki/service";
 
 /**
  * Port d'écoute par défaut de l'API headless.
@@ -350,7 +350,7 @@ export async function handleAzaleeRequest(
  * Démarre le serveur HTTP headless (Bun natif).
  *
  * ```ts
- * import { createAzaleeServer } from "@rosegriffon/azalee/server";
+ * import { createAzaleeServer } from "./";
  * createAzaleeServer({ port: 3010 }); // sidecar Tauri
  * ```
  */

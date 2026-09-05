@@ -67,7 +67,7 @@ function packageRoot(): string {
 }
 
 /** Candidats de dossier de données, du plus spécifique au plus générique. */
-function dataDirCandidates(): string[] {
+export function dataDirCandidates(): string[] {
 	const root = packageRoot();
 	return [
 		explicit.dataDir,

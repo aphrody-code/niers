@@ -13,7 +13,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { resolveMirrorPath } from "../src/config";
 import { createSqliteClient } from "../src/db/sqlite-client";
-import { createClient, hasDatabaseProvider, setDatabaseProvider } from "../src/db/provider";
+import { createClient, hasDatabaseProvider, setDatabaseProvider } from "@rosegriffon/azalee/db";
 
 const hasMirror = resolveMirrorPath() !== null;
 
@@ -231,16 +231,18 @@ describe("provider — injection et retour au défaut", () => {
 		expect(await createClient()).toBe(sentinelle as unknown as SupabaseClient);
 	});
 
-	test("setDatabaseProvider(null) restaure le miroir SQLite par défaut", async () => {
+	test("setDatabaseProvider(null) rend la main a la source de secours", async () => {
 		setDatabaseProvider(() => ({}) as unknown as SupabaseClient);
 		setDatabaseProvider(null);
 		expect(hasDatabaseProvider()).toBe(false);
+		// `null` retire MA fabrique, il ne supprime pas toute source : le defaut pose par
+		// l'outillage (le miroir) reprend la main. Sans ce second niveau, cet appel levait et
+		// condamnait au passage tous les fichiers de test suivants.
 		const client = await createClient();
-		// Le client par défaut n'expose QUE `.from(...)` (surface commune wiki).
 		expect(typeof client.from).toBe("function");
 	});
 
-	test.skipIf(!hasMirror)("le client par défaut lit réellement le miroir", async () => {
+	test.skipIf(!hasMirror)("le client injecte lit reellement le miroir", async () => {
 		const client = await createClient();
 		const res = await (
 			client.from("inagle_teams") as unknown as PromiseLike<{ data: unknown; error: Error | null }> & {

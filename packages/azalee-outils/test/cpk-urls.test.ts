@@ -18,9 +18,9 @@
  */
 import { beforeEach, describe, expect, test } from "bun:test";
 
-import { cpkAudioCueUrl, cpkAudioInfoUrl, formatDuration } from "./audio.ts";
-import { exportUrl, texUrl, vfsFind, vfsLs, vfsStat, vfsStats } from "./live.ts";
-import { modelGlbUrl } from "./models.ts";
+import { cpkAudioCueUrl, cpkAudioInfoUrl, formatDuration } from "@rosegriffon/azalee/cpk/audio";
+import { exportUrl, texUrl, vfsFind, vfsLs, vfsStat, vfsStats } from "@rosegriffon/azalee/cpk/live";
+import { modelGlbUrl } from "@rosegriffon/azalee/cpk/models";
 import {
 	cpkAssetUrl,
 	cpkAudioUrl,
@@ -28,7 +28,7 @@ import {
 	cpkRawUrl,
 	cpkThumbUrl,
 	cpkVideoUrl,
-} from "./shared.ts";
+} from "@rosegriffon/azalee/cpk/shared";
 import {
 	formatDefinition,
 	formatDuree,
@@ -40,8 +40,8 @@ import {
 	videoDownloadUrl,
 	videoInfoUrl,
 	videoUrl,
-} from "./video.ts";
-import type { FilmDto } from "./video.ts";
+} from "../src/cpk/video";
+import type { FilmDto } from "../src/cpk/video";
 
 /** L'origine que le wiki servait en dur, dans les cinq modules, sous le nom `CDN_BASE`. */
 const CDN = "https://cdn.rosegriffon.fr";

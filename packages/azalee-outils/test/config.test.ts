@@ -17,10 +17,11 @@ import {
 	getAzaleeConfig,
 	getCacheDir,
 	resetAzaleeConfig,
+	dataDirCandidates,
 	resolveDataDir,
 	resolveDataFile,
 	resolveMirrorPath,
-} from "@rosegriffon/azalee/config";
+} from "../src/config";
 
 /** Sauvegarde/restauration des variables d'environnement lues par le module. */
 const ENV_KEYS = ["AZALEE_DATA_DIR", "AZALEE_CACHE_DIR", "SQLITE_DB_PATH"] as const;
@@ -109,7 +110,14 @@ describe("resolveDataFile — localisation d'un artefact nommé", () => {
 		for (const found of [cpk, names]) {
 			if (found === null) continue;
 			expect(existsSync(found)).toBe(true);
-			expect(path.dirname(found)).toBe(dataDir as string);
+			// Le dossier trouvé est l'UN des candidats, pas forcément le premier :
+			// `resolveDataDir()` rend le premier dossier de données valide, tandis que
+			// `resolveDataFile()` rend celui qui contient l'artefact cherché. Les deux ne
+			// coïncident que si l'artefact vit dans le premier candidat — ce qui dépend du
+			// répertoire d'où l'on lance. Assertion d'origine : `dirname(found) === dataDir`,
+			// verte depuis un paquet et rouge depuis la racine, où `cpk-index.ndjson.gz` vit
+			// sous `apps/azalee/data` alors que `resolveDataDir()` désigne `<dépôt>/data`.
+			expect(dataDirCandidates()).toContain(path.dirname(found));
 		}
 	});
 

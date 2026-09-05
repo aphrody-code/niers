@@ -81,6 +81,27 @@ async function main(): Promise<void> {
 
   const server = new McpServer({ name: "niers-game", version: "0.1.0" });
 
+  server.registerTool(
+    "aphrody_api_health",
+    {
+      title: "Vérifier l'API Aphrody nie-site",
+      description: "Teste GET /api/v1/health sur nie-site et renvoie son état réel.",
+      inputSchema: {},
+    },
+    () =>
+      safe(async () => {
+        const url = `${config.aphrodyApiUrl}/api/v1/health`;
+        const response = await fetch(url, { signal: AbortSignal.timeout(5_000) });
+        const body = await response.text();
+        if (!response.ok) throw new ToolError(`nie-site ${response.status} (${url}) : ${body.slice(0, 500)}`);
+        try {
+          return { url, status: response.status, health: JSON.parse(body) };
+        } catch {
+          throw new ToolError(`réponse non JSON de nie-site (${url})`);
+        }
+      }),
+  );
+
   // ---------------------------------------------------------------- VFS ----
   server.registerTool(
     "vfs_list",

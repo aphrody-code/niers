@@ -29,3 +29,9 @@ test("le fragment est prêt à fusionner dans une config existante", () => {
   expect(Object.keys(fragment.mcpServers)).toEqual([MCP_SERVER_NAME]);
   expect(fragment.mcpServers[MCP_SERVER_NAME]?.type).toBe("stdio");
 });
+
+test("transmet l'URL nie-site sans slash final", () => {
+  expect(mcpServerEntry({ aphrodyApiUrl: "https://nie.aphrody.com///" }).env).toMatchObject({
+    NIE_APHRODY_API_URL: "https://nie.aphrody.com",
+  });
+});

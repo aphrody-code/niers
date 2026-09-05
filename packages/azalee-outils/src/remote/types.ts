@@ -16,18 +16,18 @@
 
 import type { categoryStats, searchText } from "../game-text/index";
 import type { fileMeta, listDirPaged, searchFiles } from "../cpk/index";
-import type { getCapsuleList, getCostumeList } from "../wiki/gacha";
-import type { getCoach, getCoachesList } from "../wiki/coaches";
-import type { getCrossCatalogStats, getCrossTables } from "../cross/data";
-import type { getDropsData } from "../wiki/drops";
-import type { getInvocationRates } from "../wiki/invocation";
-import type { getQuest, getQuestsList } from "../wiki/quests";
-import type { getShop, getShopsList } from "../wiki/shops";
-import type { getStadium, getStadiumsList } from "../wiki/stadiums";
-import type { getTeamDetail, getTeamsList } from "../wiki/teams";
-import type { getTrophiesList, getTrophy } from "../wiki/trophies";
+import type { getCapsuleList, getCostumeList } from "@rosegriffon/azalee/wiki/gacha";
+import type { getCoach, getCoachesList } from "@rosegriffon/azalee/wiki/coaches";
+import type { getCrossCatalogStats, getCrossTables } from "@rosegriffon/azalee/cross/data";
+import type { getDropsData } from "@rosegriffon/azalee/wiki/drops";
+import type { getInvocationRates } from "@rosegriffon/azalee/wiki/invocation";
+import type { getQuest, getQuestsList } from "@rosegriffon/azalee/wiki/quests";
+import type { getShop, getShopsList } from "@rosegriffon/azalee/wiki/shops";
+import type { getStadium, getStadiumsList } from "@rosegriffon/azalee/wiki/stadiums";
+import type { getTeamDetail, getTeamsList } from "@rosegriffon/azalee/wiki/teams";
+import type { getTrophiesList, getTrophy } from "@rosegriffon/azalee/wiki/trophies";
 import type { resolveTextAll } from "../wiki/game-text";
-import type { wikiService } from "../wiki/service";
+import type { wikiService } from "@rosegriffon/azalee/wiki/service";
 import type { AzaleeRequestOptions } from "./transport";
 
 /** Sortie résolue d'une fonction serveur. */

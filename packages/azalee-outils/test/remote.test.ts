@@ -11,7 +11,7 @@
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 
 import { rendreReseauNatif } from "../../nie-plugin/src/happydom";
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { afterAll, beforeAll, beforeEach, describe, expect, test } from "bun:test";
 
 import {
 	AZALEE_DEFAULT_API_URL,

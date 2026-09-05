@@ -6,5 +6,4 @@
  * vivent dans `./data-shared` et `./assets-shared`.
  */
 
-export * from "./catalog";
 export * from "./data";

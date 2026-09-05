@@ -29,5 +29,19 @@
   "devDependencies": {
     "typescript": "catalog:",
     "@types/bun": "catalog:"
+  },
+  "exports": {
+    "./config": "./src/config.ts",
+    "./remote": "./src/remote/index.ts",
+    "./remote/*": "./src/remote/*.ts",
+    "./server/*": "./src/server/*.ts",
+    "./cpk/*": "./src/cpk/*.ts",
+    "./game-text": "./src/game-text/index.ts",
+    "./game-text/*": "./src/game-text/*.ts",
+    "./icon-index": "./src/icon-index/index.ts",
+    "./icon-index/*": "./src/icon-index/*.ts",
+    "./cross/catalog": "./src/cross/catalog.ts",
+    "./db/sqlite-client": "./src/db/sqlite-client.ts",
+    "./wiki/*": "./src/wiki/*.ts"
   }
 }

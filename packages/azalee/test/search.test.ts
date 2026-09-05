@@ -9,7 +9,7 @@
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 
-import { resolveMirrorPath } from "../src/config";
+import { resolveMirrorPath } from "@niers/azalee-outils/config";
 import {
 	clearSearchCache,
 	detectMatchedLanguage,

@@ -12,7 +12,7 @@
  * `apps/azalee/lib/game-text/index.ts`.
  */
 import type { Database } from "bun:sqlite";
-import { formatGameText } from "./format";
+import { formatGameText } from "@rosegriffon/azalee/game-text/format";
 
 /** Une entrée brute de l'artefact : `[hashId, locale, category, value]`. */
 export type TextEntry = [hashId: string, locale: string, category: string, value: string];
