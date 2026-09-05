@@ -1,0 +1,92 @@
+/*
+ * game-tokens.css — la direction artistique du jeu, en variables CSS.
+ *
+ * ## D'ou viennent ces valeurs
+ *
+ * Les teintes sont MESUREES sur la reference archivee
+ * `data/design/aphrody-ui-ref-mainmenu-7.1.2.png` (2497x1414), par quantification a 16 couleurs
+ * uniques. Aucune n'est choisie a l'oeil : une palette citee de memoire ne ressemble au jeu que
+ * de loin, et l'ecart ne se voit qu'une fois la maquette montee.
+ *
+ * Rejouable :
+ *   convert data/design/aphrody-ui-ref-mainmenu-7.1.2.png -resize 25% \
+ *     -colors 16 -unique-colors txt:
+ *
+ * ## Deux coquilles, deux ambiances
+ *
+ * - `--jeu-*` : le menu principal du jeu, que porte Aphrody. Bleus profonds, accents ambre et
+ *   cyan, contraste eleve.
+ * - `--inacord-*` : l'application de messagerie du jeu, que porte Inacord. Panneaux sombres
+ *   desatures, un seul accent cyan. Ces trois valeurs viennent de la decision produit
+ *   (`PLAN.md` J5), pas de la quantification.
+ *
+ * Les deux jeux cohabitent : un hote choisit sa coquille, jamais ses couleurs.
+ */
+
+:root {
+	/* --- Fonds : du plus profond au plus clair ------------------------------------------- */
+	--jeu-fond-abysse: #0f1011;
+	--jeu-fond-nuit: #304262;
+	--jeu-fond-profond: #2a5ca0;
+	--jeu-fond-moyen: #3c6ebe;
+
+	/* --- Accents : ce qui appelle l'oeil -------------------------------------------------- */
+	--jeu-accent-ambre: #e5cf39;
+	--jeu-accent-brique: #c35e2d;
+	--jeu-accent-azur: #2b99fa;
+	--jeu-accent-cyan: #63d8fc;
+	--jeu-accent-turquoise: #50a6c1;
+
+	/* --- Surfaces claires et texte -------------------------------------------------------- */
+	--jeu-surface-glace: #d2f5fc;
+	--jeu-surface-brume: #a5e1f6;
+	--jeu-surface-craie: #dfdfd8;
+	--jeu-surface-cendre: #bcb6b9;
+	--jeu-surface-rose: #b0858d;
+	--jeu-texte-vif: #fdfefe;
+	--jeu-texte-doux: #5ca2e2;
+
+	/* --- Coquille InaCord (decision produit, PLAN.md J5) ---------------------------------- */
+	--inacord-panneau: #323544;
+	--inacord-panneau-clair: #374d5b;
+	--inacord-accent: #4faecc;
+
+	/* --- Geometrie : les tuiles du menu sont BISEAUTEES, pas rectangulaires ---------------- */
+	--jeu-biseau: 14px;
+	--jeu-rayon: 4px;
+	--jeu-bordure: 2px;
+
+	/* --- Rythme -------------------------------------------------------------------------- */
+	--jeu-espace-xs: 4px;
+	--jeu-espace-s: 8px;
+	--jeu-espace-m: 16px;
+	--jeu-espace-l: 24px;
+	--jeu-espace-xl: 40px;
+
+	/* --- Elevation ----------------------------------------------------------------------- */
+	--jeu-ombre-tuile: 0 2px 8px rgb(15 16 17 / 45%);
+	--jeu-ombre-panneau: 0 8px 32px rgb(15 16 17 / 65%);
+	--jeu-lueur-accent: 0 0 12px rgb(99 216 252 / 55%);
+
+	/* --- Mouvement : court et net, comme le jeu ------------------------------------------- */
+	--jeu-duree-rapide: 120ms;
+	--jeu-duree-moyenne: 220ms;
+	--jeu-courbe: cubic-bezier(0.2, 0, 0, 1);
+
+	/* --- Typographie --------------------------------------------------------------------- */
+	--jeu-titre-poids: 800;
+	--jeu-titre-espacement: 0.02em;
+	--jeu-libelle-espacement: 0.06em;
+}
+
+/*
+ * `prefers-reduced-motion` : les tuiles du menu glissent et pulsent. Une interface qui ignore
+ * ce reglage rend le systeme inutilisable pour qui en a besoin — le mouvement tombe a zero,
+ * les etats restent lisibles.
+ */
+@media (prefers-reduced-motion: reduce) {
+	:root {
+		--jeu-duree-rapide: 0ms;
+		--jeu-duree-moyenne: 0ms;
+	}
+}

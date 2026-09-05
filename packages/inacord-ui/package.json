@@ -9,7 +9,8 @@
 		"./source": "./src/source.tsx",
 		"./components/*": "./src/components/*.tsx",
 		"./config/*": "./src/config/*.ts",
-		"./lib/*": "./src/lib/*.ts"
+		"./lib/*": "./src/lib/*.ts",
+		"./shell/*": "./src/shell/*"
 	},
 	"scripts": {
 		"typecheck": "bunx tsc --noEmit"
