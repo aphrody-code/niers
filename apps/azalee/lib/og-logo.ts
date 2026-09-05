@@ -15,20 +15,24 @@
  * et un logo manquant ne lève pas : il produit une image de partage muette, ce que personne ne
  * voit avant qu'un lien ne soit partagé.
  *
- * Le fichier est donc résolu par `import.meta.url`, la voie documentée pour les ressources de
- * `next/og` : le bundler le suit et l'embarque, ici comme sur Vercel. Il vit à côté de ce
- * module pour cette raison — `public/logo-og.png` reste la copie servie aux navigateurs.
+ * ## Pourquoi ne pas le fetcher non plus par `import.meta.url`
+ *
+ * `fetch(new URL("./logo-og.png", import.meta.url))` a été essayé, et il casse le build :
+ * `file:` n'est pas un schéma que `fetch` doit servir, et Bun le refuse explicitement
+ * (« not implemented... yet... »). L'échec n'est pas discret — il interrompt l'export de
+ * `/aura/opengraph-image` et le build entier s'arrête — mais il n'apparaît qu'au build, donc
+ * après la relecture du diff.
+ *
+ * Le logo est donc une **constante embarquée** (`og-logo-data.ts`, régénérable depuis
+ * `logo-og.png`) : aucune I/O, aucun schéma d'URL, le même comportement sur le VPS, sous Bun
+ * et sur Vercel. `public/logo-og.png` reste la copie servie aux navigateurs.
  */
-let _cached: string | null = null;
+import { LOGO_OG_BASE64 } from "./og-logo-data";
 
-/** Le logo en `data:` — mémorisé, la lecture n'a lieu qu'une fois par instance. */
+const DATA_URI = `data:image/png;base64,${LOGO_OG_BASE64}`;
+
+/** Le logo en `data:` — constante embarquée, ni lecture disque ni requête réseau. */
+// eslint-disable-next-line @typescript-eslint/require-await
 export async function getOgLogoDataUri(): Promise<string> {
-	if (_cached) {
-		return _cached;
-	}
-	const octets = await fetch(new URL("./logo-og.png", import.meta.url)).then((r) =>
-		r.arrayBuffer(),
-	);
-	_cached = `data:image/png;base64,${Buffer.from(octets).toString("base64")}`;
-	return _cached;
+	return DATA_URI;
 }
