@@ -148,7 +148,7 @@ export default async function Image() {
 				style={{ alignItems: "center", bottom: 20, display: "flex", gap: 10, position: "absolute" }}
 			>
 				<img
-					src={getOgLogoDataUri()}
+					src={await getOgLogoDataUri()}
 					width={28}
 					height={28}
 					style={{ borderRadius: 7 }}

@@ -1,7 +1,5 @@
 "use server";
 
-import fs from "node:fs";
-import path from "node:path";
 import { google } from "googleapis";
 import { revalidatePath } from "next/cache";
 import { getServerSession } from "@/lib/auth-helpers";
@@ -13,20 +11,13 @@ import { createClient } from "@/lib/supabase/server";
 const DRIVE_FOLDER_ID = "19UJsSXVRV0sEd67JCwHSu9Atm3H_5D6K";
 
 function getGoogleAuth() {
-	const keyFilePath = path.join(process.cwd(), "google.json");
-
-	// 1. Try local file (dev/legacy)
-	if (fs.existsSync(keyFilePath)) {
-		return new google.auth.GoogleAuth({
-			keyFile: keyFilePath,
-			scopes: [
-				"https://www.googleapis.com/auth/documents.readonly",
-				"https://www.googleapis.com/auth/drive",
-			],
-		});
-	}
-
-	// 2. Try JSON content in Env Var (Docker/Prod)
+	// Le compte de service vient de l'environnement, et de nulle part ailleurs.
+	//
+	// Une premiere branche lisait `google.json` a cote du processus (« dev/legacy ») avant de
+	// consulter la variable. En serverless ce fichier n'existe pas, la branche etait donc morte
+	// — mais elle restait une porte : un fichier de cle depose par megarde a la racine aurait
+	// silencieusement pris le pas sur la configuration reelle. Une source de secrets doit etre
+	// unique, et lisible dans la configuration du deploiement.
 	if (process.env.GOOGLE_SERVICE_ACCOUNT) {
 		try {
 			const credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT);

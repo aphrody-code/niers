@@ -210,7 +210,7 @@ export default async function Image() {
 				}}
 			>
 				<img
-					src={getOgLogoDataUri()}
+					src={await getOgLogoDataUri()}
 					width={28}
 					height={28}
 					style={{ borderRadius: 7 }}
