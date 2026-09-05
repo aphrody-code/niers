@@ -8,7 +8,7 @@
 // MASQUES : canal alpha boosté x5, RGB force a blanc -> teintés en currentColor
 // par GameSpriteIcon (s'adapte aux 4 themes clair/sombre comme une icone lucide).
 //
-// 100% client-safe : aucun import serveur (bun:sqlite / node / server-only).
+// 100% client-safe : aucun import serveur (pilote SQLite, API Node, `server-only`).
 
 /** Un atlas g4tx normalise en webp-masque dans /public/game-icons/. */
 export interface GameIconAtlas {

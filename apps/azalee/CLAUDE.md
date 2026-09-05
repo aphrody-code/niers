@@ -18,7 +18,7 @@ Le `CLAUDE.md` parent (`../../CLAUDE.md`) couvre les conventions du monorepo (co
 | `bun run lint` | `oxlint` puis `eslint` (config-next + better-tailwindcss + react-compiler). |
 | `bun run lint:fix` | Auto-fix les deux. |
 | `bun run type-check` | `tsc --noEmit`. Depuis 2026-05-17 `typescript.ignoreBuildErrors=false` (TS 6.0 + React 19.2 + zod 4 ont corrigé la drift). Erreurs TS bloquent maintenant `next build`. |
-| `bun run backup:supabase` | Dump Supabase Postgres → SQLite via `bun:sqlite` (WAL + batch transactions). Sortie : `data/backups/supabase-<ISO>.sqlite` (~40 MB, 18 601 rows / 77 tables, gitignored). Lancer avant tout op risqué DB. |
+| `bun run backup:supabase` | Dump Supabase Postgres → SQLite via le pilote de Bun (WAL + batch transactions). Sortie : `data/backups/supabase-<ISO>.sqlite` (~40 MB, 18 601 rows / 77 tables, gitignored). Lancer avant tout op risqué DB. |
 | `bun run test` / `test:run` | Vitest (jsdom + `tests/setup.ts`). |
 | `azalee test` | Exécute la suite complète de vérifications natives (SQLite DB, API HTTP, Bxc detect/recon, DOM, rendu des pages). |
 | `vercel --prod` | Deploy prod sur Vercel depuis la racine ou via Vercel CLI. |
@@ -36,7 +36,7 @@ Le `CLAUDE.md` parent (`../../CLAUDE.md`) couvre les conventions du monorepo (co
 
 ### Auth (Better Auth + pont Supabase)
 
-`lib/auth.ts` : Better Auth instance avec `pg.Pool` (DATABASE_URL → table users Better Auth) + `supabaseAdmin` service-role pour upsert dans `profiles`.
+`lib/auth.ts` : Better Auth instance avec `pg.Pool` (chaine de connexion Postgres → table users Better Auth) + `supabaseAdmin` service-role pour upsert dans `profiles`.
 
 - Providers : **Discord** + **Google** OAuth, plus magic-link (`app/api/auth/magic-login`).
 - `databaseHooks.user.create.after` → `ensureUserProfile()` cree la ligne `profiles` Supabase. Re-appelable depuis layouts pour self-healing.

@@ -25,7 +25,7 @@ const DISABLE_SUPABASE_JWT_BRIDGE = process.env.DISABLE_SUPABASE_JWT_BRIDGE !== 
  * ## Ce qui a été retiré ici, et pourquoi (lot J2, 2026-09-05)
  *
  * Le client était enveloppé dans un `Proxy` qui détournait `from("inagle_*")` vers un cache
- * SQLite local, avec repli Postgres quand `bun:sqlite` manquait. Cette bifurcation n'a plus
+ * SQLite local, avec repli Postgres quand le pilote manquait. Cette bifurcation n'a plus
  * de sens en serverless : le fichier n'existe pas sur Vercel, le repli était donc pris à
  * *chaque* requête — au prix d'un `try/catch` sur un message d'erreur, ce qui est une
  * détection fragile. Surtout, elle faisait exister deux sources de vérité pour les mêmes

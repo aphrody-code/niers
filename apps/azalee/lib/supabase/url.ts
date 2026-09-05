@@ -5,14 +5,14 @@
  *
  * La même cascade était recopiée dans quatre modules du chemin de requête
  * (`lib/supabase/server.ts`, `lib/supabase/public.ts`, `lib/api-client.ts`,
- * `src/lib/api/supabase.ts`), chacun essayant `SUPABASE_INTERNAL_URL` **avant** l'URL
+ * `src/lib/api/supabase.ts`), chacun essayant l'URL INTERNE du VPS **avant** l'URL
  * publique, puis retombant sur `http://127.0.0.1:8811`. Corriger un site n'en corrigeait
  * aucun autre : c'est ce qui a produit le faux vert du 2026-09-05, où `/chara` rendait un
  * HTTP 200 de 136 921 octets contenant **zéro** lien de personnage.
  *
  * ## Deux décisions, et leur raison
  *
- * 1. **`SUPABASE_INTERNAL_URL` n'est plus lue.** Elle désignait un proxy `127.0.0.1` du VPS.
+ * 1. **L'URL interne du VPS n'est plus lue.** Elle désignait un proxy `127.0.0.1` local.
  *    Depuis une fonction serverless, cette adresse existe — c'est la fonction elle-même — et
  *    la requête échoue ou rend du vide *sans erreur*. Une variable qui ne peut pas être juste
  *    en production n'a pas à être consultée en production.

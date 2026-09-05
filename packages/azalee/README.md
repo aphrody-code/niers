@@ -45,7 +45,7 @@ C'est le contrat structurant du package.
 
 `@rosegriffon/azalee` ne contient **que** du code pur : types, règles de jeu,
 résolution d'URLs CDN, glossaire de traduction FR, recherche floue. Aucun
-`bun:sqlite`, aucun `node:fs`, aucun accès réseau au chargement. Elle se bundle
+aucun pilote SQLite, aucun accès disque, aucun accès réseau au chargement. Elle se bundle
 donc dans une webview Tauri, un navigateur ou un worker.
 
 ```ts
