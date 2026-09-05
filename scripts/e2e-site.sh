@@ -268,6 +268,26 @@ if [ "$ETAT_VFS" = "pret" ]; then
 		verifier "/f/<chemin de $vue> est servi" "200" "$(req "/f/$premier" | cut -d' ' -f1)"
 	done
 
+	# La recherche. Elle porte sur le CHEMIN entier, pas sur le seul nom : un motif de dossier
+	# doit donc retenir quelque chose, et un motif absurde ne rien retenir. Vérifier les deux
+	# bornes évite un filtre qui rendrait tout (donc ne filtre pas) ou rien (donc est cassé).
+	req "/api/v1/textures?q=title&per_page=5" >/dev/null
+	total_filtre="$(jq -r '.total' <"$CORPS")"
+	req "/api/v1/textures?per_page=5" >/dev/null
+	total_brut="$(jq -r '.total' <"$CORPS")"
+	VERIFS+=1
+	if [ "$total_filtre" -gt 0 ] && [ "$total_filtre" -lt "$total_brut" ] 2>/dev/null; then
+		LIGNES+=("  $(couleur '32' 'ok')    ?q= restreint la vue = $total_filtre sur $total_brut")
+	else
+		ECHECS+=1
+		LIGNES+=("  $(couleur '31' 'ECHEC') ?q= ne restreint pas : $total_filtre sur $total_brut")
+	fi
+	req "/api/v1/textures?q=zzz-motif-absent-zzz" >/dev/null
+	verifier "?q= sur un motif absent rend 0" "0" "$(jq -r '.total' <"$CORPS")"
+	# Un filtre vide ne doit PAS filtrer : la vue entiere revient.
+	req "/api/v1/textures?q=&per_page=5" >/dev/null
+	verifier "?q= vide rend la vue entière" "$total_brut" "$(jq -r '.total' <"$CORPS")"
+
 	# Pagination bornée : une demande déraisonnable est ramenée à la borne, pas refusée.
 	req "/api/v1/textures?page=1&per_page=99999" >/dev/null
 	verifier "per_page borné par le serveur" "200" "$(jq -r '.per_page' <"$CORPS")"
