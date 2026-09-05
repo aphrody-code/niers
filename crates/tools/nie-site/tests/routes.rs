@@ -472,3 +472,50 @@ async fn head_repond_comme_get_sans_corps() {
     let corps = r.into_body().collect().await.unwrap().to_bytes();
     assert_eq!(corps.len(), 0);
 }
+
+/// Le mode d'échec le plus cher de cette crate : la coquille est valide, elle répond 200, et
+/// elle ne charge pas le bundle. Rien ne le signale — ni le build, ni un test de route, ni un
+/// contrôle de taille. C'est arrivé le 2026-09-05 : `apps/nie-web` écrit ses fichiers empreintés
+/// dans `dist/static/` (parce que `/assets/` est déjà pris par le proxy vers `nie-model-serve`)
+/// et la recherche du point d'entrée ne regardait que `dist/assets/`. Aphrody servait alors une
+/// page d'accueil sans une ligne de JavaScript.
+///
+/// Ce test compte les `<script>` de la coquille pour les trois cas possibles.
+#[tokio::test]
+async fn coquille_charge_le_bundle() {
+    for dossier in nie_site::routes::static_files::DOSSIERS_BUNDLE {
+        let dist = tempfile::tempdir().unwrap();
+        std::fs::create_dir(dist.path().join(dossier)).unwrap();
+        // Le nom est celui que Vite produit REELLEMENT pour `apps/nie-web` (base64url, casses
+        // melangees) : un test ecrit sur la forme *attendue* laisse passer le vrai bundle.
+        std::fs::write(dist.path().join(dossier).join("index-RXLrxaJS.js"), "export {}").unwrap();
+        std::fs::write(dist.path().join(dossier).join("index-RXLrxaJS.css"), ":root{}").unwrap();
+
+        let etat = etat_avec(|c| c.statique = dist.path().to_path_buf());
+        let (statut, _, corps) = reponse(&etat, "/").await;
+        assert_eq!(statut, StatusCode::OK);
+        let html = String::from_utf8(corps).unwrap();
+
+        let script = format!(r#"<script type="module" src="/{dossier}/index-RXLrxaJS.js">"#);
+        let feuille = format!(r#"<link rel="stylesheet" href="/{dossier}/index-RXLrxaJS.css">"#);
+        assert!(html.contains(&script), "bundle dans {dossier}/ non charge : {html}");
+        assert!(html.contains(&feuille), "feuille de {dossier}/ non chargee");
+        assert_eq!(html.matches("<script").count(), 1, "un seul point d'entree attendu");
+
+        // Et les fichiers annoncés doivent réellement être servis, empreintés donc immuables.
+        let (statut, entetes, _) = reponse(&etat, &format!("/{dossier}/index-RXLrxaJS.js")).await;
+        assert_eq!(statut, StatusCode::OK, "{dossier}/index-RXLrxaJS.js");
+        assert_eq!(
+            entetes[header::CACHE_CONTROL].to_str().unwrap(),
+            nie_site::routes::static_files::IMMUABLE,
+        );
+    }
+
+    // Sans bundle, la coquille reste servie — mais sans `<script>`, et elle le dit.
+    let etat = etat_avec(|c| c.statique = "/nonexistent/dist".into());
+    let (statut, _, corps) = reponse(&etat, "/").await;
+    assert_eq!(statut, StatusCode::OK);
+    let html = String::from_utf8(corps).unwrap();
+    assert_eq!(html.matches("<script").count(), 0);
+    assert!(html.contains("<noscript>"));
+}
