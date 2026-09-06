@@ -64,6 +64,9 @@ afin de ne pas contaminer les événements live suivants.
 La même protection couvre désormais `LuaSession::drive_menu_for_frames` via
 `drive_menu_for_frames_with_limit` : le budget englobe le top-level, les callbacks de layers et les
 frames, puis la VM reste disponible pour l’événement suivant.
+Le driver bas niveau positionne aussi le layer courant avant chaque groupe de callbacks via son
+pont interne host→driver ; les commandes d’objet sans layer explicite ciblent ainsi le même layer
+que dans le pilotage événementiel de la session.
 
 `RuntimeContext` fournit l’injection typée des globals primitifs que le manager
 natif pose avant un callback (nombres, booléens, chaînes). Le contexte est

@@ -1066,6 +1066,19 @@ pub fn install_menu_host(lua: &Lua) -> mlua::Result<Rc<RefCell<MenuState>>> {
         lua.globals().set("funcLuaMenuCommand", f)?;
     }
 
+    // Contexte interne utilisé par le driver Rust avant les callbacks de layer. Le moteur natif
+    // pose ce slot dans son manager ; le garder hors de l'API scriptée évite d'ajouter une fausse
+    // fonction de jeu tout en permettant au chemin bas niveau `drive_menu_for_frames` de partager
+    // la même sémantique que `LuaSession::call_menu_callback`.
+    {
+        let state = Rc::clone(&state);
+        let f = lua.create_function(move |_lua, layer_id: f64| {
+            state.borrow_mut().current_layer = layer_id as u32;
+            Ok(())
+        })?;
+        lua.globals().set("__nie_set_current_layer", f)?;
+    }
+
     // ── funcLuaCommand(cmdId, …args) — dispatch des commandes générales connues ──
     {
         let state = Rc::clone(&state);
@@ -2184,6 +2197,11 @@ pub fn drive_menu_for_frames(
     // Tolérant : on collecte l'état partiel.
     for &lid in layer_ids {
         let count = item_counts.get(&lid).copied().unwrap_or(0).max(1);
+        if let Ok(Value::Function(set_current_layer)) =
+            g.raw_get::<Value>("__nie_set_current_layer")
+        {
+            let _ = set_current_layer.call::<()>(lid as f64);
+        }
         for idx in 0..count {
             for cb in ["OnSetupLayer", "OnOpenLayer", "OnEnter"] {
                 if let Ok(Value::Function(f)) = g.raw_get::<Value>(cb) {
@@ -3420,6 +3438,25 @@ mod dispatch_tests {
         assert_eq!(report.callback_invocations.get("Step"), Some(&2));
         assert_eq!(report.callback_invocations.get("PostStep"), Some(&2));
         assert_eq!(lua.globals().get::<String>("trace").unwrap(), "PSTPST");
+    }
+
+    #[test]
+    fn le_driver_positionne_le_layer_courant_avant_les_callbacks() {
+        let (lua, state) = host();
+        let bytes = lua
+            .load(
+                r#"function OnOpenLayer(layer)
+                    funcLuaMenuCommand(0x2A64B198, 0x1234, 0, false)
+                end"#,
+            )
+            .into_function()
+            .unwrap()
+            .dump(false);
+        drive_menu_for_frames(&lua, &bytes, "driver-layer", &[0x77], &BTreeMap::new(), 0).unwrap();
+        let state = state.borrow();
+        assert_eq!(state.current_layer, 0x77);
+        assert!(!state.layers[&0x77].objects[&0x1234].visible);
+        assert!(!state.layers.contains_key(&0));
     }
 
     #[test]
