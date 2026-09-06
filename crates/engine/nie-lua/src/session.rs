@@ -60,6 +60,9 @@ pub const LIFECYCLE_CALLBACKS: [&str; 6] = [
     "OnDestroy",
 ];
 
+/// Limite par défaut du chemin d'exécution d'un chunk lu depuis le VFS.
+pub const DEFAULT_VFS_INSTRUCTION_LIMIT: u32 = 20_000_000;
+
 /// Valeur transportable par un événement host→Lua.
 ///
 /// Le manager natif convertit les `uint` en nombres Lua et transmet aussi un argument optionnel
@@ -460,18 +463,50 @@ impl LuaSession {
     /// [`LuaError`] si le chunk échoue — ici l'erreur EST propagée : contrairement à une analyse,
     /// une exécution demandée explicitement doit dire qu'elle a raté.
     pub fn exec(&self, name: &str, data: &[u8]) -> Result<Vec<String>, LuaError> {
+        self.exec_with_limit(name, data, None)
+    }
+
+    /// Exécute un chunk dans la VM persistante avec une limite d'instructions optionnelle.
+    ///
+    /// Le hook est installé uniquement pendant cet appel puis retiré, afin que la limite d'un
+    /// chunk VFS ne contamine pas les callbacks live suivants ni le compteur d'une autre commande.
+    pub fn exec_with_limit(
+        &self,
+        name: &str,
+        data: &[u8],
+        instruction_limit: Option<u32>,
+    ) -> Result<Vec<String>, LuaError> {
         validate_bytecode(data)?;
         let mode = if is_lua52_bytecode(data) {
             ChunkMode::Binary
         } else {
             ChunkMode::Text
         };
-        let values: MultiValue = self
+        if let Some(limit) = instruction_limit {
+            let executed = std::cell::Cell::new(0_u32);
+            self.lua.set_hook(
+                mlua::HookTriggers::new().every_nth_instruction(10_000),
+                move |_lua, _debug| {
+                    executed.set(executed.get().saturating_add(10_000));
+                    if executed.get() >= limit {
+                        return Err(mlua::Error::RuntimeError(format!(
+                            "limite d'exécution atteinte ({limit} instructions) — script probablement en attente du moteur"
+                        )));
+                    }
+                    Ok(mlua::VmState::Continue)
+                },
+            )?;
+        }
+        let result: mlua::Result<MultiValue> = self
             .lua
             .load(data)
             .set_name(name.to_string())
             .set_mode(mode)
-            .call(())?;
+            .call(());
+        if instruction_limit.is_some() {
+            self.lua.remove_hook();
+        }
+        let values = result?;
         Ok(values.iter().map(value_to_string).collect())
     }
 
@@ -485,12 +520,21 @@ impl LuaSession {
     /// [`LuaError::VfsScriptNotFound`] si aucun résolveur n'est installé ou si le chemin est
     /// absent ; les erreurs de validation/exécution suivent le contrat de [`Self::exec`].
     pub fn exec_vfs(&self, path: &str) -> Result<Vec<String>, LuaError> {
+        self.exec_vfs_with_limit(path, Some(DEFAULT_VFS_INSTRUCTION_LIMIT))
+    }
+
+    /// Variante de [`Self::exec_vfs`] permettant de choisir ou désactiver la limite d'instructions.
+    pub fn exec_vfs_with_limit(
+        &self,
+        path: &str,
+        instruction_limit: Option<u32>,
+    ) -> Result<Vec<String>, LuaError> {
         let bytes = self
             .include_resolver
             .as_ref()
             .and_then(|resolver| resolver(path))
             .ok_or_else(|| LuaError::VfsScriptNotFound(path.to_string()))?;
-        self.exec(path, &bytes)
+        self.exec_with_limit(path, &bytes, instruction_limit)
     }
 
     /// Attache un script comme comportement.
@@ -824,6 +868,24 @@ mod tests {
             .exec_vfs("data/common/script/lua/menu/module_10.lua.bin")
             .expect("chunk principal VFS versionné");
         assert_eq!(session.eval("vfs_value").unwrap(), "42");
+    }
+
+    #[test]
+    fn lexecution_vfs_borne_une_boucle_et_retire_le_hook() {
+        let logs: LogSink = Rc::new(RefCell::new(Vec::new()));
+        let registry = HostRegistry::standard(Rc::clone(&logs));
+        let session = LuaSession::with_include(registry, logs, false, |name| {
+            (name == "loop.lua.bin").then(|| b"while true do end".to_vec())
+        })
+        .expect("session VFS");
+        let error = session
+            .exec_vfs_with_limit("loop.lua.bin", Some(10_000))
+            .expect_err("la boucle VFS doit être interrompue");
+        assert!(error.to_string().contains("limite d'exécution"));
+        session
+            .exec("after-limit", b"survived = true")
+            .expect("la VM reste utilisable après le hook");
+        assert_eq!(session.eval("survived").unwrap(), "true");
     }
 
     #[test]
