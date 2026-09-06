@@ -117,8 +117,24 @@ pub const PREFIXE_INTERNE: char = '_';
 /// français de la route, le second parce que c'est celui du reste de l'API
 /// ([`crate::routes::DemandePage`]) et qu'un client qui l'emploie ne doit pas se retrouver avec
 /// un `400` sur une « colonne inconnue `per_page` ».
-pub const PARAMS_RESERVES: [&str; 7] =
-    ["page", "par_page", "per_page", "tri", "ordre", "q", "format"];
+pub const PARAMS_RESERVES: [&str; 8] = [
+    "page", "par_page", "per_page", "tri", "ordre", "q", "format", "facets",
+];
+
+/// Combien de colonnes une seule demande peut faceter.
+///
+/// Chaque facette est un `GROUP BY` de plus sur la même table : douze est déjà généreux pour
+/// une barre de filtres, et au-delà c'est un client qui demande le schéma entier en croyant
+/// demander des filtres. **Refusé**, pas tronqué — une demande tronquée en silence rend des
+/// comptes justes sur des colonnes que le client croyait avoir demandées en plus.
+pub const FACETS_MAX: usize = 12;
+
+/// Combien de valeurs distinctes une facette republie.
+///
+/// Au-delà, la liste est **coupée et le dit** (`truncated`), avec le nombre de valeurs
+/// distinctes réellement présentes (`distinct`) : une facette de 199 équipes se dessine en
+/// « les 60 plus fournies + 139 autres », jamais en une liste qui ment sur sa longueur.
+pub const FACET_VALEURS_MAX: usize = 60;
 
 /// Les formats de sortie servis par `/api/v1/entites/{table}`.
 ///
@@ -297,6 +313,44 @@ pub struct Demande {
     pub bornes: Vec<(String, Borne, f64)>,
     /// Présences demandées : colonne du catalogue, et si l'on veut ce qui est renseigné.
     pub presences: Vec<(String, bool)>,
+    /// Colonnes à faceter — des noms du catalogue, jamais ceux envoyés par le client.
+    pub facets: Vec<String>,
+}
+
+/// Une valeur d'une facette, et combien de lignes la portent.
+#[derive(Debug, Clone, Serialize)]
+pub struct FacetValeur {
+    /// La valeur, telle qu'elle est stockée. `null` quand la colonne est vide ou nulle.
+    pub value: Option<String>,
+    /// Combien de lignes la portent, **sous les autres filtres en cours**.
+    pub count: i64,
+}
+
+/// Les valeurs d'une colonne, comptées — de quoi dessiner une barre de filtres.
+///
+/// ## Ce que c'est, et ce que ce n'est pas
+///
+/// C'est le seul moyen de dessiner un filtre honnête : sans les valeurs et leurs comptes, une
+/// interface ne peut proposer qu'un champ de texte libre, où l'utilisateur devine. Avec eux,
+/// elle montre `feu 1 203`, et un choix qui rendrait zéro ligne **ne s'affiche pas**.
+///
+/// ## Le compte est calculé sans le filtre de SA propre colonne
+///
+/// C'est la seule définition qui rend une facette multi-sélectionnable utilisable. Avec
+/// `?element=fire`, la facette `element` calculée sous tous les filtres rendrait une seule
+/// valeur — `fire`, et son compte — et l'interface ne pourrait plus proposer « ajouter
+/// `wind` ». Les autres filtres (`q`, bornes, présences, et les égalités des **autres**
+/// colonnes) s'appliquent bien : c'est ce qui fait que les comptes correspondent à l'écran.
+#[derive(Debug, Clone, Serialize)]
+pub struct Facet {
+    /// La colonne facetée.
+    pub column: String,
+    /// Combien de valeurs distinctes elle porte sous les filtres en cours.
+    pub distinct: usize,
+    /// Vrai quand la liste a été coupée à [`FACET_VALEURS_MAX`].
+    pub truncated: bool,
+    /// Les valeurs, les plus fournies d'abord.
+    pub values: Vec<FacetValeur>,
 }
 
 /// Le sens d'une borne. Deux variantes closes, jamais une chaîne du client.
@@ -379,6 +433,11 @@ pub struct PageLignes {
     pub cle: String,
     /// Ce que la route a appliqué.
     pub filtres: FiltresAppliques,
+    /// Les facettes demandées, comptées sous les filtres en cours. Absent quand `?facets` ne
+    /// l'est pas — une clé toujours présente et toujours vide ferait croire à une capacité
+    /// absente.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub facets: Vec<Facet>,
 }
 
 /// Une ligne unique.
@@ -606,6 +665,32 @@ pub fn analyser(
         }
     };
 
+    // Les facettes se declarent en UNE liste, pas en un parametre par colonne : un parametre
+    // par colonne serait indistinguable d'une egalite (`?element=` est deja refuse comme
+    // « valeur de filtre vide »), et le client ne saurait plus ce qu'il demande.
+    let mut facets: Vec<String> = Vec::new();
+    if let Some(liste) = brut.get("facets").map(|v| v.trim()).filter(|v| !v.is_empty()) {
+        for demande in liste.split(',').map(str::trim).filter(|s| !s.is_empty()) {
+            let colonne = table.colonne(demande).ok_or_else(|| {
+                ErreurSite::Demande(format!(
+                    "`facets={demande}` : `{}` n'a pas cette colonne ; son schema est sur \
+                     /api/v1/entites",
+                    table.nom
+                ))
+            })?;
+            if !facets.contains(&colonne.nom) {
+                facets.push(colonne.nom.clone());
+            }
+        }
+        if facets.len() > FACETS_MAX {
+            return Err(ErreurSite::Demande(format!(
+                "`facets` : {} colonnes demandees, {FACETS_MAX} au maximum — au-dela c'est le \
+                 schema qui est demande, pas des filtres",
+                facets.len()
+            )));
+        }
+    }
+
     let mut egalites = Vec::new();
     let mut bornes = Vec::new();
     let mut presences = Vec::new();
@@ -679,6 +764,7 @@ pub fn analyser(
         egalites,
         bornes,
         presences,
+        facets,
     })
 }
 
@@ -688,6 +774,21 @@ pub fn analyser(
 /// viennent de `table`, c'est-à-dire de la base.
 #[must_use]
 pub fn clause(table: &TableServie, d: &Demande) -> Clause {
+    clause_sauf(table, d, None)
+}
+
+/// La même clause, en **retirant** l'égalité portant sur une colonne donnée.
+///
+/// C'est ce qui rend une facette multi-sélectionnable : le compte de `element` se calcule sous
+/// tous les filtres SAUF le sien, sinon `?element=fire` ferait rendre à la facette une unique
+/// valeur et l'interface ne pourrait plus proposer d'en ajouter une seconde. Seule l'**égalité**
+/// est retirée — une borne ou une présence sur la même colonne reste appliquée, parce qu'elles
+/// ne se cumulent pas avec un choix de valeur, elles le restreignent.
+///
+/// Aucune valeur n'entre dans le texte : seuls des `?` y entrent, et les noms de colonnes
+/// viennent de `table`.
+#[must_use]
+pub fn clause_sauf(table: &TableServie, d: &Demande, sauf: Option<&str>) -> Clause {
     let mut morceaux: Vec<String> = Vec::new();
     let mut params: Vec<ValeurSql> = Vec::new();
 
@@ -714,6 +815,9 @@ pub fn clause(table: &TableServie, d: &Demande) -> Clause {
     }
 
     for (colonne, valeur) in &d.egalites {
+        if sauf == Some(colonne.as_str()) {
+            continue;
+        }
         morceaux.push(format!("\"{colonne}\" = ?"));
         params.push(ValeurSql::Text(valeur.clone()));
     }
@@ -873,6 +977,74 @@ pub fn page_lignes(
     ))
 }
 
+/// Compte les valeurs de chaque colonne facetée, sous les filtres en cours.
+///
+/// Un `GROUP BY` par colonne demandée, chacun sous [`clause_sauf`] — c'est-à-dire sous tous les
+/// filtres **sauf l'égalité de cette colonne-là** (cf. [`Facet`]). Les valeurs les plus
+/// fournies d'abord, à égalité par ordre alphabétique pour que deux appels rendent la même
+/// liste.
+///
+/// `distinct` est compté **avant** la coupe : une facette qui rend 60 valeurs sur 199 le dit,
+/// au lieu de laisser croire que la colonne n'en porte que 60.
+///
+/// # Errors
+///
+/// Toute erreur SQLite.
+pub fn facettes(
+    c: &Connection,
+    table: &TableServie,
+    d: &Demande,
+) -> Result<Vec<Facet>, ErreurSite> {
+    let mut sorties = Vec::with_capacity(d.facets.len());
+    for colonne in &d.facets {
+        let cl = clause_sauf(table, d, Some(colonne));
+        // `NULL` et la chaine vide sont rendus comme UNE seule valeur nulle : le miroir melange
+        // les deux (`age_group` est vide, pas nul), et les distinguer publierait une propriete
+        // de l'importeur, pas une du jeu. Meme choix que les tests de presence.
+        let expr = format!("nullif(\"{colonne}\", '')");
+        // Le compte distinct passe par le MEME `GROUP BY` que la liste, pas par un
+        // `count(DISTINCT ...)` : ce dernier ignore les `NULL`, si bien qu'une colonne dont la
+        // moitie des lignes est vide se serait annoncee avec une valeur distincte de moins que
+        // celles qu'elle rend. Ici les deux requetes voient exactement les memes groupes.
+        let distinct: i64 = c.query_row(
+            &format!(
+                "SELECT count(*) FROM (SELECT {expr} AS v FROM \"{}\"{} GROUP BY v)",
+                table.nom, cl.sql
+            ),
+            rusqlite::params_from_iter(cl.params.iter()),
+            |r| r.get(0),
+        )?;
+
+        let sql = format!(
+            "SELECT {expr} AS v, count(*) AS n FROM \"{}\"{} GROUP BY v \
+             ORDER BY n DESC, v IS NULL, v ASC LIMIT ?",
+            table.nom, cl.sql
+        );
+        let mut stmt = c.prepare(&sql)?;
+        let mut params = cl.params.clone();
+        params.push(ValeurSql::Integer(
+            i64::try_from(FACET_VALEURS_MAX).unwrap_or(i64::MAX),
+        ));
+        let values = stmt
+            .query_map(rusqlite::params_from_iter(params.iter()), |r| {
+                Ok(FacetValeur {
+                    value: r.get::<_, Option<String>>(0)?,
+                    count: r.get(1)?,
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let distinct = usize::try_from(distinct).unwrap_or(values.len());
+        sorties.push(Facet {
+            column: colonne.clone(),
+            distinct,
+            truncated: values.len() < distinct,
+            values,
+        });
+    }
+    Ok(sorties)
+}
+
 /// Lit une ligne par sa clé.
 ///
 /// # Errors
@@ -1020,6 +1192,7 @@ pub async fn lignes(
                 table: table.nom.clone(),
                 cle: table.cle.clone(),
                 filtres: demande.appliques(),
+                facets: facettes(c, table, &demande)?,
             };
             Ok(if csv {
                 reponse_csv(&corps)
@@ -1255,6 +1428,140 @@ mod tests {
         .unwrap()
     }
 
+    /// Calcule les facettes d'une demande sur un gisement de test.
+    fn faceter(g: &crate::dataset::Gisement, table: &TableServie, d: &Demande) -> Vec<Facet> {
+        let table = table.clone();
+        let d = d.clone();
+        g.lire(move |c| facettes(c, &table, &d)).unwrap()
+    }
+
+    /// Retrouve une valeur de facette par son libellé, ou `None` si la facette ne la porte pas.
+    fn compte_de(f: &Facet, valeur: &str) -> Option<i64> {
+        f.values
+            .iter()
+            .find(|v| v.value.as_deref() == Some(valeur))
+            .map(|v| v.count)
+    }
+
+    #[test]
+    fn une_facette_compte_les_valeurs_sous_les_filtres_en_cours() {
+        // Une facette qui ne verrait pas les filtres rendrait les mêmes comptes que la table
+        // entière — des chiffres justes à côté d'un écran qui n'en montre pas autant. Les deux
+        // moitiés sont nécessaires : sans le cas filtré, une implémentation qui ignore la
+        // clause passerait aussi.
+        let (_d, g) = base();
+        let t = table_de(&g, "inagle_characters");
+
+        let large = faceter(&g, &t, &analyser(&t, &q(&[("facets", "element")])).unwrap());
+        assert_eq!(large.len(), 1);
+        assert_eq!(large[0].column, "element");
+        assert_eq!(large[0].distinct, 2);
+        assert!(!large[0].truncated);
+        assert_eq!(compte_de(&large[0], "Feu"), Some(2));
+        assert_eq!(compte_de(&large[0], "Bois"), Some(1));
+
+        // `q=Mark` ne retient que `c1`, donc la facette ne doit plus voir qu'un `Feu` — et plus
+        // du tout de `Bois` : une valeur qui rendrait zéro ligne ne se propose pas.
+        let etroit = faceter(
+            &g,
+            &t,
+            &analyser(&t, &q(&[("facets", "element"), ("q", "Mark")])).unwrap(),
+        );
+        assert_eq!(compte_de(&etroit[0], "Feu"), Some(1));
+        assert_eq!(compte_de(&etroit[0], "Bois"), None);
+        assert_eq!(etroit[0].distinct, 1);
+    }
+
+    #[test]
+    fn une_facette_ignore_le_filtre_de_sa_propre_colonne() {
+        // LA propriété qui rend une facette multi-sélectionnable. Sous `?element=Feu`, une
+        // facette calculée avec TOUS les filtres ne rendrait que `Feu` — et l'interface ne
+        // pourrait plus proposer d'ajouter `Bois`, c'est-à-dire qu'un filtre choisi fermerait
+        // la porte à tous les autres. C'est `clause_sauf` qui l'évite, et ce test rougit si
+        // l'appel repasse par `clause`.
+        let (_d, g) = base();
+        let t = table_de(&g, "inagle_characters");
+        let d = analyser(&t, &q(&[("facets", "element"), ("element", "Feu")])).unwrap();
+
+        // La page, elle, EST filtrée : les deux comptes disent bien deux choses différentes.
+        assert_eq!(compter(&g, &t, &d), 2);
+
+        let f = faceter(&g, &t, &d);
+        assert_eq!(compte_de(&f[0], "Feu"), Some(2));
+        assert_eq!(
+            compte_de(&f[0], "Bois"),
+            Some(1),
+            "la facette doit continuer d'offrir les autres valeurs de sa propre colonne"
+        );
+
+        // Mais un filtre sur une AUTRE colonne s'applique bien à elle : sinon les comptes ne
+        // correspondraient plus à l'écran.
+        let croise = analyser(
+            &t,
+            &q(&[("facets", "element"), ("element", "Feu"), ("zukan__max", "1")]),
+        )
+        .unwrap();
+        let f = faceter(&g, &t, &croise);
+        assert_eq!(compte_de(&f[0], "Feu"), Some(1));
+        assert_eq!(compte_de(&f[0], "Bois"), None);
+    }
+
+    #[test]
+    fn une_facette_sur_une_colonne_inconnue_est_refusee() {
+        // Le piège n° 1 de ce dépôt : un paramètre accepté et jamais appliqué. Un client qui
+        // demande une facette inexistante doit recevoir un 400, pas une réponse sans le champ
+        // — il croirait que la colonne n'a aucune valeur.
+        let (_d, g) = base();
+        let t = table_de(&g, "inagle_characters");
+        let e = analyser(&t, &q(&[("facets", "couleur_preferee")])).unwrap_err();
+        assert!(
+            matches!(&e, ErreurSite::Demande(m) if m.contains("couleur_preferee")),
+            "attendu un 400 nommant la colonne, recu {e:?}"
+        );
+
+        // Et la liste est bornée : au-delà, c'est le schéma qui est demandé.
+        let colonnes = vec!["id"; FACETS_MAX + 1].join(",");
+        assert!(
+            analyser(&t, &q(&[("facets", colonnes.as_str())])).is_ok(),
+            "les doublons se dedupliquent avant d'etre comptes"
+        );
+    }
+
+    #[test]
+    fn une_facette_groupe_le_vide_avec_le_nul() {
+        // Le miroir mélange les deux — `age_group` est vide, pas nul — et publier la nuance
+        // publierait une propriété de l'importeur, pas une du jeu. Même choix que les tests de
+        // présence, et il faut que la MÊME décision se lise dans `distinct` : un
+        // `count(DISTINCT ...)` ignorerait les nuls et annoncerait une valeur de moins que
+        // celles que la liste rend juste à côté.
+        let dir = tempfile::tempdir().unwrap();
+        let chemin = dir.path().join("mirror.sqlite");
+        let c = rusqlite::Connection::open(&chemin).unwrap();
+        c.execute_batch(
+            "CREATE TABLE _meta(cle TEXT, valeur TEXT);
+             INSERT INTO _meta VALUES ('source', 'pg:DATABASE_URL');
+             CREATE TABLE inagle_creux(id TEXT, groupe TEXT);
+             INSERT INTO inagle_creux VALUES ('a', 'plein');
+             INSERT INTO inagle_creux VALUES ('b', '');
+             INSERT INTO inagle_creux VALUES ('c', NULL);",
+        )
+        .unwrap();
+        drop(c);
+        let g = crate::dataset::Gisement::nouveau(&chemin);
+        let t = table_de(&g, "inagle_creux");
+
+        let f = faceter(&g, &t, &analyser(&t, &q(&[("facets", "groupe")])).unwrap());
+        assert_eq!(f[0].distinct, 2, "`plein` et le creux, pas trois groupes");
+        assert_eq!(f[0].values.len(), 2, "`distinct` et la liste comptent pareil");
+        assert_eq!(compte_de(&f[0], "plein"), Some(1));
+        let creux = f[0]
+            .values
+            .iter()
+            .find(|v| v.value.is_none())
+            .expect("le creux est une valeur, rendue `null`");
+        assert_eq!(creux.count, 2, "la chaine vide et le NULL comptent ensemble");
+    }
+
     #[test]
     fn une_borne_retient_un_intervalle_et_ses_deux_bords() {
         // La moitie positive seule ne prouverait rien : une clause qui ne filtrerait pas
@@ -1401,6 +1708,7 @@ mod tests {
                 bornes: BTreeMap::new(),
                 presences: BTreeMap::new(),
             },
+            facets: Vec::new(),
         };
         let corps = reponse_csv(&page);
         assert_eq!(corps.status(), axum::http::StatusCode::OK);
