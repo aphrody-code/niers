@@ -9,10 +9,9 @@
 mod common;
 
 use nie_data::hash::HashId;
-use nie_data::post::{parse_delivery_list_config, DeliveryListInfo};
+use nie_data::post::{DeliveryListInfo, parse_delivery_list_config};
 
-const REAL_PATH: &str =
-    "post/delivery_list_config.cfg.bin.json";
+const REAL_PATH: &str = "post/delivery_list_config.cfg.bin.json";
 
 fn load_real() -> Option<Vec<DeliveryListInfo>> {
     let chemin_abs = common::chemin(REAL_PATH)?;
@@ -30,7 +29,11 @@ fn load_real() -> Option<Vec<DeliveryListInfo>> {
 #[test]
 fn compte_livraisons_et_contenus() {
     let Some(infos) = load_real() else { return };
-    assert_eq!(infos.len(), 20, "20 DELIVERY_INFO sous DELIVERY_INFO_LIST_BEG_0");
+    assert_eq!(
+        infos.len(),
+        20,
+        "20 DELIVERY_INFO sous DELIVERY_INFO_LIST_BEG_0"
+    );
     let total_data: usize = infos.iter().map(|i| i.data.len()).sum();
     assert_eq!(total_data, 74, "74 DELIVERY_INFO_DATA au total");
 }

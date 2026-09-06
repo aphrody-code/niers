@@ -337,13 +337,20 @@ impl SoccerCameraConfig {
                 .collect(),
             cameras: rows(&lists, "m_soccerCameraInfoList")
                 .iter()
-                .map(|r| IndexedRef { id: hash_of(r, "id"), slice: pair_of(r, "data") })
+                .map(|r| IndexedRef {
+                    id: hash_of(r, "id"),
+                    slice: pair_of(r, "data"),
+                })
                 .collect(),
             goalnet: rows(&lists, "m_scGoalnetCameraInfoList")
                 .iter()
                 .map(|r| GoalnetCameraInfo {
                     id: hash_of(r, "id"),
-                    cam_pos: [f32_of(r, "camPosX"), f32_of(r, "camPosY"), f32_of(r, "camPosZ")],
+                    cam_pos: [
+                        f32_of(r, "camPosX"),
+                        f32_of(r, "camPosY"),
+                        f32_of(r, "camPosZ"),
+                    ],
                     ref_offset: [
                         f32_of(r, "refOffsetPosX"),
                         f32_of(r, "refOffsetPosY"),
@@ -366,7 +373,11 @@ impl SoccerCameraConfig {
                     id: hash_of(r, "id"),
                     cam_length: f32_of(r, "camLength"),
                     // `camPsoX`/`camPsoY` : coquille présente dans le fichier du jeu, conservée.
-                    cam_pos: [f32_of(r, "camPsoX"), f32_of(r, "camPsoY"), f32_of(r, "camPosZ")],
+                    cam_pos: [
+                        f32_of(r, "camPsoX"),
+                        f32_of(r, "camPsoY"),
+                        f32_of(r, "camPosZ"),
+                    ],
                     rot_x: (f32_of(r, "camRotXStart"), f32_of(r, "camRotXEnd")),
                     rot_y: (f32_of(r, "camRotYStart"), f32_of(r, "camRotYEnd")),
                 })
@@ -407,7 +418,10 @@ impl SoccerCameraConfig {
                 .collect(),
             fix_pos: rows(&lists, "m_soccerFixPosCameraInfoList")
                 .iter()
-                .map(|r| IndexedRef { id: hash_of(r, "id"), slice: pair_of(r, "data") })
+                .map(|r| IndexedRef {
+                    id: hash_of(r, "id"),
+                    slice: pair_of(r, "data"),
+                })
                 .collect(),
             cinematic_data: rows(&lists, "m_cinematicCameraInfoDataList")
                 .iter()
@@ -427,7 +441,10 @@ impl SoccerCameraConfig {
                 .collect(),
             cinematic: rows(&lists, "m_cinematicCameraInfoList")
                 .iter()
-                .map(|r| IndexedRef { id: hash_of(r, "id"), slice: pair_of(r, "data") })
+                .map(|r| IndexedRef {
+                    id: hash_of(r, "id"),
+                    slice: pair_of(r, "data"),
+                })
                 .collect(),
         };
         if cfg.camera_data.is_empty() && cfg.goalnet.is_empty() {
@@ -445,9 +462,10 @@ impl SoccerCameraConfig {
     /// édité, mieux vaut ne rien rendre que rendre les paramètres d'une autre caméra.
     #[must_use]
     pub fn data_for(&self, camera: &IndexedRef) -> &[SoccerCameraInfoData] {
-        let (Ok(off), Ok(cnt)) =
-            (usize::try_from(camera.slice[0]), usize::try_from(camera.slice[1]))
-        else {
+        let (Ok(off), Ok(cnt)) = (
+            usize::try_from(camera.slice[0]),
+            usize::try_from(camera.slice[1]),
+        ) else {
             return &[];
         };
         let end = off.saturating_add(cnt).min(self.camera_data.len());
@@ -517,13 +535,44 @@ mod tests {
     #[test]
     fn tranche_hors_bornes_ne_panique_pas() {
         let cfg = SoccerCameraConfig {
-            camera_data: vec![SoccerCameraInfoData { no: 0, ..Default::default() }],
+            camera_data: vec![SoccerCameraInfoData {
+                no: 0,
+                ..Default::default()
+            }],
             ..Default::default()
         };
-        assert_eq!(cfg.data_for(&IndexedRef { id: 1, slice: [0, 1] }).len(), 1);
-        assert_eq!(cfg.data_for(&IndexedRef { id: 1, slice: [0, 99] }).len(), 1);
-        assert_eq!(cfg.data_for(&IndexedRef { id: 1, slice: [50, 1] }).len(), 0);
-        assert_eq!(cfg.data_for(&IndexedRef { id: 1, slice: [-3, 2] }).len(), 0);
+        assert_eq!(
+            cfg.data_for(&IndexedRef {
+                id: 1,
+                slice: [0, 1]
+            })
+            .len(),
+            1
+        );
+        assert_eq!(
+            cfg.data_for(&IndexedRef {
+                id: 1,
+                slice: [0, 99]
+            })
+            .len(),
+            1
+        );
+        assert_eq!(
+            cfg.data_for(&IndexedRef {
+                id: 1,
+                slice: [50, 1]
+            })
+            .len(),
+            0
+        );
+        assert_eq!(
+            cfg.data_for(&IndexedRef {
+                id: 1,
+                slice: [-3, 2]
+            })
+            .len(),
+            0
+        );
     }
 
     #[test]
@@ -546,7 +595,11 @@ mod tests {
     #[test]
     fn recherche_aerienne_par_stade() {
         let cfg = SoccerCameraConfig {
-            aerial: vec![AerialCameraInfo { id: 7, cam_length: 10.0, ..Default::default() }],
+            aerial: vec![AerialCameraInfo {
+                id: 7,
+                cam_length: 10.0,
+                ..Default::default()
+            }],
             aerial_map: vec![AerialCameraMapInfo {
                 id: 42,
                 aerial_cam_info_id: 7,

@@ -4,7 +4,9 @@
 //! Usage : `cargo run -p nie-formats --example model_glb_preview -- <mesh.g4md> <mesh.g4mg> <mesh.g4tx> <out.glb>`
 //! Rendu ensuite en PNG via : `cargo run -p nie-render3d -- --glb <out.glb> --out <out.png> --frames 1`
 
-use nie_formats::assemble::{assemble_generic_model, EmbeddedTexture, GenericModelInput, MeshComponent};
+use nie_formats::assemble::{
+    EmbeddedTexture, GenericModelInput, MeshComponent, assemble_generic_model,
+};
 
 fn main() {
     let a: Vec<String> = std::env::args().collect();
@@ -27,7 +29,10 @@ fn main() {
     })
     .expect("assemblage GLB");
 
-    if let Some(png) = nie_formats::g4tx_decode::decode_best_to_png(&g4tx, nie_formats::g4tx_decode::basename_of(&a[3])) {
+    if let Some(png) = nie_formats::g4tx_decode::decode_best_to_png(
+        &g4tx,
+        nie_formats::g4tx_decode::basename_of(&a[3]),
+    ) {
         model.embedded_textures.push(EmbeddedTexture {
             component: MeshComponent::Generic,
             name: format!("{stem}_tex"),

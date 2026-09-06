@@ -69,7 +69,11 @@ fn banque(vfs: &Vfs, path: &str) {
     for c in cues.iter().take(5) {
         println!(
             "  {:<24} awb_id={:?} {} {}Hz {}ms → {}",
-            if c.name.is_empty() { "(sans nom)" } else { &c.name },
+            if c.name.is_empty() {
+                "(sans nom)"
+            } else {
+                &c.name
+            },
             c.awb_id,
             c.codec,
             c.sample_rate.unwrap_or(0),

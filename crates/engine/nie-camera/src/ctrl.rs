@@ -259,7 +259,13 @@ impl InterPolate {
     /// Nouvelle transition.
     #[must_use]
     pub fn new(from: CameraState, to: CameraState, duration: f32, fade: FadeType) -> Self {
-        InterPolate { from, to, duration, fade, elapsed: 0.0 }
+        InterPolate {
+            from,
+            to,
+            duration,
+            fade,
+            elapsed: 0.0,
+        }
     }
 
     /// `true` tant que la transition n'est pas terminée.
@@ -319,7 +325,11 @@ impl Offset {
     pub fn intensity(&self) -> f32 {
         let t = self.elapsed;
         if t < self.in_time {
-            return if self.in_time <= f32::EPSILON { 1.0 } else { t / self.in_time };
+            return if self.in_time <= f32::EPSILON {
+                1.0
+            } else {
+                t / self.in_time
+            };
         }
         let t = t - self.in_time;
         if t < self.hold_time {
@@ -361,7 +371,11 @@ pub fn chase_from_preset(set: &PropertySet, preset: &str) -> Option<ChaseSoccer>
     if p.is_empty() {
         return None;
     }
-    let f = |k: &str, d: f32| p.get(k).and_then(crate::property::ParamValue::as_f32).unwrap_or(d);
+    let f = |k: &str, d: f32| {
+        p.get(k)
+            .and_then(crate::property::ParamValue::as_f32)
+            .unwrap_or(d)
+    };
     let ref_off = p
         .get("m_vCameraRefOffset")
         .and_then(crate::property::ParamValue::as_vec3)
@@ -464,7 +478,10 @@ mod tests {
     #[test]
     fn interpolation_atteint_la_cible() {
         let a = CameraState::default();
-        let b = CameraState { fov_deg: 90.0, ..CameraState::default() };
+        let b = CameraState {
+            fov_deg: 90.0,
+            ..CameraState::default()
+        };
         let mut it = InterPolate::new(a, b, 1.5, FadeType::from_code(6));
         let mut last = a;
         for _ in 0..100 {
@@ -508,7 +525,10 @@ mod tests {
     #[test]
     fn blender_pondere() {
         let a = CameraState::default();
-        let b = CameraState { fov_deg: 90.0, ..CameraState::default() };
+        let b = CameraState {
+            fov_deg: 90.0,
+            ..CameraState::default()
+        };
         let m = Blender { weight: 0.25 }.blend(&a, &b);
         assert!((m.fov_deg - 56.25).abs() < 1e-4);
     }

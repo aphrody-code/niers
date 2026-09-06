@@ -21,7 +21,7 @@ use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use serde_json::Value;
 
-use crate::cfgbin::{walk_named, Node};
+use crate::cfgbin::{Node, walk_named};
 use crate::hash::HashId;
 
 /// Passe 1 — furigana `[Kanji/Reading]` → `Kanji`.
@@ -63,7 +63,12 @@ fn strip_furigana(chars: &[char]) -> Vec<char> {
 /// Vrai si `chars[start..]` débute par `COL:` (lookahead négatif de la passe 2).
 fn is_col_prefix(chars: &[char], start: usize) -> bool {
     matches!(
-        (chars.get(start), chars.get(start + 1), chars.get(start + 2), chars.get(start + 3)),
+        (
+            chars.get(start),
+            chars.get(start + 1),
+            chars.get(start + 2),
+            chars.get(start + 3)
+        ),
         (Some('C'), Some('O'), Some('L'), Some(':'))
     )
 }
@@ -353,7 +358,10 @@ pub const TEXT_FILES: &[(&str, &str)] = &[
 /// Nom de fichier (sans extension) d'un type de texte convivial (port de `TEXT_FILE_NAMES[type]`).
 #[must_use]
 pub fn text_file_name(text_type: &str) -> Option<&'static str> {
-    TEXT_FILES.iter().find(|(k, _)| *k == text_type).map(|(_, f)| *f)
+    TEXT_FILES
+        .iter()
+        .find(|(k, _)| *k == text_type)
+        .map(|(_, f)| *f)
 }
 
 /// Parse un noeud `TEXT_INFO`/`NOUN_INFO` en `(hashId, texte nettoyé)`.
@@ -370,7 +378,11 @@ pub fn parse_text_info_node(node: &Node<'_>) -> Option<(HashId, String)> {
     if hash_var.ty != "Int" {
         return None;
     }
-    let text_idx = if node.name().starts_with("NOUN_INFO") { 5 } else { 2 };
+    let text_idx = if node.name().starts_with("NOUN_INFO") {
+        5
+    } else {
+        2
+    };
     let text_var = node.var(text_idx)?;
     if text_var.ty != "String" {
         return None;
@@ -411,13 +423,17 @@ pub fn parse_text_file(root: &Value) -> Vec<(HashId, String)> {
 /// (= `loadTextFile().get`, où une clé répétée garde la dernière valeur).
 #[must_use]
 pub fn find_text(entries: &[(HashId, String)], hash_id: HashId) -> Option<&str> {
-    entries.iter().rev().find(|(h, _)| *h == hash_id).map(|(_, t)| t.as_str())
+    entries
+        .iter()
+        .rev()
+        .find(|(h, _)| *h == hash_id)
+        .map(|(_, t)| t.as_str())
 }
 
 #[cfg(test)]
 mod tests {
     use super::{
-        find_text, parse_text_file, parse_text_info_node, sanitize_text, text_file_name, TEXT_FILES,
+        TEXT_FILES, find_text, parse_text_file, parse_text_info_node, sanitize_text, text_file_name,
     };
     use crate::cfgbin::Node;
     use crate::hash::HashId;
@@ -428,7 +444,10 @@ mod tests {
     fn catalog_lookup() {
         assert_eq!(text_file_name("skill"), Some("skill_text"));
         assert_eq!(text_file_name("chara"), Some("chara_text"));
-        assert_eq!(text_file_name("constellation"), Some("players_universe_text"));
+        assert_eq!(
+            text_file_name("constellation"),
+            Some("players_universe_text")
+        );
         assert_eq!(text_file_name("quest_title"), Some("quest_title_text"));
         assert_eq!(text_file_name("unknown_xyz"), None);
         assert_eq!(TEXT_FILES.len(), 45);
@@ -568,5 +587,4 @@ mod tests {
         let s = "<COL:FF0000>[必殺/ひっさつ] <VAL:5> coups<CLO>";
         assert_eq!(sanitize_text(s), "必殺 5 coups");
     }
-
 }

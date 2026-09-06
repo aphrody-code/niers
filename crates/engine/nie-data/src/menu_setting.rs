@@ -44,7 +44,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use serde_json::Value;
 
-use crate::cfgbin::{walk_named, Node};
+use crate::cfgbin::{Node, walk_named};
 use crate::hash::HashId;
 
 /// Un *layer* d'écran de menu (`MENU_LAYER_INFO`) : une couche d'objbin à composer.
@@ -480,14 +480,16 @@ impl MenuSetting {
     #[must_use]
     pub fn focus_elements(&self, index: usize) -> Option<&[MenuFocusBaseInfo]> {
         let r = self.focus_group_refs.get(index)?;
-        self.focus_base_infos.get(r.start..r.start.checked_add(r.count)?)
+        self.focus_base_infos
+            .get(r.start..r.start.checked_add(r.count)?)
     }
 
     /// États de layer du `index`-ième groupe nommé (tranche de `layer_groups`).
     #[must_use]
     pub fn group_layer_states(&self, index: usize) -> Option<&[MenuLayerGroupBase]> {
         let r = self.group_refs.get(index)?;
-        self.layer_groups.get(r.start..r.start.checked_add(r.count)?)
+        self.layer_groups
+            .get(r.start..r.start.checked_add(r.count)?)
     }
 
     /// Nombre total d'éléments focusables de l'écran (= unités de navigation).

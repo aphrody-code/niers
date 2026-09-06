@@ -3,7 +3,9 @@
 //! Utilise `scraper` (CSS selectors sur HTML5).
 //! Tous les parsers sont tolérants aux données manquantes (Option).
 
-use crate::models::{CharaListEntry, Lang, StatBlock, StatCurves, ZukanChara, ZukanItem, ZukanSkill};
+use crate::models::{
+    CharaListEntry, Lang, StatBlock, StatCurves, ZukanChara, ZukanItem, ZukanSkill,
+};
 use anyhow::Result;
 use scraper::{Html, Selector};
 use tracing::warn;
@@ -92,14 +94,8 @@ pub fn parse_chara_list(html: &str) -> Result<(Vec<CharaListEntry>, u32)> {
     let count = model_links.len().min(param_links.len());
 
     for i in 0..count {
-        let model_href = model_links[i]
-            .attr("href")
-            .unwrap_or("")
-            .to_owned();
-        let param_href = param_links[i]
-            .attr("href")
-            .unwrap_or("")
-            .to_owned();
+        let model_href = model_links[i].attr("href").unwrap_or("").to_owned();
+        let param_href = param_links[i].attr("href").unwrap_or("").to_owned();
 
         // Extraire q= de l'URL
         let q_model = extract_q_from_href(&model_href);
@@ -159,9 +155,10 @@ fn extract_character_id_from_json(json: &str) -> String {
     // Parser JSON simple : chercher la valeur après "character_id":["]
     if let Ok(v) = serde_json::from_str::<serde_json::Value>(json)
         && let Some(arr) = v.get("character_id").and_then(|v| v.as_array())
-            && let Some(id) = arr.first().and_then(|v| v.as_str()) {
-                return id.to_owned();
-            }
+        && let Some(id) = arr.first().and_then(|v| v.as_str())
+    {
+        return id.to_owned();
+    }
     String::new()
 }
 
@@ -177,9 +174,10 @@ fn extract_last_page(html: &str) -> u32 {
             .find(|c: char| !c.is_ascii_digit())
             .unwrap_or(rest.len());
         if !rest[..end].is_empty()
-            && let Ok(n) = rest[..end].parse::<u32>() {
-                max = max.max(n);
-            }
+            && let Ok(n) = rest[..end].parse::<u32>()
+        {
+            max = max.max(n);
+        }
         // Avancer la recherche au-delà de ce qu'on vient de trouver
         search = &search[pos + prefix.len() + end.max(1)..];
     }
@@ -253,9 +251,7 @@ fn parse_chara_param_item(
         .and_then(|el| el.attr("src"))
         .map(str::to_owned);
 
-    let image_hash = image_url
-        .as_ref()
-        .and_then(|url| extract_cdn_hash(url));
+    let image_hash = image_url.as_ref().and_then(|url| extract_cdn_hash(url));
 
     // Description : `.description`
     let desc_sel = sel(".description");
@@ -407,11 +403,7 @@ fn parse_stats_from_item(item: &scraper::ElementRef<'_>) -> StatCurves {
 }
 
 /// Fallback : parse la page entière comme un seul perso (si la liste est vide).
-fn parse_single_chara_param(
-    doc: &Html,
-    game_id: &str,
-    lang: Lang,
-) -> Result<Option<ZukanChara>> {
+fn parse_single_chara_param(doc: &Html, game_id: &str, lang: Lang) -> Result<Option<ZukanChara>> {
     // Vérifier qu'il y a bien un nom avant de tenter
     let name_sel = sel(".nameBox .name");
     let name = doc
@@ -566,9 +558,7 @@ pub fn parse_item_list(
             .and_then(|el| el.attr("src"))
             .map(str::to_owned);
 
-        let image_hash = image_url
-            .as_ref()
-            .and_then(|url| extract_cdn_hash(url));
+        let image_hash = image_url.as_ref().and_then(|url| extract_cdn_hash(url));
 
         results.push(ZukanItem {
             name,
@@ -606,29 +596,20 @@ fn extract_cdn_hash(url: &str) -> Option<String> {
     None
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn extract_cdn_hash_works() {
-        let url =
-            "https://dxi4wb638ujep.cloudfront.net/1/k/d/w/dwho-wi8ruk.png";
-        assert_eq!(
-            extract_cdn_hash(url),
-            Some("dwho-wi8ruk".to_owned())
-        );
+        let url = "https://dxi4wb638ujep.cloudfront.net/1/k/d/w/dwho-wi8ruk.png";
+        assert_eq!(extract_cdn_hash(url), Some("dwho-wi8ruk".to_owned()));
     }
 
     #[test]
     fn extract_cdn_hash_webp() {
-        let url =
-            "https://dxi4wb638ujep.cloudfront.net/1/k/d/w/dwho-wi8ruk.webp";
-        assert_eq!(
-            extract_cdn_hash(url),
-            Some("dwho-wi8ruk".to_owned())
-        );
+        let url = "https://dxi4wb638ujep.cloudfront.net/1/k/d/w/dwho-wi8ruk.webp";
+        assert_eq!(extract_cdn_hash(url), Some("dwho-wi8ruk".to_owned()));
     }
 
     #[test]
@@ -714,10 +695,7 @@ mod tests {
         assert_eq!(stats.intelligence, 97);
         assert_eq!(stats.total(), 90 + 97 + 91 + 98 + 105 + 111 + 97);
 
-        assert_eq!(
-            c.image_hash.as_deref(),
-            Some("dwho-wi8ruk")
-        );
+        assert_eq!(c.image_hash.as_deref(), Some("dwho-wi8ruk"));
     }
 
     #[test]

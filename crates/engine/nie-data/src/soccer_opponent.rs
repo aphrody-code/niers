@@ -12,7 +12,7 @@ use serde_json::Value;
 
 use crate::cfgbin::{field_hash, field_i64, field_str, list_values};
 use crate::hash::HashId;
-use crate::unlock_condition::{decode_unlock_condition, UnlockCondition};
+use crate::unlock_condition::{UnlockCondition, decode_unlock_condition};
 
 /// Une entrée d'adversaire de match.
 #[derive(Debug, Clone, PartialEq)]

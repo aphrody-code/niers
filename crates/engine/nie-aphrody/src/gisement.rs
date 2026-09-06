@@ -26,10 +26,10 @@ use std::string::ToString;
 
 use serde_json::Value;
 
-use nie_data::aura::{parse_all_aura_cmds, AuraCmd};
-use nie_data::chara_param::{parse_all_chara_params, CharaParam};
+use nie_data::aura::{AuraCmd, parse_all_aura_cmds};
+use nie_data::chara_param::{CharaParam, parse_all_chara_params};
 use nie_data::hash::HashId;
-use nie_data::skill::{parse_skill_config, CutinAssets, SkillInfo};
+use nie_data::skill::{CutinAssets, SkillInfo, parse_skill_config};
 
 /// Les 3 séries/codes d'Aphrody (code interne, `charaBaseId`, libellé, sous-dossier visage).
 ///
@@ -65,8 +65,7 @@ pub const SERIES: [AphrodySeriesDef; 3] = [
 pub const PRIMARY_CHARA_PARAM_ID: HashId = HashId(0x9E23_A289);
 
 /// Définition statique d'une série (constante de [`SERIES`]).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[derive(serde::Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
 pub struct AphrodySeriesDef {
     /// Code interne (`c01001900`).
     pub code: &'static str,
@@ -79,8 +78,7 @@ pub struct AphrodySeriesDef {
 }
 
 /// Une ligne de stats (7 attributs IEVR). Source : `inagle_characters.data.stats`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-#[derive(serde::Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize)]
 pub struct StatLine {
     pub kick: u16,
     pub control: u16,
@@ -111,8 +109,7 @@ impl StatLine {
 /// complète depuis les growth tables (`crate::growth::calculate_stats`) nécessiterait les tables
 /// `growth_table_config` + la rareté → `charaRank`, non passées ici ; on expose donc les valeurs
 /// validées par inagle. TODO(growth) : recalculer via `crate::growth` si les tables sont fournies.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[derive(serde::Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
 pub struct AphrodyStats {
     pub lv1: StatLine,
     pub lv50: StatLine,
@@ -159,8 +156,7 @@ impl AphrodyStats {
 ///
 /// Le `chara_param` ne porte **pas** le nom (résolu via `chara_text` par hash) : ces champs sont
 /// des constantes ancrées sur les fichiers texte réels, pas des valeurs inventées.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[derive(serde::Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
 pub struct AphrodyIdentity {
     pub name_fr: &'static str,
     pub name_en: &'static str,
@@ -209,8 +205,7 @@ impl AphrodyIdentity {
 /// Chemins VFS des assets d'un code (visage, icône, voix, modèle). Préfixés `data/`, directement
 /// servables par `nie-model-serve` (`/raw`, `/tex`, `/audio`, `/model-full`). Templates vérifiés
 /// live (HTTP 200).
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[derive(serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
 pub struct AphrodyAssets {
     /// Code interne (`c01001900`).
     pub code: String,
@@ -248,8 +243,7 @@ impl AphrodyAssets {
 }
 
 /// Une technique apprise par Aphrody, résolue contre le `skill_config` + ses assets de cut-in.
-#[derive(Debug, Clone, PartialEq)]
-#[derive(serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
 pub struct AphrodyTechnique {
     /// Niveau d'apprentissage (slot du `chara_param`).
     pub learn_level: u8,
@@ -260,8 +254,7 @@ pub struct AphrodyTechnique {
 }
 
 /// Une aura équipée par Aphrody, résolue contre l'`aura_skill_config`.
-#[derive(Debug, Clone, PartialEq)]
-#[derive(serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
 pub struct AphrodyAura {
     /// Niveau d'apprentissage (slot du `chara_param`, = 38 pour les deux).
     pub learn_level: u8,
@@ -270,8 +263,7 @@ pub struct AphrodyAura {
 }
 
 /// Une variante de carte d'Aphrody (une ligne `CHARA_PARAM_INFO`), avec techniques/auras séparées.
-#[derive(Debug, Clone, PartialEq)]
-#[derive(serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
 pub struct AphrodyVariant {
     /// `charaParamId` (ID unique de la variante).
     pub chara_param_id: HashId,
@@ -298,8 +290,7 @@ pub struct AphrodyVariant {
 }
 
 /// Dossier agrégé complet d'Aphrody.
-#[derive(Debug, Clone, PartialEq)]
-#[derive(serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
 pub struct AphrodyDossier {
     /// Identité (constantes vérifiées 3 langues).
     pub identity: AphrodyIdentity,
@@ -450,8 +441,14 @@ mod tests {
         // Les 3 codes/base_ids vérifiés (inagle_characters).
         assert_eq!(SERIES.len(), 3);
         assert_eq!(SERIES[0].base_id, HashId(0x37D7_ACFB));
-        assert_eq!(code_for_base(HashId(0xFC57_A11C)).unwrap().code, "c05026590");
-        assert_eq!(code_for_base(HashId(0xCA01_BFAB)).unwrap().code, "c07080010");
+        assert_eq!(
+            code_for_base(HashId(0xFC57_A11C)).unwrap().code,
+            "c05026590"
+        );
+        assert_eq!(
+            code_for_base(HashId(0xCA01_BFAB)).unwrap().code,
+            "c07080010"
+        );
         assert!(code_for_base(HashId(0x0000_0001)).is_none());
     }
 

@@ -21,10 +21,10 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use nie_data::passives::{
-    element_name, load_noun_texts, load_team_passive_texts, parse_lots, parse_player_passives,
-    parse_team_passives, UnifiedPassiveDb,
+    UnifiedPassiveDb, element_name, load_noun_texts, load_team_passive_texts, parse_lots,
+    parse_player_passives, parse_team_passives,
 };
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 /// Racine des données décodées, sans chemin de poste en dur : `NIE_GAME_DIR/data` si la
 /// variable est posée, sinon `./data` (le dépôt est fusionné avec l'installation du jeu).
@@ -44,9 +44,7 @@ fn main() {
     let out_path = std::env::args()
         .skip_while(|a| a != "--out")
         .nth(1)
-        .unwrap_or_else(|| {
-            "export/passives-full.json".to_string()
-        });
+        .unwrap_or_else(|| "export/passives-full.json".to_string());
 
     let data_root = PathBuf::from(&data_root);
 
@@ -81,7 +79,10 @@ fn main() {
     eprintln!("[export_passives] passive_skill_config → {passive_cfg:?}");
     let passive_root = read_json(&passive_cfg);
     let player = parse_player_passives(&passive_root, &text_fr, &text_en, &text_ja);
-    eprintln!("[export_passives] passives joueur parsés : {}", player.len());
+    eprintln!(
+        "[export_passives] passives joueur parsés : {}",
+        player.len()
+    );
 
     // ── 3. Textes team passives ───────────────────────────────────────────────
     let team_text_ja = load_text_json(
@@ -188,11 +189,7 @@ fn main() {
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 /// Lit un fichier JSON de textes (NOUN_INFO ou TEXT_INFO) — retourne un BTreeMap vide si absent.
-fn load_text_json<F>(
-    path: &Path,
-    label: &str,
-    loader: F,
-) -> std::collections::BTreeMap<u32, String>
+fn load_text_json<F>(path: &Path, label: &str, loader: F) -> std::collections::BTreeMap<u32, String>
 where
     F: Fn(&Value) -> std::collections::BTreeMap<u32, String>,
 {
@@ -240,8 +237,7 @@ fn find_cfg(data_root: &Path, subdir: &str, prefix: &str) -> PathBuf {
 fn read_json(path: &Path) -> Value {
     let raw = fs::read_to_string(path)
         .unwrap_or_else(|e| panic!("[export_passives] lecture {path:?}: {e}"));
-    serde_json::from_str(&raw)
-        .unwrap_or_else(|e| panic!("[export_passives] parse {path:?}: {e}"))
+    serde_json::from_str(&raw).unwrap_or_else(|e| panic!("[export_passives] parse {path:?}: {e}"))
 }
 
 /// Construit le JSON de sortie complet (schema stable pour azalee).

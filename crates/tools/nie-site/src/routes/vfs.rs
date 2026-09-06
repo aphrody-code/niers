@@ -13,17 +13,17 @@
 //! personnages ne portent que 5 199 `base_slug` distincts, et `unknown` y sert 65 fois. Les
 //! noms restent affichés et cherchables ; ils ne sont jamais adressés.
 
+use axum::Json;
 use axum::extract::{Path, Query, State};
 use axum::http::{HeaderMap, HeaderValue, header};
 use axum::response::Response;
-use axum::Json;
 use bytes::Bytes;
 
 use crate::error::ErreurSite;
-use crate::state::{EtatSite, ReponseCachee};
-use crate::vfs_index::Dossier;
 use crate::routes::DemandePage;
 use crate::routes::static_files::{Encodage, etiquette, reponse_octets};
+use crate::state::{EtatSite, ReponseCachee};
+use crate::vfs_index::Dossier;
 
 /// Taille au-delà de laquelle une ressource du jeu n'est plus gardée en mémoire.
 pub const TAILLE_MAX_CACHE: usize = 2 * 1024 * 1024;
@@ -80,7 +80,10 @@ pub fn normaliser_prefixe(brut: &str) -> Result<String, ErreurSite> {
 /// ce nom-là que l'utilisateur doit retrouver sur son disque.
 #[must_use]
 pub fn type_contenu(chemin: &str) -> &'static str {
-    let ext = chemin.rsplit_once('.').map(|(_, e)| e.to_ascii_lowercase()).unwrap_or_default();
+    let ext = chemin
+        .rsplit_once('.')
+        .map(|(_, e)| e.to_ascii_lowercase())
+        .unwrap_or_default();
     match ext.as_str() {
         "png" => "image/png",
         "jpg" | "jpeg" => "image/jpeg",
@@ -106,7 +109,9 @@ pub async fn fichier(
     let chemin = normaliser(&chemin)?;
     let index = etat.index()?;
     if !index.contient(&chemin) {
-        return Err(ErreurSite::Introuvable(format!("chemin absent du VFS: {chemin}")));
+        return Err(ErreurSite::Introuvable(format!(
+            "chemin absent du VFS: {chemin}"
+        )));
     }
 
     let cle = format!("vfs:{chemin}");
@@ -169,7 +174,11 @@ fn parcourir(
     let prefixe = normaliser_prefixe(prefixe)?;
     let index = etat.index()?;
     let p = demande.bornee();
-    Ok(Json(index.dossier(&prefixe, p.offset(), p.per_page as usize)))
+    Ok(Json(index.dossier(
+        &prefixe,
+        p.offset(),
+        p.per_page as usize,
+    )))
 }
 
 #[cfg(test)]
@@ -181,7 +190,10 @@ mod tests {
         assert_eq!(normaliser("data/a.g4tx").unwrap(), "data/a.g4tx");
         assert_eq!(normaliser("/data/a.g4tx").unwrap(), "data/a.g4tx");
         for mauvais in ["", "..", "data/../..", "data//a", "data/./a", "data\\a"] {
-            assert!(normaliser(mauvais).is_err(), "{mauvais} aurait du etre refuse");
+            assert!(
+                normaliser(mauvais).is_err(),
+                "{mauvais} aurait du etre refuse"
+            );
         }
         assert_eq!(normaliser("..").unwrap_err().statut().as_u16(), 400);
     }

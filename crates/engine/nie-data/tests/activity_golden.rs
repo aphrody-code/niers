@@ -20,9 +20,12 @@ fn load_json(path: &str) -> Option<serde_json::Value> {
         eprintln!("skip : {} absent du corpus", path.display());
         return None;
     }
-    let content =
-        std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("Impossible de lire {}: {e}", path.display()));
-    Some(serde_json::from_str(&content).unwrap_or_else(|e| panic!("JSON invalide {}: {e}", path.display())))
+    let content = std::fs::read_to_string(&path)
+        .unwrap_or_else(|e| panic!("Impossible de lire {}: {e}", path.display()));
+    Some(
+        serde_json::from_str(&content)
+            .unwrap_or_else(|e| panic!("JSON invalide {}: {e}", path.display())),
+    )
 }
 
 /// Fixture inline reproduisant la structure : 1 LIST_BEG (1 var, ignoré) + une racine + 1 sous-tâche.
@@ -54,7 +57,11 @@ fn fixture() -> serde_json::Value {
 #[test]
 fn fixture_arbre_storymode() {
     let acts = parse_activity_config(&fixture());
-    assert_eq!(acts.len(), 2, "le LIST_BEG (1 var) doit être filtré, 2 vraies entrées");
+    assert_eq!(
+        acts.len(),
+        2,
+        "le LIST_BEG (1 var) doit être filtré, 2 vraies entrées"
+    );
     let root = &acts[0];
     assert_eq!(root.name, "StoryMode");
     assert_eq!(root.kind, 1);
@@ -64,7 +71,10 @@ fn fixture_arbre_storymode() {
     assert_eq!(sub.kind, 5);
     assert!(!sub.is_root());
     // La sous-tâche pointe vers l'id de la racine.
-    assert_eq!(sub.parent_id, root.id, "parent_id de la sous-tâche = id de StoryMode");
+    assert_eq!(
+        sub.parent_id, root.id,
+        "parent_id de la sous-tâche = id de StoryMode"
+    );
     assert!(!root.data.is_empty(), "le blob base64 est conservé brut");
 }
 

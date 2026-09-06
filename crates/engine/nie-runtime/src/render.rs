@@ -42,7 +42,11 @@ pub struct Frame {
 impl Frame {
     #[must_use]
     pub fn new(w: u32, h: u32) -> Self {
-        Self { w, h, px: vec![0; (w * h * 4) as usize] }
+        Self {
+            w,
+            h,
+            px: vec![0; (w * h * 4) as usize],
+        }
     }
 
     fn set(&mut self, x: i32, y: i32, c: Rgba) {
@@ -141,7 +145,10 @@ impl Cam {
     }
     /// (mètres terrain) → (pixels). `+x` à droite, `+y` vers le bas.
     fn p(&self, x: f32, y: f32) -> (f32, f32) {
-        (self.ox + (x + HALF_LEN) * self.sx, self.oy + (y + HALF_WID) * self.sy)
+        (
+            self.ox + (x + HALF_LEN) * self.sx,
+            self.oy + (y + HALF_WID) * self.sy,
+        )
     }
 }
 
@@ -190,7 +197,13 @@ pub fn render(world: &World, w: u32, h: u32) -> Frame {
         // Cage (au-delà de la ligne).
         let (kx0, ky0) = cam.p(gx, -GOAL_HALF);
         let (kx1, ky1) = cam.p(gx + sign * 2.0, GOAL_HALF);
-        f.fill_rect(kx0.min(kx1) as i32, ky0 as i32, kx0.max(kx1) as i32, ky1 as i32, LINE);
+        f.fill_rect(
+            kx0.min(kx1) as i32,
+            ky0 as i32,
+            kx0.max(kx1) as i32,
+            ky1 as i32,
+            LINE,
+        );
     }
 
     // Joueurs (ombre + disque coloré ; porteur surligné, joueur contrôlé désigné).

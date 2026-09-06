@@ -33,20 +33,48 @@ fn to_iecode(siblings: &[CfgEntry]) -> Vec<serde_json::Value> {
 }
 
 fn load(vfs: &Vfs, pred: impl Fn(&str) -> bool, what: &str) -> serde_json::Value {
-    let path = vfs.iter().map(|(p, _)| p.to_string()).filter(|p| pred(p)).min().unwrap_or_else(|| panic!("{what} introuvable"));
+    let path = vfs
+        .iter()
+        .map(|(p, _)| p.to_string())
+        .filter(|p| pred(p))
+        .min()
+        .unwrap_or_else(|| panic!("{what} introuvable"));
     eprintln!("  {path}");
     let file = cfgbin::parse_t2b(&vfs.read(&path).expect("read")).expect("parse");
     json!({ "entries": to_iecode(&file.entries) })
 }
 
 fn main() {
-    let out = std::env::args().nth(1).unwrap_or_else(|| "var/quests-resolved.json".into());
-    let dir = nie_formats::vfs::resolve_game_dir().to_string_lossy().into_owned();
+    let out = std::env::args()
+        .nth(1)
+        .unwrap_or_else(|| "var/quests-resolved.json".into());
+    let dir = nie_formats::vfs::resolve_game_dir()
+        .to_string_lossy()
+        .into_owned();
     let mut vfs = Vfs::new();
-    vfs.init(Path::new(&dir).join("data").as_path()).expect("vfs init");
+    vfs.init(Path::new(&dir).join("data").as_path())
+        .expect("vfs init");
 
-    let quests = nie_data::quest::parse_quest_config(&load(&vfs, |p| p.contains("/gamedata/quest/") && p.rsplit('/').next().is_some_and(|b| b.starts_with("quest_config") && b.ends_with(".cfg.bin")), "quest_config"));
-    let titles = nie_data::text::parse_text_file(&load(&vfs, |p| p.contains("/fr/") && p.rsplit('/').next().is_some_and(|b| b.starts_with("quest_title_text") && b.ends_with(".cfg.bin")), "quest_title_text fr"));
+    let quests = nie_data::quest::parse_quest_config(&load(
+        &vfs,
+        |p| {
+            p.contains("/gamedata/quest/")
+                && p.rsplit('/')
+                    .next()
+                    .is_some_and(|b| b.starts_with("quest_config") && b.ends_with(".cfg.bin"))
+        },
+        "quest_config",
+    ));
+    let titles = nie_data::text::parse_text_file(&load(
+        &vfs,
+        |p| {
+            p.contains("/fr/")
+                && p.rsplit('/')
+                    .next()
+                    .is_some_and(|b| b.starts_with("quest_title_text") && b.ends_with(".cfg.bin"))
+        },
+        "quest_title_text fr",
+    ));
 
     let mut list: Vec<serde_json::Value> = Vec::new();
     for q in &quests {
@@ -68,6 +96,13 @@ fn main() {
     let txt = serde_json::to_string_pretty(&doc).expect("serialize");
     std::fs::create_dir_all(Path::new(&out).parent().unwrap_or(Path::new("."))).ok();
     std::fs::write(&out, &txt).unwrap_or_else(|e| panic!("écriture {out} : {e}"));
-    let resolved = quests.iter().filter(|q| nie_data::quest::resolve_title(q, &titles).is_some()).count();
-    eprintln!("✓ export-quests: {} quêtes ({resolved} titres résolus) → {out} ({} octets)", doc["count"], txt.len());
+    let resolved = quests
+        .iter()
+        .filter(|q| nie_data::quest::resolve_title(q, &titles).is_some())
+        .count();
+    eprintln!(
+        "✓ export-quests: {} quêtes ({resolved} titres résolus) → {out} ({} octets)",
+        doc["count"],
+        txt.len()
+    );
 }

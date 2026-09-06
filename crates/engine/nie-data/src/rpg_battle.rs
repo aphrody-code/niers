@@ -209,7 +209,11 @@ impl RpgBattleStatusPatternInfo {
 /// Renvoie les 28 [`RpgBattleStatusPatternInfo`] valides (id non-nul).
 #[must_use]
 pub fn parse_status_pattern_config(root: &Value) -> Vec<RpgBattleStatusPatternInfo> {
-    map_list(root, "m_statusPatternInfoList", RpgBattleStatusPatternInfo::from_value)
+    map_list(
+        root,
+        "m_statusPatternInfoList",
+        RpgBattleStatusPatternInfo::from_value,
+    )
 }
 
 // ─── rpg_battle_chara_swap_motion_config ──────────────────────────────────────
@@ -444,8 +448,7 @@ pub fn parse_party_config(root: &Value) -> RpgBattlePartyConfig {
         .into_iter()
         .enumerate()
         .map(|(i, (party_id, secondary_id))| {
-            let (disable_offset, disable_count) =
-                party_refs.get(i).copied().unwrap_or((0, 0));
+            let (disable_offset, disable_count) = party_refs.get(i).copied().unwrap_or((0, 0));
             RpgBtlPartyInfo {
                 party_id,
                 secondary_id,
@@ -808,8 +811,7 @@ pub fn parse_add_status_config(root: &Value) -> RpgBattleAddStatusConfig {
         for list_child in node.children() {
             for param_child in list_child.children() {
                 let pname = param_child.name();
-                if pname.starts_with("RPG_BTL_ADD_STATUS_INFO_PARAM_")
-                    && !pname.contains("_LIST_")
+                if pname.starts_with("RPG_BTL_ADD_STATUS_INFO_PARAM_") && !pname.contains("_LIST_")
                 {
                     params.push(RpgBtlAddStatusInfoParam::from_node(param_child));
                 }

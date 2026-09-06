@@ -91,7 +91,10 @@ impl IntoResponse for ErreurSite {
         } else {
             tracing::debug!(erreur = %self, statut = statut.as_u16(), "reponse d'erreur");
         }
-        let corps = CorpsErreur { genre: self.genre(), message: self.to_string() };
+        let corps = CorpsErreur {
+            genre: self.genre(),
+            message: self.to_string(),
+        };
         (statut, Json(corps)).into_response()
     }
 }
@@ -121,7 +124,11 @@ mod tests {
             (ErreurSite::Introuvable("x".into()), 404, "introuvable"),
             (ErreurSite::Demande("x".into()), 400, "demande_invalide"),
             (ErreurSite::Indisponible("x".into()), 503, "indisponible"),
-            (ErreurSite::TropDeRequetes("x".into()), 429, "trop_de_requetes"),
+            (
+                ErreurSite::TropDeRequetes("x".into()),
+                429,
+                "trop_de_requetes",
+            ),
             (ErreurSite::Delai("x".into()), 504, "delai_amont"),
             (ErreurSite::Amont("x".into()), 502, "amont"),
             (ErreurSite::Interne("x".into()), 500, "interne"),
@@ -137,6 +144,9 @@ mod tests {
     fn sqlite_ne_fuit_pas_le_detail() {
         let e: ErreurSite = rusqlite::Error::InvalidQuery.into();
         assert_eq!(e.statut().as_u16(), 500);
-        assert!(!e.to_string().to_lowercase().contains("query"), "aucun detail SQL au client");
+        assert!(
+            !e.to_string().to_lowercase().contains("query"),
+            "aucun detail SQL au client"
+        );
     }
 }

@@ -15,13 +15,13 @@
 
 #![cfg(not(target_arch = "wasm32"))]
 
+use crate::FormatError;
+use crate::cpk::CpkReader;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, OnceLock};
-use crate::cpk::CpkReader;
-use crate::FormatError;
 
 /// Budget mémoire du cache CPK (octets bruts cumulés), large pour garder un maximum de
 /// CPK chauds en RAM (« tout chargé comme nie.exe »). Configurable via l'env
@@ -50,7 +50,12 @@ struct CpkCache {
 
 impl CpkCache {
     fn new(budget: usize) -> Self {
-        Self { map: HashMap::new(), order: VecDeque::new(), bytes: 0, budget }
+        Self {
+            map: HashMap::new(),
+            order: VecDeque::new(),
+            bytes: 0,
+            budget,
+        }
     }
 
     /// Récupère un CPK et le marque comme récemment utilisé.
@@ -312,7 +317,9 @@ impl Vfs {
             }
             // CPK présent sur disque mais absent du cpk_list : parser son TOC.
             let cpk_path = packs.join(&name);
-            let Ok(mut f) = File::open(&cpk_path) else { continue; };
+            let Ok(mut f) = File::open(&cpk_path) else {
+                continue;
+            };
             let mut bytes = Vec::new();
             if f.read_to_end(&mut bytes).is_err() {
                 continue;
@@ -378,7 +385,9 @@ impl Vfs {
                 };
                 for entree in lecture.flatten() {
                     let chemin = entree.path();
-                    let Ok(typ) = entree.file_type() else { continue };
+                    let Ok(typ) = entree.file_type() else {
+                        continue;
+                    };
                     if typ.is_dir() {
                         pile.push(chemin);
                         continue;
@@ -391,7 +400,11 @@ impl Vfs {
                     let file_size = entree.metadata().map(|m| m.len() as u32).unwrap_or(0);
                     index.insert(
                         internal_path.clone(),
-                        VfsEntry { internal_path, cpk_filename: String::new(), file_size },
+                        VfsEntry {
+                            internal_path,
+                            cpk_filename: String::new(),
+                            file_size,
+                        },
                     );
                 }
             }
@@ -412,8 +425,15 @@ impl Vfs {
     /// mesure, cette consommation est invisible depuis l'extérieur.
     #[must_use]
     pub fn cache_stats(&self) -> CacheCpkStats {
-        let cache = self.cpk_cache.lock().expect("verrou du cache CPK empoisonné");
-        CacheCpkStats { octets: cache.bytes, entrees: cache.map.len(), budget: cache.budget }
+        let cache = self
+            .cpk_cache
+            .lock()
+            .expect("verrou du cache CPK empoisonné");
+        CacheCpkStats {
+            octets: cache.bytes,
+            entrees: cache.map.len(),
+            budget: cache.budget,
+        }
     }
 
     /// Vide le cache CPK et rend les octets libérés.
@@ -422,7 +442,10 @@ impl Vfs {
     /// qui reste vivante jusqu'à la fin de l'extraction. Vider ne fait que relâcher la
     /// référence du cache.
     pub fn vider_cache(&self) -> usize {
-        self.cpk_cache.lock().expect("verrou du cache CPK empoisonné").vider()
+        self.cpk_cache
+            .lock()
+            .expect("verrou du cache CPK empoisonné")
+            .vider()
     }
 
     /// Change le budget du cache CPK et évince immédiatement ce qui dépasse.
@@ -434,7 +457,10 @@ impl Vfs {
     ///
     /// Rend les octets libérés par l'éviction déclenchée.
     pub fn regler_budget_cache(&self, budget: usize) -> usize {
-        let mut cache = self.cpk_cache.lock().expect("verrou du cache CPK empoisonné");
+        let mut cache = self
+            .cpk_cache
+            .lock()
+            .expect("verrou du cache CPK empoisonné");
         let avant = cache.bytes;
         cache.budget = budget;
         cache.evincer();
@@ -525,7 +551,11 @@ impl Vfs {
                 candidats.push(c);
             }
         }
-        if candidats.len() == 1 { candidats.pop() } else { None }
+        if candidats.len() == 1 {
+            candidats.pop()
+        } else {
+            None
+        }
     }
 
     /// Lit un fichier complet du VFS.
@@ -604,23 +634,36 @@ impl Vfs {
         drop(cache);
 
         let (reader, cpk_bytes) = &*reader_arc;
-        
+
         // Trouver l'entrée CPK : on matche le CHEMIN COMPLET (`directory/filename`) en
         // priorité — sinon les fichiers de même nom de base dans des dossiers différents du
         // MÊME cpk (ex. `common/text/fr/skill_text.cfg.bin` vs `.../de/...`, `.../ja/...`)
         // collisionnent et on sert toujours le premier (bug de langue). Repli sur le basename
         // (exact puis insensible à la casse) pour l'index supplémentaire dont le scan azalee
         // abaisse la casse des chemins (TOC CPK : casse d'origine `Chronicle_Title_CN_01.usm`).
-        let filename = internal_path.split('/').next_back().unwrap_or(internal_path);
+        let filename = internal_path
+            .split('/')
+            .next_back()
+            .unwrap_or(internal_path);
         let full_path = |e: &crate::cpk::CpkEntry| format!("{}/{}", e.directory, e.filename);
 
         let cpk_entry = reader
             .entries
             .iter()
             .find(|e| full_path(e) == internal_path)
-            .or_else(|| reader.entries.iter().find(|e| full_path(e).eq_ignore_ascii_case(internal_path)))
+            .or_else(|| {
+                reader
+                    .entries
+                    .iter()
+                    .find(|e| full_path(e).eq_ignore_ascii_case(internal_path))
+            })
             .or_else(|| reader.entries.iter().find(|e| e.filename == filename))
-            .or_else(|| reader.entries.iter().find(|e| e.filename.eq_ignore_ascii_case(filename)))
+            .or_else(|| {
+                reader
+                    .entries
+                    .iter()
+                    .find(|e| e.filename.eq_ignore_ascii_case(filename))
+            })
             .ok_or(FormatError::Corrupt("fichier non trouve dans le CPK"))?;
 
         reader.extract(cpk_bytes, cpk_entry)
@@ -705,14 +748,21 @@ impl Vfs {
             // Sur un dump, aucun fichier ne vient d'un pack : tout est servi depuis le disque.
             return self.asset_count();
         }
-        self.index.values().filter(|e| e.cpk_filename.is_empty()).count()
+        self.index
+            .values()
+            .filter(|e| e.cpk_filename.is_empty())
+            .count()
     }
 
     /// Itère sur toutes les entrées indexées (chemin_interne, entrée VFS).
     ///
     /// Sur un dump, itère l'arborescence extraite (index construit au premier appel).
     pub fn iter(&self) -> impl Iterator<Item = (&str, &VfsEntry)> {
-        let index = if self.loose_files { self.loose_index() } else { &self.index };
+        let index = if self.loose_files {
+            self.loose_index()
+        } else {
+            &self.index
+        };
         index.iter().map(|(k, v)| (k.as_str(), v))
     }
 
@@ -729,7 +779,9 @@ impl Vfs {
     /// ces entrées viennent du sommaire du pack. L'appelant lit la taille dans le TOC au
     /// moment où il ouvre le pack.
     pub fn iter_extra(&self) -> impl Iterator<Item = (&str, &str)> {
-        self.index_extra.iter().map(|(k, v)| (k.as_str(), v.as_str()))
+        self.index_extra
+            .iter()
+            .map(|(k, v)| (k.as_str(), v.as_str()))
     }
 }
 
@@ -810,9 +862,7 @@ pub fn resolve_dump_dir() -> Option<PathBuf> {
 pub fn open_game() -> Result<Vfs, FormatError> {
     let mut vfs = Vfs::new();
     let dump_force = std::env::var("NIE_DUMP_DIR").is_ok_and(|d| !d.trim().is_empty());
-    if dump_force
-        && let Some(dump) = resolve_dump_dir()
-    {
+    if dump_force && let Some(dump) = resolve_dump_dir() {
         vfs.init_loose(dump)?;
         return Ok(vfs);
     }
@@ -821,8 +871,9 @@ pub fn open_game() -> Result<Vfs, FormatError> {
         vfs.init(&data)?;
         return Ok(vfs);
     }
-    let dump = resolve_dump_dir()
-        .ok_or(FormatError::Corrupt("ni installation du jeu ni dump extrait trouves"))?;
+    let dump = resolve_dump_dir().ok_or(FormatError::Corrupt(
+        "ni installation du jeu ni dump extrait trouves",
+    ))?;
     vfs.init_loose(dump)?;
     Ok(vfs)
 }
@@ -913,7 +964,11 @@ mod tests {
         // servirait un contenu faux sous un nom juste — refuser est la seule réponse correcte.
         std::fs::create_dir_all(data.join("dx12/movie")).expect("seconde plateforme");
         std::fs::write(data.join("dx12/movie/intro.usm"), b"autre").expect("vidéo bis");
-        assert_eq!(vfs.resolve_loose_path("data/common/movie/intro.usm"), None, "ambigu : refusé");
+        assert_eq!(
+            vfs.resolve_loose_path("data/common/movie/intro.usm"),
+            None,
+            "ambigu : refusé"
+        );
 
         assert_eq!(vfs.resolve_loose_path("data/common/movie/absent.usm"), None);
         std::fs::remove_dir_all(&base).ok();
@@ -931,7 +986,9 @@ mod tests {
     /// prouverait rien de l'API réellement appelée.
     #[test]
     fn le_cache_cpk_est_mesurable_reglable_et_videable() {
-        let dir = crate::vfs::resolve_game_dir().to_string_lossy().into_owned();
+        let dir = crate::vfs::resolve_game_dir()
+            .to_string_lossy()
+            .into_owned();
         let data = std::path::Path::new(&dir).join("data");
         if !data.join("cpk_list.cfg.bin").exists() {
             eprintln!("skip le_cache_cpk_est_mesurable_reglable_et_videable : jeu absent");
@@ -940,7 +997,11 @@ mod tests {
         let mut vfs = Vfs::new();
         vfs.init(&data).expect("Vfs::init");
 
-        assert_eq!(vfs.cache_stats().octets, 0, "cache vide avant toute lecture");
+        assert_eq!(
+            vfs.cache_stats().octets,
+            0,
+            "cache vide avant toute lecture"
+        );
 
         // Une lecture quelconque suffit à charger le CPK qui la porte.
         let Some((chemin, _)) = vfs.iter().find(|(p, _)| p.ends_with(".cfg.bin")) else {
@@ -960,16 +1021,25 @@ mod tests {
         vfs.regler_budget_cache(1);
         let serre = vfs.cache_stats();
         assert_eq!(serre.budget, 1);
-        assert_eq!(serre.entrees, 1, "le dernier paquet survit au budget dépassé");
+        assert_eq!(
+            serre.entrees, 1,
+            "le dernier paquet survit au budget dépassé"
+        );
 
         // Vider rend tout, et laisse un cache réutilisable.
         let liberes = vfs.vider_cache();
-        assert_eq!(liberes, serre.octets, "les octets rendus sont ceux qui étaient retenus");
+        assert_eq!(
+            liberes, serre.octets,
+            "les octets rendus sont ceux qui étaient retenus"
+        );
         assert_eq!(vfs.cache_stats().octets, 0);
         assert_eq!(vfs.cache_stats().entrees, 0);
 
         vfs.read(&chemin).expect("relecture après vidage");
-        assert!(vfs.cache_stats().octets > 0, "le cache se remplit de nouveau");
+        assert!(
+            vfs.cache_stats().octets > 0,
+            "le cache se remplit de nouveau"
+        );
     }
 
     /// Mount end-to-end du VRAI jeu Steam s'il est présent (sinon skip). Prouve que
@@ -978,7 +1048,9 @@ mod tests {
     /// fichiers logiques sans panic ni repli.
     #[test]
     fn vfs_init_monte_le_vrai_jeu() {
-        let dir = crate::vfs::resolve_game_dir().to_string_lossy().into_owned();
+        let dir = crate::vfs::resolve_game_dir()
+            .to_string_lossy()
+            .into_owned();
         let data = std::path::Path::new(&dir).join("data");
         if !data.join("cpk_list.cfg.bin").exists() {
             eprintln!("skip vfs_init_monte_le_vrai_jeu : jeu absent");
@@ -987,7 +1059,10 @@ mod tests {
         let mut vfs = Vfs::new();
         vfs.init(&data).expect("Vfs::init via cpk_list AES");
         let n = vfs.asset_count();
-        assert!(n > 250_000, "attendu > 250 000 fichiers indexés, obtenu {n}");
+        assert!(
+            n > 250_000,
+            "attendu > 250 000 fichiers indexés, obtenu {n}"
+        );
         // L'index logique contient de vrais chemins (au moins une texture g4tx).
         let has_g4tx = vfs
             .iter()
@@ -1002,7 +1077,9 @@ mod tests {
     /// puis vérifie que les octets extraits sont non vides et cohérents.
     #[test]
     fn vfs_read_chaine_complete() {
-        let dir = crate::vfs::resolve_game_dir().to_string_lossy().into_owned();
+        let dir = crate::vfs::resolve_game_dir()
+            .to_string_lossy()
+            .into_owned();
         let data = std::path::Path::new(&dir).join("data");
         if !data.join("cpk_list.cfg.bin").exists() {
             eprintln!("skip vfs_read_chaine_complete : jeu absent");
@@ -1030,7 +1107,9 @@ mod tests {
             let Ok(meta) = std::fs::metadata(packs.join(cpk)) else {
                 continue;
             };
-            if meta.is_file() && meta.len() > 0 && best.as_ref().is_none_or(|(b, ..)| meta.len() < *b)
+            if meta.is_file()
+                && meta.len() > 0
+                && best.as_ref().is_none_or(|(b, ..)| meta.len() < *b)
             {
                 best = Some((meta.len(), path.clone(), cpk.clone()));
             }
@@ -1053,7 +1132,9 @@ mod tests {
     ///   rapporte le nombre exact découvert au lieu de 0.
     #[test]
     fn discover_extra_cpks_retourne_zero_sur_install_complete() {
-        let dir = crate::vfs::resolve_game_dir().to_string_lossy().into_owned();
+        let dir = crate::vfs::resolve_game_dir()
+            .to_string_lossy()
+            .into_owned();
         let data = std::path::Path::new(&dir).join("data");
         if !data.join("cpk_list.cfg.bin").exists() {
             eprintln!("skip discover_extra_cpks: jeu absent");
@@ -1095,7 +1176,9 @@ mod tests {
     /// avec « impossible d'ouvrir le CPK », et les fichiers étaient inaccessibles.
     #[test]
     fn read_loose_file_avec_cpk_vide() {
-        let dir = crate::vfs::resolve_game_dir().to_string_lossy().into_owned();
+        let dir = crate::vfs::resolve_game_dir()
+            .to_string_lossy()
+            .into_owned();
         let data_dir = std::path::Path::new(&dir).join("data");
         if !data_dir.join("cpk_list.cfg.bin").exists() {
             eprintln!("skip read_loose_file_avec_cpk_vide : jeu absent");

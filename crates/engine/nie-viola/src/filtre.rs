@@ -58,7 +58,10 @@ impl Filtre {
             .filter(|s| !s.is_empty())
             .map(|brut| {
                 let (negatif, corps) = brut.strip_prefix('!').map_or((false, brut), |r| (true, r));
-                Motif { negatif, elements: compiler(corps) }
+                Motif {
+                    negatif,
+                    elements: compiler(corps),
+                }
             })
             .collect();
         Filtre { motifs }
@@ -82,7 +85,11 @@ impl Filtre {
         }
         let normalise = chemin.replace('\\', "/").to_lowercase();
 
-        if self.motifs.iter().any(|m| m.negatif && correspond(&m.elements, &normalise)) {
+        if self
+            .motifs
+            .iter()
+            .any(|m| m.negatif && correspond(&m.elements, &normalise))
+        {
             return false;
         }
         let mut a_inclusion = false;
@@ -167,7 +174,10 @@ mod tests {
     fn une_etoile_ne_traverse_pas_les_barres() {
         let f = Filtre::parse("data/*/x.bin");
         assert!(f.accepte("data/chr/x.bin"));
-        assert!(!f.accepte("data/chr/sub/x.bin"), "`*` ne doit pas franchir un /");
+        assert!(
+            !f.accepte("data/chr/sub/x.bin"),
+            "`*` ne doit pas franchir un /"
+        );
     }
 
     #[test]
@@ -190,7 +200,10 @@ mod tests {
     fn l_exclusion_prime_sur_l_inclusion() {
         let f = Filtre::parse("data/**,!data/**/movie/**");
         assert!(f.accepte("data/common/x.bin"));
-        assert!(!f.accepte("data/common/movie/intro.usm"), "l'exclusion doit gagner");
+        assert!(
+            !f.accepte("data/common/movie/intro.usm"),
+            "l'exclusion doit gagner"
+        );
     }
 
     #[test]
@@ -236,6 +249,9 @@ mod tests {
     fn un_glob_sans_prefixe_data_ne_matche_rien() {
         let f = Filtre::parse("common/gamedata/**");
         assert!(!f.accepte("data/common/gamedata/skill/x.cfg.bin"));
-        assert!(Filtre::parse("data/common/gamedata/**").accepte("data/common/gamedata/skill/x.cfg.bin"));
+        assert!(
+            Filtre::parse("data/common/gamedata/**")
+                .accepte("data/common/gamedata/skill/x.cfg.bin")
+        );
     }
 }

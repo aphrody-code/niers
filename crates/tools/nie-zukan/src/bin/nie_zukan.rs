@@ -27,12 +27,15 @@ use nie_zukan::{
     cross::{cross_with_inagle, load_zukan_charas_from_ndjson},
     forge,
     models::Lang,
-    pull::{run_pull, PullConfig},
+    pull::{PullConfig, run_pull},
 };
 use std::path::PathBuf;
 
 #[derive(Parser)]
-#[command(name = "nie-zukan", about = "Ingesteur Zukan Inagle (zukan.inazuma.jp)")]
+#[command(
+    name = "nie-zukan",
+    about = "Ingesteur Zukan Inagle (zukan.inazuma.jp)"
+)]
 struct Cli {
     #[command(subcommand)]
     cmd: Cmd,
@@ -82,7 +85,10 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
     // Défaut relatif au répertoire courant : `var/` est le magasin d'artefacts
     // régénérables du dépôt, et il vit à côté du jeu sur toutes les plateformes.
-    let root = cli.root.clone().unwrap_or_else(|| PathBuf::from("var/zukan"));
+    let root = cli
+        .root
+        .clone()
+        .unwrap_or_else(|| PathBuf::from("var/zukan"));
 
     match cli.cmd {
         Cmd::ForgeTest => {
@@ -109,9 +115,7 @@ fn main() -> Result<()> {
         }
         Cmd::Cross { mirror, lang } => {
             let lang_enum = parse_lang(&lang);
-            let ndjson_path = root
-                .join(lang_enum.code())
-                .join("chara_param.ndjson");
+            let ndjson_path = root.join(lang_enum.code()).join("chara_param.ndjson");
             let charas = load_zukan_charas_from_ndjson(&ndjson_path)?;
             if charas.is_empty() {
                 eprintln!(
@@ -137,11 +141,7 @@ fn main() -> Result<()> {
             for ex in &result.enrichment_examples[..result.enrichment_examples.len().min(5)] {
                 println!(
                     "  enrichissement id={} name={} field={} zukan={} inagle={:?}",
-                    ex.game_id,
-                    ex.name_ja,
-                    ex.field,
-                    ex.zukan_value,
-                    ex.inagle_value,
+                    ex.game_id, ex.name_ja, ex.field, ex.zukan_value, ex.inagle_value,
                 );
             }
             // Sauvegarder le résultat en JSON
@@ -151,9 +151,7 @@ fn main() -> Result<()> {
         }
         Cmd::Status => {
             for lang in Lang::all() {
-                let param_path = root
-                    .join(lang.code())
-                    .join("chara_param.ndjson");
+                let param_path = root.join(lang.code()).join("chara_param.ndjson");
                 let skills_path = root.join(lang.code()).join("skills.ndjson");
                 let items_path = root.join(lang.code()).join("items.ndjson");
                 let param_lines = count_lines(&param_path);
@@ -189,7 +187,10 @@ fn run_forge_test() -> Result<()> {
 
     // Tests supplémentaires
     let test_cases = [
-        (r#"{"filter_chara_id_str":["c01000010"]}"#, "filter_chara_id_str"),
+        (
+            r#"{"filter_chara_id_str":["c01000010"]}"#,
+            "filter_chara_id_str",
+        ),
         (r#"{"category_filter":[30]}"#, "category_filter_30"),
         (r#"{"category_filter":[1]}"#, "category_filter_1"),
     ];
@@ -204,8 +205,7 @@ fn run_forge_test() -> Result<()> {
     let q_live = "hN2ZlpOLmo2gnJeejZ6glpugjIuN3cWk3ZzPzs_Pz8_Oz92igg%3D%3D";
     let decoded = forge::decode_q(q_live)?;
     assert_eq!(
-        decoded,
-        r#"{"filter_chara_id_str":["c01000010"]}"#,
+        decoded, r#"{"filter_chara_id_str":["c01000010"]}"#,
         "décodage q live échoué"
     );
     println!("decode_live_q=ok");

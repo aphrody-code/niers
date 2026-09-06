@@ -44,7 +44,7 @@
 
 mod common;
 
-use nie_data::fast_travel::{parse_fast_travel_config, FastTravelConfig};
+use nie_data::fast_travel::{FastTravelConfig, parse_fast_travel_config};
 use nie_data::hash::HashId;
 use serde_json::json;
 
@@ -119,7 +119,11 @@ fn fixture() -> serde_json::Value {
 fn fixture_compte_entrees() {
     let cfg = parse_fast_travel_config(&fixture());
     // fast_travel_config_0.00.00 : m_fastTravelMapInfoList contient 6 entrées
-    assert_eq!(cfg.map_infos.len(), 6, "6 points de voyage rapide dans ce dump");
+    assert_eq!(
+        cfg.map_infos.len(),
+        6,
+        "6 points de voyage rapide dans ce dump"
+    );
 }
 
 #[test]
@@ -131,7 +135,10 @@ fn entree0_champs_scalaires() {
     assert_eq!(e.id, HashId(0x7225_AA02), "id entrée 0");
     assert_eq!(e.map_id, HashId(0x4E7B_90D9), "mapId entrée 0");
     assert_eq!(e.map_text_id, HashId(0xD20E_CFA3), "mapTextId entrée 0");
-    assert_eq!(e.chara_rotate_y, -180.0_f32, "charaRotateY entrée 0 = -180°");
+    assert_eq!(
+        e.chara_rotate_y, -180.0_f32,
+        "charaRotateY entrée 0 = -180°"
+    );
 }
 
 #[test]
@@ -153,7 +160,11 @@ fn entree1_champs_scalaires() {
 
     // fast_travel_config_0.00.00 : m_fastTravelMapInfoList[1] (lignes 20-32)
     assert_eq!(e.id, HashId(0x0522_9A94), "id entrée 1");
-    assert_eq!(e.map_id, HashId(0x4E7B_90D9), "mapId entrée 1 = même zone qu'entrée 0");
+    assert_eq!(
+        e.map_id,
+        HashId(0x4E7B_90D9),
+        "mapId entrée 1 = même zone qu'entrée 0"
+    );
     assert_eq!(e.map_text_id, HashId(0xA509_FF35), "mapTextId entrée 1");
     assert_eq!(e.chara_rotate_y, 0.0_f32, "charaRotateY entrée 1 = 0°");
 }
@@ -209,7 +220,11 @@ fn entree4_carte_differente() {
 
     // mapId = 0xD772C163 (JSON ligne 60) — carte distincte des entrées 0-3
     assert_eq!(e.id, HashId(0x6B3E_9B43), "id entrée 4");
-    assert_eq!(e.map_id, HashId(0xD772_C163), "mapId entrée 4 = carte différente");
+    assert_eq!(
+        e.map_id,
+        HashId(0xD772_C163),
+        "mapId entrée 4 = carte différente"
+    );
     assert_eq!(e.pos[2], -30.0_f32, "pos.z = -30");
 }
 
@@ -220,7 +235,11 @@ fn entree5_position_nulle() {
 
     // id = 0xA3E7114B (JSON ligne 71), mapId = 0x2067910E (JSON ligne 72)
     assert_eq!(e.id, HashId(0xA3E7_114B), "id entrée 5");
-    assert_eq!(e.map_id, HashId(0x2067_910E), "mapId entrée 5 = hub principal ?");
+    assert_eq!(
+        e.map_id,
+        HashId(0x2067_910E),
+        "mapId entrée 5 = hub principal ?"
+    );
     assert_eq!(e.map_text_id, HashId(0xF15D_1497), "mapTextId entrée 5");
     // pos = [0, 0, 0, 0] — position nulle (JSON lignes 74-79)
     assert_eq!(e.pos, [0.0_f32; 4], "pos entrée 5 = [0, 0, 0, 0]");
@@ -239,7 +258,10 @@ fn find_by_id_present() {
 #[test]
 fn find_by_id_absent() {
     let cfg = parse_fast_travel_config(&fixture());
-    assert!(cfg.find_by_id(HashId(0xDEAD_BEEF)).is_none(), "hash inexistant → None");
+    assert!(
+        cfg.find_by_id(HashId(0xDEAD_BEEF)).is_none(),
+        "hash inexistant → None"
+    );
 }
 
 #[test]
@@ -294,8 +316,7 @@ fn entree_id_nul_ignoree() {
 
 // ─── Tests sur le vrai fichier (skip silencieux si absent du VPS) ─────────────
 
-const REAL_PATH: &str =
-    "fast_travel/fast_travel_config_0.00.00.cfg.bin.json";
+const REAL_PATH: &str = "fast_travel/fast_travel_config_0.00.00.cfg.bin.json";
 
 fn load_real() -> Option<FastTravelConfig> {
     let chemin_abs = common::chemin(REAL_PATH)?;
@@ -314,7 +335,11 @@ fn load_real() -> Option<FastTravelConfig> {
 fn real_file_compte_total() {
     let Some(cfg) = load_real() else { return };
     // fast_travel_config_0.00.00.cfg.bin.json : 6 entrées dans m_fastTravelMapInfoList
-    assert_eq!(cfg.map_infos.len(), 6, "6 points de voyage rapide dans le dump réel");
+    assert_eq!(
+        cfg.map_infos.len(),
+        6,
+        "6 points de voyage rapide dans le dump réel"
+    );
 }
 
 #[test]
@@ -323,7 +348,10 @@ fn real_file_entree0_id_et_rotation() {
     let e = &cfg.map_infos[0];
     // m_fastTravelMapInfoList[0] : id = "0x7225AA02" (JSON ligne 9), charaRotateY = -180 (ligne 18)
     assert_eq!(e.id, HashId(0x7225_AA02), "entrée 0 id = 0x7225AA02");
-    assert_eq!(e.chara_rotate_y, -180.0_f32, "entrée 0 charaRotateY = -180°");
+    assert_eq!(
+        e.chara_rotate_y, -180.0_f32,
+        "entrée 0 charaRotateY = -180°"
+    );
 }
 
 #[test]
@@ -332,7 +360,11 @@ fn real_file_entree0_map_ids() {
     let e = &cfg.map_infos[0];
     // mapId = "0x4E7B90D9" (JSON ligne 10), mapTextId = "0xD20ECFA3" (JSON ligne 11)
     assert_eq!(e.map_id, HashId(0x4E7B_90D9), "entrée 0 mapId = 0x4E7B90D9");
-    assert_eq!(e.map_text_id, HashId(0xD20E_CFA3), "entrée 0 mapTextId = 0xD20ECFA3");
+    assert_eq!(
+        e.map_text_id,
+        HashId(0xD20E_CFA3),
+        "entrée 0 mapTextId = 0xD20ECFA3"
+    );
 }
 
 #[test]
@@ -367,10 +399,23 @@ fn real_file_entree3_pos_et_rotation() {
     let Some(cfg) = load_real() else { return };
     let e = &cfg.map_infos[3];
     // pos = [64.53, 0, -193.64, 0] (JSON lignes 49-54), charaRotateY = 90 (ligne 55)
-    assert_eq!(e.id, HashId(0xEB2C_FBB8), "entrée 3 id = 0xEB2CFBB8 (JSON ligne 47)");
-    assert!((e.pos[0] - 64.53_f32).abs() < 1e-3, "entrée 3 pos.x ≈ 64.53 (JSON ligne 50)");
-    assert!((e.pos[2] - (-193.64_f32)).abs() < 1e-2, "entrée 3 pos.z ≈ -193.64 (JSON ligne 52)");
-    assert_eq!(e.chara_rotate_y, 90.0_f32, "entrée 3 charaRotateY = 90° (JSON ligne 55)");
+    assert_eq!(
+        e.id,
+        HashId(0xEB2C_FBB8),
+        "entrée 3 id = 0xEB2CFBB8 (JSON ligne 47)"
+    );
+    assert!(
+        (e.pos[0] - 64.53_f32).abs() < 1e-3,
+        "entrée 3 pos.x ≈ 64.53 (JSON ligne 50)"
+    );
+    assert!(
+        (e.pos[2] - (-193.64_f32)).abs() < 1e-2,
+        "entrée 3 pos.z ≈ -193.64 (JSON ligne 52)"
+    );
+    assert_eq!(
+        e.chara_rotate_y, 90.0_f32,
+        "entrée 3 charaRotateY = 90° (JSON ligne 55)"
+    );
 }
 
 #[test]
@@ -378,8 +423,16 @@ fn real_file_entree4_carte_differente() {
     let Some(cfg) = load_real() else { return };
     let e = &cfg.map_infos[4];
     // mapId = "0xD772C163" (JSON ligne 60) — carte distincte des entrées 0-3
-    assert_eq!(e.id, HashId(0x6B3E_9B43), "entrée 4 id = 0x6B3E9B43 (JSON ligne 59)");
-    assert_eq!(e.map_id, HashId(0xD772_C163), "entrée 4 mapId = 0xD772C163 (JSON ligne 60)");
+    assert_eq!(
+        e.id,
+        HashId(0x6B3E_9B43),
+        "entrée 4 id = 0x6B3E9B43 (JSON ligne 59)"
+    );
+    assert_eq!(
+        e.map_id,
+        HashId(0xD772_C163),
+        "entrée 4 mapId = 0xD772C163 (JSON ligne 60)"
+    );
     assert_eq!(e.pos[2], -30.0_f32, "entrée 4 pos.z = -30 (JSON ligne 65)");
 }
 
@@ -388,10 +441,25 @@ fn real_file_entree5_position_nulle() {
     let Some(cfg) = load_real() else { return };
     let e = &cfg.map_infos[5];
     // id = "0xA3E7114B" (JSON ligne 71), mapId = "0x2067910E" (JSON ligne 72)
-    assert_eq!(e.id, HashId(0xA3E7_114B), "entrée 5 id = 0xA3E7114B (JSON ligne 71)");
-    assert_eq!(e.map_id, HashId(0x2067_910E), "entrée 5 mapId = 0x2067910E (JSON ligne 72)");
-    assert_eq!(e.map_text_id, HashId(0xF15D_1497), "entrée 5 mapTextId = 0xF15D1497 (JSON ligne 73)");
-    assert_eq!(e.pos, [0.0_f32; 4], "entrée 5 pos = [0, 0, 0, 0] (JSON lignes 74-79)");
+    assert_eq!(
+        e.id,
+        HashId(0xA3E7_114B),
+        "entrée 5 id = 0xA3E7114B (JSON ligne 71)"
+    );
+    assert_eq!(
+        e.map_id,
+        HashId(0x2067_910E),
+        "entrée 5 mapId = 0x2067910E (JSON ligne 72)"
+    );
+    assert_eq!(
+        e.map_text_id,
+        HashId(0xF15D_1497),
+        "entrée 5 mapTextId = 0xF15D1497 (JSON ligne 73)"
+    );
+    assert_eq!(
+        e.pos, [0.0_f32; 4],
+        "entrée 5 pos = [0, 0, 0, 0] (JSON lignes 74-79)"
+    );
 }
 
 #[test]

@@ -38,7 +38,7 @@ use anyhow::{Context, Result};
 use goblin::pe::PE;
 use hashbrown::{HashMap, HashSet};
 use iced_x86::{Decoder, DecoderOptions, FlowControl, Instruction, Mnemonic, OpKind, Register};
-use nie_index::{rusqlite, Db};
+use nie_index::{Db, rusqlite};
 use tracing::info;
 
 /// Longueur maximale décodée pour un corps de fonction feuille.
@@ -218,7 +218,9 @@ fn shape_of(text: &Span, bytes: &[u8], start: u64, len: u64) -> Shape {
         [a] if a.mnemonic() == Mnemonic::Ret => Shape::Stub,
         // `jmp rel32` nu : trampoline.
         [a] if a.mnemonic() == Mnemonic::Jmp && a.op0_kind() == OpKind::NearBranch64 => {
-            Shape::Thunk { target: a.near_branch64() }
+            Shape::Thunk {
+                target: a.near_branch64(),
+            }
         }
         [a, b] => match (a.mnemonic(), b.mnemonic()) {
             // `mov eax, imm32 ; ret`
@@ -245,7 +247,9 @@ fn shape_of(text: &Span, bytes: &[u8], start: u64, len: u64) -> Shape {
             (Mnemonic::Add | Mnemonic::Lea, Mnemonic::Jmp)
                 if b.op0_kind() == OpKind::NearBranch64 =>
             {
-                Shape::Thunk { target: b.near_branch64() }
+                Shape::Thunk {
+                    target: b.near_branch64(),
+                }
             }
             _ => Shape::Other,
         },
@@ -293,10 +297,16 @@ fn decode_body(text: &Span, bytes: &[u8], start: u64, limit: u64) -> Option<Body
             && insn.is_ip_rel_memory_operand()
         {
             let iat = insn.ip_rel_memory_address();
-            return Some(Body { len: end - start, targets, thunk_iat: Some(iat) });
+            return Some(Body {
+                len: end - start,
+                targets,
+                thunk_iat: Some(iat),
+            });
         }
         match insn.flow_control() {
-            FlowControl::Call | FlowControl::UnconditionalBranch | FlowControl::ConditionalBranch => {
+            FlowControl::Call
+            | FlowControl::UnconditionalBranch
+            | FlowControl::ConditionalBranch => {
                 if insn.op0_kind() == OpKind::NearBranch64 {
                     let t = insn.near_branch64();
                     if insn.flow_control() == FlowControl::Call {
@@ -313,14 +323,22 @@ fn decode_body(text: &Span, bytes: &[u8], start: u64, limit: u64) -> Option<Body
                 }
                 if insn.flow_control() == FlowControl::UnconditionalBranch {
                     if end > furthest_branch {
-                        return Some(Body { len: end - start, targets, thunk_iat: None });
+                        return Some(Body {
+                            len: end - start,
+                            targets,
+                            thunk_iat: None,
+                        });
                     }
                     last_term = Some(end);
                 }
             }
             FlowControl::Return => {
                 if end > furthest_branch {
-                    return Some(Body { len: end - start, targets, thunk_iat: None });
+                    return Some(Body {
+                        len: end - start,
+                        targets,
+                        thunk_iat: None,
+                    });
                 }
                 last_term = Some(end);
             }
@@ -330,7 +348,11 @@ fn decode_body(text: &Span, bytes: &[u8], start: u64, limit: u64) -> Option<Body
                 if n_insn == 1 {
                     return None;
                 }
-                return Some(Body { len: end - start - u64::from(insn.len() as u32), targets, thunk_iat: None });
+                return Some(Body {
+                    len: end - start - u64::from(insn.len() as u32),
+                    targets,
+                    thunk_iat: None,
+                });
             }
             _ => {}
         }
@@ -341,7 +363,11 @@ fn decode_body(text: &Span, bytes: &[u8], start: u64, limit: u64) -> Option<Body
     // Borne atteinte sans conclusion : on retient jusqu'au dernier terminateur
     // franchi, s'il y en a eu un. Sans ce repli, une fonction dont une branche
     // vise au-delà de la borne était entièrement perdue.
-    last_term.map(|e| Body { len: e - start, targets, thunk_iat: None })
+    last_term.map(|e| Body {
+        len: e - start,
+        targets,
+        thunk_iat: None,
+    })
 }
 
 /// Récupère les fonctions feuilles de `.text` hors `.pdata` et les ingère dans
@@ -361,12 +387,16 @@ pub fn recover_leaves(
     exe_path: &std::path::Path,
     dry_run: bool,
 ) -> Result<RecoverStats> {
-    let bytes = std::fs::read(exe_path).with_context(|| format!("lecture {}", exe_path.display()))?;
+    let bytes =
+        std::fs::read(exe_path).with_context(|| format!("lecture {}", exe_path.display()))?;
     let pe = PE::parse(&bytes).context("goblin: parse PE")?;
     let image_base = pe.image_base;
 
     let span_of = |name: &str| -> Option<Span> {
-        let s = pe.sections.iter().find(|s| s.name().is_ok_and(|n| n.starts_with(name)))?;
+        let s = pe
+            .sections
+            .iter()
+            .find(|s| s.name().is_ok_and(|n| n.starts_with(name)))?;
         let len = s.virtual_size.min(s.size_of_raw_data) as usize;
         Some(Span {
             va: image_base + u64::from(s.virtual_address),
@@ -409,7 +439,9 @@ pub fn recover_leaves(
         .collect::<std::result::Result<Vec<_>, _>>()?
     };
     let known: Vec<u64> = {
-        let mut q = db.conn().prepare("SELECT vaddr FROM function WHERE binary_id=?1")?;
+        let mut q = db
+            .conn()
+            .prepare("SELECT vaddr FROM function WHERE binary_id=?1")?;
         q.query_map([bin], |r| r.get::<_, i64>(0).map(|v| v as u64))?
             .collect::<std::result::Result<Vec<_>, _>>()?
     };
@@ -428,7 +460,9 @@ pub fn recover_leaves(
     let mut leaves: HashSet<u64> = HashSet::new();
     for name in [".rdata", ".data", "_RDATA", ".fptable", ".rodata"] {
         let Some(sp) = span_of(name) else { continue };
-        let Some(raw) = bytes.get(sp.off..sp.off + sp.len) else { continue };
+        let Some(raw) = bytes.get(sp.off..sp.off + sp.len) else {
+            continue;
+        };
         for (i, w) in raw.chunks_exact(8).enumerate() {
             let v = u64::from_le_bytes(w.try_into().unwrap());
             if text.contains(v) && in_ranges(&gaps, v) && !seen.contains(&v) {
@@ -461,8 +495,11 @@ pub fn recover_leaves(
     // Feuilles déjà en base : celles qui tombent dans un trou `.pdata`. Elles
     // sont re-mesurées à chaque passe pour rester cohérentes avec les débuts
     // découverts depuis.
-    let known_leaves: Vec<u64> =
-        known_sizes.iter().map(|&(a, _)| a).filter(|&a| in_ranges(&gaps, a)).collect();
+    let known_leaves: Vec<u64> = known_sizes
+        .iter()
+        .map(|&(a, _)| a)
+        .filter(|&a| in_ranges(&gaps, a))
+        .collect();
     let mut new_leaves: HashSet<u64> = leaves.clone();
     // Feuilles découvertes par balayage linéaire des résidus, sans qu'aucune
     // référence ne les désigne : confiance moindre, provenance distincte.
@@ -763,8 +800,7 @@ pub fn recover_leaves(
     {
         // Les fausses bornes sortent de la base : les garder ferait recouper
         // la forge au meme endroit au prochain `split`.
-        let mut del =
-            tx.prepare("DELETE FROM function WHERE binary_id=?1 AND vaddr=?2")?;
+        let mut del = tx.prepare("DELETE FROM function WHERE binary_id=?1 AND vaddr=?2")?;
         for a in &prune {
             del.execute(rusqlite::params![bin, *a as i64])?;
         }
@@ -776,7 +812,10 @@ pub fn recover_leaves(
         for (&a, &len) in &all_sizes {
             // Un thunk d'import porte le nom exact de la fonction importée ;
             // sinon la forme reconnue donne un nom structurel.
-            let iat = thunks.get(&a).and_then(|iat| iat_names.get(iat)).map(|n| format!("thunk_{n}"));
+            let iat = thunks
+                .get(&a)
+                .and_then(|iat| iat_names.get(iat))
+                .map(|n| format!("thunk_{n}"));
             if iat.is_some() {
                 stats.thunks_named += 1;
             }
@@ -787,7 +826,11 @@ pub fn recover_leaves(
                 Some(Shape::Stub) => Some(format!("stub_{a:x}")),
                 Some(Shape::Other) | None => None,
             });
-            let src = if thunks.contains_key(&a) { "iat-thunk" } else { "leaf-shape" };
+            let src = if thunks.contains_key(&a) {
+                "iat-thunk"
+            } else {
+                "leaf-shape"
+            };
             let (nm, src) = match &name {
                 Some(n) => (Some(n.as_str()), Some(src)),
                 None => (None, None),
@@ -811,7 +854,11 @@ pub fn recover_leaves(
                         // `leaf-ref` : désignée par un appel direct ou un
                         // pointeur de données — c'est une fonction au sens
                         // fort, pas seulement une suite d'octets décodable.
-                        let prov = if scanned.contains(&a) { "leaf-scan" } else { "leaf-ref" };
+                        let prov = if scanned.contains(&a) {
+                            "leaf-scan"
+                        } else {
+                            "leaf-ref"
+                        };
                         tx.prepare_cached(
                             "INSERT INTO function(binary_id, vaddr, size, name, name_source, subsystem, subsys_src, role, confidence)
                              VALUES(?1,?2,?3,?4,?5,'standalone',?6,'leaf',0.0)",
@@ -851,7 +898,9 @@ pub fn recover_leaves(
             "SELECT subsystem, confidence FROM function WHERE binary_id=?1 AND vaddr=?2",
         )?;
         for (&a, sh) in &shapes {
-            let Shape::Thunk { target } = *sh else { continue };
+            let Shape::Thunk { target } = *sh else {
+                continue;
+            };
             let tgt: Option<(String, f64)> = get
                 .query_row(rusqlite::params![bin, target as i64], |r| {
                     Ok((r.get(0)?, r.get(1)?))
@@ -861,8 +910,7 @@ pub fn recover_leaves(
             if sub == "standalone" {
                 continue;
             }
-            stats.shape_inherited +=
-                upd.execute(rusqlite::params![bin, a as i64, sub, conf])?;
+            stats.shape_inherited += upd.execute(rusqlite::params![bin, a as i64, sub, conf])?;
         }
     }
     tx.commit()?;
@@ -914,9 +962,10 @@ fn preceded_by_filler(text: &Span, bytes: &[u8], va: u64) -> bool {
         return false;
     }
     let off = text.off + (va - 1 - text.va) as usize;
-    bytes.get(off).is_some_and(|&b| matches!(b, 0xCC | 0x90 | 0x00))
+    bytes
+        .get(off)
+        .is_some_and(|&b| matches!(b, 0xCC | 0x90 | 0x00))
 }
-
 
 /// Longueur du **run** de remplissage (`0xCC`, `0x00`, `0x90`) en tête de
 /// `[a, b)`.
@@ -934,7 +983,9 @@ fn count_filler(text: &Span, bytes: &[u8], a: u64, b: u64) -> u64 {
     let Some(buf) = bytes.get(off..off + (b - a) as usize) else {
         return 0;
     };
-    buf.iter().take_while(|&&c| c == 0xCC || c == 0x00 || c == 0x90).count() as u64
+    buf.iter()
+        .take_while(|&&c| c == 0xCC || c == 0x00 || c == 0x90)
+        .count() as u64
 }
 
 /// Table `adresse virtuelle de l'entrée IAT → nom d'import` (`DLL_Fonction`,
@@ -958,7 +1009,12 @@ mod tests {
 
     /// Construit un `Span` de test couvrant `bytes` à partir de `va`.
     fn span(va: u64, len: usize) -> Span {
-        Span { va, end: va + len as u64, off: 0, len }
+        Span {
+            va,
+            end: va + len as u64,
+            off: 0,
+            len,
+        }
     }
 
     #[test]
@@ -990,7 +1046,11 @@ mod tests {
         let bytes = [0xCC, 0xCC, 0x90, 0x00, 0x48, 0xCC, 0xCC];
         let sp = span(0x1000, bytes.len());
         assert_eq!(count_filler(&sp, &bytes, 0x1000, 0x1007), 4);
-        assert_eq!(count_filler(&sp, &bytes, 0x1004, 0x1007), 0, "commence sur du code");
+        assert_eq!(
+            count_filler(&sp, &bytes, 0x1004, 0x1007),
+            0,
+            "commence sur du code"
+        );
         assert_eq!(count_filler(&sp, &bytes, 0x1005, 0x1007), 2);
     }
 
@@ -1000,7 +1060,10 @@ mod tests {
         // c3               ret
         let bytes = [0xB8, 0xB1, 0x2B, 0x7D, 0x53, 0xC3];
         let sp = span(0x1000, bytes.len());
-        assert_eq!(shape_of(&sp, &bytes, 0x1000, 6), Shape::ConstRet(0x537D_2BB1));
+        assert_eq!(
+            shape_of(&sp, &bytes, 0x1000, 6),
+            Shape::ConstRet(0x537D_2BB1)
+        );
     }
 
     #[test]
@@ -1021,7 +1084,10 @@ mod tests {
         let bytes = [0x48, 0x83, 0xC1, 0x08, 0xE9, 0x00, 0x01, 0x00, 0x00];
         let sp = span(0x1000, bytes.len());
         // fin du `jmp` = 0x1009, + 0x100 → 0x1109
-        assert_eq!(shape_of(&sp, &bytes, 0x1000, 9), Shape::Thunk { target: 0x1109 });
+        assert_eq!(
+            shape_of(&sp, &bytes, 0x1000, 9),
+            Shape::Thunk { target: 0x1109 }
+        );
     }
 
     #[test]

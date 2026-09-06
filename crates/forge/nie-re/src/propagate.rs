@@ -26,12 +26,20 @@ pub struct Node {
 impl Node {
     #[must_use]
     pub fn unknown() -> Self {
-        Self { label: None, confidence: 0.0, locked: false }
+        Self {
+            label: None,
+            confidence: 0.0,
+            locked: false,
+        }
     }
 
     #[must_use]
     pub fn anchor(label: u32) -> Self {
-        Self { label: Some(label), confidence: 1.0, locked: true }
+        Self {
+            label: Some(label),
+            confidence: 1.0,
+            locked: true,
+        }
     }
 }
 
@@ -47,7 +55,10 @@ pub struct PropagationGraph {
 impl PropagationGraph {
     #[must_use]
     pub fn with_capacity(n: usize) -> Self {
-        Self { nodes: Vec::with_capacity(n), adj: vec![Vec::new(); n] }
+        Self {
+            nodes: Vec::with_capacity(n),
+            adj: vec![Vec::new(); n],
+        }
     }
 
     /// Ajoute un nœud, renvoie son index.
@@ -83,15 +94,21 @@ impl PropagationGraph {
         // Amortissement par degré (anti-hub) : un nœud très connecté (utilitaires
         // alloc/string appelés partout) diffuse une influence atténuée par
         // `1/ln(deg+2)`, pour ne pas noyer les labels spécifiques.
-        let degree_damp: Vec<f32> =
-            self.adj.iter().map(|a| 1.0 / ((a.len() as f32) + 2.0).ln()).collect();
+        let degree_damp: Vec<f32> = self
+            .adj
+            .iter()
+            .map(|a| 1.0 / ((a.len() as f32) + 2.0).ln())
+            .collect();
 
         let mut newly_labeled = 0usize;
         for _ in 0..max_rounds {
             let mut changed = false;
             // Snapshot des labels pour un update synchrone.
-            let snapshot: Vec<Option<(u32, f32)>> =
-                self.nodes.iter().map(|n| n.label.map(|l| (l, n.confidence))).collect();
+            let snapshot: Vec<Option<(u32, f32)>> = self
+                .nodes
+                .iter()
+                .map(|n| n.label.map(|l| (l, n.confidence)))
+                .collect();
 
             for i in 0..self.nodes.len() {
                 if self.nodes[i].locked {
@@ -109,10 +126,11 @@ impl PropagationGraph {
                         e.1 = e.1.max(contrib);
                     }
                 }
-                let Some((&best_label, &(best_sum, best_max))) = votes
-                    .iter()
-                    .max_by(|a, b| a.1 .0.partial_cmp(&b.1 .0).unwrap_or(std::cmp::Ordering::Equal))
-                else {
+                let Some((&best_label, &(best_sum, best_max))) = votes.iter().max_by(|a, b| {
+                    a.1.0
+                        .partial_cmp(&b.1.0)
+                        .unwrap_or(std::cmp::Ordering::Equal)
+                }) else {
                     continue;
                 };
                 let total: f32 = votes.values().map(|v| v.0).sum();

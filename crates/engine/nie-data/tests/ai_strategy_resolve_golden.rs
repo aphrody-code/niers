@@ -7,7 +7,7 @@
 //! stratégies via `ai_text` (noms internes JA : « 基本戦略 » = stratégie de base, « オフェンス時基本戦略 »
 //! = stratégie d'attaque ; les 3 premières sont des entrées de test). Ce fichier fige la jointure.
 
-use nie_data::ai::{resolve_strategy_description, resolve_strategy_name, StrategyAiInfo};
+use nie_data::ai::{StrategyAiInfo, resolve_strategy_description, resolve_strategy_name};
 use nie_data::hash::HashId;
 
 fn strategy(name_id: u32, desc_id: u32) -> StrategyAiInfo {
@@ -35,7 +35,10 @@ fn resolves_strategy_name_and_description() {
     let t = ai_text();
     let s = strategy(0x0000_1001, 0x0000_1002);
     assert_eq!(resolve_strategy_name(&s, &t), Some("基本戦略"));
-    assert_eq!(resolve_strategy_description(&s, &t), Some("基本戦略説明テキスト"));
+    assert_eq!(
+        resolve_strategy_description(&s, &t),
+        Some("基本戦略説明テキスト")
+    );
 }
 
 #[test]

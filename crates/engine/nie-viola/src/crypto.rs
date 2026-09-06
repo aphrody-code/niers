@@ -47,7 +47,10 @@ impl CriwareKey {
     /// Si le texte n'est pas un entier hexadécimal 32 bits.
     pub fn depuis_hex(texte: &str) -> Result<Self, String> {
         let t = texte.trim();
-        let t = t.strip_prefix("0x").or_else(|| t.strip_prefix("0X")).unwrap_or(t);
+        let t = t
+            .strip_prefix("0x")
+            .or_else(|| t.strip_prefix("0X"))
+            .unwrap_or(t);
         u32::from_str_radix(t, 16)
             .map(CriwareKey::Explicite)
             .map_err(|_| format!("clé hexadécimale invalide : « {texte} »"))
@@ -79,14 +82,18 @@ pub fn crypt_file(source: &Path, destination: &Path, cle: &CriwareKey) -> Result
     let mut tampon = vec![0u8; TRANCHE];
     let mut position = 0u64;
     loop {
-        let lu = entree.read(&mut tampon).map_err(|e| format!("lecture : {e}"))?;
+        let lu = entree
+            .read(&mut tampon)
+            .map_err(|e| format!("lecture : {e}"))?;
         if lu == 0 {
             break;
         }
         // L'offset absolu est indispensable : la clé dérive de la position dans le fichier, une
         // tranche traitée comme si elle commençait à zéro produirait du charabia.
         crypt_bytes(&mut tampon[..lu], position, cle);
-        sortie.write_all(&tampon[..lu]).map_err(|e| format!("écriture : {e}"))?;
+        sortie
+            .write_all(&tampon[..lu])
+            .map_err(|e| format!("écriture : {e}"))?;
         position += lu as u64;
     }
     sortie.flush().map_err(|e| format!("vidage : {e}"))?;
@@ -113,7 +120,8 @@ pub fn deviner_chiffre(source: &Path, cle: &CriwareKey) -> Result<bool, String> 
     if CLAIRS.contains(&&tete) {
         return Ok(false);
     }
-    f.seek(SeekFrom::Start(0)).map_err(|e| format!("repositionnement : {e}"))?;
+    f.seek(SeekFrom::Start(0))
+        .map_err(|e| format!("repositionnement : {e}"))?;
     let mut essai = tete;
     crypt_bytes(&mut essai, 0, cle);
     Ok(CLAIRS.contains(&&essai))
@@ -125,8 +133,18 @@ mod tests {
 
     #[test]
     fn la_cle_hexadecimale_accepte_les_deux_ecritures() {
-        assert_eq!(CriwareKey::depuis_hex("1717E18E").expect("sans préfixe").valeur(), VIOLA_FIXED_KEY);
-        assert_eq!(CriwareKey::depuis_hex("0x1717e18e").expect("avec préfixe").valeur(), VIOLA_FIXED_KEY);
+        assert_eq!(
+            CriwareKey::depuis_hex("1717E18E")
+                .expect("sans préfixe")
+                .valeur(),
+            VIOLA_FIXED_KEY
+        );
+        assert_eq!(
+            CriwareKey::depuis_hex("0x1717e18e")
+                .expect("avec préfixe")
+                .valeur(),
+            VIOLA_FIXED_KEY
+        );
         assert!(CriwareKey::depuis_hex("pas une clé").is_err());
     }
 

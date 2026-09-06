@@ -165,7 +165,9 @@ impl CharaResourcePaths {
     /// Nombre de champs renseignés (chaînes extraites pour cette entrée).
     #[must_use]
     pub fn filled_count(&self) -> usize {
-        (0..PATH_FIELD_COUNT).filter(|&j| self.by_index(j).is_some()).count()
+        (0..PATH_FIELD_COUNT)
+            .filter(|&j| self.by_index(j).is_some())
+            .count()
     }
 }
 

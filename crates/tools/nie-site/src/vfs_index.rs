@@ -62,8 +62,12 @@ impl Vue {
     /// Dit si un chemin VFS entre dans le filtre.
     #[must_use]
     pub fn retient(self, chemin: &str) -> bool {
-        let Some((_, ext)) = chemin.rsplit_once('.') else { return false };
-        self.extensions().iter().any(|e| ext.eq_ignore_ascii_case(e))
+        let Some((_, ext)) = chemin.rsplit_once('.') else {
+            return false;
+        };
+        self.extensions()
+            .iter()
+            .any(|e| ext.eq_ignore_ascii_case(e))
     }
 }
 
@@ -123,7 +127,11 @@ impl IndexVfs {
                 }
             }
         }
-        Self { chemins, tailles, vues }
+        Self {
+            chemins,
+            tailles,
+            vues,
+        }
     }
 
     /// Nombre de chemins indexés.
@@ -208,14 +216,20 @@ impl IndexVfs {
     #[must_use]
     pub fn dossier(&self, prefixe: &str, offset: usize, limite: usize) -> Dossier {
         let prefixe = prefixe.trim_matches('/').to_owned();
-        let base = if prefixe.is_empty() { String::new() } else { format!("{prefixe}/") };
+        let base = if prefixe.is_empty() {
+            String::new()
+        } else {
+            format!("{prefixe}/")
+        };
         let debut = self.chemins.partition_point(|c| c.as_str() < base.as_str());
         let mut dossiers = BTreeSet::new();
         let mut fichiers = Vec::new();
         let mut total_fichiers = 0usize;
         for i in debut..self.chemins.len() {
             let chemin = &self.chemins[i];
-            let Some(reste) = chemin.strip_prefix(base.as_str()) else { break };
+            let Some(reste) = chemin.strip_prefix(base.as_str()) else {
+                break;
+            };
             match reste.split_once('/') {
                 Some((segment, _)) => {
                     if !segment.is_empty() {
@@ -244,20 +258,29 @@ impl IndexVfs {
     /// Dit si un chemin exact est indexé.
     #[must_use]
     pub fn contient(&self, chemin: &str) -> bool {
-        self.chemins.binary_search_by(|c| c.as_str().cmp(chemin)).is_ok()
+        self.chemins
+            .binary_search_by(|c| c.as_str().cmp(chemin))
+            .is_ok()
     }
 
     /// Taille déclarée d'un chemin exact.
     #[must_use]
     pub fn taille(&self, chemin: &str) -> Option<u32> {
-        let i = self.chemins.binary_search_by(|c| c.as_str().cmp(chemin)).ok()?;
+        let i = self
+            .chemins
+            .binary_search_by(|c| c.as_str().cmp(chemin))
+            .ok()?;
         self.tailles.get(i).copied()
     }
 
     fn fichier(&self, i: usize) -> Option<Fichier> {
         let chemin = self.chemins.get(i)?;
         let nom = chemin.rsplit('/').next().unwrap_or(chemin).to_owned();
-        Some(Fichier { chemin: chemin.clone(), nom, taille: self.tailles.get(i).copied().unwrap_or(0) })
+        Some(Fichier {
+            chemin: chemin.clone(),
+            nom,
+            taille: self.tailles.get(i).copied().unwrap_or(0),
+        })
     }
 }
 

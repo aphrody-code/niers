@@ -30,7 +30,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use serde_json::Value;
 
-use crate::cfgbin::{walk_named, Node};
+use crate::cfgbin::{Node, walk_named};
 use crate::hash::HashId;
 use crate::text::sanitize_text;
 
@@ -97,7 +97,11 @@ pub fn parse_noun_node(node: &Node<'_>) -> Option<ParsedNoun> {
     if name.is_empty() {
         return None;
     }
-    Some(ParsedNoun { hash_id: hash_var.as_hash(), name, alt_names })
+    Some(ParsedNoun {
+        hash_id: hash_var.as_hash(),
+        name,
+        alt_names,
+    })
 }
 
 /// Parse tous les noms `NOUN_INFO` d'un `chara_text.cfg.bin.json` désérialisé
@@ -149,7 +153,11 @@ pub fn parse_roma_node(node: &Node<'_>) -> Option<ParsedRomanizedName> {
     if first_name.is_empty() && last_name.is_empty() {
         return None;
     }
-    Some(ParsedRomanizedName { hash_id: hash_var.as_hash(), first_name, last_name })
+    Some(ParsedRomanizedName {
+        hash_id: hash_var.as_hash(),
+        first_name,
+        last_name,
+    })
 }
 
 /// Parse tous les noms romanisés d'un `chara_text_roma.cfg.bin.json` désérialisé
@@ -173,5 +181,9 @@ pub fn parse_all_roma(root: &Value) -> Vec<ParsedRomanizedName> {
 /// entrée l'emporte. On reproduit donc cette sémantique « last-wins » (itération inverse).
 #[must_use]
 pub fn find_name(nouns: &[ParsedNoun], hash_id: HashId) -> Option<&str> {
-    nouns.iter().rev().find(|n| n.hash_id == hash_id).map(|n| n.name.as_str())
+    nouns
+        .iter()
+        .rev()
+        .find(|n| n.hash_id == hash_id)
+        .map(|n| n.name.as_str())
 }

@@ -24,7 +24,9 @@ fn main() {
         seulement_max = true;
         args.remove(i);
     }
-    let path = args.first().expect("usage: rdbn_dump <f.cfg.bin> [--only <liste>] [--max]");
+    let path = args
+        .first()
+        .expect("usage: rdbn_dump <f.cfg.bin> [--only <liste>] [--max]");
 
     let data = std::fs::read(path).expect("lecture");
     let rdbn = nie_formats::cfgbin::parse(&data).expect("ce fichier n'est pas un RDBN");
@@ -35,7 +37,12 @@ fn main() {
         if only.as_ref().is_some_and(|o| &l.name != o) {
             continue;
         }
-        println!("\n=== {} ({}) — {} ligne(s) ===", l.name, l.type_name, l.rows.len());
+        println!(
+            "\n=== {} ({}) — {} ligne(s) ===",
+            l.name,
+            l.type_name,
+            l.rows.len()
+        );
         let mut montrees = 0usize;
         for (i, row) in l.rows.iter().enumerate() {
             let champs: Vec<String> = row

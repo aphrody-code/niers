@@ -247,16 +247,16 @@ pub fn decoder_planches(g4tx: &[u8]) -> Vec<(u32, u32, Vec<u8>)> {
             // Le masque ne sert donc que là où la planche de couleur est muette : appliqué
             // partout, il rend la bouche inerte, dont le dessin vit bel et bien dans la couleur.
             let couleur_muette = canal_uniforme(&rgba);
-            if let Some((mw, mh, masque)) = crate::g4tx_decode::decode_named_to_rgba(
-                g4tx,
-                &alloc::format!("{nom}msk"),
-            )
-            .filter(|(mw, mh, m)| {
-                couleur_muette
-                    && (*mw, *mh) == (w, h)
-                    && m.len() >= rgba.len()
-                    && !canal_uniforme(m)
-            }) {
+            if let Some((mw, mh, masque)) =
+                crate::g4tx_decode::decode_named_to_rgba(g4tx, &alloc::format!("{nom}msk")).filter(
+                    |(mw, mh, m)| {
+                        couleur_muette
+                            && (*mw, *mh) == (w, h)
+                            && m.len() >= rgba.len()
+                            && !canal_uniforme(m)
+                    },
+                )
+            {
                 let _ = (mw, mh);
                 for i in (0..rgba.len()).step_by(4) {
                     rgba[i + 3] = masque[i];
@@ -292,13 +292,12 @@ pub fn decoder_planches_et_masques(g4tx: &[u8]) -> alloc::vec::Vec<PlancheEtMasq
         .filter_map(|nom| {
             let (w, h, mut rgba) = crate::g4tx_decode::decode_named_to_rgba(g4tx, &nom)?;
             let couleur_muette = canal_uniforme(&rgba);
-            let masque = crate::g4tx_decode::decode_named_to_rgba(
-                g4tx,
-                &alloc::format!("{nom}msk"),
-            )
-            .filter(|(mw, mh, m)| {
-                (*mw, *mh) == (w, h) && m.len() >= rgba.len() && !canal_uniforme(m)
-            });
+            let masque =
+                crate::g4tx_decode::decode_named_to_rgba(g4tx, &alloc::format!("{nom}msk")).filter(
+                    |(mw, mh, m)| {
+                        (*mw, *mh) == (w, h) && m.len() >= rgba.len() && !canal_uniforme(m)
+                    },
+                );
             let Some((_, _, m)) = masque else {
                 return Some((w, h, rgba, None));
             };
@@ -365,8 +364,14 @@ pub fn dessiner_yeux(largeur: u32, hauteur: u32, iris: [u8; 3]) -> alloc::vec::V
         return out;
     }
     for (x0, y0, x1, y1) in YEUX_EMPRISE {
-        let (px0, py0) = ((x0 * largeur as f32) as usize, (y0 * hauteur as f32) as usize);
-        let (px1, py1) = ((x1 * largeur as f32) as usize, (y1 * hauteur as f32) as usize);
+        let (px0, py0) = (
+            (x0 * largeur as f32) as usize,
+            (y0 * hauteur as f32) as usize,
+        );
+        let (px1, py1) = (
+            (x1 * largeur as f32) as usize,
+            (y1 * hauteur as f32) as usize,
+        );
         if px1 <= px0 || py1 <= py0 {
             continue;
         }
@@ -838,7 +843,9 @@ pub fn composer_couches(couches: &[(u32, u32, Vec<u8>)]) -> Option<(u32, u32, Ve
                 sortie[i + c] = (dessus * a + dessous * (1.0 - a)).round().clamp(0.0, 255.0) as u8;
             }
             let a_dessous = f32::from(sortie[i + 3]) / 255.0;
-            sortie[i + 3] = ((a + a_dessous * (1.0 - a)) * 255.0).round().clamp(0.0, 255.0) as u8;
+            sortie[i + 3] = ((a + a_dessous * (1.0 - a)) * 255.0)
+                .round()
+                .clamp(0.0, 255.0) as u8;
         }
     }
     Some((largeur, hauteur, sortie))
@@ -952,7 +959,12 @@ pub fn reduire_rgba(
 ///
 /// Rend un message si le G4TX n'est pas décodable, si la réduction échoue ou si l'encodage échoue.
 #[cfg(feature = "textures")]
-pub fn g4tx_vignette(g4tx: &[u8], basename: &str, max_cote: u32, format: ImageOut) -> Result<Vec<u8>, String> {
+pub fn g4tx_vignette(
+    g4tx: &[u8],
+    basename: &str,
+    max_cote: u32,
+    format: ImageOut,
+) -> Result<Vec<u8>, String> {
     let (w, h, rgba) = crate::g4tx_decode::decode_best_to_rgba(g4tx, basename)
         .ok_or_else(|| "G4TX non décodable".to_string())?;
     let (vw, vh, petit) = reduire_rgba(&rgba, w, h, max_cote)?;
@@ -1098,7 +1110,12 @@ pub fn composer_planche(
     fond: [u8; 4],
 ) -> Planche {
     if cases.is_empty() || colonnes == 0 {
-        return Planche { largeur: 0, hauteur: 0, rgba: Vec::new(), cases: Vec::new() };
+        return Planche {
+            largeur: 0,
+            hauteur: 0,
+            rgba: Vec::new(),
+            cases: Vec::new(),
+        };
     }
 
     let cell_w = cases.iter().map(|c| c.largeur).max().unwrap_or(0);
@@ -1130,10 +1147,21 @@ pub fn composer_planche(
             (case.largeur, case.hauteur),
             (x, y),
         );
-        rects.push(RectPlanche { nom: case.nom.clone(), x, y, w: case.largeur, h: case.hauteur });
+        rects.push(RectPlanche {
+            nom: case.nom.clone(),
+            x,
+            y,
+            w: case.largeur,
+            h: case.hauteur,
+        });
     }
 
-    Planche { largeur, hauteur, rgba, cases: rects }
+    Planche {
+        largeur,
+        hauteur,
+        rgba,
+        cases: rects,
+    }
 }
 
 /// Recopie une image RGBA dans une autre, **pixel pour pixel, sans compositing**.
@@ -1205,8 +1233,11 @@ mod tests_planche {
 
     #[test]
     fn trois_cases_de_meme_taille_en_ligne() {
-        let cases =
-            vec![case("a", 10, 6, [255, 0, 0, 255]), case("b", 10, 6, [0, 255, 0, 255]), case("c", 10, 6, [0, 0, 255, 255])];
+        let cases = vec![
+            case("a", 10, 6, [255, 0, 0, 255]),
+            case("b", 10, 6, [0, 255, 0, 255]),
+            case("c", 10, 6, [0, 0, 255, 255]),
+        ];
         let p = composer_planche(&cases, 3, 4, 2, [0, 0, 0, 255]);
 
         // 4 + 10 + 2 + 10 + 2 + 10 + 4
@@ -1214,9 +1245,36 @@ mod tests_planche {
         assert_eq!(p.hauteur, 14, "4 + 6 + 4");
         assert_eq!(p.rgba.len(), (42 * 14 * 4) as usize);
 
-        assert_eq!(p.cases[0], RectPlanche { nom: "a".into(), x: 4, y: 4, w: 10, h: 6 });
-        assert_eq!(p.cases[1], RectPlanche { nom: "b".into(), x: 16, y: 4, w: 10, h: 6 });
-        assert_eq!(p.cases[2], RectPlanche { nom: "c".into(), x: 28, y: 4, w: 10, h: 6 });
+        assert_eq!(
+            p.cases[0],
+            RectPlanche {
+                nom: "a".into(),
+                x: 4,
+                y: 4,
+                w: 10,
+                h: 6
+            }
+        );
+        assert_eq!(
+            p.cases[1],
+            RectPlanche {
+                nom: "b".into(),
+                x: 16,
+                y: 4,
+                w: 10,
+                h: 6
+            }
+        );
+        assert_eq!(
+            p.cases[2],
+            RectPlanche {
+                nom: "c".into(),
+                x: 28,
+                y: 4,
+                w: 10,
+                h: 6
+            }
+        );
 
         // Les pixels sont bien là où le manifeste les annonce — sans quoi il mentirait.
         assert_eq!(pixel(&p, 4, 4), [255, 0, 0, 255]);
@@ -1227,7 +1285,10 @@ mod tests_planche {
 
     #[test]
     fn une_case_plus_petite_est_centree_jamais_etiree() {
-        let cases = vec![case("grande", 10, 10, [255, 0, 0, 255]), case("petite", 4, 4, [0, 255, 0, 255])];
+        let cases = vec![
+            case("grande", 10, 10, [255, 0, 0, 255]),
+            case("petite", 4, 4, [0, 255, 0, 255]),
+        ];
         let p = composer_planche(&cases, 2, 0, 0, [0, 0, 0, 0]);
 
         // La petite garde SA taille : le manifeste décrit l'image, pas la cellule.
@@ -1236,17 +1297,27 @@ mod tests_planche {
         // Cellule de 10 à partir de x=10 → décalage de 3 pour centrer une case de 4.
         assert_eq!((petite.x, petite.y), (13, 3));
         assert_eq!(pixel(&p, 13, 3), [0, 255, 0, 255]);
-        assert_eq!(pixel(&p, 10, 0), [0, 0, 0, 0], "le reste de la cellule est du fond");
+        assert_eq!(
+            pixel(&p, 10, 0),
+            [0, 0, 0, 0],
+            "le reste de la cellule est du fond"
+        );
     }
 
     #[test]
     fn la_grille_passe_a_la_ligne() {
-        let cases: Vec<_> = (0..5).map(|i| case(&format!("c{i}"), 8, 8, [1, 2, 3, 255])).collect();
+        let cases: Vec<_> = (0..5)
+            .map(|i| case(&format!("c{i}"), 8, 8, [1, 2, 3, 255]))
+            .collect();
         let p = composer_planche(&cases, 2, 0, 0, [0, 0, 0, 255]);
 
         assert_eq!(p.largeur, 16);
         assert_eq!(p.hauteur, 24, "5 cases sur 2 colonnes = 3 lignes");
-        assert_eq!((p.cases[2].x, p.cases[2].y), (0, 8), "la troisième ouvre la ligne 2");
+        assert_eq!(
+            (p.cases[2].x, p.cases[2].y),
+            (0, 8),
+            "la troisième ouvre la ligne 2"
+        );
         assert_eq!((p.cases[4].x, p.cases[4].y), (0, 16));
     }
 
@@ -1340,7 +1411,11 @@ mod tests {
         ])
         .unwrap();
         assert_eq!((out.0, out.1), (8, 4));
-        assert_eq!(&out.2[..4], &[255, 0, 0, 255], "la couche carrée ne doit pas être composée");
+        assert_eq!(
+            &out.2[..4],
+            &[255, 0, 0, 255],
+            "la couche carrée ne doit pas être composée"
+        );
     }
 
     /// Les six familles de `_facetex` doivent TOUTES pouvoir peser sur le visage composé.
@@ -1355,12 +1430,16 @@ mod tests {
         use crate::vfs::Vfs;
 
         let mut vfs = Vfs::new();
-        if vfs.init(crate::vfs::resolve_game_dir().join("data")).is_err() {
+        if vfs
+            .init(crate::vfs::resolve_game_dir().join("data"))
+            .is_err()
+        {
             eprintln!("SKIP : VFS non initialisable");
             return;
         }
         let lire = |vfs: &Vfs, rel: &str| {
-            vfs.read(&format!("data/dx11/chr/_face/20_EDIT/_facetex/{rel}.g4tx")).ok()
+            vfs.read(&format!("data/dx11/chr/_face/20_EDIT/_facetex/{rel}.g4tx"))
+                .ok()
         };
 
         // Une planche de chaque dépliage, et une seconde peau pour prouver que la variation passe.
@@ -1376,7 +1455,10 @@ mod tests {
         let pa = decoder_planches(&peau_a);
         let pb = decoder_planches(&peau_b);
         let bo = decoder_planches(&bouche);
-        assert!(!pa.is_empty() && !pb.is_empty() && !bo.is_empty(), "planches décodées");
+        assert!(
+            !pa.is_empty() && !pb.is_empty() && !bo.is_empty(),
+            "planches décodées"
+        );
 
         // Les deux dépliages sont bien distincts : c'est la prémisse du défaut.
         assert_ne!(
@@ -1448,7 +1530,11 @@ mod tests {
             true,
         )
         .unwrap();
-        assert_eq!(&out[..3], &[0, 0, 0], "un canal inactif ne doit rien apporter");
+        assert_eq!(
+            &out[..3],
+            &[0, 0, 0],
+            "un canal inactif ne doit rien apporter"
+        );
     }
 
     #[cfg(feature = "textures")]
@@ -1458,7 +1544,11 @@ mod tests {
             1,
             1,
             &pixel(128, 0, 0, 255),
-            [teinte([200, 100, 50], true), teinte([0, 0, 0], true), teinte([0, 0, 0], true)],
+            [
+                teinte([200, 100, 50], true),
+                teinte([0, 0, 0], true),
+                teinte([0, 0, 0], true),
+            ],
             true,
         )
         .unwrap();
@@ -1502,7 +1592,10 @@ mod tests {
             teinte([255, 255, 255], true),
         ];
         let posee = teinter_par_canaux(1, 1, &pixel(255, 0, 0, 255), teintes, false).unwrap();
-        assert_eq!(posee[3], 0, "une zone de fond posée par-dessus doit être transparente");
+        assert_eq!(
+            posee[3], 0,
+            "une zone de fond posée par-dessus doit être transparente"
+        );
 
         // La même planche EN fond garde son opacité.
         let fond = teinter_par_canaux(1, 1, &pixel(255, 0, 0, 255), teintes, true).unwrap();
@@ -1518,11 +1611,19 @@ mod tests {
             1,
             1,
             &pixel(128, 255, 0, 255),
-            [teinte([200, 0, 0], true), teinte([0, 180, 0], true), teinte([0, 0, 255], true)],
+            [
+                teinte([200, 0, 0], true),
+                teinte([0, 180, 0], true),
+                teinte([0, 0, 255], true),
+            ],
             true,
         )
         .unwrap();
-        assert_eq!(&out[..3], &[0, 180, 0], "le canal dominant sélectionne, il n'additionne pas");
+        assert_eq!(
+            &out[..3],
+            &[0, 180, 0],
+            "le canal dominant sélectionne, il n'additionne pas"
+        );
     }
 
     #[cfg(feature = "textures")]
@@ -1541,7 +1642,11 @@ mod tests {
             true,
         )
         .unwrap();
-        assert_eq!(&out[..3], &[243, 202, 193], "sinon le blanc du canal bleu sature tout");
+        assert_eq!(
+            &out[..3],
+            &[243, 202, 193],
+            "sinon le blanc du canal bleu sature tout"
+        );
     }
 
     #[cfg(feature = "textures")]
@@ -1617,7 +1722,10 @@ mod tests {
         let (w, h, rgba) = damier();
         let (nw, nh, out) = reduire_rgba(&rgba, w, h, 64).unwrap();
         assert_eq!((nw, nh), (w, h));
-        assert_eq!(out, rgba, "aucune vignette ne doit agrandir ni recompresser");
+        assert_eq!(
+            out, rgba,
+            "aucune vignette ne doit agrandir ni recompresser"
+        );
     }
 
     #[test]
@@ -1676,7 +1784,10 @@ mod tests {
 
         assert!(ImageOut::Webp.sans_perte());
         assert!(ImageOut::Png.sans_perte());
-        assert!(!ImageOut::Gif.sans_perte(), "GIF quantifie sur 256 couleurs");
+        assert!(
+            !ImageOut::Gif.sans_perte(),
+            "GIF quantifie sur 256 couleurs"
+        );
         assert!(!ImageOut::Jpeg.sans_perte());
         assert!(!ImageOut::Jpeg.garde_alpha());
         assert!(ImageOut::Webp.garde_alpha());
@@ -1692,7 +1803,11 @@ mod tests {
             .expect("relecture WebP")
             .to_rgba8();
         assert_eq!(relu.dimensions(), (w, h));
-        assert_eq!(relu.as_raw().as_slice(), rgba.as_slice(), "VP8L doit être exact");
+        assert_eq!(
+            relu.as_raw().as_slice(),
+            rgba.as_slice(),
+            "VP8L doit être exact"
+        );
     }
     /// Un masque de zones : fond rouge franc, une région noire au milieu.
     #[cfg(feature = "textures")]
@@ -1707,8 +1822,16 @@ mod tests {
         ];
         let masque = [255, 0, 0, 255, 255, 0, 0, 255, 255, 0, 0, 255, 0, 0, 0, 255];
         let out = decouper_par_zones(2, 2, &planche, &masque).unwrap();
-        assert_eq!(&out[0..4], &[10, 20, 30, 0], "le fond rouge devient transparent");
-        assert_eq!(&out[12..16], &[11, 22, 33, 255], "la zone garde couleur et opacité");
+        assert_eq!(
+            &out[0..4],
+            &[10, 20, 30, 0],
+            "le fond rouge devient transparent"
+        );
+        assert_eq!(
+            &out[12..16],
+            &[11, 22, 33, 255],
+            "la zone garde couleur et opacité"
+        );
     }
 
     #[cfg(feature = "textures")]
@@ -1741,5 +1864,4 @@ mod tests {
         let vide: Vec<u8> = [0, 0, 0, 0].repeat(200);
         assert!(!porte_un_trait(&vide));
     }
-
 }

@@ -25,8 +25,7 @@ pub fn open(db_override: Option<&Path>) -> anyhow::Result<Connection> {
     )
     .with_context(|| format!("ouverture SQLite {}", path.display()))?;
     // Activer WAL read-only pour les fichiers en cours d'écriture par le backup.
-    conn.pragma_update(None, "journal_mode", "WAL")
-        .ok();
+    conn.pragma_update(None, "journal_mode", "WAL").ok();
     Ok(conn)
 }
 
@@ -91,7 +90,12 @@ fn latest_sqlite_in(dir: &Path) -> Option<PathBuf> {
 /// Exécute une requête qui retourne des colonnes sous forme de chaînes.
 ///
 /// Commodité pour les appels one-off sans paramètres typés complexes.
-pub fn query_rows<F, T>(conn: &Connection, sql: &str, params: &[&dyn rusqlite::ToSql], map: F) -> anyhow::Result<Vec<T>>
+pub fn query_rows<F, T>(
+    conn: &Connection,
+    sql: &str,
+    params: &[&dyn rusqlite::ToSql],
+    map: F,
+) -> anyhow::Result<Vec<T>>
 where
     F: Fn(&rusqlite::Row<'_>) -> rusqlite::Result<T>,
 {
@@ -107,7 +111,12 @@ where
 }
 
 /// Même signature mais retourne `None` si aucune ligne.
-pub fn query_one<F, T>(conn: &Connection, sql: &str, params: &[&dyn rusqlite::ToSql], map: F) -> anyhow::Result<Option<T>>
+pub fn query_one<F, T>(
+    conn: &Connection,
+    sql: &str,
+    params: &[&dyn rusqlite::ToSql],
+    map: F,
+) -> anyhow::Result<Option<T>>
 where
     F: Fn(&rusqlite::Row<'_>) -> rusqlite::Result<T>,
 {
@@ -124,10 +133,7 @@ where
 /// Fusionne `data` JSON + `sheet_data` JSON (sheet_data prioritaire si non-null/non-vide).
 ///
 /// Fidèle au comportement TS : `{ ...row.data, ...row.sheet_data }`.
-pub fn merge_data_sheet(
-    data: Option<&str>,
-    sheet_data: Option<&str>,
-) -> serde_json::Value {
+pub fn merge_data_sheet(data: Option<&str>, sheet_data: Option<&str>) -> serde_json::Value {
     let base = data
         .and_then(|s| serde_json::from_str(s).ok())
         .unwrap_or(serde_json::Value::Object(Default::default()));
@@ -144,9 +150,7 @@ pub fn merge_data_sheet(
             serde_json::Value::Object(b)
         }
         // Si l'un n'est pas un objet, sheet_data gagne entièrement si présent.
-        (_b, serde_json::Value::Object(o)) if !o.is_empty() => {
-            serde_json::Value::Object(o)
-        }
+        (_b, serde_json::Value::Object(o)) if !o.is_empty() => serde_json::Value::Object(o),
         (b, _) => b,
     }
 }

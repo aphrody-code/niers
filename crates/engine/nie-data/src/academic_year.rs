@@ -48,6 +48,7 @@ impl AcademicYearInfo {
 /// Parse `academic_year_config.cfg.bin.json` → la liste des années scolaires.
 #[must_use]
 pub fn parse_academic_year_config(root: &Value) -> Vec<AcademicYearInfo> {
-    list_values(root, "m_academicYearInfoList")
-        .map_or_else(Vec::new, |vs| vs.iter().filter_map(AcademicYearInfo::from_value).collect())
+    list_values(root, "m_academicYearInfoList").map_or_else(Vec::new, |vs| {
+        vs.iter().filter_map(AcademicYearInfo::from_value).collect()
+    })
 }

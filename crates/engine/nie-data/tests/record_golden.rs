@@ -32,7 +32,7 @@
 mod common;
 
 use nie_data::hash::HashId;
-use nie_data::record::{parse_record_config, RecordConfig, RecordInfo};
+use nie_data::record::{RecordConfig, RecordInfo, parse_record_config};
 use serde_json::json;
 
 // ─── Fixture inline ───────────────────────────────────────────────────────────
@@ -98,21 +98,39 @@ fn record_info_0_champs_scalaires() {
     let r: &RecordInfo = &cfg.infos[0];
 
     // record_config.cfg.bin.json — RECORD_INFO_0, vars 0..8
-    assert_eq!(r.record_id, HashId::from_i64(-1957215473), "record_id RECORD_INFO_0");
-    assert_eq!(r.ref_id, HashId::from_i64(-1229922355), "ref_id RECORD_INFO_0");
+    assert_eq!(
+        r.record_id,
+        HashId::from_i64(-1957215473),
+        "record_id RECORD_INFO_0"
+    );
+    assert_eq!(
+        r.ref_id,
+        HashId::from_i64(-1229922355),
+        "ref_id RECORD_INFO_0"
+    );
     assert_eq!(r.flag1, 0, "flag1 RECORD_INFO_0");
-    assert_eq!(r.group_id, HashId(438306617), "group_id = 0x1A200739 constant");
+    assert_eq!(
+        r.group_id,
+        HashId(438306617),
+        "group_id = 0x1A200739 constant"
+    );
     assert_eq!(r.opt_id1, HashId::ZERO, "opt_id1 RECORD_INFO_0");
     assert_eq!(r.opt_id2, HashId::ZERO, "opt_id2 RECORD_INFO_0");
     assert_eq!(r.flag2, 0, "flag2 RECORD_INFO_0");
     assert_eq!(r.record_no, 1, "record_no RECORD_INFO_0 = 1");
-    assert_eq!(r.extra_data, "0", "extra_data RECORD_INFO_0 = \"0\" (absent)");
+    assert_eq!(
+        r.extra_data, "0",
+        "extra_data RECORD_INFO_0 = \"0\" (absent)"
+    );
 }
 
 #[test]
 fn record_info_0_pas_extra_data() {
     let cfg = parse_record_config(&fixture());
-    assert!(!cfg.infos[0].has_extra_data(), "RECORD_INFO_0 n'a pas d'extra_data");
+    assert!(
+        !cfg.infos[0].has_extra_data(),
+        "RECORD_INFO_0 n'a pas d'extra_data"
+    );
 }
 
 #[test]
@@ -121,9 +139,21 @@ fn record_info_7_champs_scalaires() {
     let r: &RecordInfo = &cfg.infos[1];
 
     // record_config.cfg.bin.json — RECORD_INFO_7, vars 0..8
-    assert_eq!(r.record_id, HashId::from_i64(-225707093), "record_id RECORD_INFO_7");
-    assert_eq!(r.ref_id, HashId::from_i64(685001326), "ref_id RECORD_INFO_7");
-    assert_eq!(r.opt_id2, HashId::from_i64(-1478521859), "opt_id2 RECORD_INFO_7");
+    assert_eq!(
+        r.record_id,
+        HashId::from_i64(-225707093),
+        "record_id RECORD_INFO_7"
+    );
+    assert_eq!(
+        r.ref_id,
+        HashId::from_i64(685001326),
+        "ref_id RECORD_INFO_7"
+    );
+    assert_eq!(
+        r.opt_id2,
+        HashId::from_i64(-1478521859),
+        "opt_id2 RECORD_INFO_7"
+    );
     assert_eq!(r.record_no, 8, "record_no RECORD_INFO_7 = 8");
 }
 
@@ -134,8 +164,7 @@ fn record_info_7_extra_data_base64() {
 
     // record_config.cfg.bin.json — RECORD_INFO_7 var[8] = String base64
     assert_eq!(
-        r.extra_data,
-        "AAAAAA8FNcMu49QAAQAyAAAAAXE=",
+        r.extra_data, "AAAAAA8FNcMu49QAAQAyAAAAAXE=",
         "extra_data RECORD_INFO_7"
     );
     assert!(r.has_extra_data(), "RECORD_INFO_7 a des extra_data");
@@ -167,7 +196,11 @@ fn with_extra_data_fixture() {
     let cfg = parse_record_config(&fixture());
     let extras = cfg.with_extra_data();
     // Seul RECORD_INFO_7 a un extra_data non-nul dans la fixture.
-    assert_eq!(extras.len(), 1, "1 seul record avec extra_data dans la fixture");
+    assert_eq!(
+        extras.len(),
+        1,
+        "1 seul record avec extra_data dans la fixture"
+    );
     assert_eq!(extras[0].record_no, 8);
 }
 
@@ -182,7 +215,11 @@ fn liste_beg_ignoree() {
         }]
     });
     let cfg = parse_record_config(&root);
-    assert_eq!(cfg.infos.len(), 0, "RECORD_INFO_LIST_BEG_0 ne doit pas être parsé");
+    assert_eq!(
+        cfg.infos.len(),
+        0,
+        "RECORD_INFO_LIST_BEG_0 ne doit pas être parsé"
+    );
 }
 
 #[test]
@@ -211,8 +248,7 @@ fn record_id_nul_ignore() {
 
 // ─── Tests sur le vrai fichier (skip si absent du VPS) ───────────────────────
 
-const REAL_PATH: &str =
-    "record/record_config.cfg.bin.json";
+const REAL_PATH: &str = "record/record_config.cfg.bin.json";
 
 fn load_real() -> Option<RecordConfig> {
     let chemin_abs = common::chemin(REAL_PATH)?;
@@ -272,7 +308,10 @@ fn real_file_group_id_constant() {
     // var[3] = 438306617 (0x1A200739) dans les 31 entrées du dump réel.
     let constante = HashId(438_306_617);
     for (i, r) in cfg.infos.iter().enumerate() {
-        assert_eq!(r.group_id, constante, "RECORD_INFO_{i} group_id doit être 0x1A200739");
+        assert_eq!(
+            r.group_id, constante,
+            "RECORD_INFO_{i} group_id doit être 0x1A200739"
+        );
     }
 }
 
@@ -285,7 +324,10 @@ fn real_file_record_no_non_continu() {
     assert_eq!(cfg.infos[0].record_no, 1, "premier record_no = 1");
     assert_eq!(cfg.infos[7].record_no, 8, "RECORD_INFO_7 record_no = 8");
     // RECORD_INFO_8 a record_no=10 (pas 9 — 9 est absent du dump)
-    assert_eq!(cfg.infos[8].record_no, 10, "RECORD_INFO_8 record_no = 10 (pas 9)");
+    assert_eq!(
+        cfg.infos[8].record_no, 10,
+        "RECORD_INFO_8 record_no = 10 (pas 9)"
+    );
     assert_eq!(cfg.infos[30].record_no, 34, "dernier record_no = 34");
 }
 
@@ -297,8 +339,7 @@ fn real_file_record_info_7_extra_data() {
     let r7 = &cfg.infos[7];
     assert_eq!(r7.record_no, 8, "RECORD_INFO_7 record_no = 8");
     assert_eq!(
-        r7.extra_data,
-        "AAAAAA8FNcMu49QAAQAyAAAAAXE=",
+        r7.extra_data, "AAAAAA8FNcMu49QAAQAyAAAAAXE=",
         "RECORD_INFO_7 var[8] = base64"
     );
     assert!(r7.has_extra_data(), "RECORD_INFO_7 a des extra_data");
@@ -310,10 +351,12 @@ fn real_file_record_info_30_dernier() {
 
     // record_config.cfg.bin.json — RECORD_INFO_30, lignes 1272-1313
     let r30 = &cfg.infos[30];
-    assert_eq!(r30.record_no, 34, "RECORD_INFO_30 var[7] = 34 (dernier record)");
     assert_eq!(
-        r30.extra_data,
-        "AAAAAA8FNfmGU3YAAQAyAAAAAXE=",
+        r30.record_no, 34,
+        "RECORD_INFO_30 var[7] = 34 (dernier record)"
+    );
+    assert_eq!(
+        r30.extra_data, "AAAAAA8FNfmGU3YAAQAyAAAAAXE=",
         "RECORD_INFO_30 var[8] = base64"
     );
 }
@@ -347,7 +390,16 @@ fn real_file_find_by_no_absent() {
     let Some(cfg) = load_real() else { return };
 
     // record_no = 9 est absent du dump (trou dans la séquence)
-    assert!(cfg.find_by_no(9).is_none(), "record_no=9 absent du dump (trou)");
-    assert!(cfg.find_by_no(23).is_none(), "record_no=23 absent du dump (trou)");
-    assert!(cfg.find_by_no(33).is_none(), "record_no=33 absent du dump (trou)");
+    assert!(
+        cfg.find_by_no(9).is_none(),
+        "record_no=9 absent du dump (trou)"
+    );
+    assert!(
+        cfg.find_by_no(23).is_none(),
+        "record_no=23 absent du dump (trou)"
+    );
+    assert!(
+        cfg.find_by_no(33).is_none(),
+        "record_no=33 absent du dump (trou)"
+    );
 }

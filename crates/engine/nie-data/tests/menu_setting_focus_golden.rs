@@ -24,8 +24,8 @@
 mod common;
 
 use nie_data::hash::HashId;
-use nie_data::menu_setting::{parse, MenuSetting};
-use serde_json::{json, Value};
+use nie_data::menu_setting::{MenuSetting, parse};
+use serde_json::{Value, json};
 
 /// CRC32 IEEE (poly réfléchi 0xEDB88320) — même algo que `binascii.crc32` / `cfgbin::crc32`.
 fn crc32(data: &[u8]) -> u32 {
@@ -33,7 +33,11 @@ fn crc32(data: &[u8]) -> u32 {
     for &b in data {
         crc ^= u32::from(b);
         for _ in 0..8 {
-            crc = if crc & 1 != 0 { (crc >> 1) ^ 0xEDB8_8320 } else { crc >> 1 };
+            crc = if crc & 1 != 0 {
+                (crc >> 1) ^ 0xEDB8_8320
+            } else {
+                crc >> 1
+            };
         }
     }
     !crc
@@ -58,7 +62,10 @@ const LAYERS: &[(&str, [i64; 7])] = &[
     ("rpg00_07_weekday_timezone_guide", [1, 0, 0, 0, 0, 1, 1]),
     ("mainmenu01_06_base_button_guide", [1, 2, 12, 0, 0, 1, 1]),
     ("mainmenu01_07_button_guide", [10, 2, 12, 0, 0, 1, 1]),
-    ("mainmenu01_10_return_arrow_button_guide", [1, 1, 12, 0, 0, 1, 1]),
+    (
+        "mainmenu01_10_return_arrow_button_guide",
+        [1, 1, 12, 0, 0, 1, 1],
+    ),
     ("mainmenu01_11_save_button_guide", [1, 1, 12, 0, 0, 1, 1]),
     ("cmn01_40_list_base_empty", [1, 0, 0, 0, 0, 1, 1]),
 ];
@@ -118,10 +125,30 @@ fn main_menu_tree(native: bool) -> Value {
     // Hashes tels qu'ils figurent dans le fichier, en `i32` signé : `0x756E8118` tient dans un
     // positif, les autres débordent et s'écrivent donc en complément à deux.
     let cmd_nodes = vec![
-        cmd(0, 0x756E_8118i64, "CMD_FCS_BACK", &[-0x0B24_20DFi64, -0x0B24_20DFi64, 1]),
-        cmd(1, -0x5ED0_4139i64, "CMD_FCS_NEXT", &[-0x0B24_20DFi64, -0x0B24_20DFi64, 1]),
-        cmd(2, -0x4C86_12DFi64, "CMD_FUNCTION", &[-0x3133_4156i64, -0x0B24_20DFi64]),
-        cmd(3, -0x30FD_410Ai64, "CMD_FUNCTION", &[-0x3133_4156i64, -0x0B24_20DFi64, 1]),
+        cmd(
+            0,
+            0x756E_8118i64,
+            "CMD_FCS_BACK",
+            &[-0x0B24_20DFi64, -0x0B24_20DFi64, 1],
+        ),
+        cmd(
+            1,
+            -0x5ED0_4139i64,
+            "CMD_FCS_NEXT",
+            &[-0x0B24_20DFi64, -0x0B24_20DFi64, 1],
+        ),
+        cmd(
+            2,
+            -0x4C86_12DFi64,
+            "CMD_FUNCTION",
+            &[-0x3133_4156i64, -0x0B24_20DFi64],
+        ),
+        cmd(
+            3,
+            -0x30FD_410Ai64,
+            "CMD_FUNCTION",
+            &[-0x3133_4156i64, -0x0B24_20DFi64, 1],
+        ),
     ];
 
     let res = |i: usize, path: &str| {
@@ -214,8 +241,16 @@ fn le_groupe_nomme_est_l_ecran_et_couvre_tous_ses_layers() {
 fn les_neuf_focus_sont_rattaches_au_layer_interactif() {
     let m = parsed(true);
     assert_eq!(m.focus_count(), 9, "9 MENU_FOCUS_BASE_INFO");
-    assert!(m.focus_base_infos.iter().all(|f| f.role == HashId(FOCUS_ROLE as u32)));
-    assert!(m.focus_base_infos.iter().all(|f| f.param == 0 && f.param2 == 0));
+    assert!(
+        m.focus_base_infos
+            .iter()
+            .all(|f| f.role == HashId(FOCUS_ROLE as u32))
+    );
+    assert!(
+        m.focus_base_infos
+            .iter()
+            .all(|f| f.param == 0 && f.param2 == 0)
+    );
 
     assert_eq!(m.focus_groups.len(), 1);
     let interactive = HashId(crc32(INTERACTIVE.as_bytes()));
@@ -226,13 +261,19 @@ fn les_neuf_focus_sont_rattaches_au_layer_interactif() {
     // MENU_LAYER_GROUP_BASE, et AUSSI le porteur des 4 commandes.
     assert_eq!(m.interactive_layer_id(), Some(interactive));
     assert!(m.commands.iter().all(|c| c.layer_id == interactive));
-    assert!(m.layer_by_id(interactive).is_some(), "et il est déclaré dans l'écran");
+    assert!(
+        m.layer_by_id(interactive).is_some(),
+        "et il est déclaré dans l'écran"
+    );
 }
 
 #[test]
 fn les_invariants_de_plage_tiennent() {
     let m = parsed(true);
-    assert!(m.refs_consistent(), "plages non vides = partition contiguë exhaustive");
+    assert!(
+        m.refs_consistent(),
+        "plages non vides = partition contiguë exhaustive"
+    );
     assert!(m.refs_pair_groups(), "autant de plages que de groupes");
     assert!(m.layer_hashes_consistent(), "layer_id == CRC32(name)");
 }
@@ -257,8 +298,15 @@ fn les_deux_formes_donnent_le_meme_ecran() {
     // SANS erreur — un faux vert silencieux.
     let natif = parsed(true);
     let iecode = parsed(false);
-    assert_eq!(natif, iecode, "les deux formes de variable doivent converger");
-    assert_eq!(natif.layers.len(), 13, "et ce n'est pas une égalité de deux vides");
+    assert_eq!(
+        natif, iecode,
+        "les deux formes de variable doivent converger"
+    );
+    assert_eq!(
+        natif.layers.len(),
+        13,
+        "et ce n'est pas une égalité de deux vides"
+    );
     assert_eq!(natif.focus_count(), 9);
 }
 
@@ -267,31 +315,56 @@ fn les_deux_formes_donnent_le_meme_ecran() {
 /// absent — un golden muet qui ne s'exécute pas est un faux vert.
 #[test]
 fn tous_les_ecrans_respectent_les_invariants_de_groupe_et_de_focus() {
-    let Some(dir) = common::chemin("menu/cfg") else { return };
+    let Some(dir) = common::chemin("menu/cfg") else {
+        return;
+    };
     if !dir.is_dir() {
-        eprintln!("skip invariants groupe/focus : dump menu absent ({})", dir.display());
+        eprintln!(
+            "skip invariants groupe/focus : dump menu absent ({})",
+            dir.display()
+        );
         return;
     }
 
-    let (mut ecrans, mut avec_focus, mut avec_shift, mut focus_total) = (0usize, 0usize, 0usize, 0usize);
+    let (mut ecrans, mut avec_focus, mut avec_shift, mut focus_total) =
+        (0usize, 0usize, 0usize, 0usize);
     for entry in std::fs::read_dir(&dir).expect("read_dir menu/cfg") {
         let path = entry.expect("entry").path();
-        let Some(fname) = path.file_name().and_then(|s| s.to_str()) else { continue };
-        let Some(stem) = fname.strip_suffix("_setting.cfg.bin.json") else { continue };
+        let Some(fname) = path.file_name().and_then(|s| s.to_str()) else {
+            continue;
+        };
+        let Some(stem) = fname.strip_suffix("_setting.cfg.bin.json") else {
+            continue;
+        };
         let txt = std::fs::read_to_string(&path).expect("read json");
         let root: Value = serde_json::from_str(&txt).expect("json valide");
         let ms = parse(&root);
 
-        assert!(ms.refs_pair_groups(), "{stem} : autant de plages que de groupes");
-        assert!(ms.refs_consistent(), "{stem} : plages non vides = partition contiguë exhaustive");
-        assert!(ms.group_hashes_consistent(), "{stem} : group_id ≠ CRC32(name)");
+        assert!(
+            ms.refs_pair_groups(),
+            "{stem} : autant de plages que de groupes"
+        );
+        assert!(
+            ms.refs_consistent(),
+            "{stem} : plages non vides = partition contiguë exhaustive"
+        );
+        assert!(
+            ms.group_hashes_consistent(),
+            "{stem} : group_id ≠ CRC32(name)"
+        );
 
         // Toute plage doit désigner une tranche réelle : `None` ici = débordement silencieux.
         for i in 0..ms.focus_groups.len() {
-            assert!(ms.focus_elements(i).is_some(), "{stem} : plage de focus {i} hors liste");
+            assert!(
+                ms.focus_elements(i).is_some(),
+                "{stem} : plage de focus {i} hors liste"
+            );
         }
         for i in 0..ms.groups.len() {
-            assert!(ms.group_layer_states(i).is_some(), "{stem} : plage de groupe {i} hors liste");
+            assert!(
+                ms.group_layer_states(i).is_some(),
+                "{stem} : plage de groupe {i} hors liste"
+            );
         }
 
         ecrans += 1;
@@ -301,8 +374,14 @@ fn tous_les_ecrans_respectent_les_invariants_de_groupe_et_de_focus() {
     }
 
     assert!(ecrans >= 200, "trop peu d'écrans : {ecrans}");
-    assert!(avec_focus >= 100, "aucun groupe de focus lu — le parsing focus est muet");
-    assert!(focus_total >= 500, "trop peu d'éléments focusables : {focus_total}");
+    assert!(
+        avec_focus >= 100,
+        "aucun groupe de focus lu — le parsing focus est muet"
+    );
+    assert!(
+        focus_total >= 500,
+        "trop peu d'éléments focusables : {focus_total}"
+    );
     eprintln!(
         "OK {ecrans} écrans — {avec_focus} avec focus ({focus_total} éléments), {avec_shift} avec focus-shift",
     );
@@ -313,7 +392,13 @@ fn la_forme_native_seule_ne_donne_pas_un_ecran_vide() {
     // Garde-fou dédié : si un jour `Node::var` reperd la forme native, ce test tombe seul et
     // nomme la cause, au lieu de laisser 300 écrans se parser en silence comme vides.
     let m = parsed(true);
-    assert!(!m.layers.is_empty(), "forme native `{{\"Int\":n}}` non lue par cfgbin::Node::var");
+    assert!(
+        !m.layers.is_empty(),
+        "forme native `{{\"Int\":n}}` non lue par cfgbin::Node::var"
+    );
     assert_eq!(m.layers[0].name, "mainmenu90_00_background");
-    assert_eq!(m.layers[0].objbin_path, "common/gamedata/menu/obj/mainmenu90_00_background.objbin");
+    assert_eq!(
+        m.layers[0].objbin_path,
+        "common/gamedata/menu/obj/mainmenu90_00_background.objbin"
+    );
 }

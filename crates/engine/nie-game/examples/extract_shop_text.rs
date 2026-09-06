@@ -32,32 +32,70 @@ fn to_iecode(siblings: &[CfgEntry]) -> Vec<serde_json::Value> {
 }
 
 fn load(vfs: &Vfs, pred: impl Fn(&str) -> bool, what: &str) -> serde_json::Value {
-    let path = vfs.iter().map(|(p, _)| p.to_string()).filter(|p| pred(p)).min().unwrap_or_else(|| panic!("{what} introuvable"));
+    let path = vfs
+        .iter()
+        .map(|(p, _)| p.to_string())
+        .filter(|p| pred(p))
+        .min()
+        .unwrap_or_else(|| panic!("{what} introuvable"));
     eprintln!("  {path}");
     let file = cfgbin::parse_t2b(&vfs.read(&path).expect("read")).expect("parse");
     json!({ "entries": to_iecode(&file.entries) })
 }
 
 fn main() {
-    let dir = nie_formats::vfs::resolve_game_dir().to_string_lossy().into_owned();
+    let dir = nie_formats::vfs::resolve_game_dir()
+        .to_string_lossy()
+        .into_owned();
     let mut vfs = Vfs::new();
-    vfs.init(Path::new(&dir).join("data").as_path()).expect("vfs init");
+    vfs.init(Path::new(&dir).join("data").as_path())
+        .expect("vfs init");
 
-    let cfg = load(&vfs, |p| p.contains("/gamedata/") && p.rsplit('/').next().is_some_and(|b| b.starts_with("shop_config") && b.ends_with(".cfg.bin")), "shop_config");
+    let cfg = load(
+        &vfs,
+        |p| {
+            p.contains("/gamedata/")
+                && p.rsplit('/')
+                    .next()
+                    .is_some_and(|b| b.starts_with("shop_config") && b.ends_with(".cfg.bin"))
+        },
+        "shop_config",
+    );
     let shops = nie_data::shop::parse_shop_config(&cfg);
     eprintln!("[shop] boutiques = {}", shops.len());
     assert!(!shops.is_empty());
 
-    let text = nie_data::text::parse_text_file(&load(&vfs, |p| p.contains("/fr/") && p.rsplit('/').next().is_some_and(|b| b.starts_with("shop_text") && b.ends_with(".cfg.bin")), "shop_text fr"));
+    let text = nie_data::text::parse_text_file(&load(
+        &vfs,
+        |p| {
+            p.contains("/fr/")
+                && p.rsplit('/')
+                    .next()
+                    .is_some_and(|b| b.starts_with("shop_text") && b.ends_with(".cfg.bin"))
+        },
+        "shop_text fr",
+    ));
     eprintln!("[shop_text fr] entrées = {}", text.len());
 
-    let named = shops.iter().filter(|s| nie_data::shop::resolve_name(s, &text).is_some()).count();
+    let named = shops
+        .iter()
+        .filter(|s| nie_data::shop::resolve_name(s, &text).is_some())
+        .count();
     eprintln!("noms de boutique résolus = {named}/{}", shops.len());
     assert!(named > 0, "au moins un nom de boutique résolu");
 
-    for s in shops.iter().filter(|s| nie_data::shop::resolve_name(s, &text).is_some()).take(8) {
+    for s in shops
+        .iter()
+        .filter(|s| nie_data::shop::resolve_name(s, &text).is_some())
+        .take(8)
+    {
         let n = nie_data::shop::resolve_name(s, &text).unwrap_or("");
-        eprintln!("  shop {} ({} items) → {:?}", s.shop_id.to_hex(), s.items.len(), n);
+        eprintln!(
+            "  shop {} ({} items) → {:?}",
+            s.shop_id.to_hex(),
+            s.items.len(),
+            n
+        );
     }
     eprintln!("✓ END-TO-END OK : {named} noms de boutique résolus");
 }

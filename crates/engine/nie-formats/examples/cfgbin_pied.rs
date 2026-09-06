@@ -26,7 +26,9 @@ use std::path::Path;
 const PIED: usize = 16;
 
 fn main() {
-    let dir = nie_formats::vfs::resolve_game_dir().to_string_lossy().into_owned();
+    let dir = nie_formats::vfs::resolve_game_dir()
+        .to_string_lossy()
+        .into_owned();
     let data_dir = Path::new(&dir).join("data");
 
     let mut vfs = nie_formats::vfs::Vfs::new();
@@ -50,7 +52,9 @@ fn main() {
     let mut exemple_sans_signature: Option<String> = None;
 
     for chemin in &chemins {
-        let Ok(octets) = vfs.read(chemin) else { continue };
+        let Ok(octets) = vfs.read(chemin) else {
+            continue;
+        };
         if nie_formats::cfgbin::is_rdbn(&octets) {
             continue;
         }
@@ -80,17 +84,32 @@ fn main() {
     println!("Position par position, sur les {PIED} derniers octets :");
     println!("{:>4}  {:<9} {:>8}  {}", "off", "état", "valeurs", "détail");
     for (i, vues) in valeurs_vues.iter().enumerate() {
-        let etat = if vues.len() == 1 { "CONSTANT" } else { "variable" };
-        let mut detail: Vec<String> = vues
-            .iter()
-            .map(|(v, n)| format!("0x{v:02X}×{n}"))
-            .collect();
+        let etat = if vues.len() == 1 {
+            "CONSTANT"
+        } else {
+            "variable"
+        };
+        let mut detail: Vec<String> = vues.iter().map(|(v, n)| format!("0x{v:02X}×{n}")).collect();
         detail.truncate(6);
-        let suite = if vues.len() > 6 { format!(" … +{}", vues.len() - 6) } else { String::new() };
-        println!("{:>4}  {:<9} {:>8}  {}{}", i, etat, vues.len(), detail.join(" "), suite);
+        let suite = if vues.len() > 6 {
+            format!(" … +{}", vues.len() - 6)
+        } else {
+            String::new()
+        };
+        println!(
+            "{:>4}  {:<9} {:>8}  {}{}",
+            i,
+            etat,
+            vues.len(),
+            detail.join(" "),
+            suite
+        );
     }
 
-    println!("\n{} motif(s) de pied distinct(s). Les plus fréquents :", motifs.len());
+    println!(
+        "\n{} motif(s) de pied distinct(s). Les plus fréquents :",
+        motifs.len()
+    );
     let mut classes: Vec<(&Vec<u8>, &usize)> = motifs.iter().collect();
     classes.sort_by(|a, b| b.1.cmp(a.1));
     for (motif, n) in classes.iter().take(8) {
@@ -102,7 +121,9 @@ fn main() {
         println!("\nPremier T2B SANS « t2b » dans son pied — à examiner avant de conclure :");
         println!("  {chemin}");
     } else if n_t2b > 0 {
-        println!("\nTous les T2B lus portent la signature : le pied est bien une partie du format.");
+        println!(
+            "\nTous les T2B lus portent la signature : le pied est bien une partie du format."
+        );
     }
 
     correler_octet_variable(&vfs, &chemins);
@@ -142,7 +163,9 @@ fn nombre_de_cles(octets: &[u8], e: &Entete) -> Option<i32> {
     if champ + 4 > octets.len() {
         return None;
     }
-    Some(i32::from_le_bytes(octets[champ..champ + 4].try_into().ok()?))
+    Some(i32::from_le_bytes(
+        octets[champ..champ + 4].try_into().ok()?,
+    ))
 }
 
 /// Croise la seule valeur variable du pied (offset 6) avec ce que porte le fichier.
@@ -170,7 +193,9 @@ fn correler_octet_variable(vfs: &nie_formats::vfs::Vfs, chemins: &[String]) {
     let mut groupes: [Bilan; 2] = [Bilan::default(), Bilan::default()];
 
     for chemin in chemins {
-        let Ok(octets) = vfs.read(chemin) else { continue };
+        let Ok(octets) = vfs.read(chemin) else {
+            continue;
+        };
         if nie_formats::cfgbin::is_rdbn(&octets) || octets.len() < PIED {
             continue;
         }
@@ -211,14 +236,28 @@ fn correler_octet_variable(vfs: &nie_formats::vfs::Vfs, chemins: &[String]) {
     println!("\nL'octet variable (offset 6 du pied), croisé avec l'en-tête :");
     println!(
         "{:>7} {:>8} {:>14} {:>14} {:>12} {:>12} {:>11} {:>10} {:>10}",
-        "valeur", "n", "entrées=0", "chaînes=0", "clés=0", "clés absentes",
-        "entrées max", "chaînes max", "clés max"
+        "valeur",
+        "n",
+        "entrées=0",
+        "chaînes=0",
+        "clés=0",
+        "clés absentes",
+        "entrées max",
+        "chaînes max",
+        "clés max"
     );
     for (v, b) in groupes.iter().enumerate() {
         println!(
             "{:>7} {:>8} {:>14} {:>14} {:>12} {:>12} {:>11} {:>10} {:>10}",
-            format!("0x{v:02X}"), b.n, b.entrees_nulles, b.chaines_nulles,
-            b.cles_nulles, b.cles_absentes, b.entrees_max, b.chaines_max, b.cles_max
+            format!("0x{v:02X}"),
+            b.n,
+            b.entrees_nulles,
+            b.chaines_nulles,
+            b.cles_nulles,
+            b.cles_absentes,
+            b.entrees_max,
+            b.chaines_max,
+            b.cles_max
         );
     }
 
@@ -243,7 +282,9 @@ fn correler_octet_variable(vfs: &nie_formats::vfs::Vfs, chemins: &[String]) {
     // c'est-à-dire l'emplacement, donc la nature du contenu. On ventile par premier dossier.
     let mut par_dossier: BTreeMap<String, [usize; 2]> = BTreeMap::new();
     for chemin in chemins {
-        let Ok(octets) = vfs.read(chemin) else { continue };
+        let Ok(octets) = vfs.read(chemin) else {
+            continue;
+        };
         if nie_formats::cfgbin::is_rdbn(&octets) || octets.len() < PIED {
             continue;
         }
@@ -268,7 +309,10 @@ fn correler_octet_variable(vfs: &nie_formats::vfs::Vfs, chemins: &[String]) {
     }
 
     println!("\nLe même octet, ventilé par emplacement :");
-    println!("{:<32} {:>10} {:>10}  {}", "dossier", "0x00", "0x01", "verdict");
+    println!(
+        "{:<32} {:>10} {:>10}  {}",
+        "dossier", "0x00", "0x01", "verdict"
+    );
     let mut lignes: Vec<(&String, &[usize; 2])> = par_dossier.iter().collect();
     lignes.sort_by_key(|(_, c)| core::cmp::Reverse(c[0] + c[1]));
     let mut homogenes = 0usize;
@@ -283,7 +327,10 @@ fn correler_octet_variable(vfs: &nie_formats::vfs::Vfs, chemins: &[String]) {
         println!("{:<32} {:>10} {:>10}  {}", dossier, c[0], c[1], verdict);
     }
     let total_dossiers = par_dossier.len();
-    let tous_homogenes = par_dossier.values().filter(|c| c[0] == 0 || c[1] == 0).count();
+    let tous_homogenes = par_dossier
+        .values()
+        .filter(|c| c[0] == 0 || c[1] == 0)
+        .count();
     println!(
         "\n{tous_homogenes}/{total_dossiers} dossiers sont homogènes ({homogenes} parmi les 20 \
          affichés). Un dossier mélangé suffit à réfuter « l'octet suit l'emplacement »."

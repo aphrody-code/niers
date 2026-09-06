@@ -8,17 +8,24 @@
 //! `0xCF845499` = « ミッション詳細999999 »). Le mécanisme de jointure est donc vérifié sur fixtures.
 
 use nie_data::hash::HashId;
-use nie_data::mission::{resolve_name, MissionConfigInfo};
+use nie_data::mission::{MissionConfigInfo, resolve_name};
 
 fn mission(name_id: u32) -> MissionConfigInfo {
     let mut raw = [HashId::ZERO; 14];
     raw[0] = HashId(name_id); // raw[0] = var[2] = nameId
-    MissionConfigInfo { mission_id: HashId(0x3C67_436B), mission_code: "msa999999".into(), raw }
+    MissionConfigInfo {
+        mission_id: HashId(0x3C67_436B),
+        mission_code: "msa999999".into(),
+        raw,
+    }
 }
 
 fn mission_text() -> Vec<(HashId, String)> {
     vec![
-        (HashId(0x57EE_9AB9), String::from("ミッションタイトル999999")),
+        (
+            HashId(0x57EE_9AB9),
+            String::from("ミッションタイトル999999"),
+        ),
         (HashId(0xCF84_5499), String::from("ミッション詳細999999")),
     ]
 }
@@ -32,7 +39,10 @@ fn name_id_is_raw0() {
 fn resolves_when_present() {
     let t = mission_text();
     // Une mission dont le nameId pointe l'entrée placeholder réelle.
-    assert_eq!(resolve_name(&mission(0x57EE_9AB9), &t), Some("ミッションタイトル999999"));
+    assert_eq!(
+        resolve_name(&mission(0x57EE_9AB9), &t),
+        Some("ミッションタイトル999999")
+    );
 }
 
 #[test]

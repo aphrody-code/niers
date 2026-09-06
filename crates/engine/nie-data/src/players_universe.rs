@@ -561,7 +561,11 @@ impl PlayersUniverseConfig {
     /// Tranche des [`StarSignRarityRateInfo`] d'un signe (`starSignRarityRateInfoList`).
     #[must_use]
     pub fn rates_of(&self, set: &StarSignCharaSetData) -> &[StarSignRarityRateInfo] {
-        slice_of(&self.star_sign_rarity_rates, set.rate_offset, set.rate_count)
+        slice_of(
+            &self.star_sign_rarity_rates,
+            set.rate_offset,
+            set.rate_count,
+        )
     }
 
     /// Tranche des [`UniverseStarSignInfo`] d'un univers (`universeStarSignInfoList`).

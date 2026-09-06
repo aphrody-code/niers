@@ -106,7 +106,15 @@ mod tests {
     #[test]
     fn case1_append_index0() {
         let mut arr = vec![0xAAu8; 4 * ELEM_SIZE];
-        let n = push(&mut arr, 4, 0, 0x1122_3344, 0xAABB_CCDD, 0x0102_0304, 0xDEAD_BEEF);
+        let n = push(
+            &mut arr,
+            4,
+            0,
+            0x1122_3344,
+            0xAABB_CCDD,
+            0x0102_0304,
+            0xDEAD_BEEF,
+        );
         assert_eq!(n, 1);
         let expect = hexbuf(
             "ddccbbaa000000000000803f000000000000803f0000000000000040aaaaaaaaaaaaaaaaaaaaaaaa\

@@ -39,7 +39,7 @@
 use anyhow::{Context, Result};
 use goblin::pe::PE;
 use hashbrown::HashSet;
-use nie_index::{rusqlite, Db};
+use nie_index::{Db, rusqlite};
 use tracing::info;
 
 /// Longueur minimale, en entrées, d'une suite retenue comme table de
@@ -74,7 +74,8 @@ pub struct FuncLuaStats {
 /// Échoue si le PE est illisible, si `.text`/`.rdata` manquent, ou sur toute
 /// erreur SQLite.
 pub fn ingest_funclua(db: &mut Db, bin: i64, exe_path: &std::path::Path) -> Result<FuncLuaStats> {
-    let bytes = std::fs::read(exe_path).with_context(|| format!("lecture {}", exe_path.display()))?;
+    let bytes =
+        std::fs::read(exe_path).with_context(|| format!("lecture {}", exe_path.display()))?;
     let pe = PE::parse(&bytes).context("goblin: parse PE")?;
     let image_base = pe.image_base;
 
@@ -102,7 +103,9 @@ pub fn ingest_funclua(db: &mut Db, bin: i64, exe_path: &std::path::Path) -> Resu
         };
         let off = sec.pointer_to_raw_data as usize;
         let len = sec.virtual_size.min(sec.size_of_raw_data) as usize;
-        let Some(raw) = bytes.get(off..off + len) else { continue };
+        let Some(raw) = bytes.get(off..off + len) else {
+            continue;
+        };
 
         let entry_ok = |i: usize| -> Option<(u64, u32)> {
             let e = raw.get(i..i + 16)?;
@@ -143,7 +146,9 @@ pub fn ingest_funclua(db: &mut Db, bin: i64, exe_path: &std::path::Path) -> Resu
     stats.handlers = handlers.len();
 
     let known: HashSet<u64> = {
-        let mut q = db.conn().prepare("SELECT vaddr FROM function WHERE binary_id=?1")?;
+        let mut q = db
+            .conn()
+            .prepare("SELECT vaddr FROM function WHERE binary_id=?1")?;
         q.query_map([bin], |r| r.get::<_, i64>(0).map(|v| v as u64))?
             .collect::<std::result::Result<_, _>>()?
     };
@@ -269,9 +274,15 @@ mod tests {
     /// sans cet ordre, le nom changerait d'une exécution à l'autre.
     #[test]
     fn le_nom_d_un_handler_partage_est_stable() {
-        let mut pairs = [(0x00FF_0000u32, 0x1400_1000u64), (0x0000_00FFu32, 0x1400_1000u64)];
+        let mut pairs = [
+            (0x00FF_0000u32, 0x1400_1000u64),
+            (0x0000_00FFu32, 0x1400_1000u64),
+        ];
         pairs.sort_unstable();
         assert_eq!(pairs[0].0, 0x0000_00FF);
-        assert_eq!(format!("funcLuaCmd_{:08x}", pairs[0].0), "funcLuaCmd_000000ff");
+        assert_eq!(
+            format!("funcLuaCmd_{:08x}", pairs[0].0),
+            "funcLuaCmd_000000ff"
+        );
     }
 }

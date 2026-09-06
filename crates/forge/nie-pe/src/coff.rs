@@ -352,7 +352,8 @@ mod tests {
         b[sec_tab..sec_tab + 5].copy_from_slice(b".text");
         b[sec_tab + 16..sec_tab + 20]
             .copy_from_slice(&u32::try_from(sec_data.len()).unwrap().to_le_bytes());
-        b[sec_tab + 20..sec_tab + 24].copy_from_slice(&u32::try_from(data_off).unwrap().to_le_bytes());
+        b[sec_tab + 20..sec_tab + 24]
+            .copy_from_slice(&u32::try_from(data_off).unwrap().to_le_bytes());
         b[sec_tab + 24..sec_tab + 28]
             .copy_from_slice(&u32::try_from(reloc_off).unwrap().to_le_bytes());
         b[sec_tab + 32..sec_tab + 34].copy_from_slice(&1u16.to_le_bytes());

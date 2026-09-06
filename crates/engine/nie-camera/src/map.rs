@@ -70,21 +70,81 @@ pub const G4CM_MAGIC_INDEX: u32 = 4;
 
 /// Les 15 dispatchers `funcLua*Command` du build local : table BSS et nombre de commandes.
 pub const DISPATCHERS: [Dispatcher; 15] = [
-    Dispatcher { name: "funcLuaActionCommand", table_va: 0x1_422B_32B0, count: 26 },
-    Dispatcher { name: "funcLuaCameraCommand", table_va: 0x1_422B_3380, count: 46 },
-    Dispatcher { name: "funcLuaCommand", table_va: 0x1_422B_34F0, count: 2451 },
-    Dispatcher { name: "funcLuaEffectCommand", table_va: 0x1_422B_8190, count: 48 },
-    Dispatcher { name: "funcLuaMenuCommand", table_va: 0x1_422B_8320, count: 1150 },
-    Dispatcher { name: "dispatch@0x1422BA710", table_va: 0x1_422B_A710, count: 11 },
-    Dispatcher { name: "dispatch@0x1422BAA30", table_va: 0x1_422B_AA30, count: 9 },
-    Dispatcher { name: "dispatch@0x1422BAA78", table_va: 0x1_422B_AA78, count: 3 },
-    Dispatcher { name: "dispatch@0x1422BAA90", table_va: 0x1_422B_AA90, count: 1 },
-    Dispatcher { name: "dispatch@0x1422BAAA0", table_va: 0x1_422B_AAA0, count: 39 },
-    Dispatcher { name: "dispatch@0x1422BABD8", table_va: 0x1_422B_ABD8, count: 5 },
-    Dispatcher { name: "dispatch@0x1422BAC00", table_va: 0x1_422B_AC00, count: 28 },
-    Dispatcher { name: "dispatch@0x1422BACE0", table_va: 0x1_422B_ACE0, count: 8 },
-    Dispatcher { name: "dispatch@0x1422BAD20", table_va: 0x1_422B_AD20, count: 2 },
-    Dispatcher { name: "dispatch@0x1422BAE80", table_va: 0x1_422B_AE80, count: 18 },
+    Dispatcher {
+        name: "funcLuaActionCommand",
+        table_va: 0x1_422B_32B0,
+        count: 26,
+    },
+    Dispatcher {
+        name: "funcLuaCameraCommand",
+        table_va: 0x1_422B_3380,
+        count: 46,
+    },
+    Dispatcher {
+        name: "funcLuaCommand",
+        table_va: 0x1_422B_34F0,
+        count: 2451,
+    },
+    Dispatcher {
+        name: "funcLuaEffectCommand",
+        table_va: 0x1_422B_8190,
+        count: 48,
+    },
+    Dispatcher {
+        name: "funcLuaMenuCommand",
+        table_va: 0x1_422B_8320,
+        count: 1150,
+    },
+    Dispatcher {
+        name: "dispatch@0x1422BA710",
+        table_va: 0x1_422B_A710,
+        count: 11,
+    },
+    Dispatcher {
+        name: "dispatch@0x1422BAA30",
+        table_va: 0x1_422B_AA30,
+        count: 9,
+    },
+    Dispatcher {
+        name: "dispatch@0x1422BAA78",
+        table_va: 0x1_422B_AA78,
+        count: 3,
+    },
+    Dispatcher {
+        name: "dispatch@0x1422BAA90",
+        table_va: 0x1_422B_AA90,
+        count: 1,
+    },
+    Dispatcher {
+        name: "dispatch@0x1422BAAA0",
+        table_va: 0x1_422B_AAA0,
+        count: 39,
+    },
+    Dispatcher {
+        name: "dispatch@0x1422BABD8",
+        table_va: 0x1_422B_ABD8,
+        count: 5,
+    },
+    Dispatcher {
+        name: "dispatch@0x1422BAC00",
+        table_va: 0x1_422B_AC00,
+        count: 28,
+    },
+    Dispatcher {
+        name: "dispatch@0x1422BACE0",
+        table_va: 0x1_422B_ACE0,
+        count: 8,
+    },
+    Dispatcher {
+        name: "dispatch@0x1422BAD20",
+        table_va: 0x1_422B_AD20,
+        count: 2,
+    },
+    Dispatcher {
+        name: "dispatch@0x1422BAE80",
+        table_va: 0x1_422B_AE80,
+        count: 18,
+    },
 ];
 
 /// Commandes d'entrée liées à la caméra (chaînes `CMD_*` présentes dans `.rdata`).
@@ -222,9 +282,21 @@ pub fn va_to_file_offset(va: u64) -> Option<u64> {
     // (nom, va_debut, va_fin, offset_brut, taille_brute)
     const SECTIONS: [(&str, u64, u64, u64, u64); 5] = [
         (".text", 0x1_4000_1000, 0x1_4186_B6E0, 0x400, 0x186_A800),
-        (".rdata", 0x1_4186_C000, 0x1_41C9_E0CE, 0x186_AC00, 0x43_2200),
+        (
+            ".rdata",
+            0x1_4186_C000,
+            0x1_41C9_E0CE,
+            0x186_AC00,
+            0x43_2200,
+        ),
         (".data", 0x1_41C9_F000, 0x1_4265_694C, 0x1C9_CE00, 0x24_D400),
-        (".pdata", 0x1_4265_7000, 0x1_4278_279C, 0x1EE_A200, 0x12_B800),
+        (
+            ".pdata",
+            0x1_4265_7000,
+            0x1_4278_279C,
+            0x1EE_A200,
+            0x12_B800,
+        ),
         (".rsrc", 0x1_4278_8000, 0x1_4279_7070, 0x201_8A00, 0xF200),
     ];
     for (_, start, end, raw, raw_size) in SECTIONS {
@@ -296,7 +368,10 @@ mod tests {
         // .rdata : la chaîne du dispatcher est bien dans le fichier.
         assert!(va_to_file_offset(CAMERA_DISPATCHER_NAME_VA).is_some());
         // .text : le loader G4.
-        assert_eq!(va_to_file_offset(G4_LOADER_VA), Some(0x1_4050_6630 - 0x1_4000_1000 + 0x400));
+        assert_eq!(
+            va_to_file_offset(G4_LOADER_VA),
+            Some(0x1_4050_6630 - 0x1_4000_1000 + 0x400)
+        );
         // BSS de .data : hors du fichier.
         assert_eq!(va_to_file_offset(CAMERA_DISPATCHER.table_va), None);
         // Hors image.
@@ -306,9 +381,16 @@ mod tests {
     #[test]
     fn assets_bien_formes() {
         for a in ASSETS {
-            assert!(!a.path.starts_with('/') && a.path.starts_with("common/"), "{}", a.path);
+            assert!(
+                !a.path.starts_with('/') && a.path.starts_with("common/"),
+                "{}",
+                a.path
+            );
             assert!(!a.role.is_empty());
         }
-        assert_eq!(ASSETS.iter().filter(|a| a.path.ends_with(".g4cm")).count(), 4);
+        assert_eq!(
+            ASSETS.iter().filter(|a| a.path.ends_with(".g4cm")).count(),
+            4
+        );
     }
 }

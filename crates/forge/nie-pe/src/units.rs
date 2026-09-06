@@ -79,7 +79,10 @@ impl UnitKind {
     /// Vrai si l'unité contient du code exécutable.
     #[must_use]
     pub fn is_code(self) -> bool {
-        matches!(self, Self::Function | Self::CodeFragment | Self::CodeResidue)
+        matches!(
+            self,
+            Self::Function | Self::CodeFragment | Self::CodeResidue
+        )
     }
 }
 
@@ -542,7 +545,13 @@ impl Cover {
         }
 
         if cursor < total_len {
-            units.push(mk(UnitKind::Overlay, None, cursor, total_len - cursor, None));
+            units.push(mk(
+                UnitKind::Overlay,
+                None,
+                cursor,
+                total_len - cursor,
+                None,
+            ));
         }
 
         let cover = Self {
@@ -808,14 +817,16 @@ mod tests {
         let img = synth_image();
         // Une fonction couvre RVA 0x1000..0x1100 ; on y declare une table de
         // sauts de 16 octets a RVA 0x1040.
-        let cover = Cover::split_with_data(&img, &[(0x1000, 0x100)], &[(0x1040, 16)])
-            .expect("split");
+        let cover =
+            Cover::split_with_data(&img, &[(0x1000, 0x100)], &[(0x1040, 16)]).expect("split");
         cover.validate().expect("recouvrement total");
 
         let morceaux: Vec<_> = cover
             .units
             .iter()
-            .filter(|u| u.va.is_some_and(|v| (0x1_4000_1000..0x1_4000_1100).contains(&v)))
+            .filter(|u| {
+                u.va.is_some_and(|v| (0x1_4000_1000..0x1_4000_1100).contains(&v))
+            })
             .collect();
         let kinds: Vec<_> = morceaux.iter().map(|u| u.kind).collect();
         assert_eq!(

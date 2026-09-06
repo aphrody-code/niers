@@ -36,7 +36,7 @@
 use anyhow::{Context, Result};
 use goblin::pe::PE;
 use hashbrown::HashSet;
-use nie_index::{rusqlite, Db};
+use nie_index::{Db, rusqlite};
 use tracing::info;
 
 /// Nombre minimal de pointeurs `.text` consécutifs pour retenir une table.
@@ -82,7 +82,8 @@ pub fn anon_vtable_edges_into(
     dst_bin: i64,
     exe_path: &std::path::Path,
 ) -> Result<AnonVtableStats> {
-    let bytes = std::fs::read(exe_path).with_context(|| format!("lecture {}", exe_path.display()))?;
+    let bytes =
+        std::fs::read(exe_path).with_context(|| format!("lecture {}", exe_path.display()))?;
     let pe = PE::parse(&bytes).context("goblin: parse PE")?;
     let image_base = pe.image_base;
 
@@ -105,7 +106,9 @@ pub fn anon_vtable_edges_into(
     };
 
     let mut known: HashSet<u64> = {
-        let mut q = db.conn().prepare("SELECT vaddr FROM function WHERE binary_id=?1")?;
+        let mut q = db
+            .conn()
+            .prepare("SELECT vaddr FROM function WHERE binary_id=?1")?;
         q.query_map([dst_bin], |r| r.get::<_, i64>(0).map(|v| v as u64))?
             .collect::<std::result::Result<_, _>>()?
     };
@@ -125,7 +128,9 @@ pub fn anon_vtable_edges_into(
         let base = image_base + u64::from(sec.virtual_address);
         let off = sec.pointer_to_raw_data as usize;
         let len = sec.virtual_size.min(sec.size_of_raw_data) as usize;
-        let Some(raw) = bytes.get(off..off + len) else { continue };
+        let Some(raw) = bytes.get(off..off + len) else {
+            continue;
+        };
 
         let mut i = 0usize;
         while i + 8 <= raw.len() {
@@ -189,7 +194,8 @@ pub fn anon_vtable_edges_into(
             let hub = slots[0] as i64;
             for &m in &slots[1..] {
                 if m as i64 != hub {
-                    stats.cohesion_edges += ins.execute(rusqlite::params![dst_bin, hub, m as i64])?;
+                    stats.cohesion_edges +=
+                        ins.execute(rusqlite::params![dst_bin, hub, m as i64])?;
                 }
             }
         }
@@ -232,8 +238,11 @@ mod tests {
         // Une suite de 2 est une coïncidence courante (deux pointeurs de
         // fonction voisins dans une structure) ; 3 est déjà un objet structuré.
         let suites = [vec![1u64], vec![1, 2], vec![1, 2, 3], vec![1, 2, 3, 4]];
-        let retenues: Vec<usize> =
-            suites.iter().filter(|s| s.len() >= MIN_SLOTS).map(Vec::len).collect();
+        let retenues: Vec<usize> = suites
+            .iter()
+            .filter(|s| s.len() >= MIN_SLOTS)
+            .map(Vec::len)
+            .collect();
         assert_eq!(retenues, vec![3, 4]);
     }
 

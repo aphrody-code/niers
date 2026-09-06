@@ -19,8 +19,8 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use nie_data::formation::{parse_formation_config, SoccerFormPlacementInfo};
-use serde_json::{json, Value};
+use nie_data::formation::{SoccerFormPlacementInfo, parse_formation_config};
+use serde_json::{Value, json};
 
 /// `position_id` (1..10, type de poste) → rôle, dérivé des poids offensif/défensif de
 /// `m_SoccerPositionInfoList` : id 1 = GK (def 0.95) ; 2-3 = DF (def 0.8-0.9) ;
@@ -150,8 +150,14 @@ fn main() {
     fs::write(&out_path, &json_bytes).expect("impossible d'écrire le fichier JSON");
 
     let kb = json_bytes.len() / 1024;
-    eprintln!("[export_formations] OK — {} formations, {kb}Ko → {out_path}", cfg.formations.len());
-    println!("formation_count={} size_kb={kb} out={out_path}", cfg.formations.len());
+    eprintln!(
+        "[export_formations] OK — {} formations, {kb}Ko → {out_path}",
+        cfg.formations.len()
+    );
+    println!(
+        "formation_count={} size_kb={kb} out={out_path}",
+        cfg.formations.len()
+    );
 }
 
 /// Trouve le `*.cfg.bin.json` le plus récent de `subdir` commençant par `prefix`.
@@ -177,7 +183,7 @@ fn find_cfg(data_root: &Path, subdir: &str, prefix: &str) -> PathBuf {
 
 /// Lit et parse un fichier JSON.
 fn read_json(path: &Path) -> Value {
-    let raw =
-        fs::read_to_string(path).unwrap_or_else(|e| panic!("[export_formations] lecture {path:?}: {e}"));
+    let raw = fs::read_to_string(path)
+        .unwrap_or_else(|e| panic!("[export_formations] lecture {path:?}: {e}"));
     serde_json::from_str(&raw).unwrap_or_else(|e| panic!("[export_formations] parse {path:?}: {e}"))
 }

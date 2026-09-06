@@ -8,13 +8,37 @@ use std::path::Path;
 
 /// (fichier, description, clés de jointure sortantes vers d'autres bases).
 const DATABASES: &[(&str, &str, &[&str])] = &[
-    ("characters-resolved.json", "Personnages (nom, équipe, série, genre, bio)", &["teamId→teams", "seriesId→(série)"]),
+    (
+        "characters-resolved.json",
+        "Personnages (nom, équipe, série, genre, bio)",
+        &["teamId→teams", "seriesId→(série)"],
+    ),
     ("teams-resolved.json", "Équipes (nom localisé)", &[]),
-    ("auras-resolved.json", "Avatars / Keshin / hissatsu (nom, description, élément)", &[]),
-    ("items-resolved.json", "Objets (catégorie, nom, description, prix, stats)", &[]),
-    ("trophies-resolved.json", "Succès (nom, description, condition de déblocage)", &[]),
-    ("quests-resolved.json", "Quêtes (titre, phase, type, image)", &[]),
-    ("shops-resolved.json", "Boutiques (nom, inventaire)", &["items[]→items"]),
+    (
+        "auras-resolved.json",
+        "Avatars / Keshin / hissatsu (nom, description, élément)",
+        &[],
+    ),
+    (
+        "items-resolved.json",
+        "Objets (catégorie, nom, description, prix, stats)",
+        &[],
+    ),
+    (
+        "trophies-resolved.json",
+        "Succès (nom, description, condition de déblocage)",
+        &[],
+    ),
+    (
+        "quests-resolved.json",
+        "Quêtes (titre, phase, type, image)",
+        &[],
+    ),
+    (
+        "shops-resolved.json",
+        "Boutiques (nom, inventaire)",
+        &["items[]→items"],
+    ),
 ];
 
 fn main() {
@@ -28,8 +52,13 @@ fn main() {
             .and_then(|t| serde_json::from_str::<serde_json::Value>(&t).ok())
             .map(|v| {
                 (
-                    v.get("schema").and_then(|s| s.as_str()).unwrap_or("?").to_string(),
-                    v.get("count").and_then(serde_json::Value::as_u64).unwrap_or(0),
+                    v.get("schema")
+                        .and_then(|s| s.as_str())
+                        .unwrap_or("?")
+                        .to_string(),
+                    v.get("count")
+                        .and_then(serde_json::Value::as_u64)
+                        .unwrap_or(0),
                 )
             })
             .unwrap_or_else(|| ("(absent — lancer export_*)".into(), 0));
@@ -56,6 +85,8 @@ fn main() {
     std::fs::write(&out, &txt).unwrap_or_else(|e| panic!("écriture {} : {e}", out.display()));
     eprintln!(
         "✓ export-manifest: {} bases, {total} entrées → {} ({} octets)",
-        manifest["databaseCount"], out.display(), txt.len()
+        manifest["databaseCount"],
+        out.display(),
+        txt.len()
     );
 }

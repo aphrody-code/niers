@@ -234,8 +234,7 @@ fn bmc_fixture_tex_base_path() {
     assert_eq!(cfg.tex_base_paths.len(), 1, "1 TexBasePath");
     // m_TexBasePathList[0].basePath — JSON réel ligne 7
     assert_eq!(
-        cfg.tex_base_paths[0].base_path,
-        "#/menu/220_img/bookmark_img/<LG>/",
+        cfg.tex_base_paths[0].base_path, "#/menu/220_img/bookmark_img/<LG>/",
         "basePath = '#/menu/220_img/bookmark_img/<LG>/'"
     );
 }
@@ -251,10 +250,22 @@ fn bmc_fixture_folder_item_0_champs() {
     let cfg = parse_info_bookmark_config(&fixture_info_bookmark());
     let item = &cfg.folder_items[0];
     // m_BookmarkFolderItemList[0] — JSON réel lignes 17-26
-    assert_eq!(item.search_word_id, BFI_SEARCH_WORD_ID_0, "searchWordId[0] = 0x03E43591");
-    assert_eq!(item.word_text_id, BFI_WORD_TEXT_ID_0, "wordTextId[0] = 0xD21CE615");
-    assert_eq!(item.desc_text_id, BFI_DESC_TEXT_ID_0, "descTextId[0] = 0x917DEE71");
-    assert_eq!(item.thumbnail_tex_name, BFI_THUMB_NAME_0, "thumbnailTexName[0] = 0x269EB7CF");
+    assert_eq!(
+        item.search_word_id, BFI_SEARCH_WORD_ID_0,
+        "searchWordId[0] = 0x03E43591"
+    );
+    assert_eq!(
+        item.word_text_id, BFI_WORD_TEXT_ID_0,
+        "wordTextId[0] = 0xD21CE615"
+    );
+    assert_eq!(
+        item.desc_text_id, BFI_DESC_TEXT_ID_0,
+        "descTextId[0] = 0x917DEE71"
+    );
+    assert_eq!(
+        item.thumbnail_tex_name, BFI_THUMB_NAME_0,
+        "thumbnailTexName[0] = 0x269EB7CF"
+    );
     assert_eq!(
         item.thumbnail_tex_file_name, "bookmark_img01_s01.g4tx",
         "thumbnailTexFileName[0]"
@@ -270,8 +281,14 @@ fn bmc_fixture_bookmark_data_0_champs() {
     // m_InfoBookmarkDataList[0] — JSON réel lignes 518-529
     assert_eq!(bk.bookmark_id, BMK_ID_0, "bookmarkId[0] = 0x2E2C6020");
     assert_eq!(bk.base_no, 0, "baseNo[0] = 0");
-    assert_eq!(bk.folder_name_id, BMK_FOLDER_NAME_ID_0, "folderNameId[0] = 0x01812C2A");
-    assert_eq!(bk.thumbnail_tex_name, BMK_THUMB_NAME_0, "thumbnailTexName = 0x31E45382");
+    assert_eq!(
+        bk.folder_name_id, BMK_FOLDER_NAME_ID_0,
+        "folderNameId[0] = 0x01812C2A"
+    );
+    assert_eq!(
+        bk.thumbnail_tex_name, BMK_THUMB_NAME_0,
+        "thumbnailTexName = 0x31E45382"
+    );
     assert_eq!(
         bk.thumbnail_tex_file_name, "bookmark_img01_l01.g4tx",
         "thumbnailTexFileName = 'bookmark_img01_l01.g4tx'"
@@ -305,10 +322,8 @@ fn bmc_fixture_find_folder_item() {
 
 // ─── Tests sur fichiers réels (skip silencieux si absents) ───────────────────
 
-const REAL_SEARCH_WORD: &str =
-    "search_word/search_word_config.cfg.bin.json";
-const REAL_INFO_BOOKMARK: &str =
-    "search_word/info_bookmark_config_0.00.00.cfg.bin.json";
+const REAL_SEARCH_WORD: &str = "search_word/search_word_config.cfg.bin.json";
+const REAL_INFO_BOOKMARK: &str = "search_word/info_bookmark_config_0.00.00.cfg.bin.json";
 
 fn load_json(path: &str) -> Option<serde_json::Value> {
     let path = common::chemin(path)?;
@@ -318,7 +333,10 @@ fn load_json(path: &str) -> Option<serde_json::Value> {
     }
     let content = std::fs::read_to_string(&path)
         .unwrap_or_else(|e| panic!("Impossible de lire {}: {e}", path.display()));
-    Some(serde_json::from_str(&content).unwrap_or_else(|e| panic!("JSON invalide {}: {e}", path.display())))
+    Some(
+        serde_json::from_str(&content)
+            .unwrap_or_else(|e| panic!("JSON invalide {}: {e}", path.display())),
+    )
 }
 
 // — search_word_config —
@@ -422,8 +440,7 @@ fn real_file_bmc_tex_base_path() {
     assert_eq!(cfg.tex_base_paths.len(), 1, "1 TexBasePath");
     // m_TexBasePathList[0].basePath — JSON ligne 7
     assert_eq!(
-        cfg.tex_base_paths[0].base_path,
-        "#/menu/220_img/bookmark_img/<LG>/",
+        cfg.tex_base_paths[0].base_path, "#/menu/220_img/bookmark_img/<LG>/",
         "basePath = '#/menu/220_img/bookmark_img/<LG>/'"
     );
 }
@@ -435,7 +452,11 @@ fn real_file_bmc_folder_items_compte() {
     };
     let cfg = parse_info_bookmark_config(&root);
     // m_BookmarkFolderItemList : 55 entrées
-    assert_eq!(cfg.folder_items.len(), 55, "m_BookmarkFolderItemList : 55 entrées");
+    assert_eq!(
+        cfg.folder_items.len(),
+        55,
+        "m_BookmarkFolderItemList : 55 entrées"
+    );
 }
 
 #[test]
@@ -447,10 +468,22 @@ fn real_file_bmc_folder_item_0() {
     let item = &cfg.folder_items[0];
 
     // m_BookmarkFolderItemList[0] — JSON réel lignes 17-26
-    assert_eq!(item.search_word_id, BFI_SEARCH_WORD_ID_0, "searchWordId[0] = 0x03E43591");
-    assert_eq!(item.word_text_id, BFI_WORD_TEXT_ID_0, "wordTextId[0] = 0xD21CE615");
-    assert_eq!(item.desc_text_id, BFI_DESC_TEXT_ID_0, "descTextId[0] = 0x917DEE71");
-    assert_eq!(item.thumbnail_tex_name, BFI_THUMB_NAME_0, "thumbnailTexName[0] = 0x269EB7CF");
+    assert_eq!(
+        item.search_word_id, BFI_SEARCH_WORD_ID_0,
+        "searchWordId[0] = 0x03E43591"
+    );
+    assert_eq!(
+        item.word_text_id, BFI_WORD_TEXT_ID_0,
+        "wordTextId[0] = 0xD21CE615"
+    );
+    assert_eq!(
+        item.desc_text_id, BFI_DESC_TEXT_ID_0,
+        "descTextId[0] = 0x917DEE71"
+    );
+    assert_eq!(
+        item.thumbnail_tex_name, BFI_THUMB_NAME_0,
+        "thumbnailTexName[0] = 0x269EB7CF"
+    );
     assert_eq!(
         item.thumbnail_tex_file_name, "bookmark_img01_s01.g4tx",
         "thumbnailTexFileName[0]"
@@ -466,7 +499,11 @@ fn real_file_bmc_bookmarks_compte() {
     };
     let cfg = parse_info_bookmark_config(&root);
     // m_InfoBookmarkDataList : 11 entrées
-    assert_eq!(cfg.bookmarks.len(), 11, "m_InfoBookmarkDataList : 11 entrées");
+    assert_eq!(
+        cfg.bookmarks.len(),
+        11,
+        "m_InfoBookmarkDataList : 11 entrées"
+    );
 }
 
 #[test]
@@ -480,8 +517,14 @@ fn real_file_bmc_bookmark_0() {
     // m_InfoBookmarkDataList[0] — JSON réel lignes 518-529
     assert_eq!(bk.bookmark_id, BMK_ID_0, "bookmarkId[0] = 0x2E2C6020");
     assert_eq!(bk.base_no, 0, "baseNo[0] = 0");
-    assert_eq!(bk.folder_name_id, BMK_FOLDER_NAME_ID_0, "folderNameId[0] = 0x01812C2A");
-    assert_eq!(bk.thumbnail_tex_name, BMK_THUMB_NAME_0, "thumbnailTexName = 0x31E45382");
+    assert_eq!(
+        bk.folder_name_id, BMK_FOLDER_NAME_ID_0,
+        "folderNameId[0] = 0x01812C2A"
+    );
+    assert_eq!(
+        bk.thumbnail_tex_name, BMK_THUMB_NAME_0,
+        "thumbnailTexName = 0x31E45382"
+    );
     assert_eq!(
         bk.thumbnail_tex_file_name, "bookmark_img01_l01.g4tx",
         "thumbnailTexFileName = 'bookmark_img01_l01.g4tx'"
@@ -500,7 +543,11 @@ fn real_file_bmc_bookmark_last() {
 
     // m_InfoBookmarkDataList[10] — JSON réel
     assert_eq!(bk.base_no, 10, "baseNo[10] = 10");
-    assert_eq!(bk.bookmark_id, HashId(0x3737_5161), "bookmarkId[10] = 0x37375161");
+    assert_eq!(
+        bk.bookmark_id,
+        HashId(0x3737_5161),
+        "bookmarkId[10] = 0x37375161"
+    );
     // bookmarkFolderItemList = [48, 7]
     assert_eq!(bk.folder_item_offset, 48, "folder_item_offset[10] = 48");
     assert_eq!(bk.folder_item_count, 7, "folder_item_count[10] = 7");
@@ -516,5 +563,8 @@ fn real_file_bmc_folder_items_of_resolu() {
     let items = cfg.folder_items_of(bk);
     // Les 9 premiers folder_items
     assert_eq!(items.len(), 9, "folder_items_of bookmark[0] = 9 éléments");
-    assert_eq!(items[0].search_word_id, BFI_SEARCH_WORD_ID_0, "items[0] = 0x03E43591");
+    assert_eq!(
+        items[0].search_word_id, BFI_SEARCH_WORD_ID_0,
+        "items[0] = 0x03E43591"
+    );
 }

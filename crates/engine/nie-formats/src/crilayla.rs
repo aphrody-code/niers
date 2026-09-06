@@ -83,7 +83,10 @@ pub fn has_magic(buf: &[u8]) -> bool {
 pub fn decompress(input: &[u8]) -> Result<Vec<u8>, FormatError> {
     // Vérification de longueur minimale.
     if input.len() < MIN_FILE_SIZE {
-        return Err(FormatError::TooShort { got: input.len(), need: MIN_FILE_SIZE });
+        return Err(FormatError::TooShort {
+            got: input.len(),
+            need: MIN_FILE_SIZE,
+        });
     }
 
     // Vérification du magic.
@@ -197,7 +200,9 @@ pub fn decompress(input: &[u8]) -> Result<Vec<u8>, FormatError> {
                 .checked_add(offset)
                 .ok_or(FormatError::Corrupt("CRILAYLA : overflow backref src"))?;
             if src_end > total_size {
-                return Err(FormatError::Corrupt("CRILAYLA : backref source hors limites"));
+                return Err(FormatError::Corrupt(
+                    "CRILAYLA : backref source hors limites",
+                ));
             }
 
             if offset >= length {
@@ -239,14 +244,19 @@ impl BitReader {
     /// Dans le C# : `compressedDataPtr = uncompressedDataPtr` (pointe sur le raw block),
     /// `bitsTillNextByte = 0`. Les premiers appels reculeront vers `raw_block_start - 1`.
     fn new(raw_block_start: usize, _input: &[u8]) -> Self {
-        Self { ptr: raw_block_start, bits_left: 0 }
+        Self {
+            ptr: raw_block_start,
+            bits_left: 0,
+        }
     }
 
     /// `GetNextBit` : lit 1 bit. Si épuisé (`bits_left == 0`), recule et charge l'octet suivant.
     fn get_next_bit(&mut self, input: &[u8]) -> Result<u8, FormatError> {
         if self.bits_left == 0 {
             if self.ptr == 0x10 {
-                return Err(FormatError::Corrupt("CRILAYLA : bitstream épuisé (get_next_bit)"));
+                return Err(FormatError::Corrupt(
+                    "CRILAYLA : bitstream épuisé (get_next_bit)",
+                ));
             }
             self.ptr -= 1;
             self.bits_left = 7;
@@ -271,7 +281,9 @@ impl BitReader {
     /// ```
     fn read8(&mut self, input: &[u8]) -> Result<u8, FormatError> {
         if self.ptr == 0x10 {
-            return Err(FormatError::Corrupt("CRILAYLA : bitstream épuisé (read8 avant recul)"));
+            return Err(FormatError::Corrupt(
+                "CRILAYLA : bitstream épuisé (read8 avant recul)",
+            ));
         }
         self.ptr -= 1;
         if self.bits_left != 0 {
@@ -315,7 +327,9 @@ impl BitReader {
             // bits_left == 1 : 1 bit de l'octet courant + 1 bit du suivant.
             let high = input[self.ptr] & 1;
             if self.ptr == 0x10 {
-                return Err(FormatError::Corrupt("CRILAYLA : bitstream épuisé (read2 cross)"));
+                return Err(FormatError::Corrupt(
+                    "CRILAYLA : bitstream épuisé (read2 cross)",
+                ));
             }
             self.ptr -= 1;
             let low = (input[self.ptr] >> 7) & 1;
@@ -332,7 +346,9 @@ impl BitReader {
         // Charger si épuisé.
         if self.bits_left == 0 {
             if self.ptr == 0x10 {
-                return Err(FormatError::Corrupt("CRILAYLA : bitstream épuisé (read_max8 init)"));
+                return Err(FormatError::Corrupt(
+                    "CRILAYLA : bitstream épuisé (read_max8 init)",
+                ));
             }
             self.ptr -= 1;
             self.bits_left = 8;
@@ -349,7 +365,9 @@ impl BitReader {
 
         // Croisement nécessaire (bits_left était < bit_count).
         if self.ptr == 0x10 {
-            return Err(FormatError::Corrupt("CRILAYLA : bitstream épuisé (read_max8 cross)"));
+            return Err(FormatError::Corrupt(
+                "CRILAYLA : bitstream épuisé (read_max8 cross)",
+            ));
         }
         self.ptr -= 1;
         self.bits_left = 8;
@@ -369,7 +387,9 @@ impl BitReader {
         // Premier octet.
         if self.bits_left == 0 {
             if self.ptr == 0x10 {
-                return Err(FormatError::Corrupt("CRILAYLA : bitstream épuisé (read13 init)"));
+                return Err(FormatError::Corrupt(
+                    "CRILAYLA : bitstream épuisé (read13 init)",
+                ));
             }
             self.ptr -= 1;
             self.bits_left = 8;
@@ -377,19 +397,29 @@ impl BitReader {
 
         let take1 = self.bits_left.min(bit_count);
         // take1 peut valoir 8 : utiliser u16 pour éviter l'overflow de (1u8 << 8).
-        let mask1 = if take1 >= 8 { 0xFFu8 } else { (1u8 << take1) - 1 };
+        let mask1 = if take1 >= 8 {
+            0xFFu8
+        } else {
+            (1u8 << take1) - 1
+        };
         let result1 = (input[self.ptr] >> (self.bits_left - take1)) & mask1;
         bit_count -= take1;
 
         // Avancer vers l'octet suivant.
         self.bits_left = 8;
         if self.ptr == 0x10 {
-            return Err(FormatError::Corrupt("CRILAYLA : bitstream épuisé (read13 octet 2)"));
+            return Err(FormatError::Corrupt(
+                "CRILAYLA : bitstream épuisé (read13 octet 2)",
+            ));
         }
         self.ptr -= 1;
 
         let take2 = self.bits_left.min(bit_count);
-        let mask2 = if take2 >= 8 { 0xFFu8 } else { (1u8 << take2) - 1 };
+        let mask2 = if take2 >= 8 {
+            0xFFu8
+        } else {
+            (1u8 << take2) - 1
+        };
         let result2 = (input[self.ptr] >> (self.bits_left - take2)) & mask2;
         bit_count -= take2;
 
@@ -403,12 +433,18 @@ impl BitReader {
         // Troisième octet si nécessaire.
         self.bits_left = 8;
         if self.ptr == 0x10 {
-            return Err(FormatError::Corrupt("CRILAYLA : bitstream épuisé (read13 octet 3)"));
+            return Err(FormatError::Corrupt(
+                "CRILAYLA : bitstream épuisé (read13 octet 3)",
+            ));
         }
         self.ptr -= 1;
 
         let take3 = bit_count;
-        let mask3: u16 = if take3 >= 16 { 0xFFFF } else { (1u16 << take3) - 1 };
+        let mask3: u16 = if take3 >= 16 {
+            0xFFFF
+        } else {
+            (1u16 << take3) - 1
+        };
         result = (result << take3) | ((input[self.ptr] >> (self.bits_left - take3)) as u16 & mask3);
         self.bits_left -= take3;
         Ok(result)
@@ -455,7 +491,7 @@ mod tests {
         // Fichier CRILAYLA avec uncompressed_size = 0, header_offset = 0.
         let mut buf = alloc::vec![0u8; 0x110];
         buf[0..8].copy_from_slice(b"CRILAYLA");
-        buf[8..12].copy_from_slice(&0u32.to_le_bytes());  // uncompressed_size = 0
+        buf[8..12].copy_from_slice(&0u32.to_le_bytes()); // uncompressed_size = 0
         buf[12..16].copy_from_slice(&0u32.to_le_bytes()); // header_offset = 0
         for b in &mut buf[0x10..0x110] {
             *b = 0xAB;
@@ -531,7 +567,11 @@ mod tests {
 
     impl BitWriter {
         fn new() -> Self {
-            Self { bytes: Vec::new(), current: 0, bits_used: 0 }
+            Self {
+                bytes: Vec::new(),
+                current: 0,
+                bits_used: 0,
+            }
         }
 
         /// Émet un bit (MSB-first dans chaque octet).
@@ -617,7 +657,10 @@ mod tests {
         let buf = build_literal_crilayla(&[0x42], 0xAA);
         let result = decompress(&buf).expect("1 octet littéral doit décompresser");
         assert_eq!(result.len(), 0x100 + 1);
-        assert!(result[..0x100].iter().all(|&b| b == 0xAA), "raw block incorrect");
+        assert!(
+            result[..0x100].iter().all(|&b| b == 0xAA),
+            "raw block incorrect"
+        );
         assert_eq!(result[0x100], 0x42, "octet littéral incorrect");
     }
 
@@ -628,8 +671,15 @@ mod tests {
         let result = decompress(&buf).expect("4 octets littéraux doivent décompresser");
 
         assert_eq!(result.len(), 0x100 + 4);
-        assert!(result[..0x100].iter().all(|&b| b == 0xAA), "raw block incorrect");
-        assert_eq!(&result[0x100..], payload as &[u8], "payload décompressé incorrect");
+        assert!(
+            result[..0x100].iter().all(|&b| b == 0xAA),
+            "raw block incorrect"
+        );
+        assert_eq!(
+            &result[0x100..],
+            payload as &[u8],
+            "payload décompressé incorrect"
+        );
     }
 
     #[test]
@@ -739,9 +789,9 @@ mod tests {
         bw.push_bit(0);
         bw.push_bits(0x44, 8);
         // Backref off_raw=1 (offset=4), len=4 (lvl2=1)
-        bw.push_bit(1);           // flag = backref
-        bw.push_bits(1, 13);      // off_raw = 1 → offset = 4
-        bw.push_bits(1, 2);       // lvl2 = 1 → length = 3 + 1 = 4 (< max 3, pas lvl3)
+        bw.push_bit(1); // flag = backref
+        bw.push_bits(1, 13); // off_raw = 1 → offset = 4
+        bw.push_bits(1, 2); // lvl2 = 1 → length = 3 + 1 = 4 (< max 3, pas lvl3)
 
         let mut bitstream = bw.finish();
         // Inverser : le premier bit émis doit être lu EN PREMIER (à raw_block_start-1).
@@ -769,7 +819,10 @@ mod tests {
         //   [0x44, 0x43, 0x42, 0x41, 0x41, 0x42, 0x43, 0x44]
         // (4 lits écrits à rebours aux positions 0x107..0x104, puis backref aux positions 0x103..0x100)
         assert_eq!(result.len(), 0x100 + 8, "taille incorrecte");
-        assert!(result[..0x100].iter().all(|&b| b == 0xBB), "raw block incorrect");
+        assert!(
+            result[..0x100].iter().all(|&b| b == 0xBB),
+            "raw block incorrect"
+        );
         let payload = &result[0x100..];
         // Les 4 littéraux sont écrits D'ABORD (write_pos décroît depuis total_size-1) :
         //   write_pos=0x107 → lit 0x41 ; [0x106] → 0x42 ; [0x105] → 0x43 ; [0x104] → 0x44
@@ -799,13 +852,16 @@ mod tests {
 
         let mut bw = BitWriter::new();
         // 3 lits 0xAB (encodés dans l'ordre : premier lit = lit le plus haut write_pos)
-        bw.push_bit(0); bw.push_bits(0xAB, 8);
-        bw.push_bit(0); bw.push_bits(0xAB, 8);
-        bw.push_bit(0); bw.push_bits(0xAB, 8);
+        bw.push_bit(0);
+        bw.push_bits(0xAB, 8);
+        bw.push_bit(0);
+        bw.push_bits(0xAB, 8);
+        bw.push_bit(0);
+        bw.push_bits(0xAB, 8);
         // Backref off_raw=0 (offset=3), len=3 (lvl2=0)
         bw.push_bit(1);
-        bw.push_bits(0, 13);  // off_raw=0 → offset=3
-        bw.push_bits(0, 2);   // lvl2=0 → length=3+0=3
+        bw.push_bits(0, 13); // off_raw=0 → offset=3
+        bw.push_bits(0, 2); // lvl2=0 → length=3+0=3
 
         let mut bs = bw.finish();
         bs.reverse();
@@ -821,7 +877,10 @@ mod tests {
         let result = decompress(&buf).expect("run-length via backref doit décompresser");
         assert_eq!(result.len(), 0x100 + 6);
         assert!(result[..0x100].iter().all(|&b| b == 0xCC));
-        assert!(result[0x100..].iter().all(|&b| b == 0xAB),
-            "run-length incorrect: {:?}", &result[0x100..]);
+        assert!(
+            result[0x100..].iter().all(|&b| b == 0xAB),
+            "run-length incorrect: {:?}",
+            &result[0x100..]
+        );
     }
 }

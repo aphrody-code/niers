@@ -32,29 +32,66 @@ fn to_iecode(siblings: &[CfgEntry]) -> Vec<serde_json::Value> {
 }
 
 fn load(vfs: &Vfs, pred: impl Fn(&str) -> bool, what: &str) -> serde_json::Value {
-    let path = vfs.iter().map(|(p, _)| p.to_string()).filter(|p| pred(p)).min().unwrap_or_else(|| panic!("{what} introuvable"));
+    let path = vfs
+        .iter()
+        .map(|(p, _)| p.to_string())
+        .filter(|p| pred(p))
+        .min()
+        .unwrap_or_else(|| panic!("{what} introuvable"));
     eprintln!("  {path}");
     let file = cfgbin::parse_t2b(&vfs.read(&path).expect("read")).expect("parse");
     json!({ "entries": to_iecode(&file.entries) })
 }
 
 fn main() {
-    let dir = nie_formats::vfs::resolve_game_dir().to_string_lossy().into_owned();
+    let dir = nie_formats::vfs::resolve_game_dir()
+        .to_string_lossy()
+        .into_owned();
     let mut vfs = Vfs::new();
-    vfs.init(Path::new(&dir).join("data").as_path()).expect("vfs init");
+    vfs.init(Path::new(&dir).join("data").as_path())
+        .expect("vfs init");
 
-    let cfg = load(&vfs, |p| p.contains("/gamedata/") && p.rsplit('/').next().is_some_and(|b| b.starts_with("trophy_config") && b.ends_with(".cfg.bin")), "trophy_config");
+    let cfg = load(
+        &vfs,
+        |p| {
+            p.contains("/gamedata/")
+                && p.rsplit('/')
+                    .next()
+                    .is_some_and(|b| b.starts_with("trophy_config") && b.ends_with(".cfg.bin"))
+        },
+        "trophy_config",
+    );
     let config = nie_data::trophy::parse_trophy_config(&cfg);
     eprintln!("[trophy] trophées = {}", config.infos.len());
     assert!(!config.infos.is_empty());
 
-    let text = nie_data::text::parse_text_file(&load(&vfs, |p| p.contains("/fr/") && p.rsplit('/').next().is_some_and(|b| b.starts_with("trophy_text") && b.ends_with(".cfg.bin")), "trophy_text fr"));
+    let text = nie_data::text::parse_text_file(&load(
+        &vfs,
+        |p| {
+            p.contains("/fr/")
+                && p.rsplit('/')
+                    .next()
+                    .is_some_and(|b| b.starts_with("trophy_text") && b.ends_with(".cfg.bin"))
+        },
+        "trophy_text fr",
+    ));
     eprintln!("[trophy_text fr] entrées = {}", text.len());
 
     use nie_data::trophy::{decode_unlock, resolve_description, resolve_name};
-    let named = config.infos.iter().filter(|t| resolve_name(t, &text).is_some()).count();
-    let described = config.infos.iter().filter(|t| resolve_description(t, &text).is_some()).count();
-    eprintln!("noms résolus = {named}/{} ; descriptions = {described}", config.infos.len());
+    let named = config
+        .infos
+        .iter()
+        .filter(|t| resolve_name(t, &text).is_some())
+        .count();
+    let described = config
+        .infos
+        .iter()
+        .filter(|t| resolve_description(t, &text).is_some())
+        .count();
+    eprintln!(
+        "noms résolus = {named}/{} ; descriptions = {described}",
+        config.infos.len()
+    );
     assert!(named > 0, "au moins un nom de trophée résolu");
 
     // Distribution des types de condition de déblocage (open_cond décodé).
@@ -71,10 +108,23 @@ fn main() {
     }
     eprintln!("conditions de déblocage = {kinds:?}");
 
-    for t in config.infos.iter().filter(|t| resolve_name(t, &text).is_some()).take(5) {
+    for t in config
+        .infos
+        .iter()
+        .filter(|t| resolve_name(t, &text).is_some())
+        .take(5)
+    {
         let n = resolve_name(t, &text).unwrap_or("");
         let d = resolve_description(t, &text).map(|s| s.chars().take(45).collect::<String>());
-        eprintln!("  trophy {} ({}) → {:?}  desc={:?}", t.trophy_id.to_hex(), t.code, n, d);
+        eprintln!(
+            "  trophy {} ({}) → {:?}  desc={:?}",
+            t.trophy_id.to_hex(),
+            t.code,
+            n,
+            d
+        );
     }
-    eprintln!("✓ END-TO-END OK : {named} noms / {described} descriptions de trophées résolus + conditions décodées");
+    eprintln!(
+        "✓ END-TO-END OK : {named} noms / {described} descriptions de trophées résolus + conditions décodées"
+    );
 }

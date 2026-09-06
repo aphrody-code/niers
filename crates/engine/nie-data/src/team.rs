@@ -43,7 +43,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use serde_json::Value;
 
-use crate::cfgbin::{owned, Node};
+use crate::cfgbin::{Node, owned};
 use crate::hash::HashId;
 
 /// Préfixe de la liste conteneur (`ENJOY_MODE_TEAM_INFO_LIST_BEG`, suffixe d'index iecode).

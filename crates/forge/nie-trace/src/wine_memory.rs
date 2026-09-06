@@ -29,8 +29,19 @@ fn errno_hint(errno: i32) -> &'static str {
 
 fn err_from_errno(pid: i32, addr: u64, len: usize, is_write: bool) -> MemError {
     let errno = std::io::Error::last_os_error().raw_os_error().unwrap_or(0);
-    let op = if is_write { "process_vm_writev" } else { "process_vm_readv" };
-    MemError::Syscall { op, pid, addr, len, errno, hint: errno_hint(errno) }
+    let op = if is_write {
+        "process_vm_writev"
+    } else {
+        "process_vm_readv"
+    };
+    MemError::Syscall {
+        op,
+        pid,
+        addr,
+        len,
+        errno,
+        hint: errno_hint(errno),
+    }
 }
 
 /// Lit jusqu'à `dest.len()` octets à `addr` du process `pid`. Ne stoppe pas la cible.
@@ -38,8 +49,14 @@ pub fn read(pid: i32, addr: u64, dest: &mut [u8]) -> Result<usize, MemError> {
     if dest.is_empty() {
         return Ok(0);
     }
-    let local = libc::iovec { iov_base: dest.as_mut_ptr().cast::<libc::c_void>(), iov_len: dest.len() };
-    let remote = libc::iovec { iov_base: addr as usize as *mut libc::c_void, iov_len: dest.len() };
+    let local = libc::iovec {
+        iov_base: dest.as_mut_ptr().cast::<libc::c_void>(),
+        iov_len: dest.len(),
+    };
+    let remote = libc::iovec {
+        iov_base: addr as usize as *mut libc::c_void,
+        iov_len: dest.len(),
+    };
     // SAFETY: `local.iov_base` pointe sur `dest` (valide pour écriture, `iov_len` == dest.len()).
     // `remote` n'est qu'une (adresse, longueur) transmise au noyau ; il copie au plus dest.len()
     // octets de la cible vers `dest`, sans déréférencer `remote` côté appelant.
@@ -55,8 +72,14 @@ pub fn write(pid: i32, addr: u64, src: &[u8]) -> Result<usize, MemError> {
     if src.is_empty() {
         return Ok(0);
     }
-    let local = libc::iovec { iov_base: src.as_ptr() as *mut libc::c_void, iov_len: src.len() };
-    let remote = libc::iovec { iov_base: addr as usize as *mut libc::c_void, iov_len: src.len() };
+    let local = libc::iovec {
+        iov_base: src.as_ptr() as *mut libc::c_void,
+        iov_len: src.len(),
+    };
+    let remote = libc::iovec {
+        iov_base: addr as usize as *mut libc::c_void,
+        iov_len: src.len(),
+    };
     // SAFETY: `local.iov_base` pointe sur `src` (valide pour lecture, `iov_len` == src.len()) ;
     // process_vm_writev lit `src` et écrit au plus src.len() octets côté cible.
     let n = unsafe { libc::process_vm_writev(pid, &local, 1, &remote, 1, 0) };
@@ -83,7 +106,13 @@ pub fn parse_map_line(line: &str) -> Option<MapEntry> {
     let start = u64::from_str_radix(&range[..dash], 16).ok()?;
     let end = u64::from_str_radix(&range[dash + 1..], 16).ok()?;
     let offset = u64::from_str_radix(offset_s, 16).ok()?;
-    Some(MapEntry { start, end, perms: perms.to_owned(), offset, path })
+    Some(MapEntry {
+        start,
+        end,
+        perms: perms.to_owned(),
+        offset,
+        path,
+    })
 }
 
 /// Toutes les plages de `/proc/<pid>/maps`.
@@ -236,7 +265,8 @@ mod tests {
 
     #[test]
     fn parse_map_line_basic() {
-        let e = parse_map_line("00400000-00452000 r-xp 00000000 08:01 1234 /path/to/nie.exe").unwrap();
+        let e =
+            parse_map_line("00400000-00452000 r-xp 00000000 08:01 1234 /path/to/nie.exe").unwrap();
         assert_eq!(e.start, 0x40_0000);
         assert_eq!(e.end, 0x45_2000);
         assert_eq!(e.perms, "r-xp");
@@ -246,8 +276,14 @@ mod tests {
 
     #[test]
     fn parse_map_line_spaces_and_anon() {
-        assert_eq!(parse_map_line("7ffd0000-7ffd1000 rw-p 0 00:00 0").unwrap().path, "");
-        let s = parse_map_line("140000000-140001000 r--p 0 fd:01 42 /home/u/My Games/nie.exe").unwrap();
+        assert_eq!(
+            parse_map_line("7ffd0000-7ffd1000 rw-p 0 00:00 0")
+                .unwrap()
+                .path,
+            ""
+        );
+        let s =
+            parse_map_line("140000000-140001000 r--p 0 fd:01 42 /home/u/My Games/nie.exe").unwrap();
         assert_eq!(s.path, "/home/u/My Games/nie.exe");
     }
 
@@ -260,8 +296,20 @@ mod tests {
     #[test]
     fn find_module_base_smallest_case_insensitive() {
         let maps = vec![
-            MapEntry { start: 0x1_4000_5000, end: 0x1_4000_6000, perms: "rw-p".into(), offset: 0, path: "/g/NIE.exe".into() },
-            MapEntry { start: 0x1_4000_0000, end: 0x1_4000_1000, perms: "r--p".into(), offset: 0, path: "/g/nie.exe".into() },
+            MapEntry {
+                start: 0x1_4000_5000,
+                end: 0x1_4000_6000,
+                perms: "rw-p".into(),
+                offset: 0,
+                path: "/g/NIE.exe".into(),
+            },
+            MapEntry {
+                start: 0x1_4000_0000,
+                end: 0x1_4000_1000,
+                perms: "r--p".into(),
+                offset: 0,
+                path: "/g/nie.exe".into(),
+            },
         ];
         assert_eq!(find_module_base_in(&maps, "nie.exe"), Some(0x1_4000_0000));
         assert_eq!(find_module_base_in(&maps, "absent"), None);
@@ -325,7 +373,10 @@ mod tests {
         // /proc/self/maps non vide.
         assert!(!enumerate_regions(me).is_empty());
         // notre propre comm est retrouvable.
-        let comm = fs::read_to_string(format!("/proc/{me}/comm")).unwrap().trim().to_owned();
+        let comm = fs::read_to_string(format!("/proc/{me}/comm"))
+            .unwrap()
+            .trim()
+            .to_owned();
         assert_eq!(find_pid_by_name(&comm), Some(me));
         // base + étendue du binaire de test (son chemin /proc/self/maps contient le nom du comm).
         let base = find_module_base(me, &comm).expect("binaire de test mappé");

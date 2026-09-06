@@ -122,7 +122,14 @@ impl Zone {
     /// Les six zones, dans l'ordre de leur indice.
     #[must_use]
     pub fn toutes() -> [Self; NB_ZONES] {
-        [Self::Noir, Self::Blanc, Self::Rouge, Self::Vert, Self::Bleu, Self::Autre]
+        [
+            Self::Noir,
+            Self::Blanc,
+            Self::Rouge,
+            Self::Vert,
+            Self::Bleu,
+            Self::Autre,
+        ]
     }
 
     /// Nom court, pour l'affichage.
@@ -297,9 +304,7 @@ pub fn mesurer(largeur: u32, hauteur: u32, rgba: &[u8]) -> Option<Mesures> {
         comptes[zone.index()] += 1;
         etendre(&mut boites[zone.index()], x, y);
 
-        if a > ENCRE_ALPHA_MIN
-            && u16::from(r) + u16::from(v) + u16::from(b) < ENCRE_SOMME_MAX
-        {
+        if a > ENCRE_ALPHA_MIN && u16::from(r) + u16::from(v) + u16::from(b) < ENCRE_SOMME_MAX {
             encre += 1;
             etendre(&mut boite_encre, x, y);
         }
@@ -398,7 +403,9 @@ pub fn part_zone_brute(rgba: &[u8], zone: Zone) -> f32 {
 /// Un masque uniforme n'apporte rien : le poser en alpha efface les variations de la planche.
 #[must_use]
 pub fn canal_uniforme(rgba: &[u8]) -> bool {
-    let Some(premier) = rgba.first().copied() else { return true };
+    let Some(premier) = rgba.first().copied() else {
+        return true;
+    };
     rgba.iter().step_by(4).all(|&v| v == premier)
 }
 
@@ -546,7 +553,11 @@ impl Convention {
     #[must_use]
     pub fn deriver(couleur: &Mesures, masque: Option<&Mesures>) -> Self {
         let Some(m) = masque.filter(|m| !m.canal_uniforme()) else {
-            return if couleur.est_aplat() { Self::Aplat } else { Self::SansMasque };
+            return if couleur.est_aplat() {
+                Self::Aplat
+            } else {
+                Self::SansMasque
+            };
         };
         if !m.est_masque_de_zones() {
             return Self::Decoupe;
@@ -642,7 +653,11 @@ mod tests {
 
     /// Fabrique une image RGBA unie.
     fn unie(w: u32, h: u32, c: [u8; 4]) -> Vec<u8> {
-        c.iter().copied().cycle().take((w * h * 4) as usize).collect()
+        c.iter()
+            .copied()
+            .cycle()
+            .take((w * h * 4) as usize)
+            .collect()
     }
 
     /// Peint un rectangle dans une image RGBA.
@@ -680,7 +695,10 @@ mod tests {
             peindre(&mut msk, 16, (0, y, 16, y + 1), [(y * 16) as u8; 4]);
         }
         let masque = mesurer(16, 16, &msk).expect("mesure");
-        assert_eq!(Convention::deriver(&couleur, Some(&masque)), Convention::Decoupe);
+        assert_eq!(
+            Convention::deriver(&couleur, Some(&masque)),
+            Convention::Decoupe
+        );
     }
 
     #[test]
@@ -716,7 +734,10 @@ mod tests {
         peindre(&mut msk, 16, (0, 0, 8, 8), [0, 0, 0, 255]);
         let masque = mesurer(16, 16, &msk).expect("mesure");
 
-        assert_eq!(Convention::deriver(&couleur, Some(&masque)), Convention::FondRouge);
+        assert_eq!(
+            Convention::deriver(&couleur, Some(&masque)),
+            Convention::FondRouge
+        );
     }
 
     #[test]
@@ -736,7 +757,10 @@ mod tests {
         peindre(&mut plancher, 16, (0, 0, 2, 2), [210, 211, 211, 1]);
         let couleur = mesurer(16, 16, &plancher).expect("mesure");
         assert!(!couleur.est_aplat());
-        assert_eq!(Convention::deriver(&couleur, Some(&masque)), Convention::TraceVert);
+        assert_eq!(
+            Convention::deriver(&couleur, Some(&masque)),
+            Convention::TraceVert
+        );
     }
 
     #[test]
@@ -749,12 +773,18 @@ mod tests {
         let mut msk = unie(16, 16, [255, 0, 0, 255]);
         peindre(&mut msk, 16, (4, 4, 12, 12), [0, 0, 255, 255]);
         let masque = mesurer(16, 16, &msk).expect("mesure");
-        assert_eq!(Convention::deriver(&couleur, Some(&masque)), Convention::ZoneBleue);
+        assert_eq!(
+            Convention::deriver(&couleur, Some(&masque)),
+            Convention::ZoneBleue
+        );
 
         // Le vert prime : un masque qui porte les deux est un masque d'œil.
         peindre(&mut msk, 16, (0, 0, 16, 2), [0, 200, 0, 255]);
         let masque = mesurer(16, 16, &msk).expect("mesure");
-        assert_eq!(Convention::deriver(&couleur, Some(&masque)), Convention::TraceVert);
+        assert_eq!(
+            Convention::deriver(&couleur, Some(&masque)),
+            Convention::TraceVert
+        );
     }
 
     #[test]
@@ -770,7 +800,10 @@ mod tests {
         }
         let masque = mesurer(16, 16, &msk).expect("mesure");
         assert!(!masque.est_masque_de_zones());
-        assert_eq!(Convention::deriver(&couleur, Some(&masque)), Convention::Decoupe);
+        assert_eq!(
+            Convention::deriver(&couleur, Some(&masque)),
+            Convention::Decoupe
+        );
     }
 
     #[test]
@@ -780,7 +813,10 @@ mod tests {
         let couleur = mesurer(16, 16, &plancher).expect("mesure");
         let masque = mesurer(16, 16, &unie(16, 16, [128, 64, 64, 255])).expect("mesure");
         assert!(masque.canal_uniforme());
-        assert_eq!(Convention::deriver(&couleur, Some(&masque)), Convention::SansMasque);
+        assert_eq!(
+            Convention::deriver(&couleur, Some(&masque)),
+            Convention::SansMasque
+        );
     }
 
     #[test]

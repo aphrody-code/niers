@@ -48,7 +48,10 @@ pub fn reduire_rgba(src: &[u8], w: u32, h: u32, vers_w: u32, vers_h: u32) -> Opt
         return None;
     }
     let mut out = vec![0u8; (vers_w as usize) * (vers_h as usize) * 4];
-    let (fx, fy) = (f64::from(w) / f64::from(vers_w), f64::from(h) / f64::from(vers_h));
+    let (fx, fy) = (
+        f64::from(w) / f64::from(vers_w),
+        f64::from(h) / f64::from(vers_h),
+    );
 
     for y in 0..vers_h {
         // Bornes de la zone source couverte par ce pixel cible. Au moins un pixel, même
@@ -171,8 +174,16 @@ fn base64(src: &[u8]) -> String {
         let n = (b0 << 16) | (b1 << 8) | b2;
         out.push(T[(n >> 18) as usize & 63] as char);
         out.push(T[(n >> 12) as usize & 63] as char);
-        out.push(if bloc.len() > 1 { T[(n >> 6) as usize & 63] as char } else { '=' });
-        out.push(if bloc.len() > 2 { T[n as usize & 63] as char } else { '=' });
+        out.push(if bloc.len() > 1 {
+            T[(n >> 6) as usize & 63] as char
+        } else {
+            '='
+        });
+        out.push(if bloc.len() > 2 {
+            T[n as usize & 63] as char
+        } else {
+            '='
+        });
     }
     out
 }
@@ -202,8 +213,12 @@ impl Pet {
         let hauteur = self.manifest.atlas.height;
         // Recentrer sans jamais sortir de l'atlas : un carré qui déborde produirait un crop
         // vide, et `crop_rgba` rendrait `None` sans dire pourquoi.
-        let x = cx.saturating_sub(cote / 2).min(largeur.saturating_sub(cote));
-        let y = cy.saturating_sub(cote / 2).min(hauteur.saturating_sub(cote));
+        let x = cx
+            .saturating_sub(cote / 2)
+            .min(largeur.saturating_sub(cote));
+        let y = cy
+            .saturating_sub(cote / 2)
+            .min(hauteur.saturating_sub(cote));
         let rect = Rect {
             x,
             y,

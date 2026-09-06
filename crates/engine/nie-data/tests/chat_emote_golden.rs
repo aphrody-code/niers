@@ -19,8 +19,8 @@
 mod common;
 
 use nie_data::chat_emote::{
-    parse_chat_emote_config, parse_chat_emote_def_set_config, ChatEmoteConfig,
-    ChatEmoteDefSetConfig, SENTINEL_CONFIG,
+    ChatEmoteConfig, ChatEmoteDefSetConfig, SENTINEL_CONFIG, parse_chat_emote_config,
+    parse_chat_emote_def_set_config,
 };
 use nie_data::hash::HashId;
 use serde_json::json;
@@ -81,7 +81,10 @@ fn fixture_config_entree0() {
     assert_eq!(e.tex_file_path, SENTINEL_CONFIG);
     assert_eq!(e.tex_name, HashId::ZERO);
     assert_eq!(e.text_id, HashId(0x55FB_BA47));
-    assert!(!e.has_real_texture(), "entrée 0 : pas de texture (sentinel)");
+    assert!(
+        !e.has_real_texture(),
+        "entrée 0 : pas de texture (sentinel)"
+    );
     assert!(!e.motion_loop);
 }
 
@@ -92,7 +95,10 @@ fn fixture_config_entree_avec_texture() {
     assert_eq!(e.id, HashId(0x0738_FF66));
     assert_eq!(e.flag_idx, 100);
     assert_eq!(e.type_, 1);
-    assert_eq!(e.tex_file_path, "#/menu/220_img/stamp_img/<LG>/emote_img01_01.g4tx");
+    assert_eq!(
+        e.tex_file_path,
+        "#/menu/220_img/stamp_img/<LG>/emote_img01_01.g4tx"
+    );
     assert_eq!(e.tex_name, HashId(0x2EF8_6069));
     assert_eq!(e.motion_id, HashId(0x4A66_73E1));
     assert!(e.has_real_texture());
@@ -113,7 +119,10 @@ fn fixture_def_set_parse() {
     assert_eq!(cfg.entries[0].set_type, 0);
     assert_eq!(cfg.entries[0].page_idx, 0);
     assert_eq!(cfg.entries[0].chat_id_array, HashId(0x6AE2_3243));
-    assert_eq!(cfg.find_by_chat_id(HashId(0x0738_FF66)).unwrap().set_type, 1);
+    assert_eq!(
+        cfg.find_by_chat_id(HashId(0x0738_FF66)).unwrap().set_type,
+        1
+    );
 }
 
 #[test]
@@ -155,13 +164,17 @@ fn load(path: &str) -> Option<serde_json::Value> {
 
 #[test]
 fn real_1_03_17_compte() {
-    let Some(cfg) = load_config("1.03.17.00") else { return };
+    let Some(cfg) = load_config("1.03.17.00") else {
+        return;
+    };
     assert_eq!(cfg.entries.len(), 57, "57 emotes en 1.03.17.00");
 }
 
 #[test]
 fn real_1_03_17_entree0() {
-    let Some(cfg) = load_config("1.03.17.00") else { return };
+    let Some(cfg) = load_config("1.03.17.00") else {
+        return;
+    };
     let e = &cfg.entries[0];
     assert_eq!(e.id, HashId(0x6AE2_3243));
     assert_eq!(e.flag_idx, 0);
@@ -176,13 +189,18 @@ fn real_1_03_17_entree0() {
 
 #[test]
 fn real_1_03_17_entree27_texture() {
-    let Some(cfg) = load_config("1.03.17.00") else { return };
+    let Some(cfg) = load_config("1.03.17.00") else {
+        return;
+    };
     let e = &cfg.entries[27];
     assert_eq!(e.id, HashId(0x0738_FF66));
     assert_eq!(e.flag_idx, 100);
     assert_eq!(e.sort_id, 100);
     assert_eq!(e.type_, 1);
-    assert_eq!(e.tex_file_path, "#/menu/220_img/stamp_img/<LG>/emote_img01_01.g4tx");
+    assert_eq!(
+        e.tex_file_path,
+        "#/menu/220_img/stamp_img/<LG>/emote_img01_01.g4tx"
+    );
     assert_eq!(e.tex_name, HashId(0x2EF8_6069));
     assert_eq!(e.text_id, HashId(0x88B0_89E4));
     assert_eq!(e.motion_id, HashId(0x4A66_73E1));
@@ -191,7 +209,9 @@ fn real_1_03_17_entree27_texture() {
 
 #[test]
 fn real_1_03_17_entree35_stamp_idx() {
-    let Some(cfg) = load_config("1.03.17.00") else { return };
+    let Some(cfg) = load_config("1.03.17.00") else {
+        return;
+    };
     let e = &cfg.entries[35];
     assert_eq!(e.id, HashId(0x6DD3_C782));
     assert_eq!(e.type_, 3);
@@ -202,26 +222,35 @@ fn real_1_03_17_entree35_stamp_idx() {
 
 #[test]
 fn real_1_03_17_derniere() {
-    let Some(cfg) = load_config("1.03.17.00") else { return };
+    let Some(cfg) = load_config("1.03.17.00") else {
+        return;
+    };
     let e = &cfg.entries[56];
     assert_eq!(e.id, HashId(0x3692_2181));
     assert_eq!(e.flag_idx, 313);
     assert_eq!(e.sort_id, 313);
     assert_eq!(e.type_, 2);
-    assert_eq!(e.tex_file_path, "#/menu/220_img/stamp_img/<LG>/stamp_img02_14.g4tx");
+    assert_eq!(
+        e.tex_file_path,
+        "#/menu/220_img/stamp_img/<LG>/stamp_img02_14.g4tx"
+    );
     assert_eq!(e.tex_name, HashId(0x05D3_B25D));
 }
 
 #[test]
 fn real_1_03_17_se_toujours_zero() {
-    let Some(cfg) = load_config("1.03.17.00") else { return };
+    let Some(cfg) = load_config("1.03.17.00") else {
+        return;
+    };
     assert!(cfg.entries.iter().all(|e| e.se_id == 0 && e.se_sub_id == 0));
     assert!(cfg.entries.iter().all(|e| !e.motion_loop));
 }
 
 #[test]
 fn real_1_03_17_def_set() {
-    let Some(cfg) = load_def_set("1.03.17.00") else { return };
+    let Some(cfg) = load_def_set("1.03.17.00") else {
+        return;
+    };
     assert_eq!(cfg.entries.len(), 4, "4 jeux en 1.03.17.00");
     // 1.03.17.00 utilise le champ `type` (0..3) et non `page_idx`.
     assert_eq!(cfg.entries[0].set_type, 0);
@@ -237,7 +266,9 @@ fn real_1_03_17_def_set() {
 
 #[test]
 fn real_1_02_03_compte_et_champs() {
-    let Some(cfg) = load_config("1.02.03.00") else { return };
+    let Some(cfg) = load_config("1.02.03.00") else {
+        return;
+    };
     assert_eq!(cfg.entries.len(), 57);
     let e0 = &cfg.entries[0];
     assert_eq!(e0.id, HashId(0x6AE2_3243));
@@ -256,7 +287,9 @@ fn real_1_02_03_compte_et_champs() {
 
 #[test]
 fn real_1_02_03_def_set_page_idx() {
-    let Some(cfg) = load_def_set("1.02.03.00") else { return };
+    let Some(cfg) = load_def_set("1.02.03.00") else {
+        return;
+    };
     assert_eq!(cfg.entries.len(), 3);
     // 1.02.03.00 utilise `page_idx` (1..3), pas `type`.
     assert_eq!(cfg.entries[0].page_idx, 1);
@@ -272,7 +305,9 @@ fn real_1_02_03_def_set_page_idx() {
 
 #[test]
 fn real_0_00_00_compte_et_champs() {
-    let Some(cfg) = load_config("0.00.00") else { return };
+    let Some(cfg) = load_config("0.00.00") else {
+        return;
+    };
     assert_eq!(cfg.entries.len(), 8, "8 emotes en 0.00.00");
     let e0 = &cfg.entries[0];
     assert_eq!(e0.id, HashId(0x6AE2_3243));
@@ -291,7 +326,9 @@ fn real_0_00_00_compte_et_champs() {
 
 #[test]
 fn real_0_00_00_def_set_page_idx() {
-    let Some(cfg) = load_def_set("0.00.00") else { return };
+    let Some(cfg) = load_def_set("0.00.00") else {
+        return;
+    };
     assert_eq!(cfg.entries.len(), 3);
     assert_eq!(cfg.entries[0].page_idx, 1);
     assert_eq!(cfg.entries[0].chat_id_array, HashId(0x6AE2_3243));

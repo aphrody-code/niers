@@ -24,7 +24,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use serde_json::Value;
 
-use crate::cfgbin::{owned, walk_named, Node};
+use crate::cfgbin::{Node, owned, walk_named};
 use crate::hash::HashId;
 use crate::skill::{SkillCategory, SkillElement, SkillInfo};
 
@@ -160,19 +160,11 @@ impl AuraCmd {
         // Sous-config : Int non nuls, hash non nuls.
         let int_opt = |i: usize| -> Option<i64> {
             let v = node.int(i);
-            if v != 0 {
-                Some(v)
-            } else {
-                None
-            }
+            if v != 0 { Some(v) } else { None }
         };
         let hash_opt = |i: usize| -> Option<HashId> {
             let h = node.hash(i);
-            if h.is_zero() {
-                None
-            } else {
-                Some(h)
-            }
+            if h.is_zero() { None } else { Some(h) }
         };
 
         let config = AuraConfig {

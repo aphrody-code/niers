@@ -17,7 +17,9 @@ fn load(rel: &str) -> Option<serde_json::Value> {
 
 #[test]
 fn fbtl_cro_phase_set_conditions() {
-    let Some(root) = load("soccer/game/fbtl_cro08_030_010_phase_set_0.00.00.cfg.bin.json") else { return };
+    let Some(root) = load("soccer/game/fbtl_cro08_030_010_phase_set_0.00.00.cfg.bin.json") else {
+        return;
+    };
     let cfg = parse_phase_set(&root);
     assert_eq!(cfg.items.len() as i64, cfg.count);
     assert!(!cfg.items.is_empty());
@@ -37,7 +39,9 @@ fn dispatch_typed_suffixe() {
     // signale, et le retirer casse le build `--features serde`.
     use nie_data::typed::{decode_by_key, family_key};
     use nie_data::unlock_condition::UnlockType;
-    let Some(root) = load("soccer/game/fbtl_cro08_030_010_phase_set_0.00.00.cfg.bin.json") else { return };
+    let Some(root) = load("soccer/game/fbtl_cro08_030_010_phase_set_0.00.00.cfg.bin.json") else {
+        return;
+    };
     let key = family_key("fbtl_cro08_030_010_phase_set_0.00.00.cfg.bin");
     assert!(key.ends_with("_phase_set"), "clé={key}");
     let (label, json) = decode_by_key(&key, &root).expect("dispatch câblé");

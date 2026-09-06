@@ -40,7 +40,7 @@ mod common;
 
 use nie_data::hash::HashId;
 use nie_data::user_name_plate::{
-    parse_user_name_plate_config, UserNamePlateConfig, UserNamePlateInfo,
+    UserNamePlateConfig, UserNamePlateInfo, parse_user_name_plate_config,
 };
 use serde_json::json;
 
@@ -297,8 +297,9 @@ fn real_file_polices_distinctes() {
     // Deux styles de police observés dans le dump.
     let a = HashId(0x66A0_930A);
     let b = HashId(0x72A1_CF45);
-    assert!(cfg
-        .entries
-        .iter()
-        .all(|e| e.name_font_style == a || e.name_font_style == b));
+    assert!(
+        cfg.entries
+            .iter()
+            .all(|e| e.name_font_style == a || e.name_font_style == b)
+    );
 }

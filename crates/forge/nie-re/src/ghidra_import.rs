@@ -25,7 +25,7 @@
 //! (`FUN_<hex>`) sont rejetés — ils n'apprennent rien.
 
 use anyhow::{Context, Result};
-use nie_index::{rusqlite, Db};
+use nie_index::{Db, rusqlite};
 use tracing::info;
 
 /// Statistiques de l'ingestion.
@@ -65,8 +65,13 @@ fn is_structural(name_source: &str) -> bool {
 /// # Errors
 ///
 /// Échoue si le fichier est illisible ou sur toute erreur SQLite.
-pub fn ingest_ghidra_csv(db: &mut Db, bin: i64, csv: &std::path::Path) -> Result<GhidraImportStats> {
-    let text = std::fs::read_to_string(csv).with_context(|| format!("lecture {}", csv.display()))?;
+pub fn ingest_ghidra_csv(
+    db: &mut Db,
+    bin: i64,
+    csv: &std::path::Path,
+) -> Result<GhidraImportStats> {
+    let text =
+        std::fs::read_to_string(csv).with_context(|| format!("lecture {}", csv.display()))?;
     let mut stats = GhidraImportStats::default();
 
     let tx = db.conn_mut().transaction()?;
@@ -97,7 +102,9 @@ pub fn ingest_ghidra_csv(db: &mut Db, bin: i64, csv: &std::path::Path) -> Result
             // fonction Ghidra qui ne coïncide avec rien de connu est plus
             // probablement un désalignement qu'une découverte.
             let existing: Option<(Option<String>, String)> = get
-                .query_row(rusqlite::params![bin, va as i64], |r| Ok((r.get(0)?, r.get(1)?)))
+                .query_row(rusqlite::params![bin, va as i64], |r| {
+                    Ok((r.get(0)?, r.get(1)?))
+                })
                 .ok();
             let Some((cur_name, cur_src)) = existing else {
                 stats.unmatched += 1;
@@ -141,7 +148,12 @@ mod tests {
 
     #[test]
     fn les_noms_structurels_sont_remplacables_pas_les_semantiques() {
-        for s in ["leaf-shape", "vtable-anon-struct", "vtable-struct", "iat-thunk"] {
+        for s in [
+            "leaf-shape",
+            "vtable-anon-struct",
+            "vtable-struct",
+            "iat-thunk",
+        ] {
             assert!(is_structural(s), "{s} désigne sans identifier");
         }
         // Ceux-là viennent du binaire lui-même : Ghidra ne fait pas mieux.
@@ -161,11 +173,25 @@ mod tests {
             // sans nom / nom structurel / nom sémantique
             nie_index::ingest::function(&tx, bin, 0x1000, None, None, "menu", "", 0.0).unwrap();
             nie_index::ingest::function(
-                &tx, bin, 0x2000, Some("get_const_00ff"), Some("leaf-shape"), "menu", "", 0.0,
+                &tx,
+                bin,
+                0x2000,
+                Some("get_const_00ff"),
+                Some("leaf-shape"),
+                "menu",
+                "",
+                0.0,
             )
             .unwrap();
             nie_index::ingest::function(
-                &tx, bin, 0x3000, Some("fn_Truc"), Some("strref"), "menu", "", 0.0,
+                &tx,
+                bin,
+                0x3000,
+                Some("fn_Truc"),
+                Some("strref"),
+                "menu",
+                "",
+                0.0,
             )
             .unwrap();
             tx.commit().unwrap();

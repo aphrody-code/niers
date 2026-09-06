@@ -159,8 +159,7 @@ pub fn detect_format(bytes: &[u8]) -> String {
 #[cfg(target_arch = "wasm32")]
 #[wasm_bindgen]
 pub fn crilayla_decompress(bytes: &[u8]) -> Result<Vec<u8>, JsValue> {
-    crilayla::decompress(bytes)
-        .map_err(|e| JsValue::from_str(&e.to_string()))
+    crilayla::decompress(bytes).map_err(|e| JsValue::from_str(&e.to_string()))
 }
 
 /// Décompresse un tampon CRILAYLA (version native, sans JsValue).
@@ -261,7 +260,7 @@ fn utf_value_to_json(v: &cpk::UtfValue) -> serde_json::Value {
         UtfValue::Bytes(b) => {
             // Les blobs sont encodés en tableau d'entiers pour rester JSON-pur.
             serde_json::json!(b)
-        },
+        }
     }
 }
 
@@ -300,7 +299,7 @@ pub fn calculate_stats(
     play_style: u8,
     level: u8,
 ) -> String {
-    use nie_core::growth::{calculate_stats as core_calc, GrowthParams, GrowthTables};
+    use nie_core::growth::{GrowthParams, GrowthTables, calculate_stats as core_calc};
 
     let tables = GrowthTables::load_embedded();
     let params = GrowthParams {
@@ -377,11 +376,13 @@ fn parse_match_state(state: &str) -> Option<nie_core::match_fsm::MatchState> {
 
 /// Logique commune `match_tick` (wasm32 / natif) : résout l'état suivant de la FSM.
 fn match_tick_impl(state: &str, is_training: bool, end_counter: i32) -> Result<String, String> {
-    use nie_core::match_fsm::{tick, MatchContext};
+    use nie_core::match_fsm::{MatchContext, tick};
 
-    let s = parse_match_state(state)
-        .ok_or_else(|| alloc_format_unknown_state(state))?;
-    let ctx = MatchContext { is_training, end_counter };
+    let s = parse_match_state(state).ok_or_else(|| alloc_format_unknown_state(state))?;
+    let ctx = MatchContext {
+        is_training,
+        end_counter,
+    };
     let t = tick(s, ctx);
     serde_json::json!({
         "next": t.next,
@@ -433,7 +434,7 @@ pub fn final_score(minutes: u16, seconds: u16) -> u32 {
 /// Logique commune `skill_lookup` : parse `skill_config` (+ `skill_text` optionnel)
 /// et émet la liste des techniques avec nom/élément/catégorie/puissance résolus.
 fn skill_lookup_impl(skill_config_json: &str, skill_text_json: &str) -> Result<String, String> {
-    use nie_data::skill::{join_skill_text, parse_skill_config, parse_skill_text, SkillTextMaps};
+    use nie_data::skill::{SkillTextMaps, join_skill_text, parse_skill_config, parse_skill_text};
 
     let config_root: serde_json::Value =
         serde_json::from_str(skill_config_json).map_err(|e| e.to_string())?;
@@ -640,7 +641,8 @@ pub fn g4md_parse_json(bytes: &[u8]) -> Result<String, String> {
 #[cfg(target_arch = "wasm32")]
 #[wasm_bindgen]
 pub fn cfgbin_parse_json(bytes: &[u8]) -> Result<String, JsValue> {
-    let parsed = nie_formats::cfgbin::cfgbin_parse(bytes).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let parsed =
+        nie_formats::cfgbin::cfgbin_parse(bytes).map_err(|e| JsValue::from_str(&e.to_string()))?;
     serde_json::to_string(&parsed).map_err(|e| JsValue::from_str(&e.to_string()))
 }
 
@@ -668,7 +670,7 @@ fn nw_hex_upper(bytes: &[u8]) -> String {
 /// [`nie_formats::cfgbin::RdbnValue`] -> JSON, encodage identique iecode (hash `0x..`, blob hex MAJ).
 fn nw_rdbn_value_to_json(v: &nie_formats::cfgbin::RdbnValue) -> serde_json::Value {
     use nie_formats::cfgbin::RdbnValue as R;
-    use serde_json::{json, Value};
+    use serde_json::{Value, json};
     match v {
         R::Bool(b) => json!(b),
         R::Byte(n) => json!(n),
@@ -688,7 +690,7 @@ fn nw_rdbn_value_to_json(v: &nie_formats::cfgbin::RdbnValue) -> serde_json::Valu
 /// d'iecode (exigé par `walk_named`) et variables `{type, value:"<string>"}`.
 fn nw_t2b_siblings(siblings: &[nie_formats::cfgbin::CfgEntry]) -> Vec<serde_json::Value> {
     use nie_formats::cfgbin::Value as CfgValue;
-    use serde_json::{json, Value};
+    use serde_json::{Value, json};
     use std::collections::HashMap;
     let mut counts: HashMap<&str, usize> = HashMap::new();
     siblings
@@ -713,7 +715,7 @@ fn nw_t2b_siblings(siblings: &[nie_formats::cfgbin::CfgEntry]) -> Vec<serde_json
 
 /// Décode un `cfg.bin` vers la forme iecode adaptée (RDBN `lists` ou T2B `entries`).
 fn nw_cfgbin_to_iecode(data: &[u8]) -> Option<serde_json::Value> {
-    use serde_json::{json, Map, Value};
+    use serde_json::{Map, Value, json};
     if nie_formats::cfgbin::is_rdbn(data) {
         let rdbn = nie_formats::cfgbin::parse(data).ok()?;
         let lists = nie_formats::cfgbin::read_values(&rdbn, data);
@@ -748,7 +750,9 @@ fn cfgbin_typed_json_impl(bytes: &[u8], filename: &str) -> Result<String, String
     let key = nie_data::typed::family_key(filename);
     let out = match nie_data::typed::decode_by_key(&key, &root) {
         Some((family, data)) => serde_json::json!({ "family": family, "data": data }),
-        None => serde_json::json!({ "family": serde_json::Value::Null, "key": key, "generic": root }),
+        None => {
+            serde_json::json!({ "family": serde_json::Value::Null, "key": key, "generic": root })
+        }
     };
     serde_json::to_string(&out).map_err(|e| e.to_string())
 }
@@ -930,7 +934,7 @@ pub fn lip_to_json(bytes: &[u8]) -> Result<String, String> {
 
 /// Assemble un modèle générique (paire G4MD + G4MG) en **GLB** (géométrie, glTF binaire).
 fn model_to_glb_impl(g4md: &[u8], g4mg: &[u8]) -> Result<Vec<u8>, String> {
-    use nie_formats::assemble::{assemble_generic_model, GenericModelInput, MeshComponent};
+    use nie_formats::assemble::{GenericModelInput, MeshComponent, assemble_generic_model};
     let model = assemble_generic_model(GenericModelInput {
         code: String::new(),
         g4md: g4md.to_vec(),
@@ -974,12 +978,12 @@ pub fn audio_to_wav(bytes: &[u8]) -> Result<Vec<u8>, String> {
     audio_to_wav_impl(bytes)
 }
 
-
 /// Extrait la géométrie d'un fichier G4MG à l'aide des métadonnées G4MD fournies au format JSON.
 #[cfg(target_arch = "wasm32")]
 #[wasm_bindgen]
 pub fn g4mg_extract_json(g4mg_bytes: &[u8], g4md_json: &str) -> Result<String, JsValue> {
-    let g4md: nie_formats::g4md::G4md = serde_json::from_str(g4md_json).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let g4md: nie_formats::g4md::G4md =
+        serde_json::from_str(g4md_json).map_err(|e| JsValue::from_str(&e.to_string()))?;
     let geom = nie_formats::g4mg::extract_geometry(g4mg_bytes, &g4md);
     serde_json::to_string(&geom).map_err(|e| JsValue::from_str(&e.to_string()))
 }
@@ -987,7 +991,8 @@ pub fn g4mg_extract_json(g4mg_bytes: &[u8], g4md_json: &str) -> Result<String, J
 /// Extrait la géométrie d'un fichier G4MG (version native).
 #[cfg(not(target_arch = "wasm32"))]
 pub fn g4mg_extract_json(g4mg_bytes: &[u8], g4md_json: &str) -> Result<String, String> {
-    let g4md: nie_formats::g4md::G4md = serde_json::from_str(g4md_json).map_err(|e| e.to_string())?;
+    let g4md: nie_formats::g4md::G4md =
+        serde_json::from_str(g4md_json).map_err(|e| e.to_string())?;
     let geom = nie_formats::g4mg::extract_geometry(g4mg_bytes, &g4md);
     serde_json::to_string(&geom).map_err(|e| e.to_string())
 }
@@ -1008,8 +1013,8 @@ pub fn cpk_parse_entries(cpk_bytes: &[u8], cpk_filename: &str) -> Result<String,
 /// Parse un fichier CPK (version native).
 #[cfg(not(target_arch = "wasm32"))]
 pub fn cpk_parse_entries(cpk_bytes: &[u8], cpk_filename: &str) -> Result<String, String> {
-    let reader = nie_formats::cpk::CpkReader::new(cpk_bytes, cpk_filename)
-        .map_err(|e| e.to_string())?;
+    let reader =
+        nie_formats::cpk::CpkReader::new(cpk_bytes, cpk_filename).map_err(|e| e.to_string())?;
     serde_json::to_string(&reader.entries).map_err(|e| e.to_string())
 }
 
@@ -1023,9 +1028,11 @@ pub fn cpk_extract_file(
 ) -> Result<Vec<u8>, JsValue> {
     let reader = nie_formats::cpk::CpkReader::new(cpk_bytes, cpk_filename)
         .map_err(|e| JsValue::from_str(&e.to_string()))?;
-    let entry: nie_formats::cpk::CpkEntry = serde_json::from_str(entry_json)
-        .map_err(|e| JsValue::from_str(&e.to_string()))?;
-    reader.extract(cpk_bytes, &entry).map_err(|e| JsValue::from_str(&e.to_string()))
+    let entry: nie_formats::cpk::CpkEntry =
+        serde_json::from_str(entry_json).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    reader
+        .extract(cpk_bytes, &entry)
+        .map_err(|e| JsValue::from_str(&e.to_string()))
 }
 
 /// Extrait et décompresse un fichier d'un CPK (version native).
@@ -1035,10 +1042,10 @@ pub fn cpk_extract_file(
     cpk_filename: &str,
     entry_json: &str,
 ) -> Result<Vec<u8>, String> {
-    let reader = nie_formats::cpk::CpkReader::new(cpk_bytes, cpk_filename)
-        .map_err(|e| e.to_string())?;
-    let entry: nie_formats::cpk::CpkEntry = serde_json::from_str(entry_json)
-        .map_err(|e| e.to_string())?;
+    let reader =
+        nie_formats::cpk::CpkReader::new(cpk_bytes, cpk_filename).map_err(|e| e.to_string())?;
+    let entry: nie_formats::cpk::CpkEntry =
+        serde_json::from_str(entry_json).map_err(|e| e.to_string())?;
     reader.extract(cpk_bytes, &entry).map_err(|e| e.to_string())
 }
 
@@ -1073,8 +1080,7 @@ fn parse_save_impl(bytes: &[u8], filename: &str) -> Result<String, String> {
     use nie_save::{
         BlobSubtype,
         body::{
-            autosave::parse_autosave_layout,
-            autosave_roster::parse_autosave_roster,
+            autosave::parse_autosave_layout, autosave_roster::parse_autosave_roster,
             headersave::parse_headersave,
         },
     };
@@ -1107,53 +1113,51 @@ fn parse_save_impl(bytes: &[u8], filename: &str) -> Result<String, String> {
     let headersave_json: Option<serde_json::Value> = container
         .blob_by_subtype(BlobSubtype::Headersave)
         .and_then(|blob| {
-            parse_headersave(&blob.body)
-                .ok()
-                .map(|hs| {
-                    let ts = &hs.save_timestamp;
-                    let slots: Vec<serde_json::Value> = hs
-                        .slots
-                        .iter()
-                        .enumerate()
-                        .map(|(i, s)| {
-                            let dt = s.slot_datetime.as_ref().map(|d| {
-                                serde_json::json!({
-                                    "year":   d.year,
-                                    "month":  d.month,
-                                    "day":    d.day,
-                                    "hour":   d.hour,
-                                    "minute": d.minute,
-                                    "second": d.second,
-                                })
-                            });
+            parse_headersave(&blob.body).ok().map(|hs| {
+                let ts = &hs.save_timestamp;
+                let slots: Vec<serde_json::Value> = hs
+                    .slots
+                    .iter()
+                    .enumerate()
+                    .map(|(i, s)| {
+                        let dt = s.slot_datetime.as_ref().map(|d| {
                             serde_json::json!({
-                                "index":         i,
-                                "is_active":     s.is_active,
-                                "section_role":  s.section_role,
-                                "slot_variant":  s.slot_variant,
-                                "slot_datetime": dt,
-                                "playtime_secs": s.playtime_secs,
+                                "year":   d.year,
+                                "month":  d.month,
+                                "day":    d.day,
+                                "hour":   d.hour,
+                                "minute": d.minute,
+                                "second": d.second,
                             })
+                        });
+                        serde_json::json!({
+                            "index":         i,
+                            "is_active":     s.is_active,
+                            "section_role":  s.section_role,
+                            "slot_variant":  s.slot_variant,
+                            "slot_datetime": dt,
+                            "playtime_secs": s.playtime_secs,
                         })
-                        .collect();
-                    serde_json::json!({
-                        "format_version": hs.format_version,
-                        "max_slots":      hs.max_slots,
-                        "used_slots":     hs.used_slots,
-                        "player_name":    hs.player_name,
-                        "level_str":      hs.level_str,
-                        "unique_id":      hs.unique_id,
-                        "save_timestamp": {
-                            "year":   ts.year,
-                            "month":  ts.month,
-                            "day":    ts.day,
-                            "hour":   ts.hour,
-                            "minute": ts.minute,
-                            "second": ts.second,
-                        },
-                        "slots": slots,
                     })
+                    .collect();
+                serde_json::json!({
+                    "format_version": hs.format_version,
+                    "max_slots":      hs.max_slots,
+                    "used_slots":     hs.used_slots,
+                    "player_name":    hs.player_name,
+                    "level_str":      hs.level_str,
+                    "unique_id":      hs.unique_id,
+                    "save_timestamp": {
+                        "year":   ts.year,
+                        "month":  ts.month,
+                        "day":    ts.day,
+                        "hour":   ts.hour,
+                        "minute": ts.minute,
+                        "second": ts.second,
+                    },
+                    "slots": slots,
                 })
+            })
         });
 
     // --- Parse AUTOSAVE (layout + roster + scalaires) si présent ---
@@ -1267,7 +1271,10 @@ impl WasmGame {
     pub fn new(font_cfg: &[u8], font_g4tx: &[u8]) -> Result<WasmGame, JsValue> {
         let font = nie_app::Font::from_bytes(font_cfg, font_g4tx)
             .map_err(|e| JsValue::from_str(&format!("font: {e}")))?;
-        Ok(WasmGame { font, screen: nie_app::flow::Screen::new() })
+        Ok(WasmGame {
+            font,
+            screen: nie_app::flow::Screen::new(),
+        })
     }
 
     /// Largeur du framebuffer (px).
@@ -1331,7 +1338,10 @@ mod tests {
 
     #[test]
     fn detect_format_crilayla() {
-        assert_eq!(detect_format(b"CRILAYLA\x00\x00\x00\x00\x00\x00\x00\x00"), "CRILAYLA");
+        assert_eq!(
+            detect_format(b"CRILAYLA\x00\x00\x00\x00\x00\x00\x00\x00"),
+            "CRILAYLA"
+        );
     }
 
     #[test]
@@ -1370,15 +1380,9 @@ mod tests {
     fn utf_table_json_fixture() {
         // @UTF minimal 2 colonnes / 2 lignes.
         let string_pool: &[u8] = b"TestTable\0ColA\0ColB\0hello\0world\0";
-        let schema: &[u8] = &[
-            0x24, 0x00, 0x00, 0x00, 0x0A,
-            0x2A, 0x00, 0x00, 0x00, 0x0F,
-        ];
+        let schema: &[u8] = &[0x24, 0x00, 0x00, 0x00, 0x0A, 0x2A, 0x00, 0x00, 0x00, 0x0F];
         let row_data: &[u8] = &[
-            0x00, 0x00, 0x00, 42,
-            0x00, 0x00, 0x00, 20,
-            0x00, 0x00, 0x00, 99,
-            0x00, 0x00, 0x00, 26,
+            0x00, 0x00, 0x00, 42, 0x00, 0x00, 0x00, 20, 0x00, 0x00, 0x00, 99, 0x00, 0x00, 0x00, 26,
         ];
         let mut body = Vec::new();
         body.extend_from_slice(&0x22u32.to_be_bytes());
@@ -1603,9 +1607,25 @@ mod tests {
     fn aura_config_fixture() -> String {
         // 19 variables, ordre du dump vérifié.
         let vars: Vec<serde_json::Value> = [
-            "2037965306", "wks00020", "493403631", "-1653680409", "30", "60",
-            "260858381", "-1368456794", "3", "8", "0", "1", "-1124324279",
-            "0", "0", "0", "1", "0", "0",
+            "2037965306",
+            "wks00020",
+            "493403631",
+            "-1653680409",
+            "30",
+            "60",
+            "260858381",
+            "-1368456794",
+            "3",
+            "8",
+            "0",
+            "1",
+            "-1124324279",
+            "0",
+            "0",
+            "0",
+            "1",
+            "0",
+            "0",
         ]
         .iter()
         .enumerate()
@@ -1663,7 +1683,10 @@ mod tests {
         let out = aura_lookup(&aura_config_fixture(), &skill_config).expect("ok");
         let json: serde_json::Value = serde_json::from_str(&out).expect("JSON valide");
         let h = &json["auras"][0]["hissatsu"];
-        assert!(!h.is_null(), "skillId1 doit résoudre vers le skill_config fourni");
+        assert!(
+            !h.is_null(),
+            "skillId1 doit résoudre vers le skill_config fourni"
+        );
         // `AuraHissatsu` est sérialisé tel quel par serde → clés snake_case.
         assert_eq!(h["skill_id_str"], "wks00020_hit");
         assert_eq!(h["element"], "Fire");
@@ -1675,8 +1698,25 @@ mod tests {
     /// (itemId 0x6D5D11A0, price 1401, stats 30/31, internalCode eq_sh110001).
     fn item_config_fixture() -> String {
         let raw = [
-            "1834815904", "0", "1853054332", "0", "1401", "30", "31", "999",
-            "0", "0", "0", "eq_sh110001", "1", "0", "0", "224", "0", "0", "961180446",
+            "1834815904",
+            "0",
+            "1853054332",
+            "0",
+            "1401",
+            "30",
+            "31",
+            "999",
+            "0",
+            "0",
+            "0",
+            "eq_sh110001",
+            "1",
+            "0",
+            "0",
+            "224",
+            "0",
+            "0",
+            "961180446",
         ];
         let vars: Vec<serde_json::Value> = raw
             .iter()
@@ -1726,9 +1766,8 @@ mod tests {
     #[test]
     fn parse_save_json_conteneur_minimal() {
         use nie_save::{
-            Blob, BlobHeader, BlobSubtype,
-            BLOB_MAGIC, BLOB_SUBTYPE_HEADERSAVE, DATA_START, DIR_OFFSET, LIVES_MAGIC, LIVES_CONST2,
-            crc32_of_pub, key_from_filename, decrypt_block,
+            BLOB_MAGIC, BLOB_SUBTYPE_HEADERSAVE, Blob, BlobHeader, BlobSubtype, DATA_START,
+            DIR_OFFSET, LIVES_CONST2, LIVES_MAGIC, crc32_of_pub, decrypt_block, key_from_filename,
         };
 
         let slot = "DEADBEEF-USERDATALIVE";
@@ -1760,7 +1799,8 @@ mod tests {
         let sn = slot.as_bytes();
         hdr[0x10..0x10 + sn.len()].copy_from_slice(sn);
         hdr[DIR_OFFSET..DIR_OFFSET + 4].copy_from_slice(&blob_crc.to_le_bytes());
-        hdr[DIR_OFFSET + 4..DIR_OFFSET + 8].copy_from_slice(&(blob_bytes.len() as u32).to_le_bytes());
+        hdr[DIR_OFFSET + 4..DIR_OFFSET + 8]
+            .copy_from_slice(&(blob_bytes.len() as u32).to_le_bytes());
         hdr[DIR_OFFSET + 8..DIR_OFFSET + 12].copy_from_slice(&0u32.to_le_bytes());
         let fname = b"HEADERSAVE_data.bin";
         hdr[DIR_OFFSET + 12..DIR_OFFSET + 12 + fname.len()].copy_from_slice(fname);
@@ -1789,7 +1829,10 @@ mod tests {
 
         // Le blob HEADERSAVE body fait 4 octets (trop court pour parse_headersave) →
         // headersave doit être null (pas d'erreur fatale).
-        assert!(json["headersave"].is_null(), "headersave null sur body trop court");
+        assert!(
+            json["headersave"].is_null(),
+            "headersave null sur body trop court"
+        );
         // Pas de blob AUTOSAVE → autosave null.
         assert!(json["autosave"].is_null());
     }
@@ -1804,7 +1847,9 @@ mod tests {
     #[test]
     fn parse_save_json_mauvaise_cle_erreur() {
         // On encode avec "DEADBEEF-USERDATALIVE" mais on parse avec un autre nom.
-        use nie_save::{LIVES_MAGIC, LIVES_CONST2, DATA_START, key_from_filename, decrypt_block, crc32_of_pub};
+        use nie_save::{
+            DATA_START, LIVES_CONST2, LIVES_MAGIC, crc32_of_pub, decrypt_block, key_from_filename,
+        };
         let slot = "DEADBEEF-USERDATALIVE";
         let mut hdr = vec![0u8; DATA_START];
         hdr[8..12].copy_from_slice(&LIVES_CONST2.to_le_bytes());
@@ -1827,11 +1872,16 @@ mod tests_sprite_sheet {
     fn feuille_de_sprites_d_un_atlas_reel() {
         use std::path::Path;
 
-        let dir = nie_formats::vfs::resolve_game_dir().to_string_lossy().into_owned();
+        let dir = nie_formats::vfs::resolve_game_dir()
+            .to_string_lossy()
+            .into_owned();
         let data_dir = Path::new(&dir).join("data");
         let mut vfs = nie_formats::vfs::Vfs::new();
         if vfs.init(&data_dir).is_err() {
-            eprintln!("skip feuille_de_sprites : jeu absent à {}", data_dir.display());
+            eprintln!(
+                "skip feuille_de_sprites : jeu absent à {}",
+                data_dir.display()
+            );
             return;
         }
         let Some(chemin) = vfs
@@ -1849,12 +1899,19 @@ mod tests_sprite_sheet {
         let sprites = v["sprites"].as_array().expect("tableau de sprites");
         eprintln!("{chemin} : {} régions", sprites.len());
 
-        assert!(sprites.len() > 100, "atlas d'icônes attendu, {} régions", sprites.len());
+        assert!(
+            sprites.len() > 100,
+            "atlas d'icônes attendu, {} régions",
+            sprites.len()
+        );
         assert!(v["largeur"].as_i64().unwrap_or(0) > 0);
         // Chaque région porte un rectangle exploitable : c'est ce que `g4tx_info_json` ne donne pas.
         for s in sprites {
             assert!(!s["nom"].as_str().unwrap_or("").is_empty());
-            assert!(s["largeur"].as_i64().unwrap_or(0) > 0, "region sans largeur : {s}");
+            assert!(
+                s["largeur"].as_i64().unwrap_or(0) > 0,
+                "region sans largeur : {s}"
+            );
         }
     }
 }

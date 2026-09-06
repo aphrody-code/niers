@@ -17,8 +17,7 @@
 //!   ne montre que le constructeur, pas la méthode `update()`.
 
 use crate::{
-    BALL_GRAVITY, BALL_SCALE_DEFAULT, DISTANCE_UNINIT, INVALID_PLAYER_IDX, INVALID_TARGET_ID,
-    Vec3,
+    BALL_GRAVITY, BALL_SCALE_DEFAULT, DISTANCE_UNINIT, INVALID_PLAYER_IDX, INVALID_TARGET_ID, Vec3,
 };
 
 /// Type de contrôleur de mouvement du ballon.
@@ -446,8 +445,16 @@ impl LerpMove {
             y: (self.target.y - origin.y).mul_add(ease, origin.y),
             z: (self.target.z - origin.z).mul_add(ease, origin.z),
         };
-        let y = if complete || lerped.y < self.bound_y { self.bound_y } else { lerped.y };
-        Vec3 { x: lerped.x, y, z: lerped.z }
+        let y = if complete || lerped.y < self.bound_y {
+            self.bound_y
+        } else {
+            lerped.y
+        };
+        Vec3 {
+            x: lerped.x,
+            y,
+            z: lerped.z,
+        }
     }
 }
 
@@ -477,7 +484,11 @@ impl TargetFollowMove {
     pub fn step(&mut self, origin: Vec3, dt: f32) -> Vec3 {
         self.t += dt;
         let ty = self.target.y.max(self.bound_y);
-        let ease = if self.duration > 0.0 { (self.t / self.duration).min(1.0).max(0.0) } else { 1.0 };
+        let ease = if self.duration > 0.0 {
+            (self.t / self.duration).min(1.0).max(0.0)
+        } else {
+            1.0
+        };
         // step[i] = (delta[i]).mul_add(ease, 0) (consts .data = 0) ; new_pos = origin + step.
         Vec3 {
             x: origin.x + (self.target.x - origin.x).mul_add(ease, 0.0),
@@ -534,7 +545,11 @@ pub fn rate_path_eval(base: Vec3, dir: Vec3, accel: (f32, f32), t: f32) -> Vec3 
     };
     let horiz = (accel.0 * 0.5 * t + lxz) * t;
     let vert = (accel.1 * 0.5 * t + dir.y) * t;
-    Vec3 { x: base.x + horiz * hx, y: base.y + vert, z: base.z + horiz * hz }
+    Vec3 {
+        x: base.x + horiz * hx,
+        y: base.y + vert,
+        z: base.z + horiz * hz,
+    }
 }
 
 /// Intégration de vitesse du contrôleur **Normal** (`game::BallMoveNormal`, `FUN_14133ae10`, lignes
@@ -547,12 +562,25 @@ pub fn rate_path_eval(base: Vec3, dir: Vec3, accel: (f32, f32), t: f32) -> Vec3 
 /// proviennent des champs de traînée du contrôleur + du contexte d'entrée. (La collision mesh/mur du
 /// Normal — `GetComponent`, réflexion — est runtime-couplée et hors de cette pièce de math pure.)
 #[must_use]
-pub fn normal_integrate_velocity(dir: Vec3, prev_speed: f32, accel: f32, dt: f32, factor: f32) -> (Vec3, f32) {
+pub fn normal_integrate_velocity(
+    dir: Vec3,
+    prev_speed: f32,
+    accel: f32,
+    dt: f32,
+    factor: f32,
+) -> (Vec3, f32) {
     let s = (dt * accel + prev_speed) * factor;
     let spd = s.abs();
     if spd > 0.0 {
         let k = (1.0 / spd) * s; // réciproque-produit (= ±1) — ordre f32 du binaire
-        (Vec3 { x: k * dir.x, y: k * dir.y, z: k * dir.z }, spd)
+        (
+            Vec3 {
+                x: k * dir.x,
+                y: k * dir.y,
+                z: k * dir.z,
+            },
+            spd,
+        )
     } else {
         (dir, spd)
     }
@@ -592,7 +620,14 @@ impl DribbleMove {
     ///
     /// Met à jour [`Self::direction`]/[`Self::speed`] et renvoie la position cible.
     #[must_use]
-    pub fn step(&mut self, player: Vec3, sway: Vec3, ball_radius: f32, prev: Vec3, dt: f32) -> Vec3 {
+    pub fn step(
+        &mut self,
+        player: Vec3,
+        sway: Vec3,
+        ball_radius: f32,
+        prev: Vec3,
+        dt: f32,
+    ) -> Vec3 {
         // newpos = sway + player + (0, radius, 0) — ordre f32 du décompilé : (sway.y+player.y)+radius.
         let newpos = Vec3 {
             x: sway.x + player.x,
@@ -696,7 +731,11 @@ impl RateMove {
     #[must_use]
     pub fn advance(&mut self, remaining: f32, dt: f32, decrement: bool) -> bool {
         let mut rate = 1.0;
-        let r = if decrement { remaining - self.position } else { remaining };
+        let r = if decrement {
+            remaining - self.position
+        } else {
+            remaining
+        };
         if r > 0.0 {
             let cand = (self.target - self.position) / r;
             if cand > 0.0 {
@@ -756,10 +795,22 @@ mod tests {
     fn ball_component_update_uses_validated_physics() {
         // Le ballon piloté par un mover Parabola avance selon la physique byte-fidèle :
         // `update` doit produire EXACTEMENT le même résultat que `ParabolaMove::step` (dispatch correct).
-        let p0 = Vec3 { x: 1.0, y: 2.0, z: 3.0 };
+        let p0 = Vec3 {
+            x: 1.0,
+            y: 2.0,
+            z: 3.0,
+        };
         let mv = ParabolaMove {
-            accel: Vec3 { x: 0.0, y: -9.8, z: 0.0 },
-            velocity: Vec3 { x: 4.0, y: 5.0, z: 6.0 },
+            accel: Vec3 {
+                x: 0.0,
+                y: -9.8,
+                z: 0.0,
+            },
+            velocity: Vec3 {
+                x: 4.0,
+                y: 5.0,
+                z: 6.0,
+            },
             t: 0.0,
             t_max: 10.0,
         };
@@ -794,11 +845,19 @@ mod tests {
         // Cas concret : player=(10,5,0), sway=0, r=0.5, prev=(10,4,0), dt=0.5.
         let mut d = DribbleMove::default();
         let pos = d.step(
-            Vec3 { x: 10.0, y: 5.0, z: 0.0 }, // joueur
-            Vec3::zero(),                      // sway
-            0.5,                               // rayon
-            Vec3 { x: 10.0, y: 4.0, z: 0.0 }, // prev
-            0.5,                               // dt
+            Vec3 {
+                x: 10.0,
+                y: 5.0,
+                z: 0.0,
+            }, // joueur
+            Vec3::zero(), // sway
+            0.5,          // rayon
+            Vec3 {
+                x: 10.0,
+                y: 4.0,
+                z: 0.0,
+            }, // prev
+            0.5,          // dt
         );
         // newpos = (10, (0+5)+0.5, 0) = (10, 5.5, 0)
         assert_eq!(pos.x.to_bits(), 10.0_f32.to_bits());
@@ -811,7 +870,21 @@ mod tests {
         assert_eq!(d.direction.z.to_bits(), 0.0_f32.to_bits());
         // dt ≤ 0 → vel = delta brut (pas de division).
         let mut d2 = DribbleMove::default();
-        let _ = d2.step(Vec3 { x: 1.0, y: 1.0, z: 1.0 }, Vec3::zero(), 0.0, Vec3 { x: 1.0, y: 0.0, z: 1.0 }, 0.0);
+        let _ = d2.step(
+            Vec3 {
+                x: 1.0,
+                y: 1.0,
+                z: 1.0,
+            },
+            Vec3::zero(),
+            0.0,
+            Vec3 {
+                x: 1.0,
+                y: 0.0,
+                z: 1.0,
+            },
+            0.0,
+        );
         assert_eq!(d2.speed.to_bits(), 1.0_f32.to_bits()); // |delta|=|(0,1,0)|=1
     }
 
@@ -819,39 +892,85 @@ mod tests {
     fn bezier_step_byte_exact_par_composition() {
         // Point Bezier validé byte-exact vs uemu (scripts/validate_bezier.py) ; vitesse/dir = primitives validées.
         let mut b = BezierMove {
-            p1: Vec3 { x: 0.0, y: 0.0, z: 0.0 },
-            p2: Vec3 { x: 10.0, y: 10.0, z: 0.0 },
-            p3: Vec3 { x: 20.0, y: 0.0, z: 0.0 },
+            p1: Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            p2: Vec3 {
+                x: 10.0,
+                y: 10.0,
+                z: 0.0,
+            },
+            p3: Vec3 {
+                x: 20.0,
+                y: 0.0,
+                z: 0.0,
+            },
             param: 1.0,
             total: 2.0, // t = 0.5
             ..Default::default()
         };
         // B(0.5) = (10, 5, 0) ; prev=(10,5,0) → delta=0 → speed=0, dir=0.
-        let pos = b.step(Vec3 { x: 10.0, y: 5.0, z: 0.0 }, 0.5);
+        let pos = b.step(
+            Vec3 {
+                x: 10.0,
+                y: 5.0,
+                z: 0.0,
+            },
+            0.5,
+        );
         assert_eq!(pos.x.to_bits(), 10.0_f32.to_bits());
         assert_eq!(pos.y.to_bits(), 5.0_f32.to_bits());
         assert_eq!(pos.z.to_bits(), 0.0_f32.to_bits());
         assert_eq!(b.speed.to_bits(), 0.0_f32.to_bits());
         // total ≤ 0 → extrémité p3.
-        let mut b2 = BezierMove { p3: Vec3 { x: 7.0, y: 8.0, z: 9.0 }, total: 0.0, ..Default::default() };
+        let mut b2 = BezierMove {
+            p3: Vec3 {
+                x: 7.0,
+                y: 8.0,
+                z: 9.0,
+            },
+            total: 0.0,
+            ..Default::default()
+        };
         let pos2 = b2.step(Vec3::zero(), 0.0);
-        assert_eq!(pos2, Vec3 { x: 7.0, y: 8.0, z: 9.0 });
+        assert_eq!(
+            pos2,
+            Vec3 {
+                x: 7.0,
+                y: 8.0,
+                z: 9.0
+            }
+        );
     }
 
     #[test]
     fn rate_advance_byte_exact_vs_binaire() {
         // Cas validés byte-exact vs uemu (scripts/validate_rate_progress.py).
-        let mut r = RateMove { rate: 0.0, position: 0.0, target: 10.0 };
+        let mut r = RateMove {
+            rate: 0.0,
+            position: 0.0,
+            target: 10.0,
+        };
         let overshoot = r.advance(5.0, 0.5, false); // cand=(10-0)/5=2 ; pos=2*0.5+0=1
         assert_eq!(r.rate.to_bits(), 2.0_f32.to_bits());
         assert_eq!(r.position.to_bits(), 1.0_f32.to_bits());
         assert!(!overshoot); // 10 > 1
         // decrement : rem effectif = 5 - pos.
-        let mut r2 = RateMove { rate: 0.0, position: 0.0, target: 10.0 };
+        let mut r2 = RateMove {
+            rate: 0.0,
+            position: 0.0,
+            target: 10.0,
+        };
         let _ = r2.advance(5.0, 0.5, true); // r=5-0=5 → cand=2 ; pos=1
         assert_eq!(r2.position.to_bits(), 1.0_f32.to_bits());
         // rem ≤ 0 → pos = target, puis pos += 1.0·dt.
-        let mut r3 = RateMove { rate: 0.0, position: 5.0, target: 5.0 };
+        let mut r3 = RateMove {
+            rate: 0.0,
+            position: 5.0,
+            target: 5.0,
+        };
         let _ = r3.advance(2.0, 0.1, false); // r=2>0 ; cand=(5-5)/2=0 → rate reste 1 ; pos=1*0.1+5=5.1
         assert_eq!(r3.rate.to_bits(), 1.0_f32.to_bits());
         assert_eq!(r3.position.to_bits(), 5.1_f32.to_bits());
@@ -860,16 +979,46 @@ mod tests {
     #[test]
     fn normal_integrate_velocity_byte_exact_vs_binaire() {
         // Cas validés byte-exact vs uemu (scripts/validate_normal_vel.py).
-        let (d, s) = normal_integrate_velocity(Vec3 { x: 0.6, y: 0.8, z: 0.0 }, 2.0, 1.0, 0.5, 1.0);
+        let (d, s) = normal_integrate_velocity(
+            Vec3 {
+                x: 0.6,
+                y: 0.8,
+                z: 0.0,
+            },
+            2.0,
+            1.0,
+            0.5,
+            1.0,
+        );
         assert_eq!(s.to_bits(), 2.5_f32.to_bits()); // (0.5+2)·1
         assert_eq!(d.x.to_bits(), 0.6_f32.to_bits()); // signe + → dir inchangé
         assert_eq!(d.y.to_bits(), 0.8_f32.to_bits());
         // s négatif → direction inversée.
-        let (d2, s2) = normal_integrate_velocity(Vec3 { x: 0.0, y: 1.0, z: 0.0 }, 0.5, -3.0, 0.25, 2.0);
+        let (d2, s2) = normal_integrate_velocity(
+            Vec3 {
+                x: 0.0,
+                y: 1.0,
+                z: 0.0,
+            },
+            0.5,
+            -3.0,
+            0.25,
+            2.0,
+        );
         assert_eq!(s2.to_bits(), 0.5_f32.to_bits()); // |((-0.75+0.5)·2)| = 0.5
         assert_eq!(d2.y.to_bits(), (-1.0_f32).to_bits()); // signe - → -dir
         // |s| = 0 → dir inchangé.
-        let (d3, s3) = normal_integrate_velocity(Vec3 { x: 1.0, y: 0.0, z: 0.0 }, 1.0, 0.0, 0.1, 0.0);
+        let (d3, s3) = normal_integrate_velocity(
+            Vec3 {
+                x: 1.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            1.0,
+            0.0,
+            0.1,
+            0.0,
+        );
         assert_eq!(s3.to_bits(), 0.0_f32.to_bits());
         assert_eq!(d3.x.to_bits(), 1.0_f32.to_bits());
     }
@@ -878,11 +1027,33 @@ mod tests {
     fn rate_path_eval_byte_exact_vs_binaire() {
         // Cas validés byte-exact vs uemu (scripts/validate_path_eval.py, gravité runtime résolue Y).
         // dir horizontal +x, sans accel, t=2 → avance de 2 sur x.
-        let p = rate_path_eval(Vec3 { x: 0.0, y: 0.0, z: 0.0 }, Vec3 { x: 1.0, y: 0.0, z: 0.0 }, (0.0, 0.0), 2.0);
+        let p = rate_path_eval(
+            Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            Vec3 {
+                x: 1.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            (0.0, 0.0),
+            2.0,
+        );
         assert_eq!(p.x.to_bits(), 2.0_f32.to_bits());
         assert_eq!(p.y.to_bits(), 0.0_f32.to_bits());
         // dir vertical v0=3, accel_v=-10, t=1 → y = 3·1 + ½·(-10)·1 = -2 (projectile).
-        let p2 = rate_path_eval(Vec3::zero(), Vec3 { x: 0.0, y: 3.0, z: 0.0 }, (0.0, -10.0), 1.0);
+        let p2 = rate_path_eval(
+            Vec3::zero(),
+            Vec3 {
+                x: 0.0,
+                y: 3.0,
+                z: 0.0,
+            },
+            (0.0, -10.0),
+            1.0,
+        );
         assert_eq!(p2.y.to_bits(), (-2.0_f32).to_bits());
         assert_eq!(p2.x.to_bits(), 0.0_f32.to_bits()); // |dir_xz|=0 → pas d'horizontal
     }
@@ -890,15 +1061,35 @@ mod tests {
     #[test]
     fn ball_mover_idle_keeps_position() {
         let mut m = BallMover::Idle;
-        let p = Vec3 { x: 7.0, y: 8.0, z: 9.0 };
+        let p = Vec3 {
+            x: 7.0,
+            y: 8.0,
+            z: 9.0,
+        };
         assert_eq!(m.step(p, 0.5), p);
     }
 
     #[test]
     fn target_follow_step_byte_exact_vs_binaire() {
         // Cas 1 de scripts/validate_targetfollow.py (validé byte-exact vs binaire).
-        let mut m = TargetFollowMove { target: Vec3 { x: 5.0, y: 8.0, z: 5.0 }, bound_y: 0.0, t: 0.0, duration: 2.0 };
-        let pos = m.step(Vec3 { x: 0.0, y: 0.0, z: 0.0 }, 0.5);
+        let mut m = TargetFollowMove {
+            target: Vec3 {
+                x: 5.0,
+                y: 8.0,
+                z: 5.0,
+            },
+            bound_y: 0.0,
+            t: 0.0,
+            duration: 2.0,
+        };
+        let pos = m.step(
+            Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            0.5,
+        );
         assert_eq!(pos.x.to_bits(), 1.25_f32.to_bits());
         assert_eq!(pos.y.to_bits(), 2.0_f32.to_bits());
         assert_eq!(pos.z.to_bits(), 1.25_f32.to_bits());
@@ -908,9 +1099,24 @@ mod tests {
     fn lerp_step_byte_exact_vs_binaire() {
         // Mêmes entrées que scripts/validate_lerp.py (validé byte-exact vs binaire, FMA3 émulée).
         // bound_y=0 + non complété → y=lerped.y (le clamp/snap est un no-op dans ce régime).
-        let mut m =
-            LerpMove { target: Vec3 { x: 10.0, y: 20.0, z: 30.0 }, t: 0.0, duration: 2.0, bound_y: 0.0 };
-        let pos = m.step(Vec3 { x: 1.0, y: 2.0, z: 3.0 }, 0.5);
+        let mut m = LerpMove {
+            target: Vec3 {
+                x: 10.0,
+                y: 20.0,
+                z: 30.0,
+            },
+            t: 0.0,
+            duration: 2.0,
+            bound_y: 0.0,
+        };
+        let pos = m.step(
+            Vec3 {
+                x: 1.0,
+                y: 2.0,
+                z: 3.0,
+            },
+            0.5,
+        );
         assert_eq!(pos.x.to_bits(), f32::from_bits(0x40e4_e000).to_bits()); // 7.15234375
         assert_eq!(pos.y.to_bits(), 14.304_687_5_f32.to_bits());
         assert_eq!(pos.z.to_bits(), f32::from_bits(0x41ab_a800).to_bits()); // 21.45703125
@@ -921,17 +1127,35 @@ mod tests {
     fn parabola_step_byte_exact_vs_binaire() {
         // Mêmes entrées que scripts/validate_parabola.py (validé byte-exact vs émulation du binaire).
         let mut m = ParabolaMove {
-            accel: Vec3 { x: 0.0, y: -9.8, z: 0.0 },
-            velocity: Vec3 { x: 4.0, y: 5.0, z: 6.0 },
+            accel: Vec3 {
+                x: 0.0,
+                y: -9.8,
+                z: 0.0,
+            },
+            velocity: Vec3 {
+                x: 4.0,
+                y: 5.0,
+                z: 6.0,
+            },
             t: 0.0,
             t_max: 10.0,
         };
-        let (pos, fini) = m.step(Vec3 { x: 1.0, y: 2.0, z: 3.0 }, 0.5);
+        let (pos, fini) = m.step(
+            Vec3 {
+                x: 1.0,
+                y: 2.0,
+                z: 3.0,
+            },
+            0.5,
+        );
         // Valeurs EXACTES capturées du binaire réel (f32 simple précision).
         assert_eq!(pos.x.to_bits(), 3.0_f32.to_bits());
         assert_eq!(pos.y.to_bits(), f32::from_bits(0x4051_999a).to_bits()); // 3.2750000953674316
         assert_eq!(pos.z.to_bits(), 6.0_f32.to_bits());
-        assert_eq!(m.velocity.y.to_bits(), f32::from_bits(0x3dcc_ccc0).to_bits()); // 0.09999990463256836
+        assert_eq!(
+            m.velocity.y.to_bits(),
+            f32::from_bits(0x3dcc_ccc0).to_bits()
+        ); // 0.09999990463256836
         assert_eq!(m.t.to_bits(), 0.5_f32.to_bits());
         assert!(!fini);
     }
@@ -949,26 +1173,50 @@ mod tests {
 
         // ── Parabola : p0 réinjecté ; accel=(0,-9.8,0), vel=(4,5,6), t_max=100 ; dt=0.5 ──────
         const PARABOLA: [[u32; 3]; 24] = [
-            [0x4040_0000, 0x4051_999A, 0x40C0_0000], [0x40A0_0000, 0x4006_6666, 0x4110_0000],
-            [0x40E0_0000, 0xBFC3_3335, 0x4140_0000], [0x4110_0000, 0xC0F3_3334, 0x4170_0000],
-            [0x4130_0000, 0xC181_0000, 0x4190_0000], [0x4150_0000, 0xC1D8_CCCD, 0x41A8_0000],
-            [0x4170_0000, 0xC222_1999, 0x41C0_0000], [0x4188_0000, 0xC261_9998, 0x41D8_0000],
-            [0x4198_0000, 0xC295_7332, 0x41F0_0000], [0x41A8_0000, 0xC2BE_FFFF, 0x4204_0000],
-            [0x41B8_0000, 0xC2ED_7332, 0x4210_0000], [0x41C8_0000, 0xC310_6666, 0x421C_0000],
-            [0x41D8_0000, 0xC32C_8667, 0x4228_0000], [0x41E8_0000, 0xC34B_199B, 0x4234_0000],
-            [0x41F8_0000, 0xC36C_2002, 0x4240_0000], [0x4204_0000, 0xC387_CCCE, 0x424C_0000],
-            [0x420C_0000, 0xC39A_C335, 0x4258_0000], [0x4214_0000, 0xC3AE_F335, 0x4264_0000],
-            [0x421C_0000, 0xC3C4_5CCF, 0x4270_0000], [0x4224_0000, 0xC3DB_0003, 0x427C_0000],
-            [0x422C_0000, 0xC3F2_DCD0, 0x4284_0000], [0x4234_0000, 0xC405_F99B, 0x428A_0000],
-            [0x423C_0000, 0xC413_219B, 0x4290_0000], [0x4244_0000, 0xC420_E668, 0x4296_0000],
+            [0x4040_0000, 0x4051_999A, 0x40C0_0000],
+            [0x40A0_0000, 0x4006_6666, 0x4110_0000],
+            [0x40E0_0000, 0xBFC3_3335, 0x4140_0000],
+            [0x4110_0000, 0xC0F3_3334, 0x4170_0000],
+            [0x4130_0000, 0xC181_0000, 0x4190_0000],
+            [0x4150_0000, 0xC1D8_CCCD, 0x41A8_0000],
+            [0x4170_0000, 0xC222_1999, 0x41C0_0000],
+            [0x4188_0000, 0xC261_9998, 0x41D8_0000],
+            [0x4198_0000, 0xC295_7332, 0x41F0_0000],
+            [0x41A8_0000, 0xC2BE_FFFF, 0x4204_0000],
+            [0x41B8_0000, 0xC2ED_7332, 0x4210_0000],
+            [0x41C8_0000, 0xC310_6666, 0x421C_0000],
+            [0x41D8_0000, 0xC32C_8667, 0x4228_0000],
+            [0x41E8_0000, 0xC34B_199B, 0x4234_0000],
+            [0x41F8_0000, 0xC36C_2002, 0x4240_0000],
+            [0x4204_0000, 0xC387_CCCE, 0x424C_0000],
+            [0x420C_0000, 0xC39A_C335, 0x4258_0000],
+            [0x4214_0000, 0xC3AE_F335, 0x4264_0000],
+            [0x421C_0000, 0xC3C4_5CCF, 0x4270_0000],
+            [0x4224_0000, 0xC3DB_0003, 0x427C_0000],
+            [0x422C_0000, 0xC3F2_DCD0, 0x4284_0000],
+            [0x4234_0000, 0xC405_F99B, 0x428A_0000],
+            [0x423C_0000, 0xC413_219B, 0x4290_0000],
+            [0x4244_0000, 0xC420_E668, 0x4296_0000],
         ];
         let mut mover = BallMover::Parabola(ParabolaMove {
-            accel: Vec3 { x: 0.0, y: -9.8, z: 0.0 },
-            velocity: Vec3 { x: 4.0, y: 5.0, z: 6.0 },
+            accel: Vec3 {
+                x: 0.0,
+                y: -9.8,
+                z: 0.0,
+            },
+            velocity: Vec3 {
+                x: 4.0,
+                y: 5.0,
+                z: 6.0,
+            },
             t: 0.0,
             t_max: 100.0,
         });
-        let mut pos = Vec3 { x: 1.0, y: 2.0, z: 3.0 };
+        let mut pos = Vec3 {
+            x: 1.0,
+            y: 2.0,
+            z: 3.0,
+        };
         for exp in PARABOLA {
             pos = mover.step(pos, 0.5);
             cmp(pos, exp);
@@ -977,18 +1225,39 @@ mod tests {
         // ── Lerp : origine FIXE (1,2,3), target=(10,20,30), dur=5, bound_y=0 ; dt=0.5 ────────
         // Dès la complétion (frame 9, t≥dur), y plonge à bound_y=0 — le comportement réel.
         const LERP: [[u32; 3]; 16] = [
-            [0x4083_0B11, 0x4103_0B11, 0x4144_9099], [0x40CA_0902, 0x414A_0902, 0x4197_86C2],
-            [0x40FA_D9E9, 0x417A_D9E9, 0x41BC_236F], [0x410D_566D, 0x418D_566D, 0x41D4_01A4],
-            [0x4117_0000, 0x4197_0000, 0x41E2_8000], [0x411C_5048, 0x419C_5048, 0x41EA_786C],
-            [0x411E_D567, 0x419E_D567, 0x41EE_401B], [0x411F_C504, 0x419F_C504, 0x41EF_A786],
-            [0x411F_FC50, 0x419F_FC50, 0x41EF_FA78], [0x4120_0000, 0x0000_0000, 0x41F0_0000],
-            [0x411F_FC50, 0x0000_0000, 0x41EF_FA78], [0x411F_C504, 0x0000_0000, 0x41EF_A786],
-            [0x411E_D567, 0x0000_0000, 0x41EE_401B], [0x411C_5048, 0x0000_0000, 0x41EA_786C],
-            [0x4117_0000, 0x0000_0000, 0x41E2_8000], [0x410D_566D, 0x0000_0000, 0x41D4_01A4],
+            [0x4083_0B11, 0x4103_0B11, 0x4144_9099],
+            [0x40CA_0902, 0x414A_0902, 0x4197_86C2],
+            [0x40FA_D9E9, 0x417A_D9E9, 0x41BC_236F],
+            [0x410D_566D, 0x418D_566D, 0x41D4_01A4],
+            [0x4117_0000, 0x4197_0000, 0x41E2_8000],
+            [0x411C_5048, 0x419C_5048, 0x41EA_786C],
+            [0x411E_D567, 0x419E_D567, 0x41EE_401B],
+            [0x411F_C504, 0x419F_C504, 0x41EF_A786],
+            [0x411F_FC50, 0x419F_FC50, 0x41EF_FA78],
+            [0x4120_0000, 0x0000_0000, 0x41F0_0000],
+            [0x411F_FC50, 0x0000_0000, 0x41EF_FA78],
+            [0x411F_C504, 0x0000_0000, 0x41EF_A786],
+            [0x411E_D567, 0x0000_0000, 0x41EE_401B],
+            [0x411C_5048, 0x0000_0000, 0x41EA_786C],
+            [0x4117_0000, 0x0000_0000, 0x41E2_8000],
+            [0x410D_566D, 0x0000_0000, 0x41D4_01A4],
         ];
-        let origin = Vec3 { x: 1.0, y: 2.0, z: 3.0 };
+        let origin = Vec3 {
+            x: 1.0,
+            y: 2.0,
+            z: 3.0,
+        };
         let mut mover = BallMover::Lerp(
-            LerpMove { target: Vec3 { x: 10.0, y: 20.0, z: 30.0 }, t: 0.0, duration: 5.0, bound_y: 0.0 },
+            LerpMove {
+                target: Vec3 {
+                    x: 10.0,
+                    y: 20.0,
+                    z: 30.0,
+                },
+                t: 0.0,
+                duration: 5.0,
+                bound_y: 0.0,
+            },
             origin,
         );
         for exp in LERP {
@@ -997,22 +1266,38 @@ mod tests {
 
         // ── TargetFollow : p0 réinjecté ; target=(5,8,5), dur=4, bound_y=0 ; dt=0.5 ──────────
         const TARGET_FOLLOW: [[u32; 3]; 16] = [
-            [0x3F20_0000, 0x3F80_0000, 0x3F20_0000], [0x3FDC_0000, 0x4030_0000, 0x3FDC_0000],
-            [0x403C_C000, 0x4097_0000, 0x403C_C000], [0x407E_6000, 0x40CB_8000, 0x407E_6000],
-            [0x4093_B200, 0x40EC_5000, 0x4093_B200], [0x409C_EC80, 0x40FB_1400, 0x409C_EC80],
-            [0x409F_9D90, 0x40FF_6280, 0x409F_9D90], [0x40A0_0000, 0x4100_0000, 0x40A0_0000],
-            [0x40A0_0000, 0x4100_0000, 0x40A0_0000], [0x40A0_0000, 0x4100_0000, 0x40A0_0000],
-            [0x40A0_0000, 0x4100_0000, 0x40A0_0000], [0x40A0_0000, 0x4100_0000, 0x40A0_0000],
-            [0x40A0_0000, 0x4100_0000, 0x40A0_0000], [0x40A0_0000, 0x4100_0000, 0x40A0_0000],
-            [0x40A0_0000, 0x4100_0000, 0x40A0_0000], [0x40A0_0000, 0x4100_0000, 0x40A0_0000],
+            [0x3F20_0000, 0x3F80_0000, 0x3F20_0000],
+            [0x3FDC_0000, 0x4030_0000, 0x3FDC_0000],
+            [0x403C_C000, 0x4097_0000, 0x403C_C000],
+            [0x407E_6000, 0x40CB_8000, 0x407E_6000],
+            [0x4093_B200, 0x40EC_5000, 0x4093_B200],
+            [0x409C_EC80, 0x40FB_1400, 0x409C_EC80],
+            [0x409F_9D90, 0x40FF_6280, 0x409F_9D90],
+            [0x40A0_0000, 0x4100_0000, 0x40A0_0000],
+            [0x40A0_0000, 0x4100_0000, 0x40A0_0000],
+            [0x40A0_0000, 0x4100_0000, 0x40A0_0000],
+            [0x40A0_0000, 0x4100_0000, 0x40A0_0000],
+            [0x40A0_0000, 0x4100_0000, 0x40A0_0000],
+            [0x40A0_0000, 0x4100_0000, 0x40A0_0000],
+            [0x40A0_0000, 0x4100_0000, 0x40A0_0000],
+            [0x40A0_0000, 0x4100_0000, 0x40A0_0000],
+            [0x40A0_0000, 0x4100_0000, 0x40A0_0000],
         ];
         let mut mover = BallMover::TargetFollow(TargetFollowMove {
-            target: Vec3 { x: 5.0, y: 8.0, z: 5.0 },
+            target: Vec3 {
+                x: 5.0,
+                y: 8.0,
+                z: 5.0,
+            },
             bound_y: 0.0,
             t: 0.0,
             duration: 4.0,
         });
-        let mut pos = Vec3 { x: 0.0, y: 0.0, z: 0.0 };
+        let mut pos = Vec3 {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        };
         for exp in TARGET_FOLLOW {
             pos = mover.step(pos, 0.5);
             cmp(pos, exp);
@@ -1110,7 +1395,11 @@ mod tests {
     fn possession_ids_is_free() {
         let p = PossessionIds::default();
         assert!(p.is_free());
-        let p2 = PossessionIds { owner: 0, secondary: 0xFF, tertiary: 0xFF };
+        let p2 = PossessionIds {
+            owner: 0,
+            secondary: 0xFF,
+            tertiary: 0xFF,
+        };
         assert!(!p2.is_free());
     }
 
@@ -1118,7 +1407,10 @@ mod tests {
     fn target_ids_has_no_target() {
         let t = TargetIds::default();
         assert!(t.has_no_target());
-        let t2 = TargetIds { primary: 1, secondary: crate::INVALID_TARGET_ID };
+        let t2 = TargetIds {
+            primary: 1,
+            secondary: crate::INVALID_TARGET_ID,
+        };
         assert!(!t2.has_no_target());
     }
 }

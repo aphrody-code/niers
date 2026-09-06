@@ -10,7 +10,7 @@
 mod common;
 
 use nie_data::hash::HashId;
-use nie_data::item::{parse_all_items, ItemCategory, ItemInfo};
+use nie_data::item::{ItemCategory, ItemInfo, parse_all_items};
 use serde_json::json;
 
 fn item_fixture() -> serde_json::Value {
@@ -50,7 +50,9 @@ fn item_fixture() -> serde_json::Value {
         ("String", "btl_re000001"),
     ];
     let to_vars = |arr: &[(&str, &str)]| -> Vec<serde_json::Value> {
-        arr.iter().map(|(t, v)| json!({ "type": t, "value": v })).collect()
+        arr.iter()
+            .map(|(t, v)| json!({ "type": t, "value": v }))
+            .collect()
     };
     json!({
         "entries": [

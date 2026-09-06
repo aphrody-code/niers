@@ -38,7 +38,10 @@ fn index(n: usize) -> IndexVfs {
             2 => "acb",
             _ => "cfg.bin",
         };
-        entrees.push((format!("data/dx11/lot{:03}/objet{i:06}.{ext}", i % 128), (i % 4096) as u32));
+        entrees.push((
+            format!("data/dx11/lot{:03}/objet{i:06}.{ext}", i % 128),
+            (i % 4096) as u32,
+        ));
     }
     IndexVfs::depuis(entrees)
 }
@@ -69,7 +72,10 @@ fn requete(runtime: &tokio::runtime::Runtime, routeur: &axum::Router, chemin: &s
 }
 
 fn bench_routage(c: &mut Criterion) {
-    let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
     let etat = etat();
     let routeur = nie_site::routeur(etat.clone());
 
@@ -78,7 +84,10 @@ fn bench_routage(c: &mut Criterion) {
         ("healthz", "/healthz"),
         ("api_v1_health", "/api/v1/health"),
         ("api_v1_textures", "/api/v1/textures?page=1&per_page=50"),
-        ("api_v1_textures_page_100", "/api/v1/textures?page=100&per_page=50"),
+        (
+            "api_v1_textures_page_100",
+            "/api/v1/textures?page=100&per_page=50",
+        ),
         ("parcours", "/b/data/dx11/lot001"),
         ("robots", "/robots.txt"),
         ("sitemap", "/sitemap.xml"),
@@ -115,7 +124,10 @@ fn bench_couches(c: &mut Criterion, runtime: &tokio::runtime::Runtime) {
         let config = Config {
             db: "/nonexistent/mirror.sqlite".into(),
             statique: "/nonexistent/dist".into(),
-            debit: nie_site::debit::Reglage { par_seconde, rafale: 1e9 },
+            debit: nie_site::debit::Reglage {
+                par_seconde,
+                rafale: 1e9,
+            },
             ..Config::default()
         };
         EtatSite::pour_tests(config, IndexVfs::depuis(Vec::new()))
@@ -129,7 +141,10 @@ fn bench_couches(c: &mut Criterion, runtime: &tokio::runtime::Runtime) {
     };
     let avec_debit = |etat: EtatSite| {
         route()
-            .layer(axum::middleware::from_fn_with_state(etat.clone(), nie_site::debit::limiter))
+            .layer(axum::middleware::from_fn_with_state(
+                etat.clone(),
+                nie_site::debit::limiter,
+            ))
             .with_state(etat)
     };
 
@@ -142,19 +157,16 @@ fn bench_couches(c: &mut Criterion, runtime: &tokio::runtime::Runtime) {
                 .with_state(etat_sans_borne(0.0)),
         ),
         ("debit", avec_debit(etat_sans_borne(1e9))),
-        (
-            "etag_et_debit",
-            {
-                let etat = etat_sans_borne(1e9);
-                route()
-                    .layer(axum::middleware::from_fn(nie_site::etag::conditionnel))
-                    .layer(axum::middleware::from_fn_with_state(
-                        etat.clone(),
-                        nie_site::debit::limiter,
-                    ))
-                    .with_state(etat)
-            },
-        ),
+        ("etag_et_debit", {
+            let etat = etat_sans_borne(1e9);
+            route()
+                .layer(axum::middleware::from_fn(nie_site::etag::conditionnel))
+                .layer(axum::middleware::from_fn_with_state(
+                    etat.clone(),
+                    nie_site::debit::limiter,
+                ))
+                .with_state(etat)
+        }),
     ];
 
     let mut groupe = c.benchmark_group("couches");

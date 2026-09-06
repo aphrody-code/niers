@@ -41,7 +41,7 @@
 
 mod common;
 
-use nie_data::chronicle_top::{parse_chronicle_top_caravan_config, ChronicleTopCaravanConfig};
+use nie_data::chronicle_top::{ChronicleTopCaravanConfig, parse_chronicle_top_caravan_config};
 use serde_json::json;
 
 // ─── Fixture ──────────────────────────────────────────────────────────────────
@@ -146,7 +146,10 @@ fn entree0_amplitude_x() {
     // lignes 11-14 du dump réel
     assert_eq!(e0.amplitude_max_x, 0.25_f32, "amplitudeMaxX=0.25");
     assert_eq!(e0.amplitude_easing_type_x, 0, "amplitudeEasingTypeX=0");
-    assert_eq!(e0.amplitude_period_time_x, 4.0_f32, "amplitudePeriodTimeX=4");
+    assert_eq!(
+        e0.amplitude_period_time_x, 4.0_f32,
+        "amplitudePeriodTimeX=4"
+    );
     assert_eq!(e0.amplitude_strength_x, 0.0_f32, "amplitudeStrengthX=0");
 }
 
@@ -158,7 +161,10 @@ fn entree0_amplitude_y() {
     // lignes 15-18 du dump réel
     assert_eq!(e0.amplitude_max_y, 0.5_f32, "amplitudeMaxY=0.5");
     assert_eq!(e0.amplitude_easing_type_y, 1, "amplitudeEasingTypeY=1");
-    assert_eq!(e0.amplitude_period_time_y, 2.0_f32, "amplitudePeriodTimeY=2");
+    assert_eq!(
+        e0.amplitude_period_time_y, 2.0_f32,
+        "amplitudePeriodTimeY=2"
+    );
     assert_eq!(e0.amplitude_strength_y, 0.0_f32, "amplitudeStrengthY=0");
 }
 
@@ -266,7 +272,11 @@ fn real_file_compte_entrees() {
     let Some(cfg) = load_real() else { return };
 
     // chronicle_top_caravan_config.cfg.bin.json : 5 entrées dans m_chronicleTopCaravanInfoList
-    assert_eq!(cfg.caravans.len(), 5, "5 entrées CHRONICLE_TOP_CARAVAN_INFO");
+    assert_eq!(
+        cfg.caravans.len(),
+        5,
+        "5 entrées CHRONICLE_TOP_CARAVAN_INFO"
+    );
 }
 
 #[test]
@@ -277,18 +287,48 @@ fn real_file_entree0_champs_scalaires() {
     let e0 = &cfg.caravans[0];
     assert_eq!(e0.id, 1, "id=1");
     assert_eq!(e0.move_type, 0, "moveType=0");
-    assert_eq!(e0.amplitude_max_x, 0.25_f32, "amplitudeMaxX=0.25 (ligne 11)");
-    assert_eq!(e0.amplitude_easing_type_x, 0, "amplitudeEasingTypeX=0 (ligne 12)");
-    assert_eq!(e0.amplitude_period_time_x, 4.0_f32, "amplitudePeriodTimeX=4 (ligne 13)");
-    assert_eq!(e0.amplitude_strength_x, 0.0_f32, "amplitudeStrengthX=0 (ligne 14)");
+    assert_eq!(
+        e0.amplitude_max_x, 0.25_f32,
+        "amplitudeMaxX=0.25 (ligne 11)"
+    );
+    assert_eq!(
+        e0.amplitude_easing_type_x, 0,
+        "amplitudeEasingTypeX=0 (ligne 12)"
+    );
+    assert_eq!(
+        e0.amplitude_period_time_x, 4.0_f32,
+        "amplitudePeriodTimeX=4 (ligne 13)"
+    );
+    assert_eq!(
+        e0.amplitude_strength_x, 0.0_f32,
+        "amplitudeStrengthX=0 (ligne 14)"
+    );
     assert_eq!(e0.amplitude_max_y, 0.5_f32, "amplitudeMaxY=0.5 (ligne 15)");
-    assert_eq!(e0.amplitude_easing_type_y, 1, "amplitudeEasingTypeY=1 (ligne 16)");
-    assert_eq!(e0.amplitude_period_time_y, 2.0_f32, "amplitudePeriodTimeY=2 (ligne 17)");
-    assert_eq!(e0.amplitude_strength_y, 0.0_f32, "amplitudeStrengthY=0 (ligne 18)");
+    assert_eq!(
+        e0.amplitude_easing_type_y, 1,
+        "amplitudeEasingTypeY=1 (ligne 16)"
+    );
+    assert_eq!(
+        e0.amplitude_period_time_y, 2.0_f32,
+        "amplitudePeriodTimeY=2 (ligne 17)"
+    );
+    assert_eq!(
+        e0.amplitude_strength_y, 0.0_f32,
+        "amplitudeStrengthY=0 (ligne 18)"
+    );
     assert_eq!(e0.rotation_max_z, 5.0_f32, "rotationMaxZ=5 (ligne 31)");
-    assert_eq!(e0.rotation_easing_type_z, 1, "rotationEasingTypeZ=1 (ligne 32)");
-    assert_eq!(e0.rotation_period_time_z, 4.0_f32, "rotationPeriodTimeZ=4 (ligne 33)");
-    assert_eq!(e0.rotation_strength_z, 0.0_f32, "rotationStrengthZ=0 (ligne 34)");
+    assert_eq!(
+        e0.rotation_easing_type_z, 1,
+        "rotationEasingTypeZ=1 (ligne 32)"
+    );
+    assert_eq!(
+        e0.rotation_period_time_z, 4.0_f32,
+        "rotationPeriodTimeZ=4 (ligne 33)"
+    );
+    assert_eq!(
+        e0.rotation_strength_z, 0.0_f32,
+        "rotationStrengthZ=0 (ligne 34)"
+    );
 }
 
 #[test]
@@ -299,7 +339,10 @@ fn real_file_entree1_strength_y() {
     let e1 = &cfg.caravans[1];
     assert_eq!(e1.id, 2, "id=2");
     assert_eq!(e1.move_type, 1, "moveType=1 (ligne 37)");
-    assert_eq!(e1.amplitude_strength_y, 2.0_f32, "amplitudeStrengthY=2 (ligne 46)");
+    assert_eq!(
+        e1.amplitude_strength_y, 2.0_f32,
+        "amplitudeStrengthY=2 (ligne 46)"
+    );
     assert_eq!(e1.rotation_max_z, 0.0_f32, "rotationMaxZ=0 (ligne 59)");
 }
 
@@ -310,11 +353,23 @@ fn real_file_entree3_amplitude_x_easing1() {
     // m_chronicleTopCaravanInfoList[3] (lignes 92-119) — id=4
     let e3 = &cfg.caravans[3];
     assert_eq!(e3.id, 4, "id=4");
-    assert_eq!(e3.amplitude_max_x, 0.25_f32, "amplitudeMaxX=0.25 (ligne 95)");
-    assert_eq!(e3.amplitude_easing_type_x, 1, "amplitudeEasingTypeX=1 (ligne 96)");
-    assert_eq!(e3.amplitude_strength_x, 2.0_f32, "amplitudeStrengthX=2 (ligne 98)");
+    assert_eq!(
+        e3.amplitude_max_x, 0.25_f32,
+        "amplitudeMaxX=0.25 (ligne 95)"
+    );
+    assert_eq!(
+        e3.amplitude_easing_type_x, 1,
+        "amplitudeEasingTypeX=1 (ligne 96)"
+    );
+    assert_eq!(
+        e3.amplitude_strength_x, 2.0_f32,
+        "amplitudeStrengthX=2 (ligne 98)"
+    );
     assert_eq!(e3.rotation_max_y, 1.0_f32, "rotationMaxY=1 (ligne 111)");
-    assert_eq!(e3.rotation_strength_y, 5.0_f32, "rotationStrengthY=5 (ligne 114)");
+    assert_eq!(
+        e3.rotation_strength_y, 5.0_f32,
+        "rotationStrengthY=5 (ligne 114)"
+    );
     assert_eq!(e3.rotation_max_z, 5.0_f32, "rotationMaxZ=5 (ligne 115)");
 }
 
@@ -326,15 +381,36 @@ fn real_file_entree4_animation_complete() {
     let e4 = &cfg.caravans[4];
     assert_eq!(e4.id, 5, "id=5");
     assert_eq!(e4.move_type, 1, "moveType=1 (ligne 122)");
-    assert_eq!(e4.amplitude_strength_x, 1.0_f32, "amplitudeStrengthX=1 (ligne 127)");
-    assert_eq!(e4.amplitude_strength_y, 0.5_f32, "amplitudeStrengthY=0.5 (ligne 130)");
+    assert_eq!(
+        e4.amplitude_strength_x, 1.0_f32,
+        "amplitudeStrengthX=1 (ligne 127)"
+    );
+    assert_eq!(
+        e4.amplitude_strength_y, 0.5_f32,
+        "amplitudeStrengthY=0.5 (ligne 130)"
+    );
     assert_eq!(e4.rotation_max_y, 0.5_f32, "rotationMaxY=0.5 (ligne 139)");
-    assert_eq!(e4.rotation_easing_type_y, 1, "rotationEasingTypeY=1 (ligne 140)");
-    assert_eq!(e4.rotation_period_time_y, 2.0_f32, "rotationPeriodTimeY=2 (ligne 141)");
-    assert_eq!(e4.rotation_strength_y, 2.5_f32, "rotationStrengthY=2.5 (ligne 142)");
+    assert_eq!(
+        e4.rotation_easing_type_y, 1,
+        "rotationEasingTypeY=1 (ligne 140)"
+    );
+    assert_eq!(
+        e4.rotation_period_time_y, 2.0_f32,
+        "rotationPeriodTimeY=2 (ligne 141)"
+    );
+    assert_eq!(
+        e4.rotation_strength_y, 2.5_f32,
+        "rotationStrengthY=2.5 (ligne 142)"
+    );
     assert_eq!(e4.rotation_max_z, 5.0_f32, "rotationMaxZ=5 (ligne 143)");
-    assert_eq!(e4.rotation_easing_type_z, 1, "rotationEasingTypeZ=1 (ligne 144)");
-    assert_eq!(e4.rotation_period_time_z, 4.0_f32, "rotationPeriodTimeZ=4 (ligne 145)");
+    assert_eq!(
+        e4.rotation_easing_type_z, 1,
+        "rotationEasingTypeZ=1 (ligne 144)"
+    );
+    assert_eq!(
+        e4.rotation_period_time_z, 4.0_f32,
+        "rotationPeriodTimeZ=4 (ligne 145)"
+    );
 }
 
 #[test]
@@ -343,7 +419,10 @@ fn real_file_find_by_id() {
 
     // Tous les id 1-5 doivent être trouvables.
     for id in 1_i64..=5 {
-        assert!(cfg.find_by_id(id).is_some(), "find_by_id({id}) doit réussir");
+        assert!(
+            cfg.find_by_id(id).is_some(),
+            "find_by_id({id}) doit réussir"
+        );
     }
     assert!(cfg.find_by_id(0).is_none(), "id=0 absent");
     assert!(cfg.find_by_id(6).is_none(), "id=6 absent");

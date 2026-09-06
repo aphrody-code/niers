@@ -32,35 +32,83 @@ fn to_iecode(siblings: &[CfgEntry]) -> Vec<serde_json::Value> {
 }
 
 fn load(vfs: &Vfs, pred: impl Fn(&str) -> bool, what: &str) -> serde_json::Value {
-    let path = vfs.iter().map(|(p, _)| p.to_string()).filter(|p| pred(p)).min().unwrap_or_else(|| panic!("{what} introuvable"));
+    let path = vfs
+        .iter()
+        .map(|(p, _)| p.to_string())
+        .filter(|p| pred(p))
+        .min()
+        .unwrap_or_else(|| panic!("{what} introuvable"));
     eprintln!("  {path}");
     let file = cfgbin::parse_t2b(&vfs.read(&path).expect("read")).expect("parse");
     json!({ "entries": to_iecode(&file.entries) })
 }
 
 fn main() {
-    let dir = nie_formats::vfs::resolve_game_dir().to_string_lossy().into_owned();
+    let dir = nie_formats::vfs::resolve_game_dir()
+        .to_string_lossy()
+        .into_owned();
     let mut vfs = Vfs::new();
-    vfs.init(Path::new(&dir).join("data").as_path()).expect("vfs init");
+    vfs.init(Path::new(&dir).join("data").as_path())
+        .expect("vfs init");
 
-    let cfg = load(&vfs, |p| p.contains("/gamedata/") && p.rsplit('/').next().is_some_and(|b| b.starts_with("aura_skill_config") && b.ends_with(".cfg.bin")), "aura_skill_config");
+    let cfg = load(
+        &vfs,
+        |p| {
+            p.contains("/gamedata/")
+                && p.rsplit('/')
+                    .next()
+                    .is_some_and(|b| b.starts_with("aura_skill_config") && b.ends_with(".cfg.bin"))
+        },
+        "aura_skill_config",
+    );
     let auras = nie_data::aura::parse_all_aura_cmds(&cfg);
     eprintln!("[aura] auras = {}", auras.len());
     assert!(!auras.is_empty());
 
-    let text = nie_data::text::parse_text_file(&load(&vfs, |p| p.contains("/fr/") && p.rsplit('/').next().is_some_and(|b| b.starts_with("skill_text") && b.ends_with(".cfg.bin")), "skill_text fr"));
+    let text = nie_data::text::parse_text_file(&load(
+        &vfs,
+        |p| {
+            p.contains("/fr/")
+                && p.rsplit('/')
+                    .next()
+                    .is_some_and(|b| b.starts_with("skill_text") && b.ends_with(".cfg.bin"))
+        },
+        "skill_text fr",
+    ));
     eprintln!("[skill_text fr] entrées = {}", text.len());
 
     use nie_data::aura::{resolve_description, resolve_name};
-    let named = auras.iter().filter(|a| resolve_name(a, &text).is_some()).count();
-    let described = auras.iter().filter(|a| resolve_description(a, &text).is_some()).count();
-    eprintln!("noms d'aura résolus = {named}/{} ; descriptions = {described}", auras.len());
-    assert_eq!(named, auras.len(), "toutes les auras ont un nom (vérifié 443/443)");
+    let named = auras
+        .iter()
+        .filter(|a| resolve_name(a, &text).is_some())
+        .count();
+    let described = auras
+        .iter()
+        .filter(|a| resolve_description(a, &text).is_some())
+        .count();
+    eprintln!(
+        "noms d'aura résolus = {named}/{} ; descriptions = {described}",
+        auras.len()
+    );
+    assert_eq!(
+        named,
+        auras.len(),
+        "toutes les auras ont un nom (vérifié 443/443)"
+    );
 
     for a in auras.iter().take(6) {
         let n = resolve_name(a, &text).unwrap_or("");
         let d = resolve_description(a, &text).map(|s| s.chars().take(40).collect::<String>());
-        eprintln!("  aura {} ({}) → {:?}  desc={:?}", a.aura_id.to_hex(), a.asset_code, n, d);
+        eprintln!(
+            "  aura {} ({}) → {:?}  desc={:?}",
+            a.aura_id.to_hex(),
+            a.asset_code,
+            n,
+            d
+        );
     }
-    eprintln!("✓ END-TO-END OK : {named}/{} noms d'aura (Avatar/Keshin) résolus", auras.len());
+    eprintln!(
+        "✓ END-TO-END OK : {named}/{} noms d'aura (Avatar/Keshin) résolus",
+        auras.len()
+    );
 }

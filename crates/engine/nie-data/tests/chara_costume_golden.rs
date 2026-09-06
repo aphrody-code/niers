@@ -13,18 +13,18 @@
 //! fichier, extraits via `nie-formats` (CfgBin T2B) puis les conventions de nommage iecode
 //! (`<base>_<i>`). Verite terrain = la sortie d'inagle sur le meme fichier.
 
-use nie_data::chara_costume::{parse_all_chara_costumes, CharaCostume};
+use nie_data::chara_costume::{CharaCostume, parse_all_chara_costumes};
 use nie_data::hash::HashId;
 use serde_json::json;
 
 /// Les 5 premiers enfants reels (index 0..4) : `[type, modelRefCrc, flag1, flag2]`.
 /// Source : `CHARA_COSTUME_MODEL_LIST_BEG`, enfants 0..4 du dump reel (voir en-tete).
 const RAW: [[i64; 4]; 5] = [
-    [0, 590574594, 0, 0],   // 0x23337402
-    [0, 2015922578, 0, 0],  // 0x78288992
-    [0, 1875023921, 0, 0],  // 0x6FC29831
-    [2, 1057950082, 0, 0],  // 0x3F0F0982
-    [0, -972583323, 0, 0],  // 0xC6078E65 (modelRef signe -> non signe via toHex)
+    [0, 590574594, 0, 0],  // 0x23337402
+    [0, 2015922578, 0, 0], // 0x78288992
+    [0, 1875023921, 0, 0], // 0x6FC29831
+    [2, 1057950082, 0, 0], // 0x3F0F0982
+    [0, -972583323, 0, 0], // 0xC6078E65 (modelRef signe -> non signe via toHex)
 ];
 
 /// Construit un noeud iecode `entries` : la liste MODEL (avec les 5 enfants reels) plus
@@ -72,7 +72,11 @@ fn chara_costume_champs_reels() {
     for (i, raw) in RAW.iter().enumerate() {
         let c: &CharaCostume = &parsed[i];
         assert_eq!(c.kind, raw[0], "type (kind) du costume {i}");
-        assert_eq!(c.model_ref, HashId::from_i64(raw[1]), "modelRef du costume {i}");
+        assert_eq!(
+            c.model_ref,
+            HashId::from_i64(raw[1]),
+            "modelRef du costume {i}"
+        );
         assert_eq!(c.flag1, raw[2], "flag1 du costume {i}");
         assert_eq!(c.flag2, raw[3], "flag2 du costume {i}");
     }
@@ -90,7 +94,11 @@ fn chara_costume_modelref_hex_to_hex() {
         "0xC6078E65", // -972583323 >>> 0
     ];
     for (i, hex) in expected_hex.iter().enumerate() {
-        assert_eq!(parsed[i].model_ref.to_hex(), *hex, "hex modelRef costume {i}");
+        assert_eq!(
+            parsed[i].model_ref.to_hex(),
+            *hex,
+            "hex modelRef costume {i}"
+        );
     }
 }
 
@@ -129,7 +137,11 @@ fn chara_costume_enfant_trop_court_saute() {
         ]
     });
     let parsed = parse_all_chara_costumes(&short);
-    assert_eq!(parsed.len(), 1, "l'enfant a 3 vars est saute, le valide reste");
+    assert_eq!(
+        parsed.len(),
+        1,
+        "l'enfant a 3 vars est saute, le valide reste"
+    );
     // L'index reste la position brute : le costume valide est l'enfant n.1.
     assert_eq!(parsed[0].index, 1);
     assert_eq!(parsed[0].model_ref, HashId(0x2333_7402));

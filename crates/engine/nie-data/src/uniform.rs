@@ -404,13 +404,18 @@ impl UniformConfig {
     /// Recherche les tenues étendues d'un personnage par son `charaId`. `None` si absent.
     #[must_use]
     pub fn find_chara_ex(&self, chara_id: HashId) -> Option<&CharaUniformExInfo> {
-        self.chara_ex_uniforms.iter().find(|c| c.chara_id == chara_id)
+        self.chara_ex_uniforms
+            .iter()
+            .find(|c| c.chara_id == chara_id)
     }
 
     /// Renvoie les modèles ayant un `typeId` donné (port de `byTypeId`, uniform-config.ts l.164-169).
     #[must_use]
     pub fn models_with_type_id(&self, type_id: i64) -> Vec<&UniformModelInfo> {
-        self.models.iter().filter(|m| m.type_id == type_id).collect()
+        self.models
+            .iter()
+            .filter(|m| m.type_id == type_id)
+            .collect()
     }
 
     /// Résout chaque [`UniformInfo`] en joignant sa tranche `modelInfo=[start,count]` aux

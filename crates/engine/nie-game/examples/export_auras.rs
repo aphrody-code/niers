@@ -33,26 +33,56 @@ fn to_iecode(siblings: &[CfgEntry]) -> Vec<serde_json::Value> {
 }
 
 fn load(vfs: &Vfs, pred: impl Fn(&str) -> bool, what: &str) -> serde_json::Value {
-    let path = vfs.iter().map(|(p, _)| p.to_string()).filter(|p| pred(p)).min().unwrap_or_else(|| panic!("{what} introuvable"));
+    let path = vfs
+        .iter()
+        .map(|(p, _)| p.to_string())
+        .filter(|p| pred(p))
+        .min()
+        .unwrap_or_else(|| panic!("{what} introuvable"));
     eprintln!("  {path}");
     let file = cfgbin::parse_t2b(&vfs.read(&path).expect("read")).expect("parse");
     json!({ "entries": to_iecode(&file.entries) })
 }
 
 fn main() {
-    let out = std::env::args().nth(1).unwrap_or_else(|| "var/auras-resolved.json".into());
-    let dir = nie_formats::vfs::resolve_game_dir().to_string_lossy().into_owned();
+    let out = std::env::args()
+        .nth(1)
+        .unwrap_or_else(|| "var/auras-resolved.json".into());
+    let dir = nie_formats::vfs::resolve_game_dir()
+        .to_string_lossy()
+        .into_owned();
     let mut vfs = Vfs::new();
-    vfs.init(Path::new(&dir).join("data").as_path()).expect("vfs init");
+    vfs.init(Path::new(&dir).join("data").as_path())
+        .expect("vfs init");
 
-    let cfg = load(&vfs, |p| p.contains("/gamedata/") && p.rsplit('/').next().is_some_and(|b| b.starts_with("aura_skill_config") && b.ends_with(".cfg.bin")), "aura_skill_config");
+    let cfg = load(
+        &vfs,
+        |p| {
+            p.contains("/gamedata/")
+                && p.rsplit('/')
+                    .next()
+                    .is_some_and(|b| b.starts_with("aura_skill_config") && b.ends_with(".cfg.bin"))
+        },
+        "aura_skill_config",
+    );
     let auras = nie_data::aura::parse_all_aura_cmds(&cfg);
-    let text = nie_data::text::parse_text_file(&load(&vfs, |p| p.contains("/fr/") && p.rsplit('/').next().is_some_and(|b| b.starts_with("skill_text") && b.ends_with(".cfg.bin")), "skill_text fr"));
+    let text = nie_data::text::parse_text_file(&load(
+        &vfs,
+        |p| {
+            p.contains("/fr/")
+                && p.rsplit('/')
+                    .next()
+                    .is_some_and(|b| b.starts_with("skill_text") && b.ends_with(".cfg.bin"))
+        },
+        "skill_text fr",
+    ));
 
     use nie_data::aura::{resolve_description, resolve_name};
     let mut list: Vec<serde_json::Value> = Vec::new();
     for a in &auras {
-        let Some(name) = resolve_name(a, &text) else { continue };
+        let Some(name) = resolve_name(a, &text) else {
+            continue;
+        };
         list.push(json!({
             "auraId": a.aura_id.to_hex(),
             "assetCode": a.asset_code,
@@ -72,5 +102,9 @@ fn main() {
     let txt = serde_json::to_string_pretty(&doc).expect("serialize");
     std::fs::create_dir_all(Path::new(&out).parent().unwrap_or(Path::new("."))).ok();
     std::fs::write(&out, &txt).unwrap_or_else(|e| panic!("écriture {out} : {e}"));
-    eprintln!("✓ export-auras: {} Avatar/Keshin résolus → {out} ({} octets)", doc["count"], txt.len());
+    eprintln!(
+        "✓ export-auras: {} Avatar/Keshin résolus → {out} ({} octets)",
+        doc["count"],
+        txt.len()
+    );
 }

@@ -23,7 +23,9 @@ struct Compte {
 }
 
 fn main() {
-    let dir = nie_formats::vfs::resolve_game_dir().to_string_lossy().into_owned();
+    let dir = nie_formats::vfs::resolve_game_dir()
+        .to_string_lossy()
+        .into_owned();
     let data_dir = Path::new(&dir).join("data");
 
     let mut vfs = nie_formats::vfs::Vfs::new();
@@ -47,7 +49,13 @@ fn main() {
         let categorie = chemin
             .split_once("gamedata/")
             .map_or_else(
-                || chemin.trim_start_matches("data/").split('/').next().unwrap_or("?"),
+                || {
+                    chemin
+                        .trim_start_matches("data/")
+                        .split('/')
+                        .next()
+                        .unwrap_or("?")
+                },
                 |(_, reste)| reste.split('/').next().unwrap_or("?"),
             )
             .to_string();
@@ -83,7 +91,10 @@ fn main() {
         }
     }
 
-    println!("{:<22} {:>7} {:>7} {:>7}", "catégorie", "RDBN", "T2B", "échec");
+    println!(
+        "{:<22} {:>7} {:>7} {:>7}",
+        "catégorie", "RDBN", "T2B", "échec"
+    );
     println!("{}", "-".repeat(46));
     for (cat, c) in &par_categorie {
         println!("{:<22} {:>7} {:>7} {:>7}", cat, c.rdbn, c.t2b, c.echec);
@@ -93,7 +104,11 @@ fn main() {
     println!("{}", "-".repeat(46));
     println!("{:<22} {rdbn:>7} {t2b:>7} {echec:>7}", "TOTAL");
     #[allow(clippy::cast_precision_loss)]
-    let taux = if total == 0 { 0.0 } else { (rdbn + t2b) as f64 * 100.0 / total as f64 };
+    let taux = if total == 0 {
+        0.0
+    } else {
+        (rdbn + t2b) as f64 * 100.0 / total as f64
+    };
     println!("\ncouverture : {taux:.2} % ({}/{total})", rdbn + t2b);
 
     if echec > 0 {

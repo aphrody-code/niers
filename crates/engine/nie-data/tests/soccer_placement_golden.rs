@@ -41,8 +41,18 @@ fn placements_et_resolution() {
 fn dispatch_typed() {
     use nie_data::typed::{decode_by_key, family_key};
     let Some(root) = load() else { return };
-    assert_eq!(family_key("soccer_chara_placement_1.01.97.00.cfg.bin.json".strip_suffix(".json").unwrap()), "soccer_chara_placement");
+    assert_eq!(
+        family_key(
+            "soccer_chara_placement_1.01.97.00.cfg.bin.json"
+                .strip_suffix(".json")
+                .unwrap()
+        ),
+        "soccer_chara_placement"
+    );
     let (label, json) = decode_by_key("soccer_chara_placement", &root).expect("câblé");
     assert_eq!(label, "soccer_placement");
-    assert_eq!(json["chara_placements"].as_array().map(Vec::len), Some(2269));
+    assert_eq!(
+        json["chara_placements"].as_array().map(Vec::len),
+        Some(2269)
+    );
 }

@@ -38,7 +38,8 @@ fn g4cm_reels_round_trip_byte_exact() {
         return;
     }
 
-    let (mut exact, mut objets, mut canaux, mut echantillons, mut decodes) = (0, 0, 0, 0usize, 0usize);
+    let (mut exact, mut objets, mut canaux, mut echantillons, mut decodes) =
+        (0, 0, 0, 0usize, 0usize);
     let mut echecs: Vec<String> = Vec::new();
     for p in &chemins {
         let Ok(octets) = vfs.read(p) else {
@@ -60,7 +61,11 @@ fn g4cm_reels_round_trip_byte_exact() {
                     .zip(octets.iter())
                     .position(|(a, b)| a != b)
                     .map_or_else(|| "taille".to_string(), |i| format!("0x{i:X}"));
-                echecs.push(format!("{p} : écart à {ou} ({} vs {} o)", re.len(), octets.len()));
+                echecs.push(format!(
+                    "{p} : écart à {ou} ({} vs {} o)",
+                    re.len(),
+                    octets.len()
+                ));
             }
             Err(e) => echecs.push(format!("{p} : encode {e}")),
         }
@@ -83,7 +88,10 @@ fn g4cm_reels_round_trip_byte_exact() {
         eprintln!("  ÉCHEC {e}");
     }
     assert!(echecs.is_empty(), "{} fichier(s) en échec", echecs.len());
-    assert!(objets > 0 && canaux > 0 && echantillons > 0, "décodage vide : rien n'est prouvé");
+    assert!(
+        objets > 0 && canaux > 0 && echantillons > 0,
+        "décodage vide : rien n'est prouvé"
+    );
 }
 
 /// Le dispatch `decode` doit rendre du JSON qui **contient réellement** les données de caméra.
@@ -106,8 +114,17 @@ fn decode_json_porte_les_canaux() {
     let d = nie_formats::decode::decode(&octets).expect("le .g4cm doit se décoder");
     assert_eq!(d.format, "g4cm");
     let json = String::from_utf8(d.json).expect("json utf-8");
-    for cle in ["\"channels\"", "\"times\"", "\"clips\"", "\"names\"", "\"objects\""] {
-        assert!(json.contains(cle), "le JSON ne porte pas {cle} — décodage incomplet");
+    for cle in [
+        "\"channels\"",
+        "\"times\"",
+        "\"clips\"",
+        "\"names\"",
+        "\"objects\"",
+    ] {
+        assert!(
+            json.contains(cle),
+            "le JSON ne porte pas {cle} — décodage incomplet"
+        );
     }
     eprintln!("g4cm → JSON : {} octets pour {p}", json.len());
 }

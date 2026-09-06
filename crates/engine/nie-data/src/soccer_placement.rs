@@ -95,7 +95,9 @@ impl SoccerPlacementConfig {
     /// Recherche un placement par son `placementId`.
     #[must_use]
     pub fn find(&self, placement_id: HashId) -> Option<&PlacementInfo> {
-        self.placements.iter().find(|p| p.placement_id == placement_id)
+        self.placements
+            .iter()
+            .find(|p| p.placement_id == placement_id)
     }
 }
 
@@ -119,7 +121,10 @@ pub fn parse_soccer_placement_config(root: &Value) -> SoccerPlacementConfig {
     if let Some(values) = list_values(root, "m_placementCategory") {
         for v in values {
             if let Some(data) = field_pair(v, "placementData") {
-                categories.push(PlacementCategory { category: field_i64(v, "placementCategory").unwrap_or(0), data });
+                categories.push(PlacementCategory {
+                    category: field_i64(v, "placementCategory").unwrap_or(0),
+                    data,
+                });
             }
         }
     }
@@ -129,12 +134,19 @@ pub fn parse_soccer_placement_config(root: &Value) -> SoccerPlacementConfig {
             if let Some(category_data) = field_pair(v, "categoryData") {
                 let placement_id = field_hash(v, "placementId");
                 if !placement_id.is_zero() {
-                    placements.push(PlacementInfo { placement_id, category_data });
+                    placements.push(PlacementInfo {
+                        placement_id,
+                        category_data,
+                    });
                 }
             }
         }
     }
-    SoccerPlacementConfig { chara_placements, categories, placements }
+    SoccerPlacementConfig {
+        chara_placements,
+        categories,
+        placements,
+    }
 }
 
 #[cfg(test)]
@@ -162,7 +174,10 @@ mod tests {
         });
         let cfg = parse_soccer_placement_config(&root);
         assert_eq!(cfg.chara_placements.len(), 2);
-        assert_eq!(cfg.chara_placements[0].chara_parameter_id, HashId(0xA5F3_2308));
+        assert_eq!(
+            cfg.chara_placements[0].chara_parameter_id,
+            HashId(0xA5F3_2308)
+        );
         assert_eq!(cfg.chara_placements[0].pos_x, -10);
         assert_eq!(cfg.chara_placements[0].rot_y, 180);
         assert!(cfg.chara_placements[1].is_set_ctrl_chara);

@@ -28,8 +28,8 @@
 #![warn(missing_docs)]
 
 pub mod config;
-pub mod db;
 pub mod ctrl;
+pub mod db;
 pub mod g4cm;
 pub mod live;
 pub mod map;

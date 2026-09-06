@@ -23,7 +23,7 @@
 use anyhow::{Context, Result};
 use goblin::pe::PE;
 use hashbrown::{HashMap, HashSet};
-use nie_index::{rusqlite, Db};
+use nie_index::{Db, rusqlite};
 use tracing::info;
 
 use crate::anchors::classify_rtti;
@@ -64,7 +64,8 @@ pub fn vtable_edges_into(
     exe_path: &std::path::Path,
     skip_anchor: bool,
 ) -> Result<VtableStats> {
-    let bytes = std::fs::read(exe_path).with_context(|| format!("lecture {}", exe_path.display()))?;
+    let bytes =
+        std::fs::read(exe_path).with_context(|| format!("lecture {}", exe_path.display()))?;
     let pe = PE::parse(&bytes).context("goblin: parse PE")?;
     let image_base = pe.image_base;
 
@@ -93,7 +94,9 @@ pub fn vtable_edges_into(
             return None;
         }
         let off = (va - rdata_va) as usize;
-        rdata_bytes.get(off..off + 8).map(|b| u64::from_le_bytes(b.try_into().unwrap()))
+        rdata_bytes
+            .get(off..off + 8)
+            .map(|b| u64::from_le_bytes(b.try_into().unwrap()))
     };
 
     // Vtables localisées par RTTI : adresse + nom de classe + namespace.
@@ -114,7 +117,9 @@ pub fn vtable_edges_into(
 
     // Fonctions connues de la cible.
     let mut known: HashSet<u64> = {
-        let mut q = db.conn().prepare("SELECT vaddr FROM function WHERE binary_id=?1")?;
+        let mut q = db
+            .conn()
+            .prepare("SELECT vaddr FROM function WHERE binary_id=?1")?;
         q.query_map([dst_bin], |r| r.get::<_, i64>(0).map(|v| v as u64))?
             .collect::<std::result::Result<_, _>>()?
     };
@@ -128,7 +133,9 @@ pub fn vtable_edges_into(
         let mut methods = Vec::new();
         let mut k = 1u64; // saute le pointeur COL en +0
         while k < 256 {
-            let Some(slot) = rd_u64(vt + k * 8) else { break };
+            let Some(slot) = rd_u64(vt + k * 8) else {
+                break;
+            };
             if (text_va..text_end).contains(&slot) {
                 methods.push(slot);
                 all_methods.insert(slot);
@@ -212,8 +219,7 @@ pub fn vtable_edges_into(
                 if method_to_ns.get(&m).map_or(0, |s| s.len()) > 1 {
                     continue; // thunk partagé entre plusieurs classes
                 }
-                stats.class_anchored +=
-                    upd.execute(rusqlite::params![sub, dst_bin, m as i64])?;
+                stats.class_anchored += upd.execute(rusqlite::params![sub, dst_bin, m as i64])?;
             }
         }
 
@@ -242,7 +248,11 @@ pub fn vtable_edges_into(
 
     info!(
         "vtable: {} vtables, {} méthodes, {} feuilles ajoutées, {} arêtes cohésion, {} noms-struct",
-        stats.vtables, stats.methods, stats.new_leaf_funcs, stats.cohesion_edges, stats.named_struct
+        stats.vtables,
+        stats.methods,
+        stats.new_leaf_funcs,
+        stats.cohesion_edges,
+        stats.named_struct
     );
     Ok(stats)
 }

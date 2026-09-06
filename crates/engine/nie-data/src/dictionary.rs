@@ -321,7 +321,10 @@ impl DictionaryConfig {
     ///
     /// Retourne `&[]` si la tranche dépasse la taille de `observation_refs`.
     #[must_use]
-    pub fn observation_refs_of(&self, param: &DictionaryParamData) -> &[DictionaryObservationRefData] {
+    pub fn observation_refs_of(
+        &self,
+        param: &DictionaryParamData,
+    ) -> &[DictionaryObservationRefData] {
         let start = param.observation_offset as usize;
         let end = start.saturating_add(param.observation_count as usize);
         self.observation_refs.get(start..end).unwrap_or(&[])
@@ -331,7 +334,10 @@ impl DictionaryConfig {
     ///
     /// Retourne `&[]` si la tranche dépasse la taille de `observation_action_plays`.
     #[must_use]
-    pub fn plays_of(&self, action: &DictionaryObservationActionData) -> &[DictionaryObservationActionPlay] {
+    pub fn plays_of(
+        &self,
+        action: &DictionaryObservationActionData,
+    ) -> &[DictionaryObservationActionPlay] {
         let start = action.play_offset as usize;
         let end = start.saturating_add(action.play_count as usize);
         self.observation_action_plays.get(start..end).unwrap_or(&[])
@@ -341,7 +347,10 @@ impl DictionaryConfig {
     ///
     /// Retourne `&[]` si la tranche dépasse la taille de `observation_action_ids`.
     #[must_use]
-    pub fn action_ids_of(&self, play: &DictionaryObservationActionPlay) -> &[DictionaryObservationActionId] {
+    pub fn action_ids_of(
+        &self,
+        play: &DictionaryObservationActionPlay,
+    ) -> &[DictionaryObservationActionId] {
         let start = play.action_offset as usize;
         let end = start.saturating_add(play.action_count as usize);
         self.observation_action_ids.get(start..end).unwrap_or(&[])

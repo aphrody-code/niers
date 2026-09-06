@@ -41,7 +41,11 @@ impl Vec2 {
     #[must_use]
     pub fn norm(self) -> Self {
         let l = self.len();
-        if l > 1e-6 { self * (1.0 / l) } else { Self::default() }
+        if l > 1e-6 {
+            self * (1.0 / l)
+        } else {
+            Self::default()
+        }
     }
 }
 
@@ -79,7 +83,11 @@ impl Vec3 {
     /// Vecteur nul.
     #[must_use]
     pub const fn zero() -> Self {
-        Self { x: 0.0, y: 0.0, z: 0.0 }
+        Self {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        }
     }
 
     /// Construit un vecteur 3D.
@@ -131,7 +139,11 @@ impl Vec3 {
         if len < f32::EPSILON {
             return Self::zero();
         }
-        Self { x: self.x / len, y: self.y / len, z: self.z / len }
+        Self {
+            x: self.x / len,
+            y: self.y / len,
+            z: self.z / len,
+        }
     }
 
     /// Normalisation **byte-fidèle au jeu** (`game::BallMoveRate::vmethod_3`, plage `0x141339484`,
@@ -150,7 +162,14 @@ impl Vec3 {
         let len = self.length();
         if len > 0.0 {
             let inv = 1.0 / len; // réciproque unique (divss), puis produit (mulps) — fidèle au binaire
-            (Self { x: self.x * inv, y: self.y * inv, z: self.z * inv }, len)
+            (
+                Self {
+                    x: self.x * inv,
+                    y: self.y * inv,
+                    z: self.z * inv,
+                },
+                len,
+            )
         } else {
             (Self::zero(), len)
         }
@@ -162,10 +181,18 @@ impl Vec3 {
     /// pas `delta / dt`) ; sinon `delta`. No_std (pas de `sqrt`).
     #[must_use]
     pub fn displacement_rate(self, prev: Self, dt: f32) -> Self {
-        let delta = Self { x: self.x - prev.x, y: self.y - prev.y, z: self.z - prev.z };
+        let delta = Self {
+            x: self.x - prev.x,
+            y: self.y - prev.y,
+            z: self.z - prev.z,
+        };
         if dt > 0.0 {
             let inv = 1.0 / dt;
-            Self { x: delta.x * inv, y: delta.y * inv, z: delta.z * inv }
+            Self {
+                x: delta.x * inv,
+                y: delta.y * inv,
+                z: delta.z * inv,
+            }
         } else {
             delta
         }
@@ -196,7 +223,11 @@ impl Vec3 {
     pub fn reflect(self, n: Self) -> Self {
         let dot = (self.x * n.x + self.y * n.y) + (self.z * n.z + 0.0);
         let two_dot = dot + dot;
-        Self { x: self.x - two_dot * n.x, y: self.y - two_dot * n.y, z: self.z - two_dot * n.z }
+        Self {
+            x: self.x - two_dot * n.x,
+            y: self.y - two_dot * n.y,
+            z: self.z - two_dot * n.z,
+        }
     }
 
     /// Lerp entre `self` et `other` avec poids `t` ∈ [0, 1].
@@ -222,7 +253,11 @@ mod tests {
 
     #[test]
     fn vec3_length() {
-        let v = Vec3 { x: 3.0, y: 0.0, z: 4.0 };
+        let v = Vec3 {
+            x: 3.0,
+            y: 0.0,
+            z: 4.0,
+        };
         assert!((v.length() - 5.0).abs() < 1e-5);
     }
 
@@ -234,9 +269,17 @@ mod tests {
     #[test]
     fn vec3_lerp() {
         let a = Vec3::zero();
-        let b = Vec3 { x: 10.0, y: 20.0, z: 30.0 };
+        let b = Vec3 {
+            x: 10.0,
+            y: 20.0,
+            z: 30.0,
+        };
         let mid = a.lerp(b, 0.5);
-        assert!((mid.x - 5.0).abs() < 1e-6 && (mid.y - 10.0).abs() < 1e-6 && (mid.z - 15.0).abs() < 1e-6);
+        assert!(
+            (mid.x - 5.0).abs() < 1e-6
+                && (mid.y - 10.0).abs() < 1e-6
+                && (mid.z - 15.0).abs() < 1e-6
+        );
     }
 
     #[test]
@@ -315,10 +358,20 @@ mod tests {
         assert_eq!(b.y.to_bits(), 5.0_f32.to_bits());
         assert_eq!(b.z.to_bits(), 0.0_f32.to_bits());
         // Points de contrôle alignés, t=0.25 → (2,0,0).
-        let l = Vec3::bezier_quadratic(Vec3::zero(), Vec3::new(4.0, 0.0, 0.0), Vec3::new(8.0, 0.0, 0.0), 0.25);
+        let l = Vec3::bezier_quadratic(
+            Vec3::zero(),
+            Vec3::new(4.0, 0.0, 0.0),
+            Vec3::new(8.0, 0.0, 0.0),
+            0.25,
+        );
         assert_eq!(l.x.to_bits(), 2.0_f32.to_bits());
         // Points égaux → ce point.
-        let e = Vec3::bezier_quadratic(Vec3::new(1.0, 2.0, 3.0), Vec3::new(1.0, 2.0, 3.0), Vec3::new(1.0, 2.0, 3.0), 0.5);
+        let e = Vec3::bezier_quadratic(
+            Vec3::new(1.0, 2.0, 3.0),
+            Vec3::new(1.0, 2.0, 3.0),
+            Vec3::new(1.0, 2.0, 3.0),
+            0.5,
+        );
         assert_eq!(e, Vec3::new(1.0, 2.0, 3.0));
     }
 }

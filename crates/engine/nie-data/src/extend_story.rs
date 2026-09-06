@@ -254,7 +254,9 @@ impl ExtendStoryConfig {
     /// si absentes. (L'`extendStoryDataId` d'une histoire pointe vers ce `extendStoryGameId`.)
     #[must_use]
     pub fn find_game_data(&self, game_id: HashId) -> Option<&ExtendStoryGameData> {
-        self.game_data.iter().find(|g| g.extend_story_game_id == game_id)
+        self.game_data
+            .iter()
+            .find(|g| g.extend_story_game_id == game_id)
     }
 }
 
@@ -277,19 +279,25 @@ pub fn parse_extend_story_config(root: &Value) -> ExtendStoryConfig {
     if let Some(values) = list_values(root, "m_exStoryGameEnterEvConfigList") {
         cfg.enter_events = values
             .iter()
-            .map(|v| ExtendStoryEnterEvent { enter_event_id: field_hash(v, "enterEventId") })
+            .map(|v| ExtendStoryEnterEvent {
+                enter_event_id: field_hash(v, "enterEventId"),
+            })
             .collect();
     }
     if let Some(values) = list_values(root, "m_exStoryGameWinEvConfigList") {
         cfg.win_events = values
             .iter()
-            .map(|v| ExtendStoryWinEvent { win_event_id: field_hash(v, "winEventId") })
+            .map(|v| ExtendStoryWinEvent {
+                win_event_id: field_hash(v, "winEventId"),
+            })
             .collect();
     }
     if let Some(values) = list_values(root, "m_exStoryGameLoseEvConfigList") {
         cfg.lose_events = values
             .iter()
-            .map(|v| ExtendStoryLoseEvent { lose_event_id: field_hash(v, "loseEventId") })
+            .map(|v| ExtendStoryLoseEvent {
+                lose_event_id: field_hash(v, "loseEventId"),
+            })
             .collect();
     }
     if let Some(values) = list_values(root, "m_exStoryGameDataConfigList") {

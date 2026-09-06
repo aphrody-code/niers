@@ -37,7 +37,9 @@ fn load(vfs: &Vfs, prefix: &str, must_contain: &str) -> Option<serde_json::Value
         .map(|(p, _)| p.to_string())
         .filter(|p| {
             p.contains(must_contain)
-                && p.rsplit('/').next().is_some_and(|b| b.starts_with(prefix) && b.ends_with(".cfg.bin"))
+                && p.rsplit('/')
+                    .next()
+                    .is_some_and(|b| b.starts_with(prefix) && b.ends_with(".cfg.bin"))
         })
         .min()?;
     eprintln!("  {path}");
@@ -47,11 +49,15 @@ fn load(vfs: &Vfs, prefix: &str, must_contain: &str) -> Option<serde_json::Value
 }
 
 fn main() {
-    let dir = nie_formats::vfs::resolve_game_dir().to_string_lossy().into_owned();
+    let dir = nie_formats::vfs::resolve_game_dir()
+        .to_string_lossy()
+        .into_owned();
     let mut vfs = Vfs::new();
-    vfs.init(Path::new(&dir).join("data").as_path()).expect("vfs init");
+    vfs.init(Path::new(&dir).join("data").as_path())
+        .expect("vfs init");
 
-    let cfg_root = load(&vfs, "mission_config", "/gamedata/mission/").expect("mission_config introuvable");
+    let cfg_root =
+        load(&vfs, "mission_config", "/gamedata/mission/").expect("mission_config introuvable");
     let missions = nie_data::mission::parse_mission_config(&cfg_root);
     eprintln!("[mission] missions = {}", missions.len());
     assert!(!missions.is_empty());
@@ -69,15 +75,31 @@ fn main() {
         .count();
     for m in &missions {
         let n = nie_data::mission::resolve_name(m, &mission_text);
-        eprintln!("  mission {} ({}) nameId={} → {:?}", m.mission_id.to_hex(), m.mission_code, m.name_id().to_hex(), n);
+        eprintln!(
+            "  mission {} ({}) nameId={} → {:?}",
+            m.mission_id.to_hex(),
+            m.mission_code,
+            m.name_id().to_hex(),
+            n
+        );
     }
-    eprintln!("noms de mission résolus = {resolved}/{} (stub : msa999999)", missions.len());
+    eprintln!(
+        "noms de mission résolus = {resolved}/{} (stub : msa999999)",
+        missions.len()
+    );
 
     // Mécanisme : chaque entrée réelle de `mission_text` est résoluble par son propre hash.
     assert!(!mission_text.is_empty(), "mission_text fr non vide");
     for (h, txt) in &mission_text {
-        assert_eq!(nie_data::text::find_text(&mission_text, *h), Some(txt.as_str()));
-        eprintln!("  mission_text {} = {:?}", h.to_hex(), txt.chars().take(40).collect::<String>());
+        assert_eq!(
+            nie_data::text::find_text(&mission_text, *h),
+            Some(txt.as_str())
+        );
+        eprintln!(
+            "  mission_text {} = {:?}",
+            h.to_hex(),
+            txt.chars().take(40).collect::<String>()
+        );
     }
     eprintln!("✓ END-TO-END OK : jointure mission::resolve_name vérifiée sur le vrai mission_text");
 }

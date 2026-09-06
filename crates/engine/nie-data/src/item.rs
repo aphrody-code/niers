@@ -19,7 +19,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use serde_json::Value;
 
-use crate::cfgbin::{owned, walk_named, Node};
+use crate::cfgbin::{Node, owned, walk_named};
 use crate::hash::HashId;
 
 /// Catégorie d'objet (20 variantes). Source : `CATEGORY_MAP` (item-config.ts l.51-72).
@@ -154,11 +154,7 @@ impl ItemInfo {
 
         let price = if n > 4 {
             let p = node.int(4);
-            if p > 0 {
-                Some(p)
-            } else {
-                None
-            }
+            if p > 0 { Some(p) } else { None }
         } else {
             None
         };
@@ -176,11 +172,7 @@ impl ItemInfo {
         // internalCode : var11 (asset ID).
         let internal_code = if n > 11 {
             let s = node.string(11);
-            if s.is_empty() {
-                None
-            } else {
-                Some(owned(s))
-            }
+            if s.is_empty() { None } else { Some(owned(s)) }
         } else {
             None
         };

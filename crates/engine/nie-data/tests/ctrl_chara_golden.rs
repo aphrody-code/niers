@@ -13,10 +13,10 @@
 
 use nie_data::cfgbin::Node;
 use nie_data::ctrl_chara::{
-    is_controllable, parse_all_ctrl_chara, parse_ctrl_chara_node, CtrlCharaData,
+    CtrlCharaData, is_controllable, parse_all_ctrl_chara, parse_ctrl_chara_node,
 };
 use nie_data::hash::HashId;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 fn ivar(v: i64) -> Value {
     json!({ "type": "Int", "value": v.to_string() })
@@ -87,7 +87,11 @@ fn fewer_than_three_vars_rejected() {
 
 #[test]
 fn entry_is_copy() {
-    let a = CtrlCharaData { chara_param_id: HashId(7), control_type: 2, flags: 0 };
+    let a = CtrlCharaData {
+        chara_param_id: HashId(7),
+        control_type: 2,
+        flags: 0,
+    };
     let b = a;
     assert_eq!(a, b);
 }

@@ -8,8 +8,8 @@
 //! Le **conteneur** est parsé byte-exact ; l'intérieur PhysX-cooked (maillage de collision sérialisé
 //! par le SDK PhysX) est **opaque** — relève du SDK PhysX, pas du RE Level-5 — donc non décodé.
 
-use crate::level5::{self, Level5Header};
 use crate::FormatError;
+use crate::level5::{self, Level5Header};
 
 /// Magic « PXCL » en little-endian.
 const MAGIC: u32 = 0x4C43_5850;
@@ -48,7 +48,10 @@ pub fn is_pxcl(data: &[u8]) -> bool {
 /// [`FormatError::TooShort`] si < 0x10 octets, [`FormatError::BadMagic`] si le magic ≠ « PXCL ».
 pub fn parse(data: &[u8]) -> Result<Pxcl, FormatError> {
     let header = level5::parse_header(data, MAGIC, "PXCL")?;
-    Ok(Pxcl { header, file_size: data.len() })
+    Ok(Pxcl {
+        header,
+        file_size: data.len(),
+    })
 }
 
 #[cfg(test)]
@@ -72,7 +75,10 @@ mod tests {
 
     #[test]
     fn rejette_magic_et_court() {
-        assert!(matches!(parse(&[0u8; 0x30]), Err(FormatError::BadMagic { .. })));
+        assert!(matches!(
+            parse(&[0u8; 0x30]),
+            Err(FormatError::BadMagic { .. })
+        ));
         assert!(matches!(parse(b"PX"), Err(FormatError::TooShort { .. })));
         assert!(is_pxcl(b"PXCL____________"));
         assert!(!is_pxcl(b"G4CM"));
@@ -83,8 +89,14 @@ mod tests {
     #[test]
     fn golden_col_reels() {
         for (bytes, size) in [
-            (include_bytes!("../tests/fixtures/col/ao111.col").as_slice(), 1020usize),
-            (include_bytes!("../tests/fixtures/col/k01h512.col").as_slice(), 1604usize),
+            (
+                include_bytes!("../tests/fixtures/col/ao111.col").as_slice(),
+                1020usize,
+            ),
+            (
+                include_bytes!("../tests/fixtures/col/k01h512.col").as_slice(),
+                1604usize,
+            ),
         ] {
             let c = parse(bytes).expect("col réel");
             assert_eq!(&c.header.magic.to_le_bytes(), b"PXCL");

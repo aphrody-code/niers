@@ -7,9 +7,9 @@
 //! l.24-45, lecture `lists[0].values` l.227-233). Valeurs ci-dessous extraites telles quelles
 //! du dump (via `nie_formats::cfgbin::read_values` → forme iecode), aucune valeur inventée.
 
-use nie_data::belong_team::{find_by_id, parse_belong_team_config, BelongTeamInfo, Season};
+use nie_data::belong_team::{BelongTeamInfo, Season, find_by_id, parse_belong_team_config};
 use nie_data::hash::HashId;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 /// 4 premières entrées réelles de `m_belongTeamInfoList` (index 0..3 du dump).
 fn belong_teams_head() -> Vec<Value> {
@@ -173,7 +173,11 @@ fn vrai_fichier_si_present() {
     let content = std::fs::read_to_string(path).unwrap();
     let root: Value = serde_json::from_str(&content).unwrap();
     let teams = parse_belong_team_config(&root);
-    assert_eq!(teams.len(), 208, "208 équipes d'appartenance dans le vrai dump");
+    assert_eq!(
+        teams.len(),
+        208,
+        "208 équipes d'appartenance dans le vrai dump"
+    );
     assert_eq!(teams[0].belong_team_id, HashId(0xF01B_B293));
     assert_eq!(teams[0].team_number_ie2, 18);
 }

@@ -52,7 +52,11 @@ impl Default for PhaseTriple {
     /// Valeurs issues du constructeur: `*(undefined2 *)(param_1 + 99) = 1`
     /// → les deux premiers bytes à 0, le troisième (0x702 = active) à 1.
     fn default() -> Self {
-        Self { prev: 0, transition: 0, active: 1 }
+        Self {
+            prev: 0,
+            transition: 0,
+            active: 1,
+        }
     }
 }
 
@@ -191,7 +195,11 @@ impl Default for SoccerCtrlAi {
         let mut base = SoccerCtrl::default();
         // L'IA pose ai_phase = 0, pas 1 comme le parent
         base.phases.active = 0;
-        Self { base, ai_data: [0u8; 1024], ai_phase: 0 }
+        Self {
+            base,
+            ai_data: [0u8; 1024],
+            ai_phase: 0,
+        }
     }
 }
 
@@ -218,7 +226,11 @@ mod tests {
 
     #[test]
     fn phase_triple_reset() {
-        let mut p = PhaseTriple { active: 5, prev: 3, transition: 2 };
+        let mut p = PhaseTriple {
+            active: 5,
+            prev: 3,
+            transition: 2,
+        };
         p.reset();
         assert_eq!(p.active, 1);
         assert_eq!(p.prev, 0);
@@ -249,7 +261,11 @@ mod tests {
     #[test]
     fn phase_triple_double_fallback_to_transition() {
         // Quand prev est aussi 0, utilise transition
-        let mut p = PhaseTriple { active: 5, prev: 0, transition: 2 };
+        let mut p = PhaseTriple {
+            active: 5,
+            prev: 0,
+            transition: 2,
+        };
         p.transition_to(0);
         assert_eq!(p.active, 2); // fallback sur transition
     }
@@ -276,7 +292,10 @@ mod tests {
         let mut ctrl = SoccerCtrl::new();
         ctrl.transition_phase(4);
         assert_eq!(ctrl.active_phase(), 4);
-        assert!(!ctrl.has_active_controller, "doit reinitialiser le controleur");
+        assert!(
+            !ctrl.has_active_controller,
+            "doit reinitialiser le controleur"
+        );
     }
 
     #[test]

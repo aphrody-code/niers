@@ -27,18 +27,18 @@ use fyrox::asset::untyped::ResourceKind;
 use fyrox::core::algebra::Vector3;
 use fyrox::core::log::Log;
 
+use fyrox::core::math::TriangleDefinition;
 use fyrox::event_loop::EventLoop;
 use fyrox::material::{Material, MaterialResource};
 use fyrox::resource::texture::{TextureResource, TextureResourceExtension};
 use fyrox::scene::base::BaseBuilder;
-use fyrox::core::math::TriangleDefinition;
+use fyrox::scene::mesh::MeshBuilder;
 use fyrox::scene::mesh::buffer::{TriangleBuffer, VertexBuffer};
 use fyrox::scene::mesh::surface::{Surface, SurfaceData, SurfaceResource};
 use fyrox::scene::mesh::vertex::StaticVertex;
-use fyrox::scene::mesh::MeshBuilder;
 
-use fyrox::scene::transform::TransformBuilder;
 use fyrox::scene::Scene;
+use fyrox::scene::transform::TransformBuilder;
 use fyroxed_base::{Editor, StartupData};
 
 use nie_formats::vfs::Vfs;
@@ -125,7 +125,8 @@ fn load_game_model(game_dir: &Path, asset: &str) -> Result<Model> {
     };
 
     let mut vfs = Vfs::new();
-    vfs.init(game_dir).map_err(|e| anyhow::anyhow!("montage du VFS {} : {e}", game_dir.display()))?;
+    vfs.init(game_dir)
+        .map_err(|e| anyhow::anyhow!("montage du VFS {} : {e}", game_dir.display()))?;
 
     let data = vfs
         .read(asset)
@@ -136,7 +137,11 @@ fn load_game_model(game_dir: &Path, asset: &str) -> Result<Model> {
     let dir_prefix = asset.strip_suffix(base).unwrap_or("");
     let sibling = |ext: &str| -> Option<Vec<u8>> {
         let candidate = format!("{dir_prefix}{stem}.{ext}");
-        if candidate == asset { Some(data.clone()) } else { vfs.read(&candidate).ok() }
+        if candidate == asset {
+            Some(data.clone())
+        } else {
+            vfs.read(&candidate).ok()
+        }
     };
 
     let g4md = sibling("g4md").context("G4MD introuvable (fichier ou frère de même nom)")?;
@@ -150,7 +155,9 @@ fn load_game_model(game_dir: &Path, asset: &str) -> Result<Model> {
     })
     .map_err(|e| anyhow::anyhow!("assemblage du modèle : {e}"))?;
 
-    if let Some(png) = sibling("g4tx").and_then(|g4tx| nie_formats::g4tx_decode::decode_best_to_png(&g4tx, stem)) {
+    if let Some(png) =
+        sibling("g4tx").and_then(|g4tx| nie_formats::g4tx_decode::decode_best_to_png(&g4tx, stem))
+    {
         assembled.embedded_textures.push(EmbeddedTexture {
             component: MeshComponent::Generic,
             name: format!("{stem}_tex"),
@@ -208,8 +215,11 @@ fn scene_from_model(model: &Model, label: &str) -> Scene {
             material.bind("diffuseTexture", res);
         }
 
-        let mut surface =
-            Surface::new(SurfaceResource::new_ok(Default::default(), ResourceKind::Embedded, data));
+        let mut surface = Surface::new(SurfaceResource::new_ok(
+            Default::default(),
+            ResourceKind::Embedded,
+            data,
+        ));
         surface.set_material(MaterialResource::new_ok(
             Default::default(),
             ResourceKind::Embedded,
@@ -293,11 +303,10 @@ mod tests {
 
         use fyrox::graph::SceneGraph;
         let scene = scene_from_model(&model, "test");
-        let meshes = scene
-            .graph
-            .pair_iter()
-            .filter(|(_, n)| n.is_mesh())
-            .count();
-        assert_eq!(meshes, 1, "une primitive doit donner exactement un maillage");
+        let meshes = scene.graph.pair_iter().filter(|(_, n)| n.is_mesh()).count();
+        assert_eq!(
+            meshes, 1,
+            "une primitive doit donner exactement un maillage"
+        );
     }
 }

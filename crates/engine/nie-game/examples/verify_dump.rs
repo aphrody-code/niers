@@ -19,7 +19,9 @@ fn main() -> std::process::ExitCode {
         .next()
         .expect("arg 2 : chemin fichier dumpé sur disque");
 
-    let dir = nie_formats::vfs::resolve_game_dir().to_string_lossy().into_owned();
+    let dir = nie_formats::vfs::resolve_game_dir()
+        .to_string_lossy()
+        .into_owned();
     let mut vfs = Vfs::new();
     vfs.init(Path::new(&dir).join("data").as_path())
         .expect("vfs init");

@@ -103,7 +103,7 @@ pub fn encode_pcm16_wav(samples: &[i16], channels: u32, sample_rate: u32) -> Vec
     // fmt chunk
     out.extend_from_slice(b"fmt ");
     out.extend_from_slice(&16u32.to_le_bytes()); // chunk size
-    out.extend_from_slice(&1u16.to_le_bytes());  // PCM
+    out.extend_from_slice(&1u16.to_le_bytes()); // PCM
     out.extend_from_slice(&(channels as u16).to_le_bytes());
     out.extend_from_slice(&sample_rate.to_le_bytes());
     out.extend_from_slice(&byte_rate.to_le_bytes());
@@ -149,7 +149,10 @@ fn signed_nibble(nib: u8) -> i32 {
 /// Retourne [`FormatError::Corrupt`] pour tout autre problème structurel.
 pub fn adx_decode(data: &[u8]) -> Result<PcmResult, FormatError> {
     if data.len() < 20 {
-        return Err(FormatError::TooShort { got: data.len(), need: 20 });
+        return Err(FormatError::TooShort {
+            got: data.len(),
+            need: 20,
+        });
     }
     // Magic ADX : octets 0-1 = 0x80 0x00
     if data[0] != 0x80 || data[1] != 0x00 {
@@ -180,19 +183,29 @@ pub fn adx_decode(data: &[u8]) -> Result<PcmResult, FormatError> {
     let highpass_hz = u32::from(read_u16_be(data, 16));
 
     if encoding != 3 {
-        return Err(FormatError::Corrupt("ADX : seul l'encodage type 3 est supporté"));
+        return Err(FormatError::Corrupt(
+            "ADX : seul l'encodage type 3 est supporté",
+        ));
     }
     if block_size != ADX_FRAME_BYTES || bitdepth != 4 {
-        return Err(FormatError::Corrupt("ADX : block_size ou bitdepth invalide (attendu 18/4)"));
+        return Err(FormatError::Corrupt(
+            "ADX : block_size ou bitdepth invalide (attendu 18/4)",
+        ));
     }
     if channels == 0 || channels > 2 {
-        return Err(FormatError::Corrupt("ADX : nombre de canaux invalide (1 ou 2 seulement)"));
+        return Err(FormatError::Corrupt(
+            "ADX : nombre de canaux invalide (1 ou 2 seulement)",
+        ));
     }
     if sample_rate == 0 || total_samples == 0 {
-        return Err(FormatError::Corrupt("ADX : sample_rate ou total_samples nul"));
+        return Err(FormatError::Corrupt(
+            "ADX : sample_rate ou total_samples nul",
+        ));
     }
     if audio_data_start >= data.len() {
-        return Err(FormatError::Corrupt("ADX : data_offset hors des limites du fichier"));
+        return Err(FormatError::Corrupt(
+            "ADX : data_offset hors des limites du fichier",
+        ));
     }
 
     // Coefficients ADX (filtre ADPCM linéaire 2e ordre).
@@ -256,7 +269,11 @@ pub fn adx_decode(data: &[u8]) -> Result<PcmResult, FormatError> {
         }
     }
 
-    Ok(PcmResult { samples, sample_rate, channels })
+    Ok(PcmResult {
+        samples,
+        sample_rate,
+        channels,
+    })
 }
 
 // ── AWB (AFS2) ────────────────────────────────────────────────────────────────
@@ -322,7 +339,10 @@ impl Awb {
     /// du tampon — signe que l'en-tête lu est trop court, pas que le fichier est mauvais.
     pub fn parse_entete(data: &[u8], taille_fichier: u64) -> Result<Self, FormatError> {
         if data.len() < 16 {
-            return Err(FormatError::TooShort { got: data.len(), need: 16 });
+            return Err(FormatError::TooShort {
+                got: data.len(),
+                need: 16,
+            });
         }
         if &data[..4] != b"AFS2" {
             return Err(FormatError::BadMagic { format: "AWB/AFS2" });
@@ -330,7 +350,9 @@ impl Awb {
 
         let offset_size = data[5] as usize;
         if offset_size != 2 && offset_size != 4 {
-            return Err(FormatError::Corrupt("AWB : offset_size invalide (2 ou 4 attendu)"));
+            return Err(FormatError::Corrupt(
+                "AWB : offset_size invalide (2 ou 4 attendu)",
+            ));
         }
 
         // Champ [6:8] ignoré (flags/padding selon version).
@@ -348,7 +370,9 @@ impl Awb {
         let ids_start = 0x10;
         let ids_end = ids_start + entry_count * 4;
         if ids_end > data.len() {
-            return Err(FormatError::Corrupt("AWB : table cue-IDs dépasse le tampon"));
+            return Err(FormatError::Corrupt(
+                "AWB : table cue-IDs dépasse le tampon",
+            ));
         }
         let cue_ids: Vec<u32> = (0..entry_count)
             .map(|i| read_u32_le(data, ids_start + i * 4))
@@ -362,7 +386,9 @@ impl Awb {
         let off_table_start = ids_end;
         let off_table_end = off_table_start + (entry_count + 1) * offset_size;
         if off_table_end > data.len() {
-            return Err(FormatError::Corrupt("AWB : table d'offsets dépasse le tampon"));
+            return Err(FormatError::Corrupt(
+                "AWB : table d'offsets dépasse le tampon",
+            ));
         }
 
         let read_offset = |i: usize| -> u32 {
@@ -477,7 +503,10 @@ pub fn acb_parse(data: &[u8]) -> Result<AcbInfo, FormatError> {
     };
     // Récupère un entier u32 depuis la table
     let get_u32 = |name: &str| -> Option<u32> {
-        table.get(0, name).and_then(|v| v.as_i64()).map(|v| v as u32)
+        table
+            .get(0, name)
+            .and_then(|v| v.as_i64())
+            .map(|v| v as u32)
     };
     // Récupère un blob Bytes depuis la table
     let get_bytes = |name: &str| -> Option<Vec<u8>> {
@@ -634,9 +663,10 @@ pub fn acb_cues(data: &[u8]) -> Result<Vec<AcbCue>, FormatError> {
     let mut noms: alloc::vec::Vec<String> = alloc::vec![String::new(); cue_table.rows.len()];
     if let Some(t) = sous_table("CueNameTable") {
         for r in 0..t.rows.len() {
-            let (Some(UtfValue::String(nom)), Some(idx)) =
-                (t.get(r, "CueName"), t.get(r, "CueIndex").and_then(UtfValue::as_i64))
-            else {
+            let (Some(UtfValue::String(nom)), Some(idx)) = (
+                t.get(r, "CueName"),
+                t.get(r, "CueIndex").and_then(UtfValue::as_i64),
+            ) else {
                 continue;
             };
             if let Some(slot) = noms.get_mut(idx as usize) {
@@ -645,7 +675,8 @@ pub fn acb_cues(data: &[u8]) -> Result<Vec<AcbCue>, FormatError> {
         }
     }
 
-    let entier = |t: &crate::cpk::UtfTable, r: usize, c: &str| t.get(r, c).and_then(UtfValue::as_i64);
+    let entier =
+        |t: &crate::cpk::UtfTable, r: usize, c: &str| t.get(r, c).and_then(UtfValue::as_i64);
 
     let mut cues = alloc::vec::Vec::with_capacity(cue_table.rows.len());
     for r in 0..cue_table.rows.len() {
@@ -684,9 +715,17 @@ pub fn acb_cues(data: &[u8]) -> Result<Vec<AcbCue>, FormatError> {
                     let streaming = entier(t, w, "Streaming").unwrap_or(0) != 0;
                     // Une forme d'onde en streaming vit dans l'AWB externe (`StreamAwbId`) ;
                     // sinon dans l'AWB embarqué (`MemoryAwbId`). 65535 = aucun.
-                    let id = entier(t, w, if streaming { "StreamAwbId" } else { "MemoryAwbId" })
-                        .filter(|&v| v != 65535)
-                        .map(|v| v as u16);
+                    let id = entier(
+                        t,
+                        w,
+                        if streaming {
+                            "StreamAwbId"
+                        } else {
+                            "MemoryAwbId"
+                        },
+                    )
+                    .filter(|&v| v != 65535)
+                    .map(|v| v as u16);
                     (
                         entier(t, w, "EncodeType").map(|v| v as u8),
                         entier(t, w, "NumChannels").map(|v| v as u8),
@@ -864,9 +903,15 @@ pub fn decode_awb_entry(data: &[u8], which: Option<usize>) -> Result<Vec<u8>, St
             order.retain(|&k| k != i);
             order.insert(0, i);
         }
-        Some(i) => return Err(format!("cue {i} hors limites ({} entrées)", awb.entries.len())),
-        None => order
-            .sort_by_key(|&k| core::cmp::Reverse(awb.entry_bytes(data, &awb.entries[k]).len())),
+        Some(i) => {
+            return Err(format!(
+                "cue {i} hors limites ({} entrées)",
+                awb.entries.len()
+            ));
+        }
+        None => {
+            order.sort_by_key(|&k| core::cmp::Reverse(awb.entry_bytes(data, &awb.entries[k]).len()))
+        }
     }
     for k in order {
         let entry = &awb.entries[k];
@@ -875,13 +920,17 @@ pub fn decode_awb_entry(data: &[u8], which: Option<usize>) -> Result<Vec<u8>, St
             continue;
         }
         if is_hca(ed) {
-            let (s, c, sr) =
-                hca_decode_to_pcm16(ed, subkey).map_err(|e| format!("HCA cue={}: {e}", entry.cue_id))?;
+            let (s, c, sr) = hca_decode_to_pcm16(ed, subkey)
+                .map_err(|e| format!("HCA cue={}: {e}", entry.cue_id))?;
             return Ok(encode_pcm16_wav(&s, c, sr));
         }
         if is_adx(ed) {
             let pcm = adx_decode(ed).map_err(|e| format!("ADX cue={}: {e}", entry.cue_id))?;
-            return Ok(encode_pcm16_wav(&pcm.samples, pcm.channels, pcm.sample_rate));
+            return Ok(encode_pcm16_wav(
+                &pcm.samples,
+                pcm.channels,
+                pcm.sample_rate,
+            ));
         }
         if which.is_some() {
             return Err(format!("cue {k} non décodable (ni HCA ni ADX)"));
@@ -900,7 +949,11 @@ pub fn decode_to_wav(raw: &[u8]) -> Result<Vec<u8>, String> {
     }
     if is_adx(raw) {
         let pcm = adx_decode(raw).map_err(|e| format!("ADX: {e}"))?;
-        return Ok(encode_pcm16_wav(&pcm.samples, pcm.channels, pcm.sample_rate));
+        return Ok(encode_pcm16_wav(
+            &pcm.samples,
+            pcm.channels,
+            pcm.sample_rate,
+        ));
     }
     if raw.starts_with(b"AFS2") {
         return decode_awb_entry(raw, None);
@@ -912,5 +965,8 @@ pub fn decode_to_wav(raw: &[u8]) -> Result<Vec<u8>, String> {
         }
         return Err("ACB sans AWB embarqué".into());
     }
-    Err(format!("format audio non reconnu (magic: {:02x?})", &raw[..raw.len().min(4)]))
+    Err(format!(
+        "format audio non reconnu (magic: {:02x?})",
+        &raw[..raw.len().min(4)]
+    ))
 }

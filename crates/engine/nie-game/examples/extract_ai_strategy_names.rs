@@ -6,7 +6,7 @@
 //! Usage : `cargo run -p nie-game --example extract_ai_strategy_names`
 use nie_formats::cfgbin::{self, CfgEntry, RdbnValue, Value};
 use nie_formats::vfs::Vfs;
-use serde_json::{json, Map};
+use serde_json::{Map, json};
 use std::collections::HashMap;
 use std::path::Path;
 
@@ -49,32 +49,64 @@ fn rdbn_value_to_json(v: &RdbnValue) -> serde_json::Value {
 }
 
 fn load_rdbn(vfs: &Vfs, prefix: &str) -> serde_json::Value {
-    let path = vfs.iter().map(|(p, _)| p.to_string()).filter(|p| p.contains("/gamedata/") && p.rsplit('/').next().is_some_and(|b| b.starts_with(prefix) && b.ends_with(".cfg.bin"))).min().unwrap_or_else(|| panic!("{prefix} introuvable"));
+    let path = vfs
+        .iter()
+        .map(|(p, _)| p.to_string())
+        .filter(|p| {
+            p.contains("/gamedata/")
+                && p.rsplit('/')
+                    .next()
+                    .is_some_and(|b| b.starts_with(prefix) && b.ends_with(".cfg.bin"))
+        })
+        .min()
+        .unwrap_or_else(|| panic!("{prefix} introuvable"));
     eprintln!("  {path}");
     let bytes = vfs.read(&path).expect("read");
     let rdbn = cfgbin::parse(&bytes).expect("parse rdbn");
-    let lists: Vec<serde_json::Value> = cfgbin::read_values(&rdbn, &bytes).iter().map(|l| {
-        let values: Vec<serde_json::Value> = l.rows.iter().map(|row| {
-            let mut m = Map::new();
-            for (n, v) in &row.fields { m.insert(n.clone(), rdbn_value_to_json(v)); }
-            serde_json::Value::Object(m)
-        }).collect();
-        json!({ "name": l.name, "values": values })
-    }).collect();
+    let lists: Vec<serde_json::Value> = cfgbin::read_values(&rdbn, &bytes)
+        .iter()
+        .map(|l| {
+            let values: Vec<serde_json::Value> = l
+                .rows
+                .iter()
+                .map(|row| {
+                    let mut m = Map::new();
+                    for (n, v) in &row.fields {
+                        m.insert(n.clone(), rdbn_value_to_json(v));
+                    }
+                    serde_json::Value::Object(m)
+                })
+                .collect();
+            json!({ "name": l.name, "values": values })
+        })
+        .collect();
     json!({ "lists": lists })
 }
 
 fn load_t2b(vfs: &Vfs, prefix: &str) -> serde_json::Value {
-    let path = vfs.iter().map(|(p, _)| p.to_string()).filter(|p| p.contains("/fr/") && p.rsplit('/').next().is_some_and(|b| b.starts_with(prefix) && b.ends_with(".cfg.bin"))).min().unwrap_or_else(|| panic!("{prefix} fr introuvable"));
+    let path = vfs
+        .iter()
+        .map(|(p, _)| p.to_string())
+        .filter(|p| {
+            p.contains("/fr/")
+                && p.rsplit('/')
+                    .next()
+                    .is_some_and(|b| b.starts_with(prefix) && b.ends_with(".cfg.bin"))
+        })
+        .min()
+        .unwrap_or_else(|| panic!("{prefix} fr introuvable"));
     eprintln!("  {path}");
     let file = cfgbin::parse_t2b(&vfs.read(&path).expect("read")).expect("parse");
     json!({ "entries": t2b_to_iecode(&file.entries) })
 }
 
 fn main() {
-    let dir = nie_formats::vfs::resolve_game_dir().to_string_lossy().into_owned();
+    let dir = nie_formats::vfs::resolve_game_dir()
+        .to_string_lossy()
+        .into_owned();
     let mut vfs = Vfs::new();
-    vfs.init(Path::new(&dir).join("data").as_path()).expect("vfs init");
+    vfs.init(Path::new(&dir).join("data").as_path())
+        .expect("vfs init");
 
     let cfg = load_rdbn(&vfs, "strategy_ai_config");
     let config = nie_data::ai::parse_strategy_ai_config(&cfg);
@@ -85,13 +117,26 @@ fn main() {
     eprintln!("[ai_text fr] entrées = {}", text.len());
 
     use nie_data::ai::{resolve_strategy_description, resolve_strategy_name};
-    let named = config.strategy_infos.iter().filter(|s| resolve_strategy_name(s, &text).is_some()).count();
-    eprintln!("noms de stratégie résolus = {named}/{}", config.strategy_infos.len());
+    let named = config
+        .strategy_infos
+        .iter()
+        .filter(|s| resolve_strategy_name(s, &text).is_some())
+        .count();
+    eprintln!(
+        "noms de stratégie résolus = {named}/{}",
+        config.strategy_infos.len()
+    );
 
     for s in config.strategy_infos.iter().take(8) {
         let n = resolve_strategy_name(s, &text);
-        let d = resolve_strategy_description(s, &text).map(|x| x.chars().take(40).collect::<String>());
-        eprintln!("  strategy {} → {:?}  desc={:?}", s.strategy_id.to_hex(), n, d);
+        let d =
+            resolve_strategy_description(s, &text).map(|x| x.chars().take(40).collect::<String>());
+        eprintln!(
+            "  strategy {} → {:?}  desc={:?}",
+            s.strategy_id.to_hex(),
+            n,
+            d
+        );
     }
     if named == 0 {
         eprintln!("⚠ VERDICT : name_id → ai_text NE résout PAS (modèle à revoir, ou autre table)");

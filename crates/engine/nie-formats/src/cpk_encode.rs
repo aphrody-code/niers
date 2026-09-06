@@ -52,7 +52,13 @@ fn intern_string(s: &str, pool: &mut Vec<u8>, offsets: &mut Vec<(String, u32)>) 
     off
 }
 
-fn push_value_be(out: &mut Vec<u8>, v: &UtfValue, col_type: ColumnType, string_offsets: &mut Vec<(String, u32)>, string_pool: &mut Vec<u8>) -> Result<(), String> {
+fn push_value_be(
+    out: &mut Vec<u8>,
+    v: &UtfValue,
+    col_type: ColumnType,
+    string_offsets: &mut Vec<(String, u32)>,
+    string_pool: &mut Vec<u8>,
+) -> Result<(), String> {
     match (v, col_type) {
         (UtfValue::U8(x), ColumnType::U8) => out.push(*x),
         (UtfValue::I8(x), ColumnType::I8) => out.push(*x as u8),
@@ -64,8 +70,14 @@ fn push_value_be(out: &mut Vec<u8>, v: &UtfValue, col_type: ColumnType, string_o
         (UtfValue::I64(x), ColumnType::I64) => out.extend_from_slice(&x.to_be_bytes()),
         (UtfValue::F32(x), ColumnType::F32) => out.extend_from_slice(&x.to_bits().to_be_bytes()),
         (UtfValue::F64(x), ColumnType::F64) => out.extend_from_slice(&x.to_bits().to_be_bytes()),
-        (UtfValue::String(s), ColumnType::String) => out.extend_from_slice(&intern_string(s, string_pool, string_offsets).to_be_bytes()),
-        (v, t) => return Err(format!("encode_utf : valeur {v:?} incompatible avec le type de colonne {t:?}")),
+        (UtfValue::String(s), ColumnType::String) => {
+            out.extend_from_slice(&intern_string(s, string_pool, string_offsets).to_be_bytes())
+        }
+        (v, t) => {
+            return Err(format!(
+                "encode_utf : valeur {v:?} incompatible avec le type de colonne {t:?}"
+            ));
+        }
     }
     Ok(())
 }
@@ -78,14 +90,22 @@ fn push_value_be(out: &mut Vec<u8>, v: &UtfValue, col_type: ColumnType, string_o
 /// # Erreurs
 /// `Err` si une ligne n'a pas exactement `columns.len()` valeurs, ou si une valeur ne correspond
 /// pas au type déclaré de sa colonne (jamais une conversion silencieuse qui corromprait la table).
-pub fn encode_utf(table_name: &str, columns: &[UtfColumnSpec], rows: &[Vec<UtfValue>]) -> Result<Vec<u8>, String> {
+pub fn encode_utf(
+    table_name: &str,
+    columns: &[UtfColumnSpec],
+    rows: &[Vec<UtfValue>],
+) -> Result<Vec<u8>, String> {
     const FLAG_HAS_NAME: u8 = 0x10;
     const FLAG_ROW_STORAGE: u8 = 0x40;
     const UTF_BASE: usize = 0x08;
 
     for (i, row) in rows.iter().enumerate() {
         if row.len() != columns.len() {
-            return Err(format!("encode_utf : ligne {i} a {} valeurs, attendu {}", row.len(), columns.len()));
+            return Err(format!(
+                "encode_utf : ligne {i} a {} valeurs, attendu {}",
+                row.len(),
+                columns.len()
+            ));
         }
     }
 
@@ -93,7 +113,10 @@ pub fn encode_utf(table_name: &str, columns: &[UtfColumnSpec], rows: &[Vec<UtfVa
     let mut string_pool: Vec<u8> = Vec::new();
     let mut string_offsets: Vec<(String, u32)> = Vec::new();
     let table_name_off = intern_string(table_name, &mut string_pool, &mut string_offsets);
-    let col_name_offs: Vec<u32> = columns.iter().map(|c| intern_string(&c.name, &mut string_pool, &mut string_offsets)).collect();
+    let col_name_offs: Vec<u32> = columns
+        .iter()
+        .map(|c| intern_string(&c.name, &mut string_pool, &mut string_offsets))
+        .collect();
 
     // Schéma de colonnes (0x20 + col_count*5 : 1 flag + 4 name_off BE par colonne).
     let mut schema = Vec::new();
@@ -107,7 +130,13 @@ pub fn encode_utf(table_name: &str, columns: &[UtfColumnSpec], rows: &[Vec<UtfVa
     let mut rows_bytes = Vec::new();
     for row in rows {
         for (v, col) in row.iter().zip(columns) {
-            push_value_be(&mut rows_bytes, v, col.col_type, &mut string_offsets, &mut string_pool)?;
+            push_value_be(
+                &mut rows_bytes,
+                v,
+                col.col_type,
+                &mut string_offsets,
+                &mut string_pool,
+            )?;
         }
     }
 
@@ -172,11 +201,26 @@ pub fn encode_cpk(entries: &[CpkWriteEntry]) -> Result<Vec<u8>, String> {
 
     // ── Table TOC (une ligne par fichier) ──────────────────────────────────────────────
     let toc_columns = [
-        UtfColumnSpec { name: "DirName".to_string(), col_type: ColumnType::String },
-        UtfColumnSpec { name: "FileName".to_string(), col_type: ColumnType::String },
-        UtfColumnSpec { name: "FileSize".to_string(), col_type: ColumnType::U64 },
-        UtfColumnSpec { name: "ExtractSize".to_string(), col_type: ColumnType::U64 },
-        UtfColumnSpec { name: "FileOffset".to_string(), col_type: ColumnType::U64 },
+        UtfColumnSpec {
+            name: "DirName".to_string(),
+            col_type: ColumnType::String,
+        },
+        UtfColumnSpec {
+            name: "FileName".to_string(),
+            col_type: ColumnType::String,
+        },
+        UtfColumnSpec {
+            name: "FileSize".to_string(),
+            col_type: ColumnType::U64,
+        },
+        UtfColumnSpec {
+            name: "ExtractSize".to_string(),
+            col_type: ColumnType::U64,
+        },
+        UtfColumnSpec {
+            name: "FileOffset".to_string(),
+            col_type: ColumnType::U64,
+        },
     ];
     let mut toc_rows = Vec::with_capacity(entries.len());
     let mut file_off: u64 = 0;
@@ -198,8 +242,14 @@ pub fn encode_cpk(entries: &[CpkWriteEntry]) -> Result<Vec<u8>, String> {
     // ── Table d'en-tête (1 ligne : TocOffset/ContentOffset — les 2 seuls champs lus par
     //    `CpkReader::new`, cf. doc de module, jamais d'autres colonnes réelles devinées) ──────
     let header_columns = [
-        UtfColumnSpec { name: "ContentOffset".to_string(), col_type: ColumnType::U64 },
-        UtfColumnSpec { name: "TocOffset".to_string(), col_type: ColumnType::U64 },
+        UtfColumnSpec {
+            name: "ContentOffset".to_string(),
+            col_type: ColumnType::U64,
+        },
+        UtfColumnSpec {
+            name: "TocOffset".to_string(),
+            col_type: ColumnType::U64,
+        },
     ];
 
     // Layout : conteneur d'en-tête (taille CONNUE d'avance : 1 ligne, colonnes fixes) → contenu
@@ -217,9 +267,16 @@ pub fn encode_cpk(entries: &[CpkWriteEntry]) -> Result<Vec<u8>, String> {
     let header_utf = encode_utf(
         "CpkHeader",
         &header_columns,
-        &[vec![UtfValue::U64(content_offset), UtfValue::U64(toc_offset)]],
+        &[vec![
+            UtfValue::U64(content_offset),
+            UtfValue::U64(toc_offset),
+        ]],
     )?;
-    debug_assert_eq!(header_utf.len(), header_utf_probe.len(), "encode_utf non déterministe pour une même entrée — bug");
+    debug_assert_eq!(
+        header_utf.len(),
+        header_utf_probe.len(),
+        "encode_utf non déterministe pour une même entrée — bug"
+    );
     let header_container = wrap_table_container(b"CPK ", &header_utf);
 
     let mut out = Vec::with_capacity(header_container.len() + content.len() + toc_container.len());
@@ -239,9 +296,21 @@ mod tests {
     #[test]
     fn encode_cpk_round_trip_via_cpk_reader() {
         let entries = vec![
-            CpkWriteEntry { filename: "a.txt".to_string(), directory: "dir1".to_string(), data: b"Contenu du fichier A.".to_vec() },
-            CpkWriteEntry { filename: "b.bin".to_string(), directory: String::new(), data: (0u8..=255).collect() },
-            CpkWriteEntry { filename: "c.txt".to_string(), directory: "dir1/sub".to_string(), data: Vec::new() },
+            CpkWriteEntry {
+                filename: "a.txt".to_string(),
+                directory: "dir1".to_string(),
+                data: b"Contenu du fichier A.".to_vec(),
+            },
+            CpkWriteEntry {
+                filename: "b.bin".to_string(),
+                directory: String::new(),
+                data: (0u8..=255).collect(),
+            },
+            CpkWriteEntry {
+                filename: "c.txt".to_string(),
+                directory: "dir1/sub".to_string(),
+                data: Vec::new(),
+            },
         ];
         let bytes = encode_cpk(&entries).expect("encode_cpk");
 
@@ -255,7 +324,11 @@ mod tests {
             assert_eq!(entry.size, original.data.len() as u64);
             assert!(!entry.is_compressed);
             let extracted = reader.extract(&bytes, entry).expect("extract");
-            assert_eq!(extracted, original.data, "contenu divergent pour {}/{}", original.directory, original.filename);
+            assert_eq!(
+                extracted, original.data,
+                "contenu divergent pour {}/{}",
+                original.directory, original.filename
+            );
         }
     }
 

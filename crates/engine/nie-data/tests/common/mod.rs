@@ -26,7 +26,10 @@ use std::sync::OnceLock;
 const SOUS_CHEMINS: [&str; 2] = ["dump/gamedata", "data/common/gamedata"];
 
 fn depuis(base: &Path) -> Option<PathBuf> {
-    SOUS_CHEMINS.iter().map(|s| base.join(s)).find(|p| p.is_dir())
+    SOUS_CHEMINS
+        .iter()
+        .map(|s| base.join(s))
+        .find(|p| p.is_dir())
 }
 
 /// Racine du corpus de dumps, ou `None` si absent de cette machine.

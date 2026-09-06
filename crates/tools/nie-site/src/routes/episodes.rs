@@ -160,7 +160,8 @@ pub fn ouvrir(chemin: &std::path::Path) -> Result<rusqlite::Connection, ErreurSi
     // l'ouverture. `PRAGMA schema_version` lit l'en-tête, donc force la vraie ouverture, et ne
     // coûte qu'une page (à la différence de `quick_check`, qui relirait les 2 Mio).
     let lisible = |cx: &rusqlite::Connection| -> bool {
-        cx.query_row("PRAGMA schema_version", [], |l| l.get::<_, i64>(0)).is_ok()
+        cx.query_row("PRAGMA schema_version", [], |l| l.get::<_, i64>(0))
+            .is_ok()
     };
     if let Ok(cx) = rusqlite::Connection::open_with_flags(chemin, OpenFlags::SQLITE_OPEN_READ_ONLY)
         && lisible(&cx)

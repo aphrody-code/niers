@@ -84,7 +84,9 @@ impl Frontier {
 
     /// Réinitialise complètement la frontière de ce binaire.
     pub fn reset(&mut self) -> Result<()> {
-        let _: i64 = self.conn.del(&[self.seen_key.clone(), self.list_key.clone()])?;
+        let _: i64 = self
+            .conn
+            .del(&[self.seen_key.clone(), self.list_key.clone()])?;
         Ok(())
     }
 }

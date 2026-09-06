@@ -13,7 +13,12 @@ use std::path::Path;
 
 fn walk(e: &CfgEntry, depth: usize, max_depth: usize, max_children: usize) {
     let indent = "  ".repeat(depth);
-    let vars: Vec<String> = e.variables.iter().take(10).map(|v| format!("{v:?}")).collect();
+    let vars: Vec<String> = e
+        .variables
+        .iter()
+        .take(10)
+        .map(|v| format!("{v:?}"))
+        .collect();
     let more_v = if e.variables.len() > 10 {
         format!(" …+{}", e.variables.len() - 10)
     } else {
@@ -33,7 +38,10 @@ fn walk(e: &CfgEntry, depth: usize, max_depth: usize, max_children: usize) {
         walk(c, depth + 1, max_depth, max_children);
     }
     if e.children.len() > max_children {
-        println!("{indent}  …+{} more children", e.children.len() - max_children);
+        println!(
+            "{indent}  …+{} more children",
+            e.children.len() - max_children
+        );
     }
 }
 
@@ -41,11 +49,20 @@ fn main() {
     let prefix = std::env::args()
         .nth(1)
         .expect("usage: probe_t2b <prefix> [max_depth] [max_children]");
-    let max_depth = std::env::args().nth(2).and_then(|s| s.parse().ok()).unwrap_or(3);
-    let max_children = std::env::args().nth(3).and_then(|s| s.parse().ok()).unwrap_or(5);
-    let dir = nie_formats::vfs::resolve_game_dir().to_string_lossy().into_owned();
+    let max_depth = std::env::args()
+        .nth(2)
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(3);
+    let max_children = std::env::args()
+        .nth(3)
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(5);
+    let dir = nie_formats::vfs::resolve_game_dir()
+        .to_string_lossy()
+        .into_owned();
     let mut vfs = Vfs::new();
-    vfs.init(Path::new(&dir).join("data").as_path()).expect("vfs init");
+    vfs.init(Path::new(&dir).join("data").as_path())
+        .expect("vfs init");
     let path = vfs
         .iter()
         .map(|(p, _)| p.to_string())
@@ -63,7 +80,10 @@ fn main() {
         return;
     }
     let file = cfgbin::parse_t2b(&bytes).expect("parse_t2b");
-    println!("=== T2B : {} entrées de premier niveau ===", file.entries.len());
+    println!(
+        "=== T2B : {} entrées de premier niveau ===",
+        file.entries.len()
+    );
     for e in file.entries.iter().take(max_children.max(30)) {
         walk(e, 0, max_depth, max_children);
     }

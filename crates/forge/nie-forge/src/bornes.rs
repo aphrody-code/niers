@@ -174,8 +174,16 @@ mod tests {
     #[test]
     fn le_bourrage_est_un_ancrage_sur() {
         let code = flux();
-        assert_eq!(ancre_sure(&code, 8, &[]), Some(8), "juste après le bourrage");
-        assert_eq!(ancre_sure(&code, 14, &[]), Some(8), "remonte jusqu'au bourrage");
+        assert_eq!(
+            ancre_sure(&code, 8, &[]),
+            Some(8),
+            "juste après le bourrage"
+        );
+        assert_eq!(
+            ancre_sure(&code, 14, &[]),
+            Some(8),
+            "remonte jusqu'au bourrage"
+        );
     }
 
     #[test]

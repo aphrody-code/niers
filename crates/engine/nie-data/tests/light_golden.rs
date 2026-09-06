@@ -19,7 +19,7 @@ mod common;
 extern crate std;
 
 use nie_data::hash::HashId;
-use nie_data::light::{parse_light_overwrite_config, LightVal};
+use nie_data::light::{LightVal, parse_light_overwrite_config};
 use serde_json::json;
 
 // 7531368 = 0x0072DBE8 — param_id de PARAM_0, PARAM_9, PARAM_18 (JSON l.7)
@@ -130,7 +130,11 @@ fn fixture_param_0_id_et_valeur_int() {
     assert_eq!(cfg.params[0].param_id, PARAM_ID_0, "param_id[0]=0x0072DBE8");
     // PARAM_0.var[1]=Int("400") (JSON l.10)
     assert_eq!(cfg.params[0].values.len(), 1, "PARAM_0 a 1 valeur");
-    assert_eq!(cfg.params[0].values[0], LightVal::Int(400), "values[0]=Int(400)");
+    assert_eq!(
+        cfg.params[0].values[0],
+        LightVal::Int(400),
+        "values[0]=Int(400)"
+    );
 }
 
 #[test]
@@ -142,9 +146,15 @@ fn fixture_param_1_float() {
         HashId::from_i64(-1910140030),
         "param_id[1]=-1910140030 as u32"
     );
-    assert!(cfg.params[1].values[0].is_float(), "PARAM_1 values[0] est Float");
+    assert!(
+        cfg.params[1].values[0].is_float(),
+        "PARAM_1 values[0] est Float"
+    );
     let v = cfg.params[1].values[0].as_f64();
-    assert!((v - 0.7).abs() < 1e-5, "PARAM_1 values[0] ≈ 0.7 (réel: {v})");
+    assert!(
+        (v - 0.7).abs() < 1e-5,
+        "PARAM_1 values[0] ≈ 0.7 (réel: {v})"
+    );
 }
 
 #[test]
@@ -164,16 +174,25 @@ fn fixture_param_2_triple_float() {
 fn fixture_param_7_float_negatif() {
     let cfg = parse_light_overwrite_config(&fixture_light());
     // PARAM_7.var[1]=Float("-0,05") (JSON l.129)
-    assert!(cfg.params[3].values[0].is_float(), "PARAM_7 values[0] Float");
+    assert!(
+        cfg.params[3].values[0].is_float(),
+        "PARAM_7 values[0] Float"
+    );
     let v = cfg.params[3].values[0].as_f64();
-    assert!((v - (-0.05)).abs() < 1e-5, "PARAM_7 values[0] ≈ -0.05 (réel: {v})");
+    assert!(
+        (v - (-0.05)).abs() < 1e-5,
+        "PARAM_7 values[0] ≈ -0.05 (réel: {v})"
+    );
 }
 
 #[test]
 fn fixture_info_0_champs() {
     let cfg = parse_light_overwrite_config(&fixture_light());
     // INFO_0.var[0]=896315108 (JSON l.322), REF_PARAM_0 : offset=0, count=2
-    assert_eq!(cfg.infos[0].info_id, INFO_ID_0, "info_id[0]=896315108=0x357CF2E4");
+    assert_eq!(
+        cfg.infos[0].info_id, INFO_ID_0,
+        "info_id[0]=896315108=0x357CF2E4"
+    );
     assert_eq!(cfg.infos[0].param_offset, 0, "param_offset[0]=0");
     assert_eq!(cfg.infos[0].param_count, 2, "param_count[0]=2");
 }
@@ -197,14 +216,20 @@ fn fixture_params_of() {
     // params_of(infos[0]) → tranche [0..2] → 2 params
     let slice = cfg.params_of(&cfg.infos[0]);
     assert_eq!(slice.len(), 2, "params_of(infos[0]).len()=2");
-    assert_eq!(slice[0].param_id, PARAM_ID_0, "slice[0].param_id=PARAM_ID_0");
+    assert_eq!(
+        slice[0].param_id, PARAM_ID_0,
+        "slice[0].param_id=PARAM_ID_0"
+    );
 }
 
 #[test]
 fn fixture_find_info() {
     let cfg = parse_light_overwrite_config(&fixture_light());
     let found = cfg.find_info(INFO_ID_0);
-    assert!(found.is_some(), "find_info(INFO_ID_0) doit trouver infos[0]");
+    assert!(
+        found.is_some(),
+        "find_info(INFO_ID_0) doit trouver infos[0]"
+    );
     assert_eq!(found.unwrap().param_count, 2);
     assert!(cfg.find_info(HashId(0xDEADBEEF)).is_none(), "absent → None");
 }
@@ -221,40 +246,72 @@ fn load_json(path: &str) -> Option<serde_json::Value> {
     }
     let s = std::fs::read_to_string(&path)
         .unwrap_or_else(|e| panic!("Impossible de lire {}: {e}", path.display()));
-    Some(serde_json::from_str(&s).unwrap_or_else(|e| panic!("JSON invalide {}: {e}", path.display())))
+    Some(
+        serde_json::from_str(&s)
+            .unwrap_or_else(|e| panic!("JSON invalide {}: {e}", path.display())),
+    )
 }
 
 #[test]
 fn real_file_comptes() {
-    let Some(root) = load_json(REAL_LIGHT) else { return };
+    let Some(root) = load_json(REAL_LIGHT) else {
+        return;
+    };
     let cfg = parse_light_overwrite_config(&root);
     // PARAM_LIST_BEG_0.var[0]=20 (JSON l.5), INFO_LIST_BEG_0.var[0]=3 (JSON l.311)
-    assert_eq!(cfg.params.len(), 20, "20 LIGHT_OVERWRITE_PARAM dans le fichier réel");
-    assert_eq!(cfg.infos.len(), 3, "3 LIGHT_OVERWRITE_INFO dans le fichier réel");
+    assert_eq!(
+        cfg.params.len(),
+        20,
+        "20 LIGHT_OVERWRITE_PARAM dans le fichier réel"
+    );
+    assert_eq!(
+        cfg.infos.len(),
+        3,
+        "3 LIGHT_OVERWRITE_INFO dans le fichier réel"
+    );
 }
 
 #[test]
 fn real_file_param_0_id_et_valeur() {
-    let Some(root) = load_json(REAL_LIGHT) else { return };
+    let Some(root) = load_json(REAL_LIGHT) else {
+        return;
+    };
     let cfg = parse_light_overwrite_config(&root);
     // PARAM_0.var[0]=Int("7531368") (JSON l.7), var[1]=Int("400") (JSON l.10)
-    assert_eq!(cfg.params[0].param_id, PARAM_ID_0, "PARAM_0.param_id=0x0072DBE8");
-    assert_eq!(cfg.params[0].values[0], LightVal::Int(400), "PARAM_0.values[0]=Int(400)");
+    assert_eq!(
+        cfg.params[0].param_id, PARAM_ID_0,
+        "PARAM_0.param_id=0x0072DBE8"
+    );
+    assert_eq!(
+        cfg.params[0].values[0],
+        LightVal::Int(400),
+        "PARAM_0.values[0]=Int(400)"
+    );
 }
 
 #[test]
 fn real_file_param_1_float() {
-    let Some(root) = load_json(REAL_LIGHT) else { return };
+    let Some(root) = load_json(REAL_LIGHT) else {
+        return;
+    };
     let cfg = parse_light_overwrite_config(&root);
     // PARAM_1.var[1]=Float("0,7") (JSON l.33)
-    assert!(cfg.params[1].values[0].is_float(), "PARAM_1.values[0] Float");
+    assert!(
+        cfg.params[1].values[0].is_float(),
+        "PARAM_1.values[0] Float"
+    );
     let v = cfg.params[1].values[0].as_f64();
-    assert!((v - 0.7).abs() < 1e-5, "PARAM_1.values[0] ≈ 0.7 (réel: {v})");
+    assert!(
+        (v - 0.7).abs() < 1e-5,
+        "PARAM_1.values[0] ≈ 0.7 (réel: {v})"
+    );
 }
 
 #[test]
 fn real_file_param_2_triple_float() {
-    let Some(root) = load_json(REAL_LIGHT) else { return };
+    let Some(root) = load_json(REAL_LIGHT) else {
+        return;
+    };
     let cfg = parse_light_overwrite_config(&root);
     // PARAM_2.var[1..3]=0.85/0.82/0.63 (JSON l.49,53,57)
     assert_eq!(cfg.params[2].values.len(), 3, "PARAM_2 a 3 valeurs");
@@ -268,7 +325,9 @@ fn real_file_param_2_triple_float() {
 
 #[test]
 fn real_file_param_7_float_negatif() {
-    let Some(root) = load_json(REAL_LIGHT) else { return };
+    let Some(root) = load_json(REAL_LIGHT) else {
+        return;
+    };
     let cfg = parse_light_overwrite_config(&root);
     // PARAM_7.var[0]=-2124741719 (JSON l.121), var[1]=Float("-0,05") (JSON l.124)
     assert_eq!(
@@ -277,12 +336,17 @@ fn real_file_param_7_float_negatif() {
         "PARAM_7.param_id=-2124741719 as u32"
     );
     let v = cfg.params[7].values[0].as_f64();
-    assert!((v - (-0.05)).abs() < 1e-5, "PARAM_7.values[0] ≈ -0.05 (réel: {v})");
+    assert!(
+        (v - (-0.05)).abs() < 1e-5,
+        "PARAM_7.values[0] ≈ -0.05 (réel: {v})"
+    );
 }
 
 #[test]
 fn real_file_info_0_champs() {
-    let Some(root) = load_json(REAL_LIGHT) else { return };
+    let Some(root) = load_json(REAL_LIGHT) else {
+        return;
+    };
     let cfg = parse_light_overwrite_config(&root);
     // INFO_0.var[0]=896315108 (JSON l.322), REF_PARAM_0.var[0]=0 (l.332), var[1]=9 (l.336)
     assert_eq!(cfg.infos[0].info_id, INFO_ID_0, "INFO_0.info_id=896315108");
@@ -292,7 +356,9 @@ fn real_file_info_0_champs() {
 
 #[test]
 fn real_file_info_1_champs() {
-    let Some(root) = load_json(REAL_LIGHT) else { return };
+    let Some(root) = load_json(REAL_LIGHT) else {
+        return;
+    };
     let cfg = parse_light_overwrite_config(&root);
     // INFO_1.var[0]=-1402601634 (JSON l.345), REF_PARAM_1 : offset=9 (l.355), count=9 (l.359)
     assert_eq!(
@@ -306,7 +372,9 @@ fn real_file_info_1_champs() {
 
 #[test]
 fn real_file_info_2_champs() {
-    let Some(root) = load_json(REAL_LIGHT) else { return };
+    let Some(root) = load_json(REAL_LIGHT) else {
+        return;
+    };
     let cfg = parse_light_overwrite_config(&root);
     // INFO_2.var[0]=-614281272 (JSON l.368), REF_PARAM_2 : offset=18 (l.378), count=2 (l.382)
     assert_eq!(
@@ -320,17 +388,24 @@ fn real_file_info_2_champs() {
 
 #[test]
 fn real_file_params_of_info_0() {
-    let Some(root) = load_json(REAL_LIGHT) else { return };
+    let Some(root) = load_json(REAL_LIGHT) else {
+        return;
+    };
     let cfg = parse_light_overwrite_config(&root);
     // INFO_0 → params[0..9] → 9 params, le premier est PARAM_0
     let slice = cfg.params_of(&cfg.infos[0]);
     assert_eq!(slice.len(), 9, "params_of(infos[0]).len()=9");
-    assert_eq!(slice[0].param_id, PARAM_ID_0, "slice[0].param_id=PARAM_ID_0");
+    assert_eq!(
+        slice[0].param_id, PARAM_ID_0,
+        "slice[0].param_id=PARAM_ID_0"
+    );
 }
 
 #[test]
 fn real_file_params_of_info_2_borne() {
-    let Some(root) = load_json(REAL_LIGHT) else { return };
+    let Some(root) = load_json(REAL_LIGHT) else {
+        return;
+    };
     let cfg = parse_light_overwrite_config(&root);
     // INFO_2 → params[18..20] → 2 params
     let slice = cfg.params_of(&cfg.infos[2]);
@@ -339,16 +414,23 @@ fn real_file_params_of_info_2_borne() {
 
 #[test]
 fn real_file_find_info() {
-    let Some(root) = load_json(REAL_LIGHT) else { return };
+    let Some(root) = load_json(REAL_LIGHT) else {
+        return;
+    };
     let cfg = parse_light_overwrite_config(&root);
     let found = cfg.find_info(INFO_ID_0);
-    assert!(found.is_some(), "find_info(INFO_ID_0) doit trouver infos[0]");
+    assert!(
+        found.is_some(),
+        "find_info(INFO_ID_0) doit trouver infos[0]"
+    );
     assert_eq!(found.unwrap().param_count, 9);
 }
 
 #[test]
 fn real_file_tous_params_ont_valeurs() {
-    let Some(root) = load_json(REAL_LIGHT) else { return };
+    let Some(root) = load_json(REAL_LIGHT) else {
+        return;
+    };
     let cfg = parse_light_overwrite_config(&root);
     // Tous les 20 params ont au moins 1 valeur
     let sans = cfg.params.iter().filter(|p| p.values.is_empty()).count();

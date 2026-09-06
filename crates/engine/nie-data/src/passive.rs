@@ -18,7 +18,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use serde_json::Value;
 
-use crate::cfgbin::{walk_named, Node};
+use crate::cfgbin::{Node, walk_named};
 use crate::hash::HashId;
 
 /// Portée d'un passif. Source : `PassiveScope` (types.ts l.165).
@@ -196,7 +196,8 @@ pub fn detect_boost_type(effect_fr: Option<&str>, effect_en: Option<&str>) -> Pa
     if t.contains("récup") || t.contains("recovery") || t.contains("récupér") {
         return PassiveBoostType::Recovery;
     }
-    if t.contains("vit ") || t.contains("vitesse") || t.contains("speed") || t.contains("agilité") {
+    if t.contains("vit ") || t.contains("vitesse") || t.contains("speed") || t.contains("agilité")
+    {
         return PassiveBoostType::Speed;
     }
     if t.contains("end ") || t.contains("endurance") || t.contains("stamina") {
@@ -212,7 +213,8 @@ pub fn detect_boost_type(effect_fr: Option<&str>, effect_en: Option<&str>) -> Pa
     if t.contains("tir ") || t.contains("shoot") || t.contains("frappe") {
         return PassiveBoostType::Shoot;
     }
-    if t.contains("drb") || t.contains("dribble") || t.contains("contrôle") || t.contains("control") {
+    if t.contains("drb") || t.contains("dribble") || t.contains("contrôle") || t.contains("control")
+    {
         return PassiveBoostType::Dribble;
     }
     if t.contains("att ") || t.contains("attack") || t.contains("attaque") {

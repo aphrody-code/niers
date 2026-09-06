@@ -8,7 +8,9 @@
 //! Usage : `cargo run -p nie-viola --example cpk_list_roundtrip -- <cpk_list.cfg.bin>`
 
 fn main() {
-    let path = std::env::args().nth(1).expect("usage: cpk_list_roundtrip <cpk_list.cfg.bin>");
+    let path = std::env::args()
+        .nth(1)
+        .expect("usage: cpk_list_roundtrip <cpk_list.cfg.bin>");
     let brut = std::fs::read(&path).expect("lecture");
     println!("fichier   {path}");
     println!("octets    {}", brut.len());
@@ -24,8 +26,15 @@ fn main() {
         rechiffre.len()
     );
     if !env_ok {
-        let n = rechiffre.iter().zip(brut.iter()).filter(|(a, b)| a != b).count();
-        println!("          {n} octets diffèrent, Δtaille = {}", rechiffre.len() as i64 - brut.len() as i64);
+        let n = rechiffre
+            .iter()
+            .zip(brut.iter())
+            .filter(|(a, b)| a != b)
+            .count();
+        println!(
+            "          {n} octets diffèrent, Δtaille = {}",
+            rechiffre.len() as i64 - brut.len() as i64
+        );
     }
 
     // ── 2. réencodage T2B ───────────────────────────────────────────────────────
@@ -38,12 +47,23 @@ fn main() {
         reencode.len()
     );
     if !t2b_ok {
-        let n = reencode.iter().zip(clair.iter()).filter(|(a, b)| a != b).count();
-        println!("          {n} octets diffèrent, Δtaille = {}", reencode.len() as i64 - clair.len() as i64);
+        let n = reencode
+            .iter()
+            .zip(clair.iter())
+            .filter(|(a, b)| a != b)
+            .count();
+        println!(
+            "          {n} octets diffèrent, Δtaille = {}",
+            reencode.len() as i64 - clair.len() as i64
+        );
     }
 
     println!(
         "\nverdict   patcher les octets en clair est {}",
-        if env_ok { "SÛR (l'enveloppe est fidèle)" } else { "à proscrire (l'enveloppe elle-même dérive)" }
+        if env_ok {
+            "SÛR (l'enveloppe est fidèle)"
+        } else {
+            "à proscrire (l'enveloppe elle-même dérive)"
+        }
     );
 }

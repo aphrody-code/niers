@@ -26,9 +26,7 @@ use steamroom::client::LoggedIn;
 use steamroom::client::SteamClient;
 use steamroom::depot::{AppId, CellId, DepotId, DepotKey, ManifestId};
 use steamroom::types::key_value::KeyValue;
-use steamroom_client::login::{
-    CredentialsLoginFlow, GuardType, LoginBuilder,
-};
+use steamroom_client::login::{CredentialsLoginFlow, GuardType, LoginBuilder};
 use tracing::{info, warn};
 
 use crate::options::{SteamDownloadOptions, SteamGuardKind, SteamGuardProvider};
@@ -69,9 +67,7 @@ impl SteamSession {
     /// 2. Sinon si `username` + `password` fournis → `CredentialsLogin` + 2FA via `guard_provider`
     /// 3. Si `username` est `None` → login anonyme (jeux gratuits seulement)
     pub async fn connect(opts: &SteamDownloadOptions) -> Result<Self> {
-        let token_store = Arc::new(TokenStore::load(
-            opts.token_store_path.as_deref(),
-        ));
+        let token_store = Arc::new(TokenStore::load(opts.token_store_path.as_deref()));
 
         let client = login_with_opts(opts, &token_store).await?;
 
@@ -123,12 +119,14 @@ impl SteamSession {
         for info in infos {
             let id = info.app_id.map(|a| a.0).unwrap_or(app_id);
             if let Some(kv_data) = info.kv_data {
-                let kv = parse_app_kv(&kv_data)
-                    .with_context(|| format!("parse KV app {id}"))?;
-                self.app_cache.insert(id, AppData {
-                    kv,
-                    change_number: info.change_number,
-                });
+                let kv = parse_app_kv(&kv_data).with_context(|| format!("parse KV app {id}"))?;
+                self.app_cache.insert(
+                    id,
+                    AppData {
+                        kv,
+                        change_number: info.change_number,
+                    },
+                );
             }
         }
 
@@ -145,7 +143,11 @@ impl SteamSession {
     /// Récupère et cache la clé de déchiffrement d'un depot.
     ///
     /// Renvoie `None` si le compte n'a pas accès au depot (résultat non-OK).
-    pub async fn request_depot_key(&mut self, depot_id: u32, app_id: u32) -> Result<Option<DepotKey>> {
+    pub async fn request_depot_key(
+        &mut self,
+        depot_id: u32,
+        app_id: u32,
+    ) -> Result<Option<DepotKey>> {
         if let Some(key) = self.depot_keys.get(&depot_id) {
             return Ok(Some(key.clone()));
         }
@@ -217,12 +219,7 @@ impl SteamSession {
     ///
     /// Renvoie `None` si la requête échoue ; la plupart des CDN SteamPipe n'en
     /// requièrent pas et fonctionnent sans.
-    pub async fn cdn_auth_token(
-        &self,
-        app_id: u32,
-        depot_id: u32,
-        host: &str,
-    ) -> Option<String> {
+    pub async fn cdn_auth_token(&self, app_id: u32, depot_id: u32, host: &str) -> Option<String> {
         match self
             .client
             .get_cdn_auth_token(AppId(app_id), DepotId(depot_id), host)
@@ -235,7 +232,6 @@ impl SteamSession {
             }
         }
     }
-
 }
 
 // ─── Logique de login ─────────────────────────────────────────────────────────

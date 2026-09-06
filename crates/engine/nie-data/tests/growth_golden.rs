@@ -16,8 +16,8 @@
 //!   Lv99 : Kc=261 Cr=258 Tc=235 Pr=210 Ps=202 Ag=195 It=230
 
 use nie_data::growth::{
-    calculate_single_stat, calculate_stats, parse_growth_tables, rarity_to_growth_rank,
-    CharacterGrowthParams, StatBlock,
+    CharacterGrowthParams, StatBlock, calculate_single_stat, calculate_stats, parse_growth_tables,
+    rarity_to_growth_rank,
 };
 use serde_json::json;
 
@@ -52,7 +52,15 @@ fn params() -> CharacterGrowthParams {
 }
 
 fn block(kc: i64, cr: i64, tc: i64, pr: i64, ps: i64, ag: i64, it: i64) -> StatBlock {
-    StatBlock { kc, cr, tc, pr, ps, ag, it }
+    StatBlock {
+        kc,
+        cr,
+        tc,
+        pr,
+        ps,
+        ag,
+        it,
+    }
 }
 
 #[test]
@@ -64,12 +72,30 @@ fn stat_block_par_palier_golden_inagle() {
     let p = params();
 
     assert_eq!(calculate_stats(&t, &p, 1), block(13, 14, 12, 10, 10, 9, 11));
-    assert_eq!(calculate_stats(&t, &p, 15), block(57, 60, 57, 52, 47, 46, 53));
-    assert_eq!(calculate_stats(&t, &p, 30), block(106, 110, 106, 98, 87, 87, 99));
-    assert_eq!(calculate_stats(&t, &p, 40), block(135, 135, 126, 114, 107, 104, 121));
-    assert_eq!(calculate_stats(&t, &p, 50), block(164, 160, 146, 130, 127, 122, 144));
-    assert_eq!(calculate_stats(&t, &p, 75), block(213, 210, 191, 170, 165, 159, 187));
-    assert_eq!(calculate_stats(&t, &p, 99), block(261, 258, 235, 210, 202, 195, 230));
+    assert_eq!(
+        calculate_stats(&t, &p, 15),
+        block(57, 60, 57, 52, 47, 46, 53)
+    );
+    assert_eq!(
+        calculate_stats(&t, &p, 30),
+        block(106, 110, 106, 98, 87, 87, 99)
+    );
+    assert_eq!(
+        calculate_stats(&t, &p, 40),
+        block(135, 135, 126, 114, 107, 104, 121)
+    );
+    assert_eq!(
+        calculate_stats(&t, &p, 50),
+        block(164, 160, 146, 130, 127, 122, 144)
+    );
+    assert_eq!(
+        calculate_stats(&t, &p, 75),
+        block(213, 210, 191, 170, 165, 159, 187)
+    );
+    assert_eq!(
+        calculate_stats(&t, &p, 99),
+        block(261, 258, 235, 210, 202, 195, 230)
+    );
 }
 
 #[test]

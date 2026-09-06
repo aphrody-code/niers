@@ -20,8 +20,12 @@ fn load() -> Option<serde_json::Value> {
         eprintln!("skip : {} absent du corpus", chemin_abs.display());
         return None;
     }
-    let content = std::fs::read_to_string(&chemin_abs).unwrap_or_else(|e| panic!("lecture {}: {e}", chemin_abs.display()));
-    Some(serde_json::from_str(&content).unwrap_or_else(|e| panic!("JSON {}: {e}", chemin_abs.display())))
+    let content = std::fs::read_to_string(&chemin_abs)
+        .unwrap_or_else(|e| panic!("lecture {}: {e}", chemin_abs.display()));
+    Some(
+        serde_json::from_str(&content)
+            .unwrap_or_else(|e| panic!("JSON {}: {e}", chemin_abs.display())),
+    )
 }
 
 #[test]

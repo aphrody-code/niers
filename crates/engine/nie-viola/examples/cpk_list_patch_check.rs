@@ -7,7 +7,9 @@
 
 fn main() {
     let mut args = std::env::args().skip(1);
-    let path = args.next().expect("usage: cpk_list_patch_check <cpk_list> <chemin…>");
+    let path = args
+        .next()
+        .expect("usage: cpk_list_patch_check <cpk_list> <chemin…>");
     let chemins: Vec<String> = args.collect();
     assert!(!chemins.is_empty(), "donner au moins un chemin VFS");
 
@@ -25,9 +27,17 @@ fn main() {
 
     assert!(r.introuvables.is_empty(), "chemin(s) absent(s) du cpk_list");
     assert_eq!(patche.len(), clair.len(), "la taille du clair a changé");
-    let diff = patche.iter().zip(clair.iter()).filter(|(a, b)| a != b).count();
+    let diff = patche
+        .iter()
+        .zip(clair.iter())
+        .filter(|(a, b)| a != b)
+        .count();
     println!("diff réel     {diff} octets");
-    assert_eq!(diff, 4 * r.rendus_loose.len(), "plus d'octets modifiés que prévu");
+    assert_eq!(
+        diff,
+        4 * r.rendus_loose.len(),
+        "plus d'octets modifiés que prévu"
+    );
 
     // Relecture : le fichier doit rester un T2B valide, et les chemins visés être loose.
     let cfg = nie_formats::cfgbin::cfgbin_parse(&patche).expect("le patché doit se reparser");
@@ -54,6 +64,9 @@ fn main() {
 
     let rechiffre = nie_formats::cpk::encrypt_cpk_list(&patche);
     assert_eq!(rechiffre.len(), brut.len(), "la taille chiffrée a changé");
-    println!("rechiffré     {} octets (taille d'origine conservée)", rechiffre.len());
+    println!(
+        "rechiffré     {} octets (taille d'origine conservée)",
+        rechiffre.len()
+    );
     println!("\nverdict   patch VALIDE — prêt à écrire");
 }

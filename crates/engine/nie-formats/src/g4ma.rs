@@ -6,8 +6,8 @@
 //! `type_id`=0x68 — même famille que [`crate::g4cm`]/[`crate::g4mt`]). Corps (clés d'animation de
 //! matériau) non décodé faute de vérité terrain — en-tête byte-exact seulement.
 
-use crate::level5::{self, Level5Header};
 use crate::FormatError;
+use crate::level5::{self, Level5Header};
 
 /// Magic « G4MA » en little-endian.
 const MAGIC: u32 = 0x414D_3447;
@@ -42,10 +42,16 @@ pub fn is_g4ma(data: &[u8]) -> bool {
 /// [`FormatError::TooShort`] si < 0x40 octets, [`FormatError::BadMagic`] si le magic ≠ « G4MA ».
 pub fn parse(data: &[u8]) -> Result<G4ma, FormatError> {
     if data.len() < HEADER_LEN {
-        return Err(FormatError::TooShort { got: data.len(), need: HEADER_LEN });
+        return Err(FormatError::TooShort {
+            got: data.len(),
+            need: HEADER_LEN,
+        });
     }
     let header = level5::parse_header(data, MAGIC, "G4MA")?;
-    Ok(G4ma { header, file_size: data.len() })
+    Ok(G4ma {
+        header,
+        file_size: data.len(),
+    })
 }
 
 #[cfg(test)]
@@ -68,7 +74,10 @@ mod tests {
 
     #[test]
     fn rejette_magic_et_court() {
-        assert!(matches!(parse(&[0u8; HEADER_LEN]), Err(FormatError::BadMagic { .. })));
+        assert!(matches!(
+            parse(&[0u8; HEADER_LEN]),
+            Err(FormatError::BadMagic { .. })
+        ));
         assert!(matches!(parse(b"G4MA"), Err(FormatError::TooShort { .. })));
         assert!(is_g4ma(b"G4MA____"));
         assert!(!is_g4ma(b"G4MT"));

@@ -75,7 +75,10 @@ impl AsmSource {
             let part = Self::parse(&text, &f.display().to_string())?;
             for (va, insns) in part.bodies {
                 if all.bodies.insert(va, insns).is_some() {
-                    bail!("adresse {va:#x} définie dans deux fichiers de {}", dir.display());
+                    bail!(
+                        "adresse {va:#x} définie dans deux fichiers de {}",
+                        dir.display()
+                    );
                 }
             }
         }

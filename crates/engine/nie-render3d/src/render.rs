@@ -26,8 +26,15 @@ pub fn bounds(model: &Model) -> (V3, f32) {
             }
         }
     }
-    let c = [(lo[0] + hi[0]) * 0.5, (lo[1] + hi[1]) * 0.5, (lo[2] + hi[2]) * 0.5];
-    let r = (0..3).map(|k| (hi[k] - lo[k]) * 0.5).fold(0.0_f32, f32::max).max(1e-3);
+    let c = [
+        (lo[0] + hi[0]) * 0.5,
+        (lo[1] + hi[1]) * 0.5,
+        (lo[2] + hi[2]) * 0.5,
+    ];
+    let r = (0..3)
+        .map(|k| (hi[k] - lo[k]) * 0.5)
+        .fold(0.0_f32, f32::max)
+        .max(1e-3);
     (c, r)
 }
 
@@ -101,7 +108,11 @@ pub fn render(model: &Model, angle: f32, w: u32, h: u32) -> Vec<u8> {
 
     // Projette un sommet (centré/normalisé/orienté) → (sx_px, sy_px, depth) ou None si derrière.
     let project = |v: V3| -> Option<(f32, f32, f32)> {
-        let n = [(v[0] - center[0]) * inv, (v[1] - center[1]) * inv, (v[2] - center[2]) * inv];
+        let n = [
+            (v[0] - center[0]) * inv,
+            (v[1] - center[1]) * inv,
+            (v[2] - center[2]) * inv,
+        ];
         let r = orient(n, cy, sy, cx, sx);
         let depth = cam_d - r[2]; // >0 = devant la caméra
         if depth <= 0.05 {
@@ -116,7 +127,9 @@ pub fn render(model: &Model, angle: f32, w: u32, h: u32) -> Vec<u8> {
         let tex = prim.texture.and_then(|t| model.textures.get(t));
         for tri in prim.indices.chunks_exact(3) {
             let (ia, ib, ic) = (tri[0] as usize, tri[1] as usize, tri[2] as usize);
-            if ia >= prim.positions.len() || ib >= prim.positions.len() || ic >= prim.positions.len()
+            if ia >= prim.positions.len()
+                || ib >= prim.positions.len()
+                || ic >= prim.positions.len()
             {
                 continue;
             }
@@ -132,9 +145,21 @@ pub fn render(model: &Model, angle: f32, w: u32, h: u32) -> Vec<u8> {
                 continue;
             }
             // Normale de face (espace monde centré/orienté) pour Lambert.
-            let na = [(wa[0] - center[0]) * inv, (wa[1] - center[1]) * inv, (wa[2] - center[2]) * inv];
-            let nb = [(wb[0] - center[0]) * inv, (wb[1] - center[1]) * inv, (wb[2] - center[2]) * inv];
-            let nc = [(wc[0] - center[0]) * inv, (wc[1] - center[1]) * inv, (wc[2] - center[2]) * inv];
+            let na = [
+                (wa[0] - center[0]) * inv,
+                (wa[1] - center[1]) * inv,
+                (wa[2] - center[2]) * inv,
+            ];
+            let nb = [
+                (wb[0] - center[0]) * inv,
+                (wb[1] - center[1]) * inv,
+                (wb[2] - center[2]) * inv,
+            ];
+            let nc = [
+                (wc[0] - center[0]) * inv,
+                (wc[1] - center[1]) * inv,
+                (wc[2] - center[2]) * inv,
+            ];
             let fn_ = normv(cross(
                 sub(orient(nb, cy, sy, cx, sx), orient(na, cy, sy, cx, sx)),
                 sub(orient(nc, cy, sy, cx, sx), orient(na, cy, sy, cx, sx)),
@@ -142,7 +167,11 @@ pub fn render(model: &Model, angle: f32, w: u32, h: u32) -> Vec<u8> {
             let lambert = dot(fn_, light).abs();
             let shade = 0.35 + 0.65 * lambert; // texturé : moins d'écrasement que l'argile
             // UV par sommet (vides si la primitive n'est pas texturée → fallback argile).
-            let uv = if tex.is_some() && ia < prim.uv.len() && ib < prim.uv.len() && ic < prim.uv.len() {
+            let uv = if tex.is_some()
+                && ia < prim.uv.len()
+                && ib < prim.uv.len()
+                && ic < prim.uv.len()
+            {
                 [prim.uv[ia], prim.uv[ib], prim.uv[ic]]
             } else {
                 [[0.0, 0.0]; 3]
@@ -162,7 +191,12 @@ pub(crate) fn sample(t: &Texture, u: f32, v: f32) -> [u8; 4] {
     let x = ((uu * t.width as f32) as u32).min(t.width.saturating_sub(1));
     let y = ((vv * t.height as f32) as u32).min(t.height.saturating_sub(1));
     let idx = ((y * t.width + x) * 4) as usize;
-    [t.rgba[idx], t.rgba[idx + 1], t.rgba[idx + 2], t.rgba[idx + 3]]
+    [
+        t.rgba[idx],
+        t.rgba[idx + 1],
+        t.rgba[idx + 2],
+        t.rgba[idx + 3],
+    ]
 }
 
 /// Remplit un triangle écran (barycentrique) avec test/écriture z-buffer. Si `tex` est fourni,
@@ -252,13 +286,21 @@ mod tests {
     #[test]
     fn texture_modulee_par_shade() {
         // Primitive texturée : un quad mappé sur une texture 2×2 rouge/vert/bleu/blanc.
-        let tex = Texture { width: 2, height: 2, rgba: vec![
-            255, 0, 0, 255, 0, 255, 0, 255,
-            0, 0, 255, 255, 255, 255, 255, 255,
-        ] };
+        let tex = Texture {
+            width: 2,
+            height: 2,
+            rgba: vec![
+                255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 255, 255,
+            ],
+        };
         let model = Model {
             primitives: vec![Primitive {
-                positions: vec![[-1.0, -1.0, 0.0], [1.0, -1.0, 0.0], [1.0, 1.0, 0.0], [-1.0, 1.0, 0.0]],
+                positions: vec![
+                    [-1.0, -1.0, 0.0],
+                    [1.0, -1.0, 0.0],
+                    [1.0, 1.0, 0.0],
+                    [-1.0, 1.0, 0.0],
+                ],
                 normals: vec![[0.0, 0.0, 1.0]; 4],
                 uv: vec![[0.0, 1.0], [1.0, 1.0], [1.0, 0.0], [0.0, 0.0]],
                 indices: vec![0, 1, 2, 0, 2, 3], // CCW glTF.
@@ -270,8 +312,12 @@ mod tests {
         let buf = render(&model, 0.0, w, h);
         // Dominance de teinte (robuste au shade) : un coin où le rouge domine, un autre le bleu —
         // preuve que la texture est bel et bien échantillonnée (et pas un aplat uniforme).
-        let red = buf.chunks_exact(4).any(|p| p[0] > 60 && p[0] > p[1] + 40 && p[0] > p[2] + 40);
-        let blue = buf.chunks_exact(4).any(|p| p[2] > 60 && p[2] > p[0] + 40 && p[2] > p[1] + 40);
+        let red = buf
+            .chunks_exact(4)
+            .any(|p| p[0] > 60 && p[0] > p[1] + 40 && p[0] > p[2] + 40);
+        let blue = buf
+            .chunks_exact(4)
+            .any(|p| p[2] > 60 && p[2] > p[0] + 40 && p[2] > p[1] + 40);
         assert!(red, "un coin rouge de la texture doit apparaître");
         assert!(blue, "un coin bleu de la texture doit apparaître");
     }
@@ -289,8 +335,14 @@ mod tests {
         let buf = render(&tri_model(), 0.0, w, h);
         assert_eq!(buf.len(), (w * h * 4) as usize);
         // Au moins quelques pixels de mesh (argile ~100-200) au-dessus du fond sombre (<60).
-        let lit = buf.chunks_exact(4).filter(|p| p[0] > 80 && p[1] > 80 && p[2] > 80).count();
-        assert!(lit > 50, "le triangle doit produire des pixels de mesh ({lit})");
+        let lit = buf
+            .chunks_exact(4)
+            .filter(|p| p[0] > 80 && p[1] > 80 && p[2] > 80)
+            .count();
+        assert!(
+            lit > 50,
+            "le triangle doit produire des pixels de mesh ({lit})"
+        );
     }
 
     #[test]

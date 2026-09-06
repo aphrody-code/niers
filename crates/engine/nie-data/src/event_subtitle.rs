@@ -99,7 +99,10 @@ pub fn parse_event_text(root: &Value) -> Vec<EventTextLine> {
         if node.name().contains("BEGIN") || node.var_count() < 3 {
             return;
         }
-        out.push(EventTextLine { text_hash: node.hash(0), raw_text: node.string(2).into() });
+        out.push(EventTextLine {
+            text_hash: node.hash(0),
+            raw_text: node.string(2).into(),
+        });
     });
     out
 }
@@ -125,5 +128,8 @@ pub fn parse_washa_map(root: &Value) -> Vec<WashaEntry> {
 /// Résout le texte brut d'un hash dans une liste issue de [`parse_event_text`] (premier match).
 #[must_use]
 pub fn find_event_text(lines: &[EventTextLine], text_hash: HashId) -> Option<&str> {
-    lines.iter().find(|l| l.text_hash == text_hash).map(|l| l.raw_text.as_str())
+    lines
+        .iter()
+        .find(|l| l.text_hash == text_hash)
+        .map(|l| l.raw_text.as_str())
 }

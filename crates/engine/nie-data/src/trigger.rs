@@ -21,7 +21,7 @@ use serde_json::Value;
 
 use crate::cfgbin::Node;
 use crate::hash::HashId;
-use crate::unlock_condition::{decode_unlock_condition, UnlockCondition};
+use crate::unlock_condition::{UnlockCondition, decode_unlock_condition};
 
 /// Un item de déclencheur (`DATA_ITEM_<i>`), avec sa condition décodée.
 #[derive(Debug, Clone, PartialEq)]

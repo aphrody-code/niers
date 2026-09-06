@@ -18,15 +18,22 @@ fn load() -> Option<serde_json::Value> {
         eprintln!("skip : {} absent du corpus", chemin_abs.display());
         return None;
     }
-    let content = std::fs::read_to_string(&chemin_abs).unwrap_or_else(|e| panic!("lecture {}: {e}", chemin_abs.display()));
-    Some(serde_json::from_str(&content).unwrap_or_else(|e| panic!("JSON {}: {e}", chemin_abs.display())))
+    let content = std::fs::read_to_string(&chemin_abs)
+        .unwrap_or_else(|e| panic!("lecture {}: {e}", chemin_abs.display()));
+    Some(
+        serde_json::from_str(&content)
+            .unwrap_or_else(|e| panic!("JSON {}: {e}", chemin_abs.display())),
+    )
 }
 
 #[test]
 fn categories_byte_exact() {
     let Some(root) = load() else { return };
     let cfg = parse_flag_config(&root);
-    assert_eq!(cfg.flag_info, [0, 1, 2, 17, 19, 22, 5, 6, 7, 8, 16, 20, 21, 12, 11]);
+    assert_eq!(
+        cfg.flag_info,
+        [0, 1, 2, 17, 19, 22, 5, 6, 7, 8, 16, 20, 21, 12, 11]
+    );
     assert_eq!(cfg.tbox_info, [3]);
     assert_eq!(cfg.tbox_repop_info, [13]);
     assert_eq!(cfg.map_door_info, [4]);

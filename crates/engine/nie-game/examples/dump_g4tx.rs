@@ -37,12 +37,22 @@ fn decode(g4tx_data: &[u8], tex: &g4tx::G4txTexture) -> Option<(u32, u32, Vec<u8
     if w == 0 || h == 0 {
         return None;
     }
-    let surface = Surface { width: w, height: h, depth: 1, layers: 1, mipmaps: 1, image_format: fmt, data: &dds[PIXELS..] };
+    let surface = Surface {
+        width: w,
+        height: h,
+        depth: 1,
+        layers: 1,
+        mipmaps: 1,
+        image_format: fmt,
+        data: &dds[PIXELS..],
+    };
     Some((w, h, surface.decode_rgba8().ok()?.data))
 }
 
 fn main() {
-    let arg = std::env::args().nth(1).unwrap_or_else(|| "title02_00".into());
+    let arg = std::env::args()
+        .nth(1)
+        .unwrap_or_else(|| "title02_00".into());
     let dir = nie_formats::vfs::resolve_game_dir();
     let mut vfs = Vfs::new();
     vfs.init(dir.join("data").as_path()).expect("vfs init");
@@ -70,7 +80,10 @@ fn main() {
                 std::fs::write(&out, &buf).unwrap();
                 println!("  tex {:24} {w}x{h} -> {out}", t.name);
             }
-            None => println!("  tex {:24} {}x{} (non-DDS/skip)", t.name, t.width, t.height),
+            None => println!(
+                "  tex {:24} {}x{} (non-DDS/skip)",
+                t.name, t.width, t.height
+            ),
         }
     }
 }

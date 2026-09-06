@@ -10,7 +10,7 @@ mod common;
 
 use nie_data::hash::HashId;
 use nie_data::passive::{
-    detect_boost_type, detect_scope, parse_effects, parse_passives, PassiveBoostType, PassiveScope,
+    PassiveBoostType, PassiveScope, detect_boost_type, detect_scope, parse_effects, parse_passives,
 };
 use serde_json::json;
 
@@ -65,7 +65,10 @@ fn passive_skill_info_0() {
     assert_eq!(p.rarity, 6);
 
     // Jointure effectId → params (0.5 Float, 10 Int).
-    let params = p.effect_params.as_ref().expect("params joints via effectId");
+    let params = p
+        .effect_params
+        .as_ref()
+        .expect("params joints via effectId");
     assert_eq!(params.len(), 2);
     assert!((params[0] - 0.5).abs() < 1e-9);
     assert!((params[1] - 10.0).abs() < 1e-9);
@@ -94,32 +97,74 @@ fn detect_scope_golden() {
         detect_scope(Some("pour les joueurs de feu"), None),
         PassiveScope::Player
     );
-    assert_eq!(detect_scope(Some("effet indéterminé xyz"), None), PassiveScope::Unknown);
+    assert_eq!(
+        detect_scope(Some("effet indéterminé xyz"), None),
+        PassiveScope::Unknown
+    );
     // fallback EN si FR absent.
-    assert_eq!(detect_scope(None, Some("boosts the whole team")), PassiveScope::Team);
+    assert_eq!(
+        detect_scope(None, Some("boosts the whole team")),
+        PassiveScope::Team
+    );
 }
 
 #[test]
 fn detect_boost_type_golden() {
     // Ordre de priorité porté de detectBoostType (premier match gagne).
-    assert_eq!(detect_boost_type(Some("augmente la brèche"), None), PassiveBoostType::Breach);
-    assert_eq!(detect_boost_type(Some("taux de justice"), None), PassiveBoostType::Justice);
+    assert_eq!(
+        detect_boost_type(Some("augmente la brèche"), None),
+        PassiveBoostType::Breach
+    );
+    assert_eq!(
+        detect_boost_type(Some("taux de justice"), None),
+        PassiveBoostType::Justice
+    );
     assert_eq!(
         detect_boost_type(Some("bonus d'affrontement"), None),
         PassiveBoostType::Confrontation
     );
-    assert_eq!(detect_boost_type(Some("gain de tension"), None), PassiveBoostType::Tension);
-    assert_eq!(detect_boost_type(Some("récupération accrue"), None), PassiveBoostType::Recovery);
-    assert_eq!(detect_boost_type(Some("boost de vitesse"), None), PassiveBoostType::Speed);
-    assert_eq!(detect_boost_type(Some("plus d'endurance"), None), PassiveBoostType::Stamina);
-    assert_eq!(detect_boost_type(Some("tir +<VALUE>%"), None), PassiveBoostType::Shoot);
-    assert_eq!(detect_boost_type(Some("dribble renforcé"), None), PassiveBoostType::Dribble);
+    assert_eq!(
+        detect_boost_type(Some("gain de tension"), None),
+        PassiveBoostType::Tension
+    );
+    assert_eq!(
+        detect_boost_type(Some("récupération accrue"), None),
+        PassiveBoostType::Recovery
+    );
+    assert_eq!(
+        detect_boost_type(Some("boost de vitesse"), None),
+        PassiveBoostType::Speed
+    );
+    assert_eq!(
+        detect_boost_type(Some("plus d'endurance"), None),
+        PassiveBoostType::Stamina
+    );
+    assert_eq!(
+        detect_boost_type(Some("tir +<VALUE>%"), None),
+        PassiveBoostType::Shoot
+    );
+    assert_eq!(
+        detect_boost_type(Some("dribble renforcé"), None),
+        PassiveBoostType::Dribble
+    );
     // "défense" → block (testé avant defense dans la cascade).
-    assert_eq!(detect_boost_type(Some("hausse la défense physique"), None), PassiveBoostType::Block);
-    assert_eq!(detect_boost_type(Some("arrêt amélioré"), None), PassiveBoostType::Catch);
+    assert_eq!(
+        detect_boost_type(Some("hausse la défense physique"), None),
+        PassiveBoostType::Block
+    );
+    assert_eq!(
+        detect_boost_type(Some("arrêt amélioré"), None),
+        PassiveBoostType::Catch
+    );
     // mot unique sans espace → special (branche !contains(' ')).
-    assert_eq!(detect_boost_type(Some("Passion"), None), PassiveBoostType::Special);
-    assert_eq!(detect_boost_type(Some("xyzzy multi mots inconnus"), None), PassiveBoostType::Unknown);
+    assert_eq!(
+        detect_boost_type(Some("Passion"), None),
+        PassiveBoostType::Special
+    );
+    assert_eq!(
+        detect_boost_type(Some("xyzzy multi mots inconnus"), None),
+        PassiveBoostType::Unknown
+    );
 }
 
 #[test]

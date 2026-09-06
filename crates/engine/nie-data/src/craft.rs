@@ -44,7 +44,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use serde_json::Value;
 
-use crate::cfgbin::{walk_named, Node};
+use crate::cfgbin::{Node, walk_named};
 use crate::hash::HashId;
 
 /// Lit la variable `i` d'un noeud comme `f64` (0.0 si absente).
@@ -498,8 +498,11 @@ pub fn parse_craft_obj_config(root: &Value) -> CraftObjConfig {
 
     // Objets de craft : noeud principal `CRAFT_OBJ_INFO_N` + 4 refs appariés par position.
     let obj_nodes = collect_obj_main(root);
-    let ref_lottery =
-        collect(root, "CRAFT_OBJ_INFO_REF_INTERREST_LOTTERY_UNIQUE_CHARA_INFO_", false);
+    let ref_lottery = collect(
+        root,
+        "CRAFT_OBJ_INFO_REF_INTERREST_LOTTERY_UNIQUE_CHARA_INFO_",
+        false,
+    );
     let ref_socket = collect(root, "CRAFT_OBJ_INFO_REF_INTERREST_SOCKET_INFO_", false);
     let ref_npc = collect(root, "CRAFT_OBJ_INFO_REF_NPC_STICK_POINT_INFO_", false);
     let ref_visual = collect(root, "CRAFT_OBJ_INFO_REF_VISUAL_GROUP_INFO_", false);
@@ -515,10 +518,22 @@ pub fn parse_craft_obj_config(root: &Value) -> CraftObjConfig {
             Some(CraftObjInfo {
                 craft_id,
                 raw,
-                ref_lottery: ref_lottery.get(i).map(|n| RefRange::from_node(*n)).unwrap_or_default(),
-                ref_socket: ref_socket.get(i).map(|n| RefRange::from_node(*n)).unwrap_or_default(),
-                ref_npc_stick: ref_npc.get(i).map(|n| RefRange::from_node(*n)).unwrap_or_default(),
-                ref_visual_group: ref_visual.get(i).map(|n| RefRange::from_node(*n)).unwrap_or_default(),
+                ref_lottery: ref_lottery
+                    .get(i)
+                    .map(|n| RefRange::from_node(*n))
+                    .unwrap_or_default(),
+                ref_socket: ref_socket
+                    .get(i)
+                    .map(|n| RefRange::from_node(*n))
+                    .unwrap_or_default(),
+                ref_npc_stick: ref_npc
+                    .get(i)
+                    .map(|n| RefRange::from_node(*n))
+                    .unwrap_or_default(),
+                ref_visual_group: ref_visual
+                    .get(i)
+                    .map(|n| RefRange::from_node(*n))
+                    .unwrap_or_default(),
             })
         })
         .collect();

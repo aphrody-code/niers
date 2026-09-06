@@ -68,7 +68,10 @@ impl SystemUnlockWindowSet {
     #[must_use]
     pub fn from_value(v: &Value) -> Option<Self> {
         let info_slice = field_pair(v, "systemUnlockWindowInfoList")?;
-        Some(Self { id: field_hash(v, "systemUnlockWindowIdCrc"), info_slice })
+        Some(Self {
+            id: field_hash(v, "systemUnlockWindowIdCrc"),
+            info_slice,
+        })
     }
 }
 
@@ -89,7 +92,9 @@ impl SystemUnlockWindowConfig {
         let set = self.sets.iter().find(|s| s.id == id)?;
         let n = self.infos.len();
         let start = (set.info_slice[0].max(0) as usize).min(n);
-        let end = start.saturating_add(set.info_slice[1].max(0) as usize).min(n);
+        let end = start
+            .saturating_add(set.info_slice[1].max(0) as usize)
+            .min(n);
         self.infos.get(start..end)
     }
 }

@@ -76,7 +76,10 @@ pub fn is_dxbc(data: &[u8]) -> bool {
 /// [`FormatError::Corrupt`] si la table de chunks ou un chunk sort des limites du fichier.
 pub fn parse(data: &[u8]) -> Result<Dxbc, FormatError> {
     if data.len() < MIN_LEN {
-        return Err(FormatError::TooShort { got: data.len(), need: MIN_LEN });
+        return Err(FormatError::TooShort {
+            got: data.len(),
+            need: MIN_LEN,
+        });
     }
     if !is_dxbc(data) {
         return Err(FormatError::BadMagic { format: "DXBC" });
@@ -89,7 +92,11 @@ pub fn parse(data: &[u8]) -> Result<Dxbc, FormatError> {
 
     // La table d'offsets (chunk_count × u32) doit tenir juste après l'en-tête.
     let table_end = 0x20usize
-        .checked_add(chunk_count.checked_mul(4).ok_or(FormatError::Corrupt("dxbc chunk_count overflow"))?)
+        .checked_add(
+            chunk_count
+                .checked_mul(4)
+                .ok_or(FormatError::Corrupt("dxbc chunk_count overflow"))?,
+        )
         .ok_or(FormatError::Corrupt("dxbc table overflow"))?;
     if table_end > data.len() {
         return Err(FormatError::Corrupt("dxbc: table de chunks hors limites"));
@@ -109,16 +116,29 @@ pub fn parse(data: &[u8]) -> Result<Dxbc, FormatError> {
         if data_offset.checked_add(size).is_none_or(|e| e > data.len()) {
             return Err(FormatError::Corrupt("dxbc: données de chunk hors limites"));
         }
-        chunks.push(DxbcChunk { fourcc, data_offset, size });
+        chunks.push(DxbcChunk {
+            fourcc,
+            data_offset,
+            size,
+        });
     }
 
-    Ok(Dxbc { digest, version, total_size, chunks, file_size: data.len() })
+    Ok(Dxbc {
+        digest,
+        version,
+        total_size,
+        chunks,
+        file_size: data.len(),
+    })
 }
 
 fn read_u32(data: &[u8], off: usize) -> Result<u32, FormatError> {
     data.get(off..off + 4)
         .map(|b| u32::from_le_bytes([b[0], b[1], b[2], b[3]]))
-        .ok_or(FormatError::TooShort { got: data.len(), need: off + 4 })
+        .ok_or(FormatError::TooShort {
+            got: data.len(),
+            need: off + 4,
+        })
 }
 
 #[cfg(test)]
@@ -148,7 +168,10 @@ mod tests {
 
     #[test]
     fn rejette_magic_court_et_corrompu() {
-        assert!(matches!(parse(&[0u8; 0x20]), Err(FormatError::BadMagic { .. })));
+        assert!(matches!(
+            parse(&[0u8; 0x20]),
+            Err(FormatError::BadMagic { .. })
+        ));
         assert!(matches!(parse(b"DXBC"), Err(FormatError::TooShort { .. })));
         assert!(is_dxbc(b"DXBC____________________________"));
         // chunk_count énorme → table hors limites = Corrupt (pas de panic).
@@ -164,10 +187,19 @@ mod tests {
     #[test]
     fn golden_dxbc_reels() {
         for (bytes, size) in [
-            (include_bytes!("../tests/fixtures/dxbc/sample.vfxo").as_slice(), 21656usize),
-            (include_bytes!("../tests/fixtures/dxbc/sample.pfxo").as_slice(), 20180usize),
+            (
+                include_bytes!("../tests/fixtures/dxbc/sample.vfxo").as_slice(),
+                21656usize,
+            ),
+            (
+                include_bytes!("../tests/fixtures/dxbc/sample.pfxo").as_slice(),
+                20180usize,
+            ),
             // .cfxo (compute/effect shader) = aussi du DXBC : même conteneur, mêmes chunks.
-            (include_bytes!("../tests/fixtures/dxbc/sample.cfxo").as_slice(), 8052usize),
+            (
+                include_bytes!("../tests/fixtures/dxbc/sample.cfxo").as_slice(),
+                8052usize,
+            ),
         ] {
             let d = parse(bytes).expect("dxbc réel");
             assert_eq!(d.file_size, size);

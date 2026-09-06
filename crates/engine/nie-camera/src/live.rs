@@ -44,7 +44,12 @@ pub struct CameraLayout {
 
 impl Default for CameraLayout {
     fn default() -> Self {
-        CameraLayout { pos: 0x00, ref_pos: 0x0C, fov: Some(0x18), roll: Some(0x1C) }
+        CameraLayout {
+            pos: 0x00,
+            ref_pos: 0x0C,
+            fov: Some(0x18),
+            roll: Some(0x1C),
+        }
     }
 }
 
@@ -72,9 +77,8 @@ impl CameraLayout {
             buf.get(o..o + 4)
                 .map(|b| f32::from_le_bytes([b[0], b[1], b[2], b[3]]))
         };
-        let v3 = |o: usize| -> Option<[f32; 3]> {
-            Some([f32_at(o)?, f32_at(o + 4)?, f32_at(o + 8)?])
-        };
+        let v3 =
+            |o: usize| -> Option<[f32; 3]> { Some([f32_at(o)?, f32_at(o + 4)?, f32_at(o + 8)?]) };
         Some(CameraState {
             pos: v3(self.pos)?,
             ref_pos: v3(self.ref_pos)?,
@@ -125,7 +129,11 @@ pub struct PlausibleRange {
 
 impl Default for PlausibleRange {
     fn default() -> Self {
-        PlausibleRange { max_coord: 5_000.0, fov: (1.0, 179.0), max_length: 5_000.0 }
+        PlausibleRange {
+            max_coord: 5_000.0,
+            fov: (1.0, 179.0),
+            max_length: 5_000.0,
+        }
     }
 }
 
@@ -142,7 +150,12 @@ impl PlausibleRange {
         if !finite {
             return false;
         }
-        if st.pos.iter().chain(st.ref_pos.iter()).any(|v| v.abs() > self.max_coord) {
+        if st
+            .pos
+            .iter()
+            .chain(st.ref_pos.iter())
+            .any(|v| v.abs() > self.max_coord)
+        {
             return false;
         }
         if st.fov_deg < self.fov.0 || st.fov_deg > self.fov.1 {
@@ -255,7 +268,10 @@ pub fn scan(pid: i32, layout: CameraLayout, range: PlausibleRange, limit: usize)
                 if let Some(st) = layout.decode(&buf[off..])
                     && range.accepts(&st)
                 {
-                    out.push(Candidate { addr: base + off as u64, state: st });
+                    out.push(Candidate {
+                        addr: base + off as u64,
+                        state: st,
+                    });
                     if out.len() >= limit {
                         return out;
                     }
@@ -312,7 +328,12 @@ mod tests {
 
     #[test]
     fn layout_sans_fov_ni_roll() {
-        let layout = CameraLayout { pos: 0, ref_pos: 12, fov: None, roll: None };
+        let layout = CameraLayout {
+            pos: 0,
+            ref_pos: 12,
+            fov: None,
+            roll: None,
+        };
         assert_eq!(layout.span(), 24);
         let buf = vec![0u8; 24];
         let st = layout.decode(&buf).expect("décodage");
@@ -335,27 +356,54 @@ mod tests {
         };
         assert!(r.accepts(&ok));
         // NaN.
-        assert!(!r.accepts(&CameraState { fov_deg: f32::NAN, ..ok }));
+        assert!(!r.accepts(&CameraState {
+            fov_deg: f32::NAN,
+            ..ok
+        }));
         // Coordonnée absurde.
-        assert!(!r.accepts(&CameraState { pos: [1e9, 0.0, 0.0], ..ok }));
+        assert!(!r.accepts(&CameraState {
+            pos: [1e9, 0.0, 0.0],
+            ..ok
+        }));
         // FOV hors bornes.
         assert!(!r.accepts(&CameraState { fov_deg: 0.0, ..ok }));
         // Caméra dégénérée (œil sur la cible).
-        assert!(!r.accepts(&CameraState { pos: [0.0, 0.0, 0.0], ..ok }));
+        assert!(!r.accepts(&CameraState {
+            pos: [0.0, 0.0, 0.0],
+            ..ok
+        }));
     }
 
     #[test]
     fn intersection_de_scans() {
         let a = CameraState::default();
-        let b = CameraState { fov_deg: 60.0, ..CameraState::default() };
+        let b = CameraState {
+            fov_deg: 60.0,
+            ..CameraState::default()
+        };
         let before = [
-            Candidate { addr: 0x1000, state: a },
-            Candidate { addr: 0x2000, state: a },
+            Candidate {
+                addr: 0x1000,
+                state: a,
+            },
+            Candidate {
+                addr: 0x2000,
+                state: a,
+            },
         ];
         let after = [
-            Candidate { addr: 0x1000, state: b }, // a changé → retenu
-            Candidate { addr: 0x2000, state: a }, // inchangé → écarté
-            Candidate { addr: 0x3000, state: b }, // nouveau → écarté
+            Candidate {
+                addr: 0x1000,
+                state: b,
+            }, // a changé → retenu
+            Candidate {
+                addr: 0x2000,
+                state: a,
+            }, // inchangé → écarté
+            Candidate {
+                addr: 0x3000,
+                state: b,
+            }, // nouveau → écarté
         ];
         let n = narrow(&before, &after);
         assert_eq!(n.len(), 1);

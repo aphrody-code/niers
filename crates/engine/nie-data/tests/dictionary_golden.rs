@@ -69,9 +69,9 @@
 mod common;
 
 use nie_data::dictionary::{
-    parse_dictionary_config, DictionaryConfig, DictionaryHabitatData,
-    DictionaryObservationActionData, DictionaryObservationActionId,
-    DictionaryObservationActionPlay, DictionaryObservationRefData, DictionaryParamData,
+    DictionaryConfig, DictionaryHabitatData, DictionaryObservationActionData,
+    DictionaryObservationActionId, DictionaryObservationActionPlay, DictionaryObservationRefData,
+    DictionaryParamData, parse_dictionary_config,
 };
 use nie_data::hash::HashId;
 use serde_json::json;
@@ -203,7 +203,10 @@ fn habitat_0_champs_complets() {
     assert_eq!(h.map_name_id, HashId(0x7999_5A45));
     assert_eq!(h.file_name, "");
     assert_eq!(h.texture_name_crc, HashId::ZERO);
-    assert!(!h.is_show_area_texture, "isShowAreaTexture=false pour l'entrée 0");
+    assert!(
+        !h.is_show_area_texture,
+        "isShowAreaTexture=false pour l'entrée 0"
+    );
 }
 
 #[test]
@@ -214,7 +217,10 @@ fn habitat_1_show_area_texture() {
     // dictionary_config_0.00.00 : m_HabitatList[1]
     assert_eq!(h.habitat_id, HashId(0x1A3F_75EB));
     assert_eq!(h.map_id, HashId(0x63A5_A6D9));
-    assert!(h.is_show_area_texture, "isShowAreaTexture=true pour l'entrée 1");
+    assert!(
+        h.is_show_area_texture,
+        "isShowAreaTexture=true pour l'entrée 1"
+    );
 }
 
 #[test]
@@ -224,7 +230,11 @@ fn observation_ref_0_charaid_nul() {
     let o: &DictionaryObservationRefData = &cfg.observation_refs[0];
 
     // dictionary_config_0.00.00 : m_ObservationDataList[0]
-    assert_eq!(o.chara_id, HashId::ZERO, "charaid nul = comportement par défaut");
+    assert_eq!(
+        o.chara_id,
+        HashId::ZERO,
+        "charaid nul = comportement par défaut"
+    );
     assert_eq!(o.actiontype_id, HashId(0x877B_7FFF));
 }
 
@@ -356,8 +366,7 @@ fn tranche_hors_bornes_renvoie_vide() {
 
 // ─── Test sur le vrai fichier (skip si absent du VPS) ─────────────────────────
 
-const REAL_PATH: &str =
-    "dictionary/dictionary_config_0.00.00.cfg.bin.json";
+const REAL_PATH: &str = "dictionary/dictionary_config_0.00.00.cfg.bin.json";
 
 fn load_real() -> Option<DictionaryConfig> {
     let chemin_abs = common::chemin(REAL_PATH)?;
@@ -378,11 +387,27 @@ fn real_file_comptes() {
 
     // Comptes vérifiés sur le dump réel
     assert_eq!(cfg.habitats.len(), 43, "43 zones d'habitat");
-    assert_eq!(cfg.observation_refs.len(), 280, "280 références observation");
+    assert_eq!(
+        cfg.observation_refs.len(),
+        280,
+        "280 références observation"
+    );
     assert_eq!(cfg.params.len(), 280, "280 fiches encyclopédie");
-    assert_eq!(cfg.observation_action_ids.len(), 178, "178 identifiants d'action");
-    assert_eq!(cfg.observation_action_plays.len(), 94, "94 playlists d'action");
-    assert_eq!(cfg.observation_action_data.len(), 28, "28 types d'action d'observation");
+    assert_eq!(
+        cfg.observation_action_ids.len(),
+        178,
+        "178 identifiants d'action"
+    );
+    assert_eq!(
+        cfg.observation_action_plays.len(),
+        94,
+        "94 playlists d'action"
+    );
+    assert_eq!(
+        cfg.observation_action_data.len(),
+        28,
+        "28 types d'action d'observation"
+    );
 }
 
 #[test]
@@ -405,7 +430,10 @@ fn real_file_habitat_1_show_area() {
     let h = &cfg.habitats[1];
     assert_eq!(h.habitat_id, HashId(0x1A3F_75EB));
     assert_eq!(h.map_id, HashId(0x63A5_A6D9));
-    assert!(h.is_show_area_texture, "HabitatList[1] isShowAreaTexture=true");
+    assert!(
+        h.is_show_area_texture,
+        "HabitatList[1] isShowAreaTexture=true"
+    );
 }
 
 #[test]

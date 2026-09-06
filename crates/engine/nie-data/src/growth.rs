@@ -204,7 +204,9 @@ pub fn find_lv1_entry<'a>(
     }
     if p.play_style != 0 {
         let f = tables.lv1.iter().find(|e| {
-            e.main_position == p.main_position && e.sub_position == p.sub_position && e.play_style == 0
+            e.main_position == p.main_position
+                && e.sub_position == p.sub_position
+                && e.play_style == 0
         });
         if f.is_some() {
             return f;
@@ -218,7 +220,10 @@ pub fn find_lv1_entry<'a>(
             return f;
         }
     }
-    tables.lv1.iter().find(|e| e.main_position == p.main_position)
+    tables
+        .lv1
+        .iter()
+        .find(|e| e.main_position == p.main_position)
 }
 
 /// Lookup Lv30 avec chaîne de fallback (pattern≥2→0, subPosition→0, charaRank→0).
@@ -271,7 +276,10 @@ pub fn find_lv30_entry<'a>(
             return f;
         }
     }
-    tables.lv30.iter().find(|e| e.main_position == p.main_position)
+    tables
+        .lv30
+        .iter()
+        .find(|e| e.main_position == p.main_position)
 }
 
 /// Lookup Main avec chaîne de fallback (pattern≥2→0, charaRank→0). Source : `findMainEntry` (l.244-284).
@@ -282,30 +290,33 @@ pub fn find_main_entry<'a>(
 ) -> Option<&'a GrowthTableMainEntry> {
     let rank = rarity_to_growth_rank(p.chara_rank);
     let exact = tables.main.iter().find(|e| {
-        e.main_position == p.main_position && e.growth_pattern == p.growth_pattern && e.chara_rank == rank
+        e.main_position == p.main_position
+            && e.growth_pattern == p.growth_pattern
+            && e.chara_rank == rank
     });
     if exact.is_some() {
         return exact;
     }
     if p.growth_pattern >= 2 {
-        let f = tables
-            .main
-            .iter()
-            .find(|e| e.main_position == p.main_position && e.growth_pattern == 0 && e.chara_rank == rank);
+        let f = tables.main.iter().find(|e| {
+            e.main_position == p.main_position && e.growth_pattern == 0 && e.chara_rank == rank
+        });
         if f.is_some() {
             return f;
         }
     }
     if rank != 0 {
-        let f = tables
-            .main
-            .iter()
-            .find(|e| e.main_position == p.main_position && e.growth_pattern == 0 && e.chara_rank == 0);
+        let f = tables.main.iter().find(|e| {
+            e.main_position == p.main_position && e.growth_pattern == 0 && e.chara_rank == 0
+        });
         if f.is_some() {
             return f;
         }
     }
-    tables.main.iter().find(|e| e.main_position == p.main_position)
+    tables
+        .main
+        .iter()
+        .find(|e| e.main_position == p.main_position)
 }
 
 /// Calcule le bloc de stats complet à un niveau. Source : `calculateStats` (l.290-340).

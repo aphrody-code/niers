@@ -10,11 +10,9 @@
 //! fichier fige la logique de parse + nettoyage sur fixtures contrôlées.
 
 use nie_data::cfgbin::Node;
-use nie_data::chara_description::{
-    find_by_hash, parse_chara_descriptions, parse_description_node,
-};
+use nie_data::chara_description::{find_by_hash, parse_chara_descriptions, parse_description_node};
 use nie_data::hash::HashId;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 fn ivar(v: i64) -> Value {
     json!({ "type": "Int", "value": v.to_string() })
@@ -31,7 +29,11 @@ fn text_info(name: &str, hash: i64, desc: &str) -> Value {
 #[test]
 fn parses_and_sanitizes() {
     // Entrée brute avec balise couleur + furigana + balise valeur → texte nettoyé.
-    let n = text_info("TEXT_INFO_0", 0x1234_5678, "<COL:FF0000>Texte<CLO> avec [漢字/かんじ] et <VAL:5>");
+    let n = text_info(
+        "TEXT_INFO_0",
+        0x1234_5678,
+        "<COL:FF0000>Texte<CLO> avec [漢字/かんじ] et <VAL:5>",
+    );
     let d = parse_description_node(&Node::new(&n)).expect("valide");
     assert_eq!(d.hash_id, HashId(0x1234_5678));
     assert_eq!(d.description, "Texte avec 漢字 et 5");
@@ -77,7 +79,10 @@ fn walk_under_begin_node() {
     });
     let descs = parse_chara_descriptions(&root);
     assert_eq!(descs.len(), 2, "2 descriptions non-vides (la 3ᵉ est vide)");
-    assert_eq!(find_by_hash(&descs, HashId(0xAAAA_0001)), Some("Première description"));
+    assert_eq!(
+        find_by_hash(&descs, HashId(0xAAAA_0001)),
+        Some("Première description")
+    );
     assert_eq!(find_by_hash(&descs, HashId(0xAAAA_0002)), Some("Deuxième"));
     assert_eq!(find_by_hash(&descs, HashId(0xAAAA_0003)), None);
     assert_eq!(find_by_hash(&descs, HashId(0xDEAD_BEEF)), None);

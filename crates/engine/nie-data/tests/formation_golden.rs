@@ -43,8 +43,8 @@
 mod common;
 
 use nie_data::formation::{
-    parse_formation_config, FormationConfig, SoccerCurvePointInfo, SoccerFormPlacementInfo,
-    SoccerFormationInfo, SoccerLineCurveInfo, SoccerPositionInfo, Vec2,
+    FormationConfig, SoccerCurvePointInfo, SoccerFormPlacementInfo, SoccerFormationInfo,
+    SoccerLineCurveInfo, SoccerPositionInfo, Vec2, parse_formation_config,
 };
 use nie_data::hash::HashId;
 use serde_json::json;
@@ -154,8 +154,14 @@ fn position_info_type_gk() {
     assert_eq!(p.position_id, 1);
     assert_eq!(p.center_line_weight, 0.5_f32);
     // 0.05 et 0.95 ne sont pas exactement représentables en f32 ; on valide à 1 ulp f32.
-    assert!((p.offense_line_weight - 0.05_f32).abs() < 1e-6, "offenseLineWeight ≈ 0.05");
-    assert!((p.defense_line_weight - 0.95_f32).abs() < 1e-6, "defenseLineWeight ≈ 0.95");
+    assert!(
+        (p.offense_line_weight - 0.05_f32).abs() < 1e-6,
+        "offenseLineWeight ≈ 0.05"
+    );
+    assert!(
+        (p.defense_line_weight - 0.95_f32).abs() < 1e-6,
+        "defenseLineWeight ≈ 0.95"
+    );
 }
 
 #[test]
@@ -202,7 +208,10 @@ fn placement_gk_offense_pos_hex_decode() {
     // → y: f32::from_bits(0x3F70A3D7) ≈ 0.9399... (GK légèrement plus avancé)
     assert_eq!(s.offense_pos.x, 0.0_f32);
     assert_eq!(s.offense_pos.y, f32::from_bits(0x3F70_A3D7));
-    assert!((s.offense_pos.y - 0.94_f32).abs() < 1e-3, "GK offensePos.y ≈ 0.94");
+    assert!(
+        (s.offense_pos.y - 0.94_f32).abs() < 1e-3,
+        "GK offensePos.y ≈ 0.94"
+    );
 }
 
 #[test]
@@ -212,7 +221,11 @@ fn placement_gk_bustup_pos_exact() {
 
     // bustupPos = "0000000000008040"
     // → x: 0.0, y: f32::from_bits(0x40800000) = 4.0 (exactement représentable)
-    assert_eq!(s.bustup_pos, Vec2 { x: 0.0, y: 4.0 }, "bustupPos GK = (0.0, 4.0)");
+    assert_eq!(
+        s.bustup_pos,
+        Vec2 { x: 0.0, y: 4.0 },
+        "bustupPos GK = (0.0, 4.0)"
+    );
 }
 
 #[test]
@@ -270,7 +283,11 @@ fn placements_of_slice() {
     let cfg = parse_formation_config(&fixture());
     // La formation 0 a placement_offset=0, placement_count=1 dans la fixture.
     let slots = cfg.placements_of(&cfg.formations[0]);
-    assert_eq!(slots.len(), 1, "placements_of renvoie exactement placement_count éléments");
+    assert_eq!(
+        slots.len(),
+        1,
+        "placements_of renvoie exactement placement_count éléments"
+    );
     assert_eq!(slots[0].position_id, 1, "le seul slot est le GK");
 }
 
@@ -300,8 +317,7 @@ fn vec2_parse_hex_zero_string() {
 
 // ─── Test sur le vrai fichier (skip si absent du VPS) ────────────────────────
 
-const REAL_PATH: &str =
-    "formation/formation_config_0.02.16.cfg.bin.json";
+const REAL_PATH: &str = "formation/formation_config_0.02.16.cfg.bin.json";
 
 fn load_real() -> Option<FormationConfig> {
     let chemin_abs = common::chemin(REAL_PATH)?;

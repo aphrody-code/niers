@@ -277,7 +277,10 @@ mod tests {
     #[test]
     fn le_francais_n_a_pas_de_prefixe() {
         assert_eq!(Langue::Fr.prefixe(), "");
-        assert_eq!(Langue::Fr.url("https://aphrody.com", "/"), "https://aphrody.com");
+        assert_eq!(
+            Langue::Fr.url("https://aphrody.com", "/"),
+            "https://aphrody.com"
+        );
         assert_eq!(
             Langue::En.url("https://aphrody.com", "/textures"),
             "https://aphrody.com/en/textures"

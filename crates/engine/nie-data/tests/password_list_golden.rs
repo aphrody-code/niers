@@ -10,10 +10,9 @@
 mod common;
 
 use nie_data::hash::HashId;
-use nie_data::post::{parse_password_list_config, PasswordListConfig};
+use nie_data::post::{PasswordListConfig, parse_password_list_config};
 
-const REAL_PATH: &str =
-    "post/password_list_config.cfg.bin.json";
+const REAL_PATH: &str = "post/password_list_config.cfg.bin.json";
 
 fn load_real() -> Option<PasswordListConfig> {
     let chemin_abs = common::chemin(REAL_PATH)?;

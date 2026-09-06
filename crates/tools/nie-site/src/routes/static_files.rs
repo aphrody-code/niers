@@ -84,7 +84,10 @@ pub fn immuable(relatif: &Path) -> bool {
         .is_some_and(|d| DOSSIERS_BUNDLE.contains(&d));
     let a_plusieurs_composants = relatif.components().count() > 1;
     (dans_dossier_bundle && a_plusieurs_composants)
-        || relatif.file_name().and_then(|n| n.to_str()).is_some_and(empreinte)
+        || relatif
+            .file_name()
+            .and_then(|n| n.to_str())
+            .is_some_and(empreinte)
 }
 
 /// Normalise un chemin relatif reçu d'un client : rend `None` dès qu'il sort de la racine.
@@ -254,11 +257,7 @@ async fn points_d_entree_dans(racine: &Path, dossier: &str) -> (Option<String>, 
 
 /// Sert un fichier du bundle. Rend `None` quand il n'existe pas : c'est l'appelant qui décide
 /// du repli (la coquille pour une route de navigation, une erreur pour une ressource).
-pub async fn servir(
-    etat: &EtatSite,
-    relatif: &str,
-    entetes: &HeaderMap,
-) -> Option<Response> {
+pub async fn servir(etat: &EtatSite, relatif: &str, entetes: &HeaderMap) -> Option<Response> {
     let sur = chemin_sur(relatif)?;
     if sur.as_os_str().is_empty() {
         return None;
@@ -268,7 +267,9 @@ pub async fn servir(
     if !meta.is_file() {
         return None;
     }
-    let accept = entetes.get(header::ACCEPT_ENCODING).and_then(|v| v.to_str().ok());
+    let accept = entetes
+        .get(header::ACCEPT_ENCODING)
+        .and_then(|v| v.to_str().ok());
     let enc = negocier(&fichier, accept);
     let chemin_servi = variante(&fichier, enc);
     let cle = format!("statique:{}:{}", chemin_servi.display(), enc.suffixe());
@@ -358,12 +359,21 @@ mod tests {
         assert!(empreinte("index.9f8e7d6c5b4a.css"), "hexadecimal");
         // La forme que Vite produit par defaut — c'est elle qui manquait, et le bundle
         // d'`apps/nie-web` etait servi `no-cache` a chaque requete.
-        assert!(empreinte("index-RXLrxaJS.js"), "base64url melangeant les casses");
+        assert!(
+            empreinte("index-RXLrxaJS.js"),
+            "base64url melangeant les casses"
+        );
         assert!(empreinte("app-B7xk29Za.css"), "base64url avec chiffres");
         assert!(!empreinte("index.html"));
         assert!(!empreinte("app-1a2b.js"), "moins de huit caracteres");
-        assert!(!empreinte("app-composant.js"), "un mot n'est pas une empreinte");
-        assert!(!empreinte("mon-fichier-normal.js"), "un mot n'est pas une empreinte");
+        assert!(
+            !empreinte("app-composant.js"),
+            "un mot n'est pas une empreinte"
+        );
+        assert!(
+            !empreinte("mon-fichier-normal.js"),
+            "un mot n'est pas une empreinte"
+        );
     }
 
     #[test]
@@ -378,7 +388,10 @@ mod tests {
         // ne peut plus deployer.
         assert!(!immuable(Path::new("index.html")));
         assert!(!immuable(Path::new("favicon.ico")));
-        assert!(!immuable(Path::new("static")), "le dossier lui-meme n'est pas un fichier");
+        assert!(
+            !immuable(Path::new("static")),
+            "le dossier lui-meme n'est pas un fichier"
+        );
         // Hors dossier connu, on retombe sur le nom.
         assert!(immuable(Path::new("vendor/app-1a2b3c4d.js")));
     }
@@ -388,7 +401,10 @@ mod tests {
         assert!(chemin_sur("../etc/passwd").is_none());
         assert!(chemin_sur("/a/../../b").is_none());
         assert!(chemin_sur("/assets/app.js").is_some());
-        assert_eq!(chemin_sur("/assets/app.js").unwrap(), Path::new("assets/app.js"));
+        assert_eq!(
+            chemin_sur("/assets/app.js").unwrap(),
+            Path::new("assets/app.js")
+        );
     }
 
     #[test]
@@ -396,7 +412,11 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let f = dir.path().join("app.js");
         std::fs::write(&f, b"x").unwrap();
-        assert_eq!(negocier(&f, Some("br, gzip")), Encodage::Identite, "aucune variante presente");
+        assert_eq!(
+            negocier(&f, Some("br, gzip")),
+            Encodage::Identite,
+            "aucune variante presente"
+        );
         std::fs::write(dir.path().join("app.js.zst"), b"z").unwrap();
         assert_eq!(negocier(&f, Some("zstd")), Encodage::Zstd);
         std::fs::write(dir.path().join("app.js.br"), b"b").unwrap();
@@ -407,8 +427,14 @@ mod tests {
 
     #[test]
     fn types_de_contenu() {
-        assert_eq!(type_contenu(Path::new("a.js")), "text/javascript; charset=utf-8");
+        assert_eq!(
+            type_contenu(Path::new("a.js")),
+            "text/javascript; charset=utf-8"
+        );
         assert_eq!(type_contenu(Path::new("a.wasm")), "application/wasm");
-        assert_eq!(type_contenu(Path::new("a.inconnu")), "application/octet-stream");
+        assert_eq!(
+            type_contenu(Path::new("a.inconnu")),
+            "application/octet-stream"
+        );
     }
 }

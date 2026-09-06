@@ -23,8 +23,8 @@ use alloc::format;
 use alloc::string::String;
 use alloc::vec::Vec;
 
-use crate::cfgbin::Value;
 use crate::FormatError;
+use crate::cfgbin::Value;
 
 /// Type d'une variable T2B, tel qu'encodé sur 2 bits.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -77,15 +77,22 @@ pub struct EntreeLoc {
 /// Lit l'en-tête et rend `(offset de la table de chaînes, longueur, nombre d'entrées)`.
 fn entete(data: &[u8]) -> Result<(usize, usize, usize), FormatError> {
     if data.len() < 16 {
-        return Err(FormatError::TooShort { got: data.len(), need: 16 });
+        return Err(FormatError::TooShort {
+            got: data.len(),
+            need: 16,
+        });
     }
     let lire = |o: usize| i32::from_le_bytes([data[o], data[o + 1], data[o + 2], data[o + 3]]);
     let (n, off, len) = (lire(0), lire(4), lire(8));
     if n < 0 || off < 0 || len < 0 {
-        return Err(FormatError::Corrupt("T2B header: count/offset/length négatif"));
+        return Err(FormatError::Corrupt(
+            "T2B header: count/offset/length négatif",
+        ));
     }
     let (off, len) = (off as usize, len as usize);
-    let fin = off.checked_add(len).ok_or(FormatError::Corrupt("T2B string table overflow"))?;
+    let fin = off
+        .checked_add(len)
+        .ok_or(FormatError::Corrupt("T2B string table overflow"))?;
     if off < 16 || fin > data.len() {
         return Err(FormatError::Corrupt("String table offset out of bounds"));
     }
@@ -116,7 +123,10 @@ pub fn localiser_tout(data: &[u8]) -> Result<Vec<EntreeLoc>, FormatError> {
         }
         let fin = string_table_off + string_table_len;
         let tranche = &data[debut..fin];
-        let nul = tranche.iter().position(|&b| b == 0).unwrap_or(tranche.len());
+        let nul = tranche
+            .iter()
+            .position(|&b| b == 0)
+            .unwrap_or(tranche.len());
         String::from_utf8_lossy(&tranche[..nul]).into_owned()
     };
 
@@ -167,11 +177,20 @@ pub fn localiser_tout(data: &[u8]) -> Result<Vec<EntreeLoc>, FormatError> {
                 // que le sauter garde le parcours aligné.
                 VarType::Entier | VarType::Inconnu => Value::Int(i32::from_le_bytes(brut)),
             };
-            variables.push(VarLoc { ty, offset: pos, valeur });
+            variables.push(VarLoc {
+                ty,
+                offset: pos,
+                valeur,
+            });
             pos += 4;
         }
 
-        out.push(EntreeLoc { index, crc, nom: format!("UNKNOWN_{crc:08X}"), variables });
+        out.push(EntreeLoc {
+            index,
+            crc,
+            nom: format!("UNKNOWN_{crc:08X}"),
+            variables,
+        });
     }
     Ok(out)
 }
@@ -213,8 +232,15 @@ impl core::fmt::Display for T2bPatchError {
             Self::EntreeHorsPlage { demande, total } => {
                 write!(f, "entrée {demande} hors plage (le fichier en a {total})")
             }
-            Self::VariableHorsPlage { entree, demande, total } => {
-                write!(f, "variable {demande} hors plage dans l'entrée {entree} (elle en a {total})")
+            Self::VariableHorsPlage {
+                entree,
+                demande,
+                total,
+            } => {
+                write!(
+                    f,
+                    "variable {demande} hors plage dans l'entrée {entree} (elle en a {total})"
+                )
             }
             Self::TypeIncompatible { reel, tente } => {
                 write!(f, "la variable est {reel:?}, écriture {tente} refusée")
@@ -261,30 +287,49 @@ pub fn appliquer(data: &mut [u8], modifs: &[ModifT2b]) -> Result<usize, T2bPatch
         let total = entrees.len();
         let e = entrees
             .get(m.entree)
-            .ok_or(T2bPatchError::EntreeHorsPlage { demande: m.entree, total })?;
+            .ok_or(T2bPatchError::EntreeHorsPlage {
+                demande: m.entree,
+                total,
+            })?;
         let nb = e.variables.len();
-        let v = e.variables.get(m.variable).ok_or(T2bPatchError::VariableHorsPlage {
-            entree: m.entree,
-            demande: m.variable,
-            total: nb,
-        })?;
+        let v = e
+            .variables
+            .get(m.variable)
+            .ok_or(T2bPatchError::VariableHorsPlage {
+                entree: m.entree,
+                demande: m.variable,
+                total: nb,
+            })?;
 
         let octets = match (m.valeur, v.ty) {
             (ValT2b::Entier(x), VarType::Entier) => x.to_le_bytes(),
             (ValT2b::Flottant(x), VarType::Flottant) => x.to_le_bytes(),
             (ValT2b::OffsetChaine(x), VarType::Chaine) => x.to_le_bytes(),
             (ValT2b::Entier(_), reel) => {
-                return Err(T2bPatchError::TypeIncompatible { reel, tente: "entier" })
+                return Err(T2bPatchError::TypeIncompatible {
+                    reel,
+                    tente: "entier",
+                });
             }
             (ValT2b::Flottant(_), reel) => {
-                return Err(T2bPatchError::TypeIncompatible { reel, tente: "flottant" })
+                return Err(T2bPatchError::TypeIncompatible {
+                    reel,
+                    tente: "flottant",
+                });
             }
             (ValT2b::OffsetChaine(_), reel) => {
-                return Err(T2bPatchError::TypeIncompatible { reel, tente: "offset de chaîne" })
+                return Err(T2bPatchError::TypeIncompatible {
+                    reel,
+                    tente: "offset de chaîne",
+                });
             }
         };
         let (o, fin) = (v.offset, v.offset + 4);
-        changes += data[o..fin].iter().zip(&octets).filter(|(a, b)| *a != *b).count();
+        changes += data[o..fin]
+            .iter()
+            .zip(&octets)
+            .filter(|(a, b)| *a != *b)
+            .count();
         data[o..fin].copy_from_slice(&octets);
     }
     Ok(changes)

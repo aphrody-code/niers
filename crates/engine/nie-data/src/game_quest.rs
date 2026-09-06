@@ -156,7 +156,12 @@ pub fn parse_game_quest_config(root: &Value) -> GameQuestConfig {
             }
         }
     }
-    GameQuestConfig { icons, quest_data, game_infos, game_quests }
+    GameQuestConfig {
+        icons,
+        quest_data,
+        game_infos,
+        game_quests,
+    }
 }
 
 #[cfg(test)]

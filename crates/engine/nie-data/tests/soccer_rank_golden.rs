@@ -26,7 +26,14 @@ fn ranks_byte_exact() {
 fn dispatch_typed() {
     use nie_data::typed::{decode_by_key, family_key};
     let Some(root) = load() else { return };
-    assert_eq!(family_key("soccer_rank_config_0.00.00.cfg.bin.json".strip_suffix(".json").unwrap()), "soccer_rank_config");
+    assert_eq!(
+        family_key(
+            "soccer_rank_config_0.00.00.cfg.bin.json"
+                .strip_suffix(".json")
+                .unwrap()
+        ),
+        "soccer_rank_config"
+    );
     let (label, _j) = decode_by_key("soccer_rank_config", &root).expect("câblé");
     assert_eq!(label, "soccer_rank");
 }

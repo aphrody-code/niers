@@ -21,7 +21,7 @@
 //!
 //! Le mapping rareté→`charaRank` réutilise [`crate::stats::rarity_to_growth_rank`].
 
-use crate::stats::{calculate_single_stat, rarity_to_growth_rank, StatBlock};
+use crate::stats::{StatBlock, calculate_single_stat, rarity_to_growth_rank};
 
 /// Entrée de la table des stats de niveau 1 (par position/sous-position/style).
 ///
@@ -166,9 +166,7 @@ impl GrowthTables {
 
         if entry.is_none() && params.sub_position != 0 {
             entry = self.lv1.iter().find(|e| {
-                e.main_position == params.main_position
-                    && e.sub_position == 0
-                    && e.play_style == 0
+                e.main_position == params.main_position && e.sub_position == 0 && e.play_style == 0
             });
         }
 
@@ -399,7 +397,12 @@ mod loader {
                 })
                 .collect();
 
-            Self { lv1, lv30, main, sub }
+            Self {
+                lv1,
+                lv30,
+                main,
+                sub,
+            }
         }
     }
 }

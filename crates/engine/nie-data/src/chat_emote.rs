@@ -220,7 +220,12 @@ impl ChatEmoteDefSetConfig {
 #[must_use]
 pub fn parse_chat_emote_config(root: &Value) -> ChatEmoteConfig {
     let entries = list_values(root, "m_ChatEmoteInfoList")
-        .map(|values| values.iter().filter_map(ChatEmoteInfo::from_value).collect())
+        .map(|values| {
+            values
+                .iter()
+                .filter_map(ChatEmoteInfo::from_value)
+                .collect()
+        })
         .unwrap_or_default();
     ChatEmoteConfig { entries }
 }
@@ -231,7 +236,12 @@ pub fn parse_chat_emote_config(root: &Value) -> ChatEmoteConfig {
 #[must_use]
 pub fn parse_chat_emote_def_set_config(root: &Value) -> ChatEmoteDefSetConfig {
     let entries = list_values(root, "m_ChatEmoteDefSetInfoList")
-        .map(|values| values.iter().filter_map(ChatEmoteDefSet::from_value).collect())
+        .map(|values| {
+            values
+                .iter()
+                .filter_map(ChatEmoteDefSet::from_value)
+                .collect()
+        })
         .unwrap_or_default();
     ChatEmoteDefSetConfig { entries }
 }

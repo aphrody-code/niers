@@ -45,7 +45,9 @@ fn open_read(pid: i32) -> Option<Handle> {
 
 fn last_error_hint(code: u32) -> &'static str {
     match code {
-        5 => " (ERROR_ACCESS_DENIED — EAC actif ? lance nie.exe directement sans EACLauncher, ou en admin)",
+        5 => {
+            " (ERROR_ACCESS_DENIED — EAC actif ? lance nie.exe directement sans EACLauncher, ou en admin)"
+        }
         87 => " (ERROR_INVALID_PARAMETER — plage partiellement non mappée)",
         299 => " (ERROR_PARTIAL_COPY — la plage chevauche un trou non mappé)",
         _ => "",
@@ -73,7 +75,13 @@ pub fn read(pid: i32, addr: u64, dest: &mut [u8]) -> Result<usize, MemError> {
     // SAFETY: `h.0` est un handle valide (PROCESS_VM_READ). `dest` est inscriptible sur `dest.len()`.
     // ReadProcessMemory écrit au plus `dest.len()` octets et renseigne `read_n`.
     let ok = unsafe {
-        ReadProcessMemory(h.0, addr as *const c_void, dest.as_mut_ptr().cast::<c_void>(), dest.len(), &mut read_n)
+        ReadProcessMemory(
+            h.0,
+            addr as *const c_void,
+            dest.as_mut_ptr().cast::<c_void>(),
+            dest.len(),
+            &mut read_n,
+        )
     };
     if ok == 0 && read_n == 0 {
         // SAFETY: appel FFI pur.
@@ -115,7 +123,14 @@ pub fn write(pid: i32, addr: u64, src: &[u8]) -> Result<usize, MemError> {
     let Some(h) = open_rw(pid) else {
         // SAFETY: appel FFI pur.
         let code = unsafe { GetLastError() };
-        return Err(MemError::Win { op: "OpenProcess", pid, addr, len: src.len(), code, hint: last_error_hint(code) });
+        return Err(MemError::Win {
+            op: "OpenProcess",
+            pid,
+            addr,
+            len: src.len(),
+            code,
+            hint: last_error_hint(code),
+        });
     };
 
     // Déverrouille **page par page** en mémorisant la protection d'origine de CHAQUE page :
@@ -133,7 +148,13 @@ pub fn write(pid: i32, addr: u64, src: &[u8]) -> Result<usize, MemError> {
         // SAFETY: `h.0` valide (PROCESS_VM_OPERATION) ; `old` inscriptible ; une seule page (protection
         // uniforme à la granularité page), donc `old` reçoit bien sa protection d'origine.
         let ok = unsafe {
-            VirtualProtectEx(h.0, page as *const c_void, PAGE as usize, PAGE_EXECUTE_READWRITE, &mut old)
+            VirtualProtectEx(
+                h.0,
+                page as *const c_void,
+                PAGE as usize,
+                PAGE_EXECUTE_READWRITE,
+                &mut old,
+            )
         };
         if ok != 0 {
             saved.push((page, old));
@@ -148,7 +169,13 @@ pub fn write(pid: i32, addr: u64, src: &[u8]) -> Result<usize, MemError> {
     // SAFETY: `h.0` valide (PROCESS_VM_WRITE) ; `src` lisible sur `src.len()` octets ;
     // WriteProcessMemory écrit au plus `src.len()` octets et renseigne `written`.
     let ok = unsafe {
-        WriteProcessMemory(h.0, addr as *mut c_void, src.as_ptr().cast::<c_void>(), src.len(), &mut written)
+        WriteProcessMemory(
+            h.0,
+            addr as *mut c_void,
+            src.as_ptr().cast::<c_void>(),
+            src.len(),
+            &mut written,
+        )
     };
     let write_err = if ok == 0 {
         // SAFETY: appel FFI pur — capturé AVANT la restauration de protection (qui écraserait l'erreur).
@@ -167,7 +194,14 @@ pub fn write(pid: i32, addr: u64, src: &[u8]) -> Result<usize, MemError> {
     unsafe { FlushInstructionCache(h.0, addr as *const c_void, src.len()) };
 
     if let Some(code) = write_err {
-        return Err(MemError::Win { op: "WriteProcessMemory", pid, addr, len: src.len(), code, hint: last_error_hint(code) });
+        return Err(MemError::Win {
+            op: "WriteProcessMemory",
+            pid,
+            addr,
+            len: src.len(),
+            code,
+            hint: last_error_hint(code),
+        });
     }
     Ok(written)
 }
@@ -205,9 +239,8 @@ pub fn find_pid_by_name(name: &str) -> Option<i32> {
 /// `(base, taille, chemin)` du module de `pid` dont `szModule`/`szExePath` contient `fragment`.
 fn module_entry(pid: i32, fragment: &str) -> Option<(u64, u64, String)> {
     // SAFETY: snapshot des modules du pid ; on tente 32+64 bits.
-    let snap = unsafe {
-        CreateToolhelp32Snapshot(TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, pid as u32)
-    };
+    let snap =
+        unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, pid as u32) };
     if snap == INVALID_HANDLE_VALUE {
         return None;
     }
@@ -300,7 +333,13 @@ pub fn enumerate_regions(pid: i32) -> Vec<MapEntry> {
                 .find(|(mb, me, _)| base >= *mb && base < *me)
                 .map(|(_, _, name)| name.clone())
                 .unwrap_or_default();
-            out.push(MapEntry { start: base, end: next, perms, offset: 0, path });
+            out.push(MapEntry {
+                start: base,
+                end: next,
+                perms,
+                offset: 0,
+                path,
+            });
         }
         addr = next;
     }
@@ -310,9 +349,8 @@ pub fn enumerate_regions(pid: i32) -> Vec<MapEntry> {
 /// `(base, end, nom)` de tous les modules du process.
 fn module_list(pid: i32) -> Vec<(u64, u64, String)> {
     // SAFETY: snapshot modules ; INVALID_HANDLE_VALUE en échec.
-    let snap = unsafe {
-        CreateToolhelp32Snapshot(TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, pid as u32)
-    };
+    let snap =
+        unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, pid as u32) };
     if snap == INVALID_HANDLE_VALUE {
         return Vec::new();
     }

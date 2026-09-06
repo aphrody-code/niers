@@ -225,7 +225,10 @@ impl CharaParamSlot {
 pub fn parse_autosave_layout(body: &[u8]) -> Result<AutoSaveLayout, SaveError> {
     // ---- En-tête global (8 octets) ----
     if body.len() < 8 {
-        return Err(SaveError::TooShort { got: body.len(), need: 8 });
+        return Err(SaveError::TooShort {
+            got: body.len(),
+            need: 8,
+        });
     }
 
     // body.len() >= 8 vérifié ci-dessus ; get() pour rester sans panic en toute circonstance.
@@ -235,7 +238,9 @@ pub fn parse_autosave_layout(body: &[u8]) -> Result<AutoSaveLayout, SaveError> {
             .ok_or(SaveError::Corrupt("AUTOSAVE: lecture version"))?,
     );
     if version != BODY_VERSION {
-        return Err(SaveError::Corrupt("version AUTOSAVE body inconnue (attendu 0x00000001)"));
+        return Err(SaveError::Corrupt(
+            "version AUTOSAVE body inconnue (attendu 0x00000001)",
+        ));
     }
     let opaque_4 = u32::from_le_bytes(
         body.get(4..8)
@@ -333,9 +338,7 @@ fn parse_chara_table(body: &[u8], start_offset: usize) -> Vec<CharaParamSlot> {
 
     for i in 0..CHARA_SLOT_COUNT {
         // checked_add pour éviter l'overflow sur wasm32 (usize = 32 bits).
-        let sep_offset = match start_offset
-            .checked_add(i.saturating_mul(CHARA_SLOT_STRIDE))
-        {
+        let sep_offset = match start_offset.checked_add(i.saturating_mul(CHARA_SLOT_STRIDE)) {
             Some(v) => v,
             None => break,
         };
@@ -437,7 +440,10 @@ mod tests {
         // séparateur[29] = 0x720 + 29 * 0x2D8
         let sep_29 = SCALAR_STREAM_END + 29 * CHARA_SLOT_STRIDE;
         let table_end = sep_29 + CHARA_SLOT_STRIDE;
-        assert_eq!(table_end, CHARA_TABLE_END_REAL, "CHARA_TABLE_END_REAL cohérent");
+        assert_eq!(
+            table_end, CHARA_TABLE_END_REAL,
+            "CHARA_TABLE_END_REAL cohérent"
+        );
         assert_eq!(CHARA_TABLE_END_REAL, 0x5C70);
         assert_eq!(SCALAR_STREAM_END, 0x720);
         assert_eq!(SCALAR_STREAM_OFFSET, 0x008);
@@ -469,7 +475,7 @@ mod tests {
         let mut buf = Vec::new();
         buf.extend_from_slice(&1u32.to_le_bytes()); // size=1
         buf.extend_from_slice(&0u32.to_le_bytes()); // hash=0
-        buf.push(0xAA);                              // data
+        buf.push(0xAA); // data
 
         buf.extend_from_slice(&2u32.to_le_bytes()); // size=2
         buf.extend_from_slice(&0u32.to_le_bytes()); // hash=0
@@ -557,13 +563,28 @@ mod tests {
         assert_eq!(layout.scalar_stream_range.0, SCALAR_STREAM_OFFSET);
         assert_eq!(layout.scalar_stream_range.1, SCALAR_STREAM_END);
         // Au moins 1 record valide (le reste du padding génère des records size=0 valides)
-        assert!(layout.scalar_record_count >= 1, "au moins 1 record scalaire");
+        assert!(
+            layout.scalar_record_count >= 1,
+            "au moins 1 record scalaire"
+        );
 
         assert_eq!(layout.chara_param_slots.len(), 2);
-        assert!(layout.chara_param_slots[0].separator_valid, "slot 0 séparateur valide");
-        assert!(layout.chara_param_slots[1].separator_valid, "slot 1 séparateur valide");
-        assert_eq!(layout.chara_param_slots[0].separator_offset, SCALAR_STREAM_END);
-        assert_eq!(layout.chara_param_slots[0].data_offset, SCALAR_STREAM_END + 8);
+        assert!(
+            layout.chara_param_slots[0].separator_valid,
+            "slot 0 séparateur valide"
+        );
+        assert!(
+            layout.chara_param_slots[1].separator_valid,
+            "slot 1 séparateur valide"
+        );
+        assert_eq!(
+            layout.chara_param_slots[0].separator_offset,
+            SCALAR_STREAM_END
+        );
+        assert_eq!(
+            layout.chara_param_slots[0].data_offset,
+            SCALAR_STREAM_END + 8
+        );
         assert_eq!(
             layout.chara_param_slots[1].separator_offset,
             SCALAR_STREAM_END + CHARA_SLOT_STRIDE
@@ -585,7 +606,7 @@ mod tests {
     #[test]
     #[cfg_attr(not(feature = "real-saves"), ignore)]
     fn integration_vps_layout_invariants() {
-        use crate::{io::read_save, BlobSubtype};
+        use crate::{BlobSubtype, io::read_save};
         use std::path::Path;
 
         let path = Path::new("data/saves/002AB8F4-USERDATALIVE");
@@ -604,12 +625,26 @@ mod tests {
 
         // Invariants validés sur octets réels (2026-06-05, VPS)
         assert_eq!(layout.version, 1, "version");
-        assert_eq!(layout.opaque_4, 0x17E8_4B00, "opaque_4 (valeur observée save VPS)");
-        assert_eq!(layout.scalar_record_count, SCALAR_RECORD_COUNT, "124 records scalaires");
-        assert_eq!(layout.scalar_stream_range, (0x008, 0x720), "bornes scalaire stream");
+        assert_eq!(
+            layout.opaque_4, 0x17E8_4B00,
+            "opaque_4 (valeur observée save VPS)"
+        );
+        assert_eq!(
+            layout.scalar_record_count, SCALAR_RECORD_COUNT,
+            "124 records scalaires"
+        );
+        assert_eq!(
+            layout.scalar_stream_range,
+            (0x008, 0x720),
+            "bornes scalaire stream"
+        );
 
         // Table CharaParam
-        assert_eq!(layout.chara_param_slots.len(), CHARA_SLOT_COUNT, "30 slots CharaParam");
+        assert_eq!(
+            layout.chara_param_slots.len(),
+            CHARA_SLOT_COUNT,
+            "30 slots CharaParam"
+        );
         for (i, slot) in layout.chara_param_slots.iter().enumerate() {
             assert!(slot.separator_valid, "slot {} séparateur invalide", i);
             assert_eq!(
@@ -624,7 +659,11 @@ mod tests {
                 i
             );
         }
-        assert_eq!(layout.chara_table_range, (0x720, 0x5C70), "bornes table CharaParam");
+        assert_eq!(
+            layout.chara_table_range,
+            (0x720, 0x5C70),
+            "bornes table CharaParam"
+        );
 
         // Section 2
         assert_eq!(layout.section2_range.0, 0x5C70, "section2 début");

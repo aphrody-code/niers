@@ -31,18 +31,33 @@ pub struct AspectViewport {
 /// `FUN_14045ff50`. `None` si aucun ajustement n'est requis (le ratio tombe juste), auquel cas le
 /// binaire ne touche pas les champs de viewport. `num`/`den` doivent être non nuls (division).
 #[must_use]
-pub fn compute_aspect_viewport(disp_w: u32, disp_h: u32, num: u32, den: u32) -> Option<AspectViewport> {
+pub fn compute_aspect_viewport(
+    disp_w: u32,
+    disp_h: u32,
+    num: u32,
+    den: u32,
+) -> Option<AspectViewport> {
     let scaled = disp_w.wrapping_mul(den) / num; // uVar3 (u32, troncature)
     if scaled == disp_h {
         return None; // pas d'ajustement → champs non écrits
     }
     if scaled < disp_h {
         // letterbox : barres horizontales, contenu centré verticalement.
-        Some(AspectViewport { x: 0, y: (disp_h.wrapping_sub(scaled)) >> 1, w: disp_w, h: scaled })
+        Some(AspectViewport {
+            x: 0,
+            y: (disp_h.wrapping_sub(scaled)) >> 1,
+            w: disp_w,
+            h: scaled,
+        })
     } else {
         // pillarbox : barres verticales, contenu centré horizontalement.
         let new_w = disp_h.wrapping_mul(num) / den;
-        Some(AspectViewport { x: (disp_w.wrapping_sub(new_w)) >> 1, y: 0, w: new_w, h: disp_h })
+        Some(AspectViewport {
+            x: (disp_w.wrapping_sub(new_w)) >> 1,
+            y: 0,
+            w: new_w,
+            h: disp_h,
+        })
     }
 }
 
@@ -64,7 +79,15 @@ mod tests {
         // 1920×1080 cible 4:3 → scaled = 1920*3/4 = 1440 > 1080 → en fait pillarbox ; choisissons un
         // cas letterbox : 1920×1080 cible 21:9 → scaled = 1920*9/21 = 822 < 1080.
         let v = compute_aspect_viewport(1920, 1080, 21, 9).unwrap();
-        assert_eq!(v, AspectViewport { x: 0, y: (1080 - 822) / 2, w: 1920, h: 822 });
+        assert_eq!(
+            v,
+            AspectViewport {
+                x: 0,
+                y: (1080 - 822) / 2,
+                w: 1920,
+                h: 822
+            }
+        );
         assert_eq!(v.h, 822); // 1920*9/21 = 822 (troncature)
     }
 
@@ -74,7 +97,15 @@ mod tests {
         // 1920×1080 cible 4:3 → scaled = 1920*3/4 = 1440 > 1080 → pillarbox.
         let v = compute_aspect_viewport(1920, 1080, 4, 3).unwrap();
         let new_w = 1080u32 * 4 / 3; // 1440
-        assert_eq!(v, AspectViewport { x: (1920 - new_w) / 2, y: 0, w: new_w, h: 1080 });
+        assert_eq!(
+            v,
+            AspectViewport {
+                x: (1920 - new_w) / 2,
+                y: 0,
+                w: new_w,
+                h: 1080
+            }
+        );
         assert_eq!(v.w, 1440);
     }
 

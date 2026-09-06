@@ -7,10 +7,10 @@
 //! Usage : `cargo run -p nie-game --example extract_unlock_conditions`
 use nie_data::gallery::parse_gallery_config;
 use nie_data::scene_archive::parse_scene_archive_config;
-use nie_data::unlock_condition::{decode_unlock_condition, UnlockType};
+use nie_data::unlock_condition::{UnlockType, decode_unlock_condition};
 use nie_formats::cfgbin::{self, RdbnValue};
 use nie_formats::vfs::Vfs;
-use serde_json::{json, Map, Value};
+use serde_json::{Map, Value, json};
 use std::collections::BTreeMap;
 use std::path::Path;
 
@@ -82,9 +82,12 @@ fn kind_name(k: UnlockType) -> &'static str {
 }
 
 fn main() {
-    let dir = nie_formats::vfs::resolve_game_dir().to_string_lossy().into_owned();
+    let dir = nie_formats::vfs::resolve_game_dir()
+        .to_string_lossy()
+        .into_owned();
     let mut vfs = Vfs::new();
-    vfs.init(Path::new(&dir).join("data").as_path()).expect("vfs init");
+    vfs.init(Path::new(&dir).join("data").as_path())
+        .expect("vfs init");
 
     let mut dist: BTreeMap<&'static str, usize> = BTreeMap::new();
     let mut total = 0usize;
@@ -121,7 +124,9 @@ fn main() {
 
     eprintln!("\n=== TOTAL {total} conditions décodées (0 panic) ===");
     eprintln!("distribution = {dist:?}");
-    eprintln!("avec épisode story déduit = {with_episode} ; event-flags requis (cumulés) = {events}");
+    eprintln!(
+        "avec épisode story déduit = {with_episode} ; event-flags requis (cumulés) = {events}"
+    );
     assert!(total > 0, "au moins une condition décodée");
     eprintln!("✓ END-TO-END OK : nie_data::unlock_condition décode tout le réel sans erreur");
 }

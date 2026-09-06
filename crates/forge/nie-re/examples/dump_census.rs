@@ -47,7 +47,10 @@ fn main() {
 
     let census = d.vtable_census(rdata_lo, rdata_hi);
     println!("vtables instanciées distinctes : {}\n", census.len());
-    println!("{:>9}  {:<46} {:<16} statique", "instances", "classe", "vtable");
+    println!(
+        "{:>9}  {:<46} {:<16} statique",
+        "instances", "classe", "vtable"
+    );
     println!("{}", "-".repeat(96));
 
     let mut seen = HashSet::new();
@@ -60,7 +63,10 @@ fn main() {
             && seen.insert(nm.clone())
         {
             let rva = va - base;
-            println!("{c:>9}  {nm:<46} nie+0x{rva:<9X} 0x{:X}", NIE_IMAGE_BASE + rva);
+            println!(
+                "{c:>9}  {nm:<46} nie+0x{rva:<9X} 0x{:X}",
+                NIE_IMAGE_BASE + rva
+            );
             shown += 1;
             if shown >= topn {
                 break;

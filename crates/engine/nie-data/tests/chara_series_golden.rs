@@ -7,9 +7,9 @@
 //! « Inazuma Eleven » (protagoniste d'IE1). Distribution réelle sur le roster : IE 1058, IE2 671,
 //! IE3 646, GO 980, Chrono Stone 543, Galaxy 395, Ares 244, Orion 210, Victory Road 1149.
 
-use nie_data::chara_base::{resolve_series_name_fr, CharaBase};
+use nie_data::chara_base::{CharaBase, resolve_series_name_fr};
 use nie_data::chara_series::{
-    find_by_id, parse_chara_series_config, series_name_en, series_name_fr, CharaSeriesInfo,
+    CharaSeriesInfo, find_by_id, parse_chara_series_config, series_name_en, series_name_fr,
 };
 use nie_data::hash::HashId;
 use serde_json::json;
@@ -62,7 +62,10 @@ fn chara_base_resolves_series() {
         series_id: Some(HashId(0x62E8_448F)),
         belong_team_id: None,
     };
-    assert_eq!(resolve_series_name_fr(&endou, &series), Some("Inazuma Eleven"));
+    assert_eq!(
+        resolve_series_name_fr(&endou, &series),
+        Some("Inazuma Eleven")
+    );
     // series_id absent → None.
     endou.series_id = None;
     assert_eq!(resolve_series_name_fr(&endou, &series), None);

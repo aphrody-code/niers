@@ -49,7 +49,12 @@ impl Default for VerifOptions {
     fn default() -> Self {
         // Un fichier sur 500 : ~500 lectures sur 255 000 chemins, assez pour qu'un
         // déchiffrement cassé se voie, assez peu pour tenir en quelques secondes.
-        Self { filtre: None, inclure_extra: true, echantillon: 500, threads: None }
+        Self {
+            filtre: None,
+            inclure_extra: true,
+            echantillon: 500,
+            threads: None,
+        }
     }
 }
 
@@ -153,7 +158,10 @@ pub const MAX_CONSTATS: usize = 5_000;
 /// # Errors
 /// Si le pool de threads demandé ne peut pas être construit.
 pub fn verifier(vfs: &Vfs, dump: &Path, options: &VerifOptions) -> Result<VerifReport, String> {
-    let filtre = options.filtre.as_deref().map_or_else(Filtre::default, Filtre::parse);
+    let filtre = options
+        .filtre
+        .as_deref()
+        .map_or_else(Filtre::default, Filtre::parse);
 
     // Trié : l'échantillonnage « un sur n » doit tomber sur les mêmes fichiers d'une exécution
     // à l'autre, sans quoi deux vérifications ne se comparent pas. L'ordre d'un HashMap ne le
@@ -178,7 +186,11 @@ pub fn verifier(vfs: &Vfs, dump: &Path, options: &VerifOptions) -> Result<VerifR
         })
         .collect();
     if options.inclure_extra {
-        attendus.extend(vfs.iter_extra().filter(|(c, _)| filtre.accepte(c)).map(|(c, _)| (c, 0)));
+        attendus.extend(
+            vfs.iter_extra()
+                .filter(|(c, _)| filtre.accepte(c))
+                .map(|(c, _)| (c, 0)),
+        );
     }
     attendus.sort_unstable();
 
@@ -195,7 +207,12 @@ pub fn verifier(vfs: &Vfs, dump: &Path, options: &VerifOptions) -> Result<VerifR
         if let Ok(mut c) = constats.lock()
             && c.len() < MAX_CONSTATS
         {
-            c.push(Constat { chemin: chemin.to_string(), anomalie, attendu, trouve });
+            c.push(Constat {
+                chemin: chemin.to_string(),
+                anomalie,
+                attendu,
+                trouve,
+            });
         }
     };
 
@@ -231,7 +248,12 @@ pub fn verifier(vfs: &Vfs, dump: &Path, options: &VerifOptions) -> Result<VerifR
                 compares.fetch_add(1, Ordering::Relaxed);
                 if sur_disque != attendu {
                     contenus.fetch_add(1, Ordering::Relaxed);
-                    noter(chemin, Anomalie::ContenuDivergent, attendu.len() as u64, sur_disque.len() as u64);
+                    noter(
+                        chemin,
+                        Anomalie::ContenuDivergent,
+                        attendu.len() as u64,
+                        sur_disque.len() as u64,
+                    );
                 }
             }
         }
@@ -275,8 +297,11 @@ pub fn verifier(vfs: &Vfs, dump: &Path, options: &VerifOptions) -> Result<VerifR
 /// # Errors
 /// Si `dump` n'est pas lisible.
 pub fn intrus(vfs: &Vfs, dump: &Path) -> Result<Vec<String>, String> {
-    let connus: std::collections::HashSet<&str> =
-        vfs.iter().map(|(c, _)| c).chain(vfs.iter_extra().map(|(c, _)| c)).collect();
+    let connus: std::collections::HashSet<&str> = vfs
+        .iter()
+        .map(|(c, _)| c)
+        .chain(vfs.iter_extra().map(|(c, _)| c))
+        .collect();
     let mut hors_index: Vec<String> = crate::enumerer(dump)?
         .into_iter()
         .map(|(_, rel)| rel)
@@ -335,13 +360,21 @@ mod tests {
     #[test]
     fn la_couverture_vaut_cent_sur_un_perimetre_vide() {
         let r = VerifReport::default();
-        assert!((r.couverture() - 100.0).abs() < f64::EPSILON, "rien à trouver n'est pas un manque");
+        assert!(
+            (r.couverture() - 100.0).abs() < f64::EPSILON,
+            "rien à trouver n'est pas un manque"
+        );
         assert!(r.conforme());
     }
 
     #[test]
     fn la_couverture_ne_compte_que_les_conformes() {
-        let r = VerifReport { attendus: 200, conformes: 150, manquants: 50, ..VerifReport::default() };
+        let r = VerifReport {
+            attendus: 200,
+            conformes: 150,
+            manquants: 50,
+            ..VerifReport::default()
+        };
         assert!((r.couverture() - 75.0).abs() < 1e-9);
         assert!(!r.conforme(), "50 manquants : non conforme");
     }

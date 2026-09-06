@@ -147,7 +147,9 @@ mod tests {
     #[test]
     fn attendre_un_process_inexistant_rend_none_sans_bloquer() {
         let debut = Instant::now();
-        assert!(attendre_process("ce-process-n-existe-pas.exe", Duration::from_millis(600)).is_none());
+        assert!(
+            attendre_process("ce-process-n-existe-pas.exe", Duration::from_millis(600)).is_none()
+        );
         // La sonde dort par tranches de 500 ms : on vérifie qu'elle rend la main vite, sans
         // partir en boucle infinie.
         assert!(debut.elapsed() < Duration::from_secs(5));

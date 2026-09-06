@@ -73,7 +73,11 @@ impl ElfIdent {
     pub fn from_bytes(bytes: &[u8]) -> Option<&Self> {
         let ref_obj = zerocopy::Ref::<_, Self>::from_bytes(bytes.get(..16)?).ok()?;
         let ident = zerocopy::Ref::into_ref(ref_obj);
-        if ident.magic == Self::MAGIC { Some(ident) } else { None }
+        if ident.magic == Self::MAGIC {
+            Some(ident)
+        } else {
+            None
+        }
     }
 
     /// Return `true` if this identifies a 64-bit ELF.
@@ -155,7 +159,11 @@ impl DosHeader {
     pub fn from_bytes(bytes: &[u8]) -> Option<&Self> {
         let ref_obj = zerocopy::Ref::<_, Self>::from_bytes(bytes.get(..64)?).ok()?;
         let hdr = zerocopy::Ref::into_ref(ref_obj);
-        if hdr.e_magic == Self::MAGIC { Some(hdr) } else { None }
+        if hdr.e_magic == Self::MAGIC {
+            Some(hdr)
+        } else {
+            None
+        }
     }
 
     /// Byte offset of the PE signature (`IMAGE_NT_HEADERS`) within the file.
@@ -266,7 +274,9 @@ impl HeaderProbe {
     #[must_use]
     pub fn from_bytes(bytes: &[u8]) -> Self {
         if let Some(ident) = ElfIdent::from_bytes(bytes) {
-            return Self::Elf { is_64: ident.is_64() };
+            return Self::Elf {
+                is_64: ident.is_64(),
+            };
         }
         if DosHeader::from_bytes(bytes).is_some() {
             let is_64 = matches!(PeMagic::from_file_bytes(bytes), PeMagic::Pe64);
@@ -423,7 +433,10 @@ mod tests {
         let mut buf = [0u8; 16];
         buf[0..4].copy_from_slice(b"\x7FELF");
         buf[4] = ElfIdent::CLASS_64;
-        expect_that!(HeaderProbe::from_bytes(&buf), eq(HeaderProbe::Elf { is_64: true }));
+        expect_that!(
+            HeaderProbe::from_bytes(&buf),
+            eq(HeaderProbe::Elf { is_64: true })
+        );
     }
 
     #[gtest]
@@ -431,7 +444,10 @@ mod tests {
         let mut buf = [0u8; 16];
         buf[0..4].copy_from_slice(b"\x7FELF");
         buf[4] = ElfIdent::CLASS_32;
-        expect_that!(HeaderProbe::from_bytes(&buf), eq(HeaderProbe::Elf { is_64: false }));
+        expect_that!(
+            HeaderProbe::from_bytes(&buf),
+            eq(HeaderProbe::Elf { is_64: false })
+        );
     }
 
     #[gtest]
@@ -472,7 +488,10 @@ mod tests {
         elf32[4] = 1;
         expect_that!(HeaderProbe::from_bytes(&elf32).is_64(), eq(false));
 
-        expect_that!(HeaderProbe::from_bytes(b"garbage data here!!").is_64(), eq(false));
+        expect_that!(
+            HeaderProbe::from_bytes(b"garbage data here!!").is_64(),
+            eq(false)
+        );
     }
 
     /// Regression guard: ElfIdent must be exactly 16 bytes (ELF spec requirement).

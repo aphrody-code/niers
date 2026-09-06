@@ -123,13 +123,18 @@ impl FontMetrics {
     /// toutes, plutôt qu'à chaque site d'appel.
     #[must_use]
     pub fn glyph_char(&self, c: char) -> Option<&GlyphMetric> {
-        self.glyph(c as u32).or_else(|| self.glyph(cle_empaquetee(c)))
+        self.glyph(c as u32)
+            .or_else(|| self.glyph(cle_empaquetee(c)))
     }
 
     /// Métrique d'un point de code dans une police donnée (0 ou 1).
     #[must_use]
     pub fn glyph_in_font(&self, font: u8, codepoint: u32) -> Option<&GlyphMetric> {
-        let map = if font == 1 { &self.glyphs_small } else { &self.glyphs };
+        let map = if font == 1 {
+            &self.glyphs_small
+        } else {
+            &self.glyphs
+        };
         map.get(&codepoint)
     }
 
@@ -172,7 +177,12 @@ pub fn decode_packed_codepoint(raw: u32) -> Option<char> {
     }
     // 4 octets empaquetés (tête 0xF0..=0xF4) : le plus large repéré tient sur 32 bits sans reste.
     {
-        let b = [(raw >> 24) as u8, (raw >> 16) as u8, (raw >> 8) as u8, raw as u8];
+        let b = [
+            (raw >> 24) as u8,
+            (raw >> 16) as u8,
+            (raw >> 8) as u8,
+            raw as u8,
+        ];
         if (0xF0..=0xF4).contains(&b[0])
             && b[1..].iter().all(|&x| (0x80..=0xBF).contains(&x))
             && let Ok(s) = core::str::from_utf8(&b)
@@ -229,7 +239,13 @@ pub fn parse_metrics(cfg: &CfgBinFile) -> FontMetrics {
                 let row: Vec<i32> = e
                     .variables
                     .iter()
-                    .filter_map(|v| if let Value::Int(n) = v { Some(*n) } else { None })
+                    .filter_map(|v| {
+                        if let Value::Int(n) = v {
+                            Some(*n)
+                        } else {
+                            None
+                        }
+                    })
                     .collect();
                 // Colonnes 5/6 = largeur/hauteur de l'atlas (validé : 4096/2048), partagées.
                 if out.atlas_width == 0 {
@@ -259,19 +275,32 @@ pub fn parse_metrics(cfg: &CfgBinFile) -> FontMetrics {
                     Some(n) if n >= 0 => n as u32,
                     _ => continue,
                 };
-                let font = as_i32(e.variables.first()).unwrap_or(0).clamp(0, u8::MAX as i32) as u8;
+                let font = as_i32(e.variables.first())
+                    .unwrap_or(0)
+                    .clamp(0, u8::MAX as i32) as u8;
                 let g = GlyphMetric {
                     font,
                     base: as_i32(e.variables.get(1)).unwrap_or(0).max(0) as u32,
                     codepoint: cp,
-                    x: as_i32(e.variables.get(3)).unwrap_or(0).clamp(0, u16::MAX as i32) as u16,
-                    y: as_i32(e.variables.get(4)).unwrap_or(0).clamp(0, u16::MAX as i32) as u16,
-                    width: as_i32(e.variables.get(5)).unwrap_or(0).clamp(0, u16::MAX as i32) as u16,
+                    x: as_i32(e.variables.get(3))
+                        .unwrap_or(0)
+                        .clamp(0, u16::MAX as i32) as u16,
+                    y: as_i32(e.variables.get(4))
+                        .unwrap_or(0)
+                        .clamp(0, u16::MAX as i32) as u16,
+                    width: as_i32(e.variables.get(5))
+                        .unwrap_or(0)
+                        .clamp(0, u16::MAX as i32) as u16,
                     bearing_x: as_i32(e.variables.get(6))
                         .unwrap_or(0)
-                        .clamp(i16::MIN as i32, i16::MAX as i32) as i16,
-                    advance: as_i32(e.variables.get(7)).unwrap_or(0).clamp(0, u16::MAX as i32) as u16,
-                    page: as_i32(e.variables.get(8)).unwrap_or(0).clamp(0, u8::MAX as i32) as u8,
+                        .clamp(i16::MIN as i32, i16::MAX as i32)
+                        as i16,
+                    advance: as_i32(e.variables.get(7))
+                        .unwrap_or(0)
+                        .clamp(0, u16::MAX as i32) as u16,
+                    page: as_i32(e.variables.get(8))
+                        .unwrap_or(0)
+                        .clamp(0, u8::MAX as i32) as u8,
                 };
                 if font == 1 {
                     out.glyphs_small.insert(cp, g);
@@ -402,7 +431,7 @@ pub fn glyph_blitter(
             canvas_slice[0] = color[0]; // R
             canvas_slice[1] = color[1]; // G
             canvas_slice[2] = color[2]; // B
-            canvas_slice[3] = out_a;    // A
+            canvas_slice[3] = out_a; // A
         }
     }
 }
@@ -439,7 +468,17 @@ pub fn draw_text(
         let Some(m) = metrics.glyph(cp) else { continue };
         let dst_x = pen_x + m.bearing_x as i32;
         let dst_y = pen_y - ascent;
-        glyph_blitter(atlas, atlas_w, m, cell_height, canvas, canvas_stride, dst_x, dst_y, color);
+        glyph_blitter(
+            atlas,
+            atlas_w,
+            m,
+            cell_height,
+            canvas,
+            canvas_stride,
+            dst_x,
+            dst_y,
+            color,
+        );
         pen_x += m.advance as i32;
     }
     pen_x - pen_x_start
@@ -486,7 +525,10 @@ impl LatinAtlas {
     #[must_use]
     pub fn from_atlas(atlas: &[u8], aw: usize, ah: usize, y_base: u16, cell_h: u16) -> Self {
         let stride = aw * 4;
-        let (y0, y1) = (y_base as usize + 4, (y_base as usize + cell_h as usize).min(ah));
+        let (y0, y1) = (
+            y_base as usize + 4,
+            (y_base as usize + cell_h as usize).min(ah),
+        );
         let mut raw: Vec<(u16, u16)> = Vec::new();
         let (mut on, mut start) = (false, 0usize);
         for ax in 0..aw {
@@ -527,8 +569,8 @@ impl LatinAtlas {
             if ay >= ah {
                 break;
             }
-            let encre = (0..aw)
-                .any(|ax| atlas.get(ay * stride + ax * 4 + 3).copied().unwrap_or(0) > 32);
+            let encre =
+                (0..aw).any(|ax| atlas.get(ay * stride + ax * 4 + 3).copied().unwrap_or(0) > 32);
             if encre {
                 haut.get_or_insert(gy);
                 bas = gy;
@@ -537,7 +579,13 @@ impl LatinAtlas {
         let ink_top = haut.unwrap_or(0);
         let ink_h = bas.saturating_sub(ink_top) + 1;
 
-        Self { spans, y_base, cell_h, ink_top, ink_h }
+        Self {
+            spans,
+            y_base,
+            cell_h,
+            ink_top,
+            ink_h,
+        }
     }
 
     /// Span `(x0,x1)` d'un codepoint Latin, ou `None` si hors de la rangée scannée.
@@ -595,7 +643,10 @@ impl LatinAtlas {
             for gy in 0..self.cell_h as usize {
                 let ay = self.y_base as usize + gy;
                 for gx in 0..gw {
-                    let a = atlas.get(ay * stride + (x0 as usize + gx) * 4 + 3).copied().unwrap_or(0);
+                    let a = atlas
+                        .get(ay * stride + (x0 as usize + gx) * 4 + 3)
+                        .copied()
+                        .unwrap_or(0);
                     if a < 8 {
                         continue;
                     }
@@ -627,10 +678,26 @@ mod tests {
     #[test]
     fn decode_packed_codepoint_cas_reels() {
         assert_eq!(decode_packed_codepoint(0x21), Some('!'), "ASCII direct");
-        assert_eq!(decode_packed_codepoint(0xC2A1), Some('¡'), "2 octets empaquetés, font_zh_hans");
-        assert_eq!(decode_packed_codepoint(0xE296A0), Some('■'), "3 octets empaquetés, font_ja_endroll2");
-        assert_eq!(decode_packed_codepoint(0xE38080), Some('\u{3000}'), "3 octets empaquetés, font_zh_hans2");
-        assert_eq!(decode_packed_codepoint(0x3042), Some('あ'), "BMP direct (octets non-UTF-8 valides ensemble)");
+        assert_eq!(
+            decode_packed_codepoint(0xC2A1),
+            Some('¡'),
+            "2 octets empaquetés, font_zh_hans"
+        );
+        assert_eq!(
+            decode_packed_codepoint(0xE296A0),
+            Some('■'),
+            "3 octets empaquetés, font_ja_endroll2"
+        );
+        assert_eq!(
+            decode_packed_codepoint(0xE38080),
+            Some('\u{3000}'),
+            "3 octets empaquetés, font_zh_hans2"
+        );
+        assert_eq!(
+            decode_packed_codepoint(0x3042),
+            Some('あ'),
+            "BMP direct (octets non-UTF-8 valides ensemble)"
+        );
     }
 
     /// Construit une entrée `CHR` à partir de ses 9 colonnes (col[2] = codepoint).
@@ -673,7 +740,10 @@ mod tests {
         assert_eq!(fm.dims.cell_height, 71, "hauteur cellule");
         assert_eq!(fm.dims.descent, 25, "descendante");
         let a = fm.glyph(65).unwrap();
-        assert_eq!((a.x, a.width, a.bearing_x, a.advance, a.page), (1157, 38, 1, 39, 0));
+        assert_eq!(
+            (a.x, a.width, a.bearing_x, a.advance, a.page),
+            (1157, 38, 1, 39, 0)
+        );
         let i = fm.glyph(105).unwrap();
         assert_eq!((i.width, i.advance), (7, 12));
     }
@@ -706,7 +776,17 @@ mod tests {
         let mut canvas = [0u8; 8 * 8 * 4];
 
         // Blitter : dst_x=0, dst_y=0, cell_height=2, couleur blanche opaque.
-        glyph_blitter(&atlas, 4, &metric, 2, &mut canvas, 8 * 4, 0, 0, [255, 255, 255, 255]);
+        glyph_blitter(
+            &atlas,
+            4,
+            &metric,
+            2,
+            &mut canvas,
+            8 * 4,
+            0,
+            0,
+            [255, 255, 255, 255],
+        );
 
         // Le blitter trace atlas(ax+col, ay+row) → canvas(dst_x+col, dst_y+row).
         // Pour row=0 : atlas_row = ay+0 = 1, canvas_row = dst_y+0 = 0.
@@ -727,17 +807,33 @@ mod tests {
         atlas[3] = 200; // pixel (0,0), A=200
 
         let metric = GlyphMetric {
-            font: 0, base: 0, codepoint: 65,
-            x: 0, y: 0, width: 1,
-            bearing_x: 0, advance: 1, page: 0,
+            font: 0,
+            base: 0,
+            codepoint: 65,
+            x: 0,
+            y: 0,
+            width: 1,
+            bearing_x: 0,
+            advance: 1,
+            page: 0,
         };
         let mut canvas = [0u8; 4];
         // Teinte rouge semi-transparente : color[3]=128.
-        glyph_blitter(&atlas, 1, &metric, 1, &mut canvas, 4, 0, 0, [255, 0, 0, 128]);
+        glyph_blitter(
+            &atlas,
+            1,
+            &metric,
+            1,
+            &mut canvas,
+            4,
+            0,
+            0,
+            [255, 0, 0, 128],
+        );
 
         assert_eq!(canvas[0], 255, "R");
-        assert_eq!(canvas[1], 0,   "G");
-        assert_eq!(canvas[2], 0,   "B");
+        assert_eq!(canvas[1], 0, "G");
+        assert_eq!(canvas[2], 0, "B");
         // out_a = 200 * 128 / 255 = 100 (entier).
         assert_eq!(canvas[3], 100, "A = 200*128/255");
     }
@@ -747,13 +843,29 @@ mod tests {
     fn glyph_blitter_clip_out_of_bounds() {
         let atlas = [0u8, 0, 0, 255]; // 1×1 pixel opaque
         let metric = GlyphMetric {
-            font: 0, base: 0, codepoint: 65,
-            x: 0, y: 0, width: 1,
-            bearing_x: 0, advance: 1, page: 0,
+            font: 0,
+            base: 0,
+            codepoint: 65,
+            x: 0,
+            y: 0,
+            width: 1,
+            bearing_x: 0,
+            advance: 1,
+            page: 0,
         };
         let mut canvas = [0u8; 4];
         // Positionner hors canevas : dst_x = -1 → ignoré.
-        glyph_blitter(&atlas, 1, &metric, 1, &mut canvas, 4, -1, 0, [255, 255, 255, 255]);
+        glyph_blitter(
+            &atlas,
+            1,
+            &metric,
+            1,
+            &mut canvas,
+            4,
+            -1,
+            0,
+            [255, 255, 255, 255],
+        );
         assert_eq!(canvas, [0u8; 4], "pixel hors limites ignoré");
     }
 
@@ -773,7 +885,17 @@ mod tests {
         // Atlas 20×10 BGRA8 (tous zéros → aucun pixel tracé, mais l'avance est quand même calculée).
         let atlas = alloc::vec![0u8; 20 * 10 * 4];
         let mut canvas = alloc::vec![0u8; 100 * 20 * 4];
-        let advance = draw_text(&atlas, 20, &fm, "AB", &mut canvas, 100 * 4, 0, 5, [255, 255, 255, 255]);
+        let advance = draw_text(
+            &atlas,
+            20,
+            &fm,
+            "AB",
+            &mut canvas,
+            100 * 4,
+            0,
+            5,
+            [255, 255, 255, 255],
+        );
         assert_eq!(advance, 10 + 12, "avance totale A+B");
     }
 
@@ -786,7 +908,9 @@ mod tests {
     /// - Ligne relative 19 (atlas row 20), colonne relative 34 : alpha = 47.
     #[test]
     fn real_font_metrics_match() {
-        let dir = crate::vfs::resolve_game_dir().to_string_lossy().into_owned();
+        let dir = crate::vfs::resolve_game_dir()
+            .to_string_lossy()
+            .into_owned();
         let data = std::path::Path::new(&dir).join("data");
         if !crate::vfs::donnees_disponibles(&data) {
             eprintln!("skip real_font_metrics_match : jeu absent");
@@ -805,10 +929,18 @@ mod tests {
 
         assert_eq!(fm.atlas_width, 4096, "largeur atlas");
         assert_eq!(fm.atlas_height, 2048, "hauteur atlas");
-        assert!(fm.glyph_count() > 7000, "trop peu de glyphes ({})", fm.glyph_count());
+        assert!(
+            fm.glyph_count() > 7000,
+            "trop peu de glyphes ({})",
+            fm.glyph_count()
+        );
         // Métriques ASCII réelles (validées par dump).
         let a = fm.glyph(65).expect("A");
-        assert_eq!((a.x, a.y, a.width, a.advance), (1157, 1, 38, 39), "glyphe A");
+        assert_eq!(
+            (a.x, a.y, a.width, a.advance),
+            (1157, 1, 38, 39),
+            "glyphe A"
+        );
         let w = fm.glyph(87).expect("W");
         assert_eq!((w.width, w.advance), (47, 48), "glyphe W");
         let i = fm.glyph(105).expect("i");
@@ -830,7 +962,9 @@ mod tests {
     /// - Canvas [19][34].alpha = 47  (atlas BGRA8 [row=20,col=1191], A=47)
     #[test]
     fn real_glyph_blitter_a() {
-        let dir = crate::vfs::resolve_game_dir().to_string_lossy().into_owned();
+        let dir = crate::vfs::resolve_game_dir()
+            .to_string_lossy()
+            .into_owned();
         let data = std::path::Path::new(&dir).join("data");
         if !crate::vfs::donnees_disponibles(&data) {
             eprintln!("skip real_glyph_blitter_A : jeu absent");
@@ -871,38 +1005,66 @@ mod tests {
         let mut canvas = alloc::vec![0u8; canvas_w * canvas_h * 4];
 
         glyph_blitter(
-            atlas, atlas_w, &a_metric, cell_height,
-            &mut canvas, (canvas_w * 4) as u32,
-            0, 0, [255, 255, 255, 255],
+            atlas,
+            atlas_w,
+            &a_metric,
+            cell_height,
+            &mut canvas,
+            (canvas_w * 4) as u32,
+            0,
+            0,
+            [255, 255, 255, 255],
         );
 
         // Pixel [row=20, col=0] : alpha attendu = 251 (mesuré sur l'atlas réel).
         let off_20_0 = 20 * canvas_w * 4;
-        assert_eq!(canvas[off_20_0 + 3], 251, "alpha row=20 col=0 doit être 251");
+        assert_eq!(
+            canvas[off_20_0 + 3],
+            251,
+            "alpha row=20 col=0 doit être 251"
+        );
 
         // Pixel [row=19, col=34] : alpha attendu = 47.
         let off_19_34 = (19 * canvas_w + 34) * 4;
-        assert_eq!(canvas[off_19_34 + 3], 47, "alpha row=19 col=34 doit être 47");
+        assert_eq!(
+            canvas[off_19_34 + 3],
+            47,
+            "alpha row=19 col=34 doit être 47"
+        );
 
         // La zone supérieure [0..19] doit être entièrement nulle (blank rows).
         for row in 0..19 {
             for col in 0..38 {
                 let off = (row * canvas_w + col) * 4;
-                assert_eq!(canvas[off + 3], 0, "row={row} col={col} doit être transparent");
+                assert_eq!(
+                    canvas[off + 3],
+                    0,
+                    "row={row} col={col} doit être transparent"
+                );
             }
         }
 
         // Vérification de `draw_text` sur "A" : au moins un pixel non-nul dans le canevas.
         let mut canvas2 = alloc::vec![0u8; canvas_w * canvas_h * 4];
         let advance = draw_text(
-            atlas, atlas_w, &fm, "A",
-            &mut canvas2, (canvas_w * 4) as u32,
-            0, fm.dims.ascent as i32, [255, 255, 255, 255],
+            atlas,
+            atlas_w,
+            &fm,
+            "A",
+            &mut canvas2,
+            (canvas_w * 4) as u32,
+            0,
+            fm.dims.ascent as i32,
+            [255, 255, 255, 255],
         );
         assert_eq!(advance, 39, "avance du glyphe A");
         // draw_text calcule dst_x = pen_x + bearing_x = 0 + 1 = 1 pour 'A' (bearing_x=1).
         // Avec pen_y=46, dst_y = 46 - 46 = 0. Le pixel [row=20][col=0+1=1] doit avoir alpha=251.
         let off_draw_row20_col1 = (20 * canvas_w + 1) * 4;
-        assert_eq!(canvas2[off_draw_row20_col1 + 3], 251, "draw_text : pixel [20][1] alpha=251 (bearing_x=1)");
+        assert_eq!(
+            canvas2[off_draw_row20_col1 + 3],
+            251,
+            "draw_text : pixel [20][1] alpha=251 (bearing_x=1)"
+        );
     }
 }

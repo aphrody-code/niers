@@ -13,8 +13,8 @@
 //! et validé croisé contre une implémentation Python indépendante
 //! (`plugins/niers-blender/g4mt_probe.py`/`g4mt_motion.py`, submodule tiers) sur des fichiers réels du VFS.
 
-use crate::level5::{self, Level5Header};
 use crate::FormatError;
+use crate::level5::{self, Level5Header};
 
 /// Magic « G4MT » en little-endian.
 const MAGIC: u32 = 0x544D_3447;
@@ -49,10 +49,16 @@ pub fn is_g4mt(data: &[u8]) -> bool {
 /// [`FormatError::TooShort`] si < 0x40 octets, [`FormatError::BadMagic`] si le magic ≠ « G4MT ».
 pub fn parse(data: &[u8]) -> Result<G4mt, FormatError> {
     if data.len() < HEADER_LEN {
-        return Err(FormatError::TooShort { got: data.len(), need: HEADER_LEN });
+        return Err(FormatError::TooShort {
+            got: data.len(),
+            need: HEADER_LEN,
+        });
     }
     let header = level5::parse_header(data, MAGIC, "G4MT")?;
-    Ok(G4mt { header, file_size: data.len() })
+    Ok(G4mt {
+        header,
+        file_size: data.len(),
+    })
 }
 
 // ============================================================================
@@ -88,16 +94,19 @@ fn u16_at(d: &[u8], o: usize) -> Option<u16> {
     d.get(o..o + 2).map(|b| u16::from_le_bytes([b[0], b[1]]))
 }
 fn u32_at(d: &[u8], o: usize) -> Option<u32> {
-    d.get(o..o + 4).map(|b| u32::from_le_bytes([b[0], b[1], b[2], b[3]]))
+    d.get(o..o + 4)
+        .map(|b| u32::from_le_bytes([b[0], b[1], b[2], b[3]]))
 }
 fn f32_at(d: &[u8], o: usize) -> Option<f32> {
-    d.get(o..o + 4).map(|b| f32::from_le_bytes([b[0], b[1], b[2], b[3]]))
+    d.get(o..o + 4)
+        .map(|b| f32::from_le_bytes([b[0], b[1], b[2], b[3]]))
 }
 fn i8_at(d: &[u8], o: usize) -> Option<f32> {
     u8_at(d, o).map(|v| f32::from(v as i8))
 }
 fn i16_at(d: &[u8], o: usize) -> Option<f32> {
-    d.get(o..o + 2).map(|b| f32::from(i16::from_le_bytes([b[0], b[1]])))
+    d.get(o..o + 2)
+        .map(|b| f32::from(i16::from_le_bytes([b[0], b[1]])))
 }
 
 /// Un clip nommé d'un conteneur G4MT. Un fichier en contient couramment plusieurs (cf. module doc).
@@ -221,7 +230,11 @@ fn read_utf8_cstr(data: &[u8], start: usize) -> Option<String> {
 
 fn normalize_quat(q: [f32; 4]) -> [f32; 4] {
     let n = (q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]).sqrt();
-    if n <= 1e-9 { [0.0, 0.0, 0.0, 1.0] } else { [q[0] / n, q[1] / n, q[2] / n, q[3] / n] }
+    if n <= 1e-9 {
+        [0.0, 0.0, 0.0, 1.0]
+    } else {
+        [q[0] / n, q[1] / n, q[2] / n, q[3] / n]
+    }
 }
 
 fn slerp(a: [f32; 4], b: [f32; 4], t: f32) -> [f32; 4] {
@@ -253,7 +266,12 @@ fn slerp(a: [f32; 4], b: [f32; 4], t: f32) -> [f32; 4] {
 }
 
 fn lerp4(a: [f32; 4], b: [f32; 4], t: f32) -> [f32; 4] {
-    [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t, a[3] + (b[3] - a[3]) * t]
+    [
+        a[0] + (b[0] - a[0]) * t,
+        a[1] + (b[1] - a[1]) * t,
+        a[2] + (b[2] - a[2]) * t,
+        a[3] + (b[3] - a[3]) * t,
+    ]
 }
 
 impl Motion {
@@ -391,8 +409,11 @@ impl Motion {
             });
         }
 
-        let key_count =
-            channels.iter().map(|c| c.key_start + c.key_count).max().unwrap_or(0) as usize;
+        let key_count = channels
+            .iter()
+            .map(|c| c.key_start + c.key_count)
+            .max()
+            .unwrap_or(0) as usize;
         let mut keys = Vec::with_capacity(key_count);
         for i in 0..key_count {
             keys.push(u16_at(data, key_offset + i * 2)?);
@@ -432,14 +453,25 @@ impl Motion {
     fn rotation_channel(&self, clip: &Clip, target_index: u16) -> Option<&RawChannel> {
         let start = clip.target_info_start as usize;
         let end = start + clip.target_info_count as usize;
-        let info = self.target_infos.get(start..end)?.iter().find(|t| t.target_index == target_index)?;
+        let info = self
+            .target_infos
+            .get(start..end)?
+            .iter()
+            .find(|t| t.target_index == target_index)?;
         let cs = info.channel_start as usize;
         let ce = cs + info.channel_count as usize;
-        self.channels.get(cs..ce)?.iter().find(|c| c.channel_type == 9)
+        self.channels
+            .get(cs..ce)?
+            .iter()
+            .find(|c| c.channel_type == 9)
     }
 
     fn decode_key(&self, data: &[u8], channel: &RawChannel, key_index: u32) -> Option<[f32; 4]> {
-        let scale = self.scales.get(channel.scale_index as usize).copied().unwrap_or(1.0);
+        let scale = self
+            .scales
+            .get(channel.scale_index as usize)
+            .copied()
+            .unwrap_or(1.0);
         let base = self.data_offset
             + channel.data_offset as usize
             + key_index as usize * channel.stride as usize;
@@ -476,10 +508,18 @@ impl Motion {
             return self.decode_key(data, channel, left as u32);
         }
         let span = f32::from(keys[left + 1]) - f32::from(keys[left]);
-        let t = if span > 0.0 { (frame - f32::from(keys[left])) / span } else { 0.0 };
+        let t = if span > 0.0 {
+            (frame - f32::from(keys[left])) / span
+        } else {
+            0.0
+        };
         let a = self.decode_key(data, channel, left as u32)?;
         let b = self.decode_key(data, channel, left as u32 + 1)?;
-        Some(if channel.channel_type == 9 { slerp(a, b, t) } else { lerp4(a, b, t) })
+        Some(if channel.channel_type == 9 {
+            slerp(a, b, t)
+        } else {
+            lerp4(a, b, t)
+        })
     }
 
     /// Échantillonne le quaternion de rotation (xyzw normalisé) d'une cible animée à la frame
@@ -487,25 +527,47 @@ impl Motion {
     /// STEP). `data` = les octets bruts du `.g4mt` (déjà utilisés pour [`Self::parse`]).
     /// `target_index` = une valeur renvoyée par [`Self::target_indices`].
     #[must_use]
-    pub fn sample_rotation(&self, data: &[u8], clip: &Clip, target_index: u16, frame: f32) -> Option<[f32; 4]> {
+    pub fn sample_rotation(
+        &self,
+        data: &[u8],
+        clip: &Clip,
+        target_index: u16,
+        frame: f32,
+    ) -> Option<[f32; 4]> {
         let channel = self.rotation_channel(clip, target_index)?;
-        self.sample_channel(data, channel, frame).map(normalize_quat)
+        self.sample_channel(data, channel, frame)
+            .map(normalize_quat)
     }
 
     /// Échantillonne tous les canaux TRS d'un os, en conservant la pose de repos pour
     /// les composantes absentes. Les clips additifs sont refusés car ils exigent une base.
     #[must_use]
-    pub fn sample_local_trs(&self, data: &[u8], clip: &Clip, target_index: u16, frame: f32, rest: crate::g4sk::LocalTrs) -> Option<crate::g4sk::LocalTrs> {
-        if clip.is_additive() || !frame.is_finite() { return None; }
+    pub fn sample_local_trs(
+        &self,
+        data: &[u8],
+        clip: &Clip,
+        target_index: u16,
+        frame: f32,
+        rest: crate::g4sk::LocalTrs,
+    ) -> Option<crate::g4sk::LocalTrs> {
+        if clip.is_additive() || !frame.is_finite() {
+            return None;
+        }
         let start = clip.target_info_start as usize;
         let end = start + clip.target_info_count as usize;
-        let info = self.target_infos.get(start..end)?.iter().find(|t| t.target_index == target_index)?;
+        let info = self
+            .target_infos
+            .get(start..end)?
+            .iter()
+            .find(|t| t.target_index == target_index)?;
         let cs = info.channel_start as usize;
         let ce = cs + info.channel_count as usize;
         let mut pose = rest;
         for channel in self.channels.get(cs..ce)? {
             let value = self.sample_channel(data, channel, frame)?;
-            if !value.iter().all(|v| v.is_finite()) { return None; }
+            if !value.iter().all(|v| v.is_finite()) {
+                return None;
+            }
             match channel.channel_type {
                 1..=3 => pose.scale[channel.channel_type as usize - 1] = value[0],
                 9 => pose.quat = normalize_quat(value),
@@ -524,7 +586,11 @@ impl Motion {
 pub fn resolve_targets(target_hashes: &[u32], bone_names: &[&str]) -> Vec<Option<usize>> {
     target_hashes
         .iter()
-        .map(|&hash| bone_names.iter().position(|name| crate::cfgbin::crc32(name.as_bytes()) == hash))
+        .map(|&hash| {
+            bone_names
+                .iter()
+                .position(|name| crate::cfgbin::crc32(name.as_bytes()) == hash)
+        })
         .collect()
 }
 
@@ -549,7 +615,10 @@ mod tests {
 
     #[test]
     fn rejette_magic_et_court() {
-        assert!(matches!(parse(&[0u8; HEADER_LEN]), Err(FormatError::BadMagic { .. })));
+        assert!(matches!(
+            parse(&[0u8; HEADER_LEN]),
+            Err(FormatError::BadMagic { .. })
+        ));
         assert!(matches!(parse(b"G4MT"), Err(FormatError::TooShort { .. })));
         assert!(is_g4mt(b"G4MT____"));
         assert!(!is_g4mt(b"G4CM"));
@@ -560,8 +629,14 @@ mod tests {
     #[test]
     fn golden_g4mt_reels() {
         for (bytes, size) in [
-            (include_bytes!("../tests/fixtures/g4mt/small.g4mt").as_slice(), 2176usize),
-            (include_bytes!("../tests/fixtures/g4mt/med.g4mt").as_slice(), 41280usize),
+            (
+                include_bytes!("../tests/fixtures/g4mt/small.g4mt").as_slice(),
+                2176usize,
+            ),
+            (
+                include_bytes!("../tests/fixtures/g4mt/med.g4mt").as_slice(),
+                41280usize,
+            ),
         ] {
             let g = parse(bytes).expect("g4mt réel");
             assert_eq!(&g.header.magic.to_le_bytes(), b"G4MT");
@@ -665,17 +740,25 @@ mod tests {
         let q0 = motion.sample_rotation(&buf, clip, 0, 0.0).expect("q0");
         assert!((q0[3] - 1.0).abs() < 0.01, "q0 ≈ identité : {q0:?}");
         let q_mid = motion.sample_rotation(&buf, clip, 0, 0.5).expect("q_mid");
-        let n = (q_mid[0] * q_mid[0] + q_mid[1] * q_mid[1] + q_mid[2] * q_mid[2] + q_mid[3] * q_mid[3]).sqrt();
+        let n =
+            (q_mid[0] * q_mid[0] + q_mid[1] * q_mid[1] + q_mid[2] * q_mid[2] + q_mid[3] * q_mid[3])
+                .sqrt();
         assert!((n - 1.0).abs() < 0.01, "q_mid normalisé : {n}");
 
         let rest = crate::g4sk::LocalTrs {
-            scale: [2.0, 3.0, 4.0], quat: [0.0, 0.0, 0.0, 1.0], translation: [5.0, 6.0, 7.0],
+            scale: [2.0, 3.0, 4.0],
+            quat: [0.0, 0.0, 0.0, 1.0],
+            translation: [5.0, 6.0, 7.0],
         };
         let local = motion.sample_local_trs(&buf, clip, 0, 0.5, rest).unwrap();
         assert_eq!(local.quat, q_mid);
         assert_eq!(local.translation, rest.translation);
         assert_eq!(local.scale, rest.scale);
-        assert!(motion.sample_local_trs(&buf, clip, 0, f32::NAN, rest).is_none());
+        assert!(
+            motion
+                .sample_local_trs(&buf, clip, 0, f32::NAN, rest)
+                .is_none()
+        );
 
         // Un canal scalaire ne normalise pas sa valeur comme un quaternion ; les axes
         // non animés restent ceux de repos, y compris pour translation et échelle.
@@ -692,11 +775,17 @@ mod tests {
         assert_eq!(local.translation[2], 7.0);
         assert_eq!(local.quat, rest.quat);
         motion.channels[0].channel_type = 3;
-        let local = motion.sample_local_trs(&buf, &motion.clips[0], 0, 1.0, rest).unwrap();
+        let local = motion
+            .sample_local_trs(&buf, &motion.clips[0], 0, 1.0, rest)
+            .unwrap();
         assert_eq!(&local.scale[..2], &[2.0, 3.0]);
         assert_eq!(local.scale[2], 6.0);
         motion.clips[0].flags = 1;
-        assert!(motion.sample_local_trs(&buf, &motion.clips[0], 0, 0.0, rest).is_none());
+        assert!(
+            motion
+                .sample_local_trs(&buf, &motion.clips[0], 0, 0.0, rest)
+                .is_none()
+        );
     }
 
     /// Golden croisé contre l'implémentation Python indépendante (`plugins/niers-blender`, submodule)
@@ -715,7 +804,10 @@ mod tests {
         let bones = crate::g4sk::parse_hierarchy(sk, &header);
         let bone_names: Vec<&str> = bones.bones.iter().map(|b| b.name.as_str()).collect();
         let resolved = resolve_targets(&motion.target_hashes, &bone_names);
-        assert!(resolved.iter().filter(|r| r.is_some()).count() > 100, "la majorité des cibles doit se résoudre contre le G4SK réel");
+        assert!(
+            resolved.iter().filter(|r| r.is_some()).count() > 100,
+            "la majorité des cibles doit se résoudre contre le G4SK réel"
+        );
 
         // Clip 6 = "立ち会話控えめ1L", 383 frames (0..=382) — le cas long que l'ancien parseur ratait.
         let clip = &motion.clips[6];
@@ -730,11 +822,17 @@ mod tests {
             for frame in [0.0f32, 100.0, 200.0, 382.0] {
                 if let Some(q) = motion.sample_rotation(data, clip, t, frame) {
                     let n = (q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]).sqrt();
-                    assert!((n - 1.0).abs() < 0.01, "quaternion non-unitaire cible={t} frame={frame} n={n}");
+                    assert!(
+                        (n - 1.0).abs() < 0.01,
+                        "quaternion non-unitaire cible={t} frame={frame} n={n}"
+                    );
                     sampled += 1;
                 }
             }
         }
-        assert!(sampled > 20, "trop peu de rotations résolues sur le clip long ({sampled})");
+        assert!(
+            sampled > 20,
+            "trop peu de rotations résolues sur le clip long ({sampled})"
+        );
     }
 }

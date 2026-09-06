@@ -8,9 +8,9 @@
 //! La fixture reproduit la forme iecode/T2B **frère** (en-tête `*_INFO` suivi de son
 //! `*_DATA_LIST_BEG`) que produit `cfgbin_to_t2b_iecode_root`, et qui est appariée par le parseur.
 
-use nie_data::capsule::{parse_capsule_database, RankRate, WeaponColorRate};
+use nie_data::capsule::{RankRate, WeaponColorRate, parse_capsule_database};
 use nie_data::hash::HashId;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 /// Construit une variable Int au format dump (`{type:"Int", value:"<n>"}`).
 fn iv(n: i64) -> Value {
@@ -48,10 +48,26 @@ fn fixture() -> Value {
         "CPSL_PRIZE_INFO_LIST_BEG",
         &[],
         vec![
-            node("CPSL_PRIZE_INFO", &[240_076_273, -754_029_353, 0, 0, 0, 0], vec![]),
-            node("CPSL_PRIZE_INFO", &[627_185_202, -131_907_820, 0, 0, 0, 0], vec![]),
-            node("CPSL_PRIZE_INFO", &[1_014_572_915, -516_420_011, 0, 0, 0, 0], vec![]),
-            node("CPSL_PRIZE_INFO", &[1_933_095_348, -1_367_762_798, 0, 0, 0, 0], vec![]),
+            node(
+                "CPSL_PRIZE_INFO",
+                &[240_076_273, -754_029_353, 0, 0, 0, 0],
+                vec![],
+            ),
+            node(
+                "CPSL_PRIZE_INFO",
+                &[627_185_202, -131_907_820, 0, 0, 0, 0],
+                vec![],
+            ),
+            node(
+                "CPSL_PRIZE_INFO",
+                &[1_014_572_915, -516_420_011, 0, 0, 0, 0],
+                vec![],
+            ),
+            node(
+                "CPSL_PRIZE_INFO",
+                &[1_933_095_348, -1_367_762_798, 0, 0, 0, 0],
+                vec![],
+            ),
         ],
     );
 
@@ -91,19 +107,47 @@ fn fixture() -> Value {
     let config_specs: [([i64; 5], [i64; 6]); 4] = [
         (
             [1_048_507_728, 0, 1_541_988_908, 0, 0],
-            [-164_431_687, -1_275_641_544, 1_934_060_454, 737_141_143, -553_857_320, 0],
+            [
+                -164_431_687,
+                -1_275_641_544,
+                1_934_060_454,
+                737_141_143,
+                -553_857_320,
+                0,
+            ],
         ),
         (
             [-1_956_708_521, 0, 753_914_554, 1, 1],
-            [-1_777_603_265, -1_275_856_345, 993_989_695, 1_670_880_782, 1_408_550_806, 0],
+            [
+                -1_777_603_265,
+                -1_275_856_345,
+                993_989_695,
+                1_670_880_782,
+                1_408_550_806,
+                0,
+            ],
         ),
         (
             [-1_066_827_929, 0, -1_243_184_384, 2, 2],
-            [1_362_153_735, -1_962_672_800, -868_136_450, -1_796_619_313, -1_149_967_454, 0],
+            [
+                1_362_153_735,
+                -1_962_672_800,
+                -868_136_450,
+                -1_796_619_313,
+                -1_149_967_454,
+                0,
+            ],
         ),
         (
             [-65_255_421, 0, -1_025_395_818, 3, 3],
-            [32_525_825, -1_108_769_549, -1_740_601_530, -1_058_534_025, -767_243_483, 0],
+            [
+                32_525_825,
+                -1_108_769_549,
+                -1_740_601_530,
+                -1_058_534_025,
+                -767_243_483,
+                0,
+            ],
         ),
     ];
     let mut config_children = Vec::new();
@@ -138,8 +182,20 @@ fn weapon_color_table_reelle() {
     assert_eq!(t.table_id.to_hex(), "0x17EE9D93");
     // 6 lignes {colorType 1..6, weight 17}.
     assert_eq!(t.colors.len(), 6);
-    assert_eq!(t.colors[0], WeaponColorRate { color_type: 1, weight: 17 });
-    assert_eq!(t.colors[5], WeaponColorRate { color_type: 6, weight: 17 });
+    assert_eq!(
+        t.colors[0],
+        WeaponColorRate {
+            color_type: 1,
+            weight: 17
+        }
+    );
+    assert_eq!(
+        t.colors[5],
+        WeaponColorRate {
+            color_type: 6,
+            weight: 17
+        }
+    );
     assert!(t.colors.iter().all(|c| c.weight == 17));
 }
 
@@ -201,7 +257,10 @@ fn config_info_reelles() {
     assert_eq!(c0.data[0].vars[0], -164_431_687);
     assert_eq!(HashId::from_i64(c0.data[0].vars[0]).to_hex(), "0xF632F8B9");
     // 4e config.
-    assert_eq!(db.configs[3].vars, vec![-65_255_421, 0, -1_025_395_818, 3, 3]);
+    assert_eq!(
+        db.configs[3].vars,
+        vec![-65_255_421, 0, -1_025_395_818, 3, 3]
+    );
 }
 
 #[test]
@@ -212,7 +271,11 @@ fn cross_references_internes_coherentes() {
     let rank_id = db.lot_rank_rates[0].id;
     let table_id = db.prize_tables[0].id;
     let cfg = &db.configs[0];
-    assert_eq!(HashId::from_i64(cfg.vars[2]), rank_id, "config.vars[2] == rank table id");
+    assert_eq!(
+        HashId::from_i64(cfg.vars[2]),
+        rank_id,
+        "config.vars[2] == rank table id"
+    );
     assert_eq!(
         HashId::from_i64(cfg.data[0].vars[0]),
         table_id,

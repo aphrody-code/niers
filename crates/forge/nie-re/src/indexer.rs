@@ -10,7 +10,7 @@
 //! 5. Renvoie un [`IndexStats`] avec les comptes.
 
 use anyhow::{Context, Result};
-use nie_index::{rusqlite, Db};
+use nie_index::{Db, rusqlite};
 use std::path::Path;
 use tracing::info;
 
@@ -34,11 +34,11 @@ pub struct IndexStats {
 /// sont vides mais la fonction réussit quand même (pas d'erreur).
 pub fn triage_into(db: &mut Db, binary_id: i64, exe_path: &Path) -> Result<IndexStats> {
     // Lecture en mémoire (safe, pas d'unsafe memmap2).
-    let bytes = std::fs::read(exe_path)
-        .with_context(|| format!("lecture {}", exe_path.display()))?;
+    let bytes =
+        std::fs::read(exe_path).with_context(|| format!("lecture {}", exe_path.display()))?;
 
-    let report = aphrody_re::triage(&bytes)
-        .with_context(|| format!("triage {}", exe_path.display()))?;
+    let report =
+        aphrody_re::triage(&bytes).with_context(|| format!("triage {}", exe_path.display()))?;
 
     let format_str: &'static str = match report.format {
         aphrody_re::Format::Pe32 => "PE32",
@@ -48,9 +48,14 @@ pub fn triage_into(db: &mut Db, binary_id: i64, exe_path: &Path) -> Result<Index
         aphrody_re::Format::Unknown => "Unknown",
     };
 
-    info!("triage {}: {} ({} sections, {} imports, {} exports)",
-        exe_path.display(), format_str,
-        report.sections.len(), report.imports.len(), report.exports.len());
+    info!(
+        "triage {}: {} ({} sections, {} imports, {} exports)",
+        exe_path.display(),
+        format_str,
+        report.sections.len(),
+        report.imports.len(),
+        report.exports.len()
+    );
 
     let tx = db.conn_mut().transaction()?;
 
@@ -65,10 +70,10 @@ pub fn triage_into(db: &mut Db, binary_id: i64, exe_path: &Path) -> Result<Index
                 binary_id,
                 &sec.name,
                 sec.vaddr as i64,
-                sec.size as i64,   // vsize = raw size ici (triage ne distingue pas)
-                sec.vaddr as i64,  // paddr (conservatif : même valeur)
-                sec.size as i64,   // psize
-                "r"                // perm (inconnu depuis triage)
+                sec.size as i64,  // vsize = raw size ici (triage ne distingue pas)
+                sec.vaddr as i64, // paddr (conservatif : même valeur)
+                sec.size as i64,  // psize
+                "r"               // perm (inconnu depuis triage)
             ],
         );
         if r.is_ok() {
@@ -100,7 +105,12 @@ pub fn triage_into(db: &mut Db, binary_id: i64, exe_path: &Path) -> Result<Index
 
     tx.commit().context("commit triage")?;
 
-    Ok(IndexStats { format: format_str, sections, imports, exports })
+    Ok(IndexStats {
+        format: format_str,
+        sections,
+        imports,
+        exports,
+    })
 }
 
 #[cfg(test)]
@@ -121,7 +131,9 @@ mod tests {
         // Nettoyage garanti même en cas d'erreur.
         struct Cleanup(std::path::PathBuf);
         impl Drop for Cleanup {
-            fn drop(&mut self) { let _ = std::fs::remove_file(&self.0); }
+            fn drop(&mut self) {
+                let _ = std::fs::remove_file(&self.0);
+            }
         }
         let _cleanup = Cleanup(tmp_path.clone());
 

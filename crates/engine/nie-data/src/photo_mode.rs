@@ -103,7 +103,9 @@ impl PhotoModeRandomPoseConfig {
     /// ```
     #[must_use]
     pub fn find_by_motion(&self, motion_name_crc: HashId) -> Option<&RandomPose> {
-        self.poses.iter().find(|p| p.motion_name_crc == motion_name_crc)
+        self.poses
+            .iter()
+            .find(|p| p.motion_name_crc == motion_name_crc)
     }
 
     /// Renvoie toutes les poses ayant ce `charaBodyType` exact (sans joker `255`).

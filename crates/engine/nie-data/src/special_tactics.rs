@@ -42,7 +42,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use serde_json::Value;
 
-use crate::cfgbin::{owned, walk_named, Node};
+use crate::cfgbin::{Node, owned, walk_named};
 use crate::hash::HashId;
 
 /// Sentinelle « valeur absente » (`0xC4DC849A` en non signé) — filtrée à l'identique
@@ -332,7 +332,11 @@ impl SpecialTacticsConfig {
     /// Conditions de réussite de la i-ème tactique (via `ref_success_cond_ids[i]`).
     #[must_use]
     pub fn success_cond_ids_of(&self, info_index: usize) -> &[SpecialTacticsCondId] {
-        slice_of(&self.success_cond_ids, &self.ref_success_cond_ids, info_index)
+        slice_of(
+            &self.success_cond_ids,
+            &self.ref_success_cond_ids,
+            info_index,
+        )
     }
 
     /// Recherche une tactique par son `tactics_id`. `None` si absente.
@@ -356,7 +360,8 @@ pub fn parse_special_tactics(root: &Value) -> SpecialTacticsConfig {
     // Liste des effets.
     walk_named(root, "SPECIAL_TACTICS_EFFECT_LIST_BEG", |list| {
         for child in list.children() {
-            if !child.name().starts_with("SPECIAL_TACTICS_EFFECT_") || child.name().contains("_LIST_")
+            if !child.name().starts_with("SPECIAL_TACTICS_EFFECT_")
+                || child.name().contains("_LIST_")
             {
                 continue;
             }

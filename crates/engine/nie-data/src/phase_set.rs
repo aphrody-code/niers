@@ -13,7 +13,7 @@ use alloc::vec::Vec;
 use serde_json::Value;
 
 use crate::cfgbin::Node;
-use crate::unlock_condition::{decode_unlock_condition, UnlockCondition};
+use crate::unlock_condition::{UnlockCondition, decode_unlock_condition};
 
 /// Un item de phase (`DATA_ITEM_<i>`) : variables entières + conditions décodées.
 #[derive(Debug, Clone, PartialEq)]

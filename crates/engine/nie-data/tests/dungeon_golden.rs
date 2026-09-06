@@ -40,7 +40,7 @@ mod common;
 extern crate std;
 
 use nie_data::dungeon::{
-    parse_gimmick_system_num_config, GimmickNumSystemInfo, GimmickNumTableGroup,
+    GimmickNumSystemInfo, GimmickNumTableGroup, parse_gimmick_system_num_config,
 };
 use nie_data::hash::HashId;
 use serde_json::json;
@@ -205,7 +205,10 @@ fn fixture_groupe_compte() {
 fn fixture_groupe_id_0() {
     let cfg = parse_gimmick_system_num_config(&fixture_minimal());
     // GROUP_0 : var[0] = -1568497890 (ligne 13–19)
-    assert_eq!(cfg.groups[0].group_id, GROUP_ID_0, "group_id[0] = -1568497890");
+    assert_eq!(
+        cfg.groups[0].group_id, GROUP_ID_0,
+        "group_id[0] = -1568497890"
+    );
 }
 
 #[test]
@@ -305,14 +308,12 @@ fn fixture_system_info_sous_groupe() {
 
     // INFO_GROUP_0 : var[0]=1647881546 → group_id
     assert_eq!(
-        info.sub_groups[0].group_id,
-        GROUP_ID_2,
+        info.sub_groups[0].group_id, GROUP_ID_2,
         "sub_group_id = 1647881546 (= GROUP_ID_2)"
     );
     // INFO_GROUP_0 : var[1] = payload base64 (ligne 319)
     assert_eq!(
-        info.sub_groups[0].payload_b64,
-        "AAAAAA8FNbkZNtoAAQAyAAAAAHE=",
+        info.sub_groups[0].payload_b64, "AAAAAA8FNbkZNtoAAQAyAAAAAHE=",
         "payload_b64 INFO_GROUP_0"
     );
 }
@@ -322,7 +323,11 @@ fn fixture_data_10_float_25() {
     let cfg = parse_gimmick_system_num_config(&fixture_avec_system_info());
     // DATA_10 : var[0]=547509227, var[1]="2,5" (Float), var[2]=0
     let g = &cfg.groups[0];
-    assert_eq!(g.entries.len(), 1, "1 entrée de données dans GROUP_0 (fixture info)");
+    assert_eq!(
+        g.entries.len(),
+        1,
+        "1 entrée de données dans GROUP_0 (fixture info)"
+    );
     let d = &g.entries[0];
     assert_eq!(d.param_id, DATA_3_PARAM_ID, "param_id DATA_10 = 547509227");
     assert!(
@@ -358,8 +363,7 @@ fn fixture_find_system_info() {
 
 // ─── Tests sur fichier réel (skip silencieux si absent) ───────────────────────
 
-const REAL_GIMMICK_NUM: &str =
-    "dungeon/gimmick_system_num_config.cfg.bin.json";
+const REAL_GIMMICK_NUM: &str = "dungeon/gimmick_system_num_config.cfg.bin.json";
 
 fn load_json(path: &str) -> Option<serde_json::Value> {
     let path = common::chemin(path)?;
@@ -369,7 +373,10 @@ fn load_json(path: &str) -> Option<serde_json::Value> {
     }
     let content = std::fs::read_to_string(&path)
         .unwrap_or_else(|e| panic!("Impossible de lire {}: {e}", path.display()));
-    Some(serde_json::from_str(&content).unwrap_or_else(|e| panic!("JSON invalide {}: {e}", path.display())))
+    Some(
+        serde_json::from_str(&content)
+            .unwrap_or_else(|e| panic!("JSON invalide {}: {e}", path.display())),
+    )
 }
 
 #[test]
@@ -631,8 +638,7 @@ fn real_file_system_info_1_sous_groupe_payload() {
     );
     // INFO_GROUP_1 : var[1]="AAAAABgFNSo9RUMACgEoAAYCNEIVKDMyAAAAAXg=" (ligne 352–355)
     assert_eq!(
-        sg.payload_b64,
-        "AAAAABgFNSo9RUMACgEoAAYCNEIVKDMyAAAAAXg=",
+        sg.payload_b64, "AAAAABgFNSo9RUMACgEoAAYCNEIVKDMyAAAAAXg=",
         "INFO_GROUP_1.payload_b64"
     );
 }
@@ -670,8 +676,7 @@ fn real_file_tous_flags_nuls() {
             assert_eq!(
                 entry.flag, 0,
                 "flag non-nul dans groupe {:?}, param {:?}",
-                g.group_id,
-                entry.param_id
+                g.group_id, entry.param_id
             );
         }
     }
@@ -685,7 +690,10 @@ fn real_file_find_group_group_3() {
     let cfg = parse_gimmick_system_num_config(&root);
     // find_group doit retrouver GROUP_3 (noeud le plus profond)
     let found = cfg.find_group(GROUP_ID_3);
-    assert!(found.is_some(), "find_group(GROUP_ID_3) doit trouver le groupe");
+    assert!(
+        found.is_some(),
+        "find_group(GROUP_ID_3) doit trouver le groupe"
+    );
     assert_eq!(found.unwrap().entries.len(), 1, "GROUP_3 a 1 entrée");
 }
 
@@ -697,7 +705,10 @@ fn real_file_find_system_info_2() {
     let cfg = parse_gimmick_system_num_config(&root);
     // find_system_info(INFO_ID_2) doit retrouver l'entrée sans sous-groupe
     let found = cfg.find_system_info(INFO_ID_2);
-    assert!(found.is_some(), "find_system_info(INFO_ID_2) doit trouver l'info");
+    assert!(
+        found.is_some(),
+        "find_system_info(INFO_ID_2) doit trouver l'info"
+    );
     assert_eq!(
         found.unwrap().sub_groups.len(),
         0,
@@ -725,8 +736,7 @@ fn real_file_data_5_param_id() {
     // DATA_5 (6ème entrée de GROUP_0) : var[0] = -1637982369 (JSON ligne 122–127)
     // C'est l'entrée qui porte GROUP_1 comme enfant
     assert_eq!(
-        cfg.groups[0].entries[5].param_id,
-        DATA_5_PARAM_ID,
+        cfg.groups[0].entries[5].param_id, DATA_5_PARAM_ID,
         "DATA_5.param_id = -1637982369"
     );
 }
@@ -759,7 +769,11 @@ fn real_file_groupe_1_pas_groupe_0() {
     // GROUP_1 est imbriqué dans GROUP_0 via DATA_5, mais doit être un groupe séparé
     let g: &GimmickNumTableGroup = cfg.find_group(GROUP_ID_1).expect("GROUP_1 doit exister");
     // GROUP_1 n'a que 3 entrées, pas 6 comme GROUP_0
-    assert_eq!(g.entries.len(), 3, "GROUP_1 a exactement 3 entrées directes");
+    assert_eq!(
+        g.entries.len(),
+        3,
+        "GROUP_1 a exactement 3 entrées directes"
+    );
     // GROUP_1 n'a pas les mêmes entrées que GROUP_0
     assert_ne!(g.group_id, GROUP_ID_0, "GROUP_1 ≠ GROUP_0");
 }

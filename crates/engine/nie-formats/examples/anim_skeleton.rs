@@ -133,7 +133,12 @@ fn main() {
             if par >= 0 && (par as usize) < n {
                 let pp = proj(xform(&world[par as usize], [0.0, 0.0, 0.0]));
                 let lit = bone_target[i].is_some();
-                line(&mut buf, pp, pj, if lit { [90, 200, 255] } else { [70, 70, 90] });
+                line(
+                    &mut buf,
+                    pp,
+                    pj,
+                    if lit { [90, 200, 255] } else { [70, 70, 90] },
+                );
             }
             // articulation.
             for dy in -1..=1 {

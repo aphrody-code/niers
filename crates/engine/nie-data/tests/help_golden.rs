@@ -226,7 +226,10 @@ fn fixture_image_0() {
 #[test]
 fn fixture_image_1_sprite() {
     let cfg = parse_help_list_config(&fixture_help());
-    assert_eq!(cfg.images[1].sprite_hash, IMG1_SPRITE, "sprite[1] = 0x8A5AA0AB");
+    assert_eq!(
+        cfg.images[1].sprite_hash, IMG1_SPRITE,
+        "sprite[1] = 0x8A5AA0AB"
+    );
     assert_eq!(cfg.images[1].sort_no, 2);
 }
 
@@ -242,8 +245,16 @@ fn fixture_info_0_champs_et_blob() {
     assert_eq!(info.raw[13], INFO0_RAW13, "raw[13] = 0x17BE3DBD");
     assert_eq!(info.raw[14], INFO0_RAW14, "raw[14] = 0x2ADE140D");
     // var[12] est une String base64 → raw[12] = 0, blob conservé tel quel
-    assert_eq!(info.raw[12], HashId::ZERO, "raw[12] = 0 (la String vit dans blob)");
-    assert_eq!(info.blob.as_deref(), Some(INFO13_BLOB), "blob base64 préservé");
+    assert_eq!(
+        info.raw[12],
+        HashId::ZERO,
+        "raw[12] = 0 (la String vit dans blob)"
+    );
+    assert_eq!(
+        info.blob.as_deref(),
+        Some(INFO13_BLOB),
+        "blob base64 préservé"
+    );
 }
 
 #[test]
@@ -294,8 +305,7 @@ fn fixture_find_info() {
 
 // ─── Tests sur fichier réel (skip silencieux si absent) ───────────────────────────
 
-const REAL_HELP: &str =
-    "help/help_list_config_1.04.08.00.cfg.bin.json";
+const REAL_HELP: &str = "help/help_list_config_1.04.08.00.cfg.bin.json";
 
 fn load_json(path: &str) -> Option<serde_json::Value> {
     let path = common::chemin(path)?;
@@ -303,9 +313,12 @@ fn load_json(path: &str) -> Option<serde_json::Value> {
         eprintln!("skip : {} absent du corpus", path.display());
         return None;
     }
-    let content =
-        std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("Impossible de lire {}: {e}", path.display()));
-    Some(serde_json::from_str(&content).unwrap_or_else(|e| panic!("JSON invalide {}: {e}", path.display())))
+    let content = std::fs::read_to_string(&path)
+        .unwrap_or_else(|e| panic!("Impossible de lire {}: {e}", path.display()));
+    Some(
+        serde_json::from_str(&content)
+            .unwrap_or_else(|e| panic!("JSON invalide {}: {e}", path.display())),
+    )
 }
 
 #[test]
@@ -316,7 +329,11 @@ fn real_comptes() {
     let cfg = parse_help_list_config(&root);
     assert_eq!(cfg.images.len(), 322, "322 HELP_LIST_IMAGE");
     assert_eq!(cfg.infos.len(), 245, "245 HELP_LIST_INFO");
-    assert_eq!(cfg.guide_layouts.len(), 216, "216 HELP_OPERATION_GUIDE_LAYOUT");
+    assert_eq!(
+        cfg.guide_layouts.len(),
+        216,
+        "216 HELP_OPERATION_GUIDE_LAYOUT"
+    );
     assert_eq!(cfg.guide_infos.len(), 21, "21 HELP_OPERATION_GUIDE_INFO");
     assert_eq!(cfg.sort_order.len(), 245, "245 __SORT_INDEX");
     // somme des image_count = 322 (toutes les images sont référencées une fois)
@@ -360,7 +377,10 @@ fn real_info_0() {
     assert_eq!(info.raw[13], INFO0_RAW13);
     assert_eq!(info.raw[14], INFO0_RAW14);
     // REF_IMAGE_0 = [0,0] : la première entrée d'aide n'a pas d'image associée
-    assert_eq!(info.image_count, 0, "info[0] sans image (REF_IMAGE_0 = [0,0])");
+    assert_eq!(
+        info.image_count, 0,
+        "info[0] sans image (REF_IMAGE_0 = [0,0])"
+    );
     assert_eq!(info.blob, None, "info[0] sans blob (var[12] = Int 0)");
 }
 
@@ -435,7 +455,10 @@ fn real_guide_info_0_et_20() {
     let g0 = &cfg.guide_infos[0];
     // guide_id[0] = 0x2156356E == IMAGE_0.guide_hash (recoupement)
     assert_eq!(g0.guide_id, GI0_GUIDE_ID, "guide_id[0] = 0x2156356E");
-    assert_eq!(g0.guide_id, cfg.images[0].guide_hash, "recoupe IMAGE_0.guide_hash");
+    assert_eq!(
+        g0.guide_id, cfg.images[0].guide_hash,
+        "recoupe IMAGE_0.guide_hash"
+    );
     assert_eq!(g0.text_id, GI0_TEXT, "text[0] = 0x74C5F394");
     assert_eq!(g0.layout_offset, 0);
     assert_eq!(g0.layout_count, 18, "REF_LAYOUT_0 = [0,18]");

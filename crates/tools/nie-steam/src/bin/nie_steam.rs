@@ -11,9 +11,9 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
+use nie_steam::IEVR_STEAM_APP_ID;
 use nie_steam::downloader::SteamDepotDownloader;
 use nie_steam::options::SteamDownloadOptions;
-use nie_steam::IEVR_STEAM_APP_ID;
 use tracing_subscriber::EnvFilter;
 
 #[derive(Parser, Debug)]

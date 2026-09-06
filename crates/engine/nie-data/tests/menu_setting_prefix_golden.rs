@@ -9,8 +9,7 @@ mod common;
 use nie_data::hash::HashId;
 use nie_data::menu_setting::parse;
 
-const PATH: &str =
-    "menu/cfg/info_bookmark_menu_setting.cfg.bin.json";
+const PATH: &str = "menu/cfg/info_bookmark_menu_setting.cfg.bin.json";
 
 fn load() -> Option<serde_json::Value> {
     let chemin_abs = common::chemin(PATH)?;
@@ -18,7 +17,8 @@ fn load() -> Option<serde_json::Value> {
         eprintln!("skip : {} absent du corpus", chemin_abs.display());
         return None;
     }
-    let c = std::fs::read_to_string(&chemin_abs).unwrap_or_else(|e| panic!("lecture {}: {e}", chemin_abs.display()));
+    let c = std::fs::read_to_string(&chemin_abs)
+        .unwrap_or_else(|e| panic!("lecture {}: {e}", chemin_abs.display()));
     Some(serde_json::from_str(&c).unwrap_or_else(|e| panic!("JSON {}: {e}", chemin_abs.display())))
 }
 

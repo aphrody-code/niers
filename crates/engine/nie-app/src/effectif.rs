@@ -59,9 +59,10 @@ fn element(v: i64) -> &'static str {
 
 /// Lit un `cfg.bin` du VFS et le rend sous la forme JSON qu'attend `nie-data`.
 fn charger_json(vfs: &Vfs, chemin: &str) -> Result<serde_json::Value> {
-    let octets = vfs.read(chemin).map_err(|e| anyhow::anyhow!("{chemin} : {e:?}"))?;
-    nie_formats::cfgbin::to_iecode_json(&octets)
-        .with_context(|| format!("décodage de {chemin}"))
+    let octets = vfs
+        .read(chemin)
+        .map_err(|e| anyhow::anyhow!("{chemin} : {e:?}"))?;
+    nie_formats::cfgbin::to_iecode_json(&octets).with_context(|| format!("décodage de {chemin}"))
 }
 
 /// Trouve le premier fichier du VFS sous `prefixe` dont le nom commence par `radical`.
@@ -91,13 +92,12 @@ fn resoudre(vfs: &Vfs, prefixe: &str, radical: &str) -> Option<String> {
 /// afficher : un écran d'effectif vide vaut mieux qu'un plantage, mais il doit dire pourquoi.
 pub fn charger(vfs: &Vfs, max: usize, langue: &str) -> Result<Vec<Joueur>> {
     const DOSSIER: &str = "data/common/gamedata/character/";
-    let p_param = resoudre(vfs, DOSSIER, "chara_param")
-        .context("aucun chara_param dans le VFS")?;
-    let p_base = resoudre(vfs, DOSSIER, "chara_base")
-        .context("aucun chara_base dans le VFS")?;
+    let p_param = resoudre(vfs, DOSSIER, "chara_param").context("aucun chara_param dans le VFS")?;
+    let p_base = resoudre(vfs, DOSSIER, "chara_base").context("aucun chara_base dans le VFS")?;
     let p_text = format!("data/common/text/{langue}/chara_text.cfg.bin");
 
-    let params: Vec<CharaParam> = chara_param::parse_all_chara_params(&charger_json(vfs, &p_param)?);
+    let params: Vec<CharaParam> =
+        chara_param::parse_all_chara_params(&charger_json(vfs, &p_param)?);
     let bases: Vec<CharaBase> = chara_base::parse_all_chara_base(&charger_json(vfs, &p_base)?);
     // Les noms sont facultatifs : sans eux on affiche les codes internes plutôt que rien.
     let noms = charger_json(vfs, &p_text)
@@ -131,7 +131,10 @@ pub fn charger(vfs: &Vfs, max: usize, langue: &str) -> Result<Vec<Joueur>> {
             break;
         }
     }
-    anyhow::ensure!(!out.is_empty(), "aucun personnage jointable entre chara_param et chara_base");
+    anyhow::ensure!(
+        !out.is_empty(),
+        "aucun personnage jointable entre chara_param et chara_base"
+    );
     Ok(out)
 }
 
@@ -326,7 +329,11 @@ pub fn charger_objets(vfs: &Vfs, max: usize, langue: &str) -> Result<Vec<Objet>>
         } else {
             nom
         };
-        out.push(Objet { nom, categorie: categorie(it.category), prix: it.price });
+        out.push(Objet {
+            nom,
+            categorie: categorie(it.category),
+            prix: it.price,
+        });
         if out.len() >= max {
             break;
         }

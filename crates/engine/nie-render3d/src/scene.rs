@@ -4,7 +4,11 @@
 //! on projette un monde entier sous une caméra arbitraire. Brique de base du **match 3D** et, à
 //! terme, des **maps/scènes** du jeu. Z-buffer, éclairage Lambert deux-faces, fond dégradé.
 
-#![allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, clippy::cast_precision_loss)]
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_precision_loss
+)]
 
 use crate::vecmath::{V3, cross, dot, normv, sub};
 
@@ -134,7 +138,12 @@ pub fn render_scene(
     for y in 0..h {
         let t = y as f32 / h as f32;
         let mix = |a: u8, b: u8| (f32::from(a) * (1.0 - t) + f32::from(b) * t) as u8;
-        let bg = [mix(bg_top[0], bg_bot[0]), mix(bg_top[1], bg_bot[1]), mix(bg_top[2], bg_bot[2]), 255];
+        let bg = [
+            mix(bg_top[0], bg_bot[0]),
+            mix(bg_top[1], bg_bot[1]),
+            mix(bg_top[2], bg_bot[2]),
+            255,
+        ];
         for x in 0..w {
             let i = ((y * w + x) * 4) as usize;
             px[i..i + 4].copy_from_slice(&bg);
@@ -200,9 +209,18 @@ pub fn render_scene(
                     [[0.0, 0.0]; 3]
                 };
                 let poly = clip_near(&[
-                    CVert { c: cam_space(wa), uv: uv[0] },
-                    CVert { c: cam_space(wb), uv: uv[1] },
-                    CVert { c: cam_space(wc), uv: uv[2] },
+                    CVert {
+                        c: cam_space(wa),
+                        uv: uv[0],
+                    },
+                    CVert {
+                        c: cam_space(wb),
+                        uv: uv[1],
+                    },
+                    CVert {
+                        c: cam_space(wc),
+                        uv: uv[2],
+                    },
                 ]);
                 if poly.len() < 3 {
                     continue;
@@ -219,7 +237,18 @@ pub fn render_scene(
                 let use_tex = if uv == [[0.0, 0.0]; 3] { None } else { tex };
                 for i in 1..s.len() - 1 {
                     let uvs = [poly[0].uv, poly[i].uv, poly[i + 1].uv];
-                    fill_tex(&mut px, &mut zbuf, w, h, s[0], s[i], s[i + 1], uvs, use_tex, shade);
+                    fill_tex(
+                        &mut px,
+                        &mut zbuf,
+                        w,
+                        h,
+                        s[0],
+                        s[i],
+                        s[i + 1],
+                        uvs,
+                        use_tex,
+                        shade,
+                    );
                 }
             }
         }
@@ -268,8 +297,15 @@ fn clip_near(poly: &[CVert]) -> Vec<CVert> {
 fn lerp_near(s: CVert, e: CVert) -> CVert {
     let t = (NEAR - s.c[2]) / (e.c[2] - s.c[2]);
     CVert {
-        c: [s.c[0] + (e.c[0] - s.c[0]) * t, s.c[1] + (e.c[1] - s.c[1]) * t, NEAR],
-        uv: [s.uv[0] + (e.uv[0] - s.uv[0]) * t, s.uv[1] + (e.uv[1] - s.uv[1]) * t],
+        c: [
+            s.c[0] + (e.c[0] - s.c[0]) * t,
+            s.c[1] + (e.c[1] - s.c[1]) * t,
+            NEAR,
+        ],
+        uv: [
+            s.uv[0] + (e.uv[0] - s.uv[0]) * t,
+            s.uv[1] + (e.uv[1] - s.uv[1]) * t,
+        ],
     }
 }
 
@@ -387,13 +423,30 @@ mod tests {
         // Un quad vert au sol (y=0), caméra au-dessus qui regarde l'origine.
         let g = [40u8, 160, 60];
         let tris = vec![
-            Tri { p: [[-5.0, 0.0, -5.0], [5.0, 0.0, -5.0], [5.0, 0.0, 5.0]], color: g },
-            Tri { p: [[-5.0, 0.0, -5.0], [5.0, 0.0, 5.0], [-5.0, 0.0, 5.0]], color: g },
+            Tri {
+                p: [[-5.0, 0.0, -5.0], [5.0, 0.0, -5.0], [5.0, 0.0, 5.0]],
+                color: g,
+            },
+            Tri {
+                p: [[-5.0, 0.0, -5.0], [5.0, 0.0, 5.0], [-5.0, 0.0, 5.0]],
+                color: g,
+            },
         ];
-        let cam = Camera { eye: [0.0, 12.0, -12.0], target: [0.0, 0.0, 0.0], up: [0.0, 1.0, 0.0], fov_y: 0.9 };
+        let cam = Camera {
+            eye: [0.0, 12.0, -12.0],
+            target: [0.0, 0.0, 0.0],
+            up: [0.0, 1.0, 0.0],
+            fov_y: 0.9,
+        };
         let buf = render_world(&tris, &cam, 128, 128, [20, 24, 40], [40, 48, 70]);
-        let green = buf.chunks_exact(4).filter(|p| p[1] > p[0] + 20 && p[1] > p[2] + 20).count();
-        assert!(green > 200, "le quad vert doit couvrir une bonne part de l'image ({green})");
+        let green = buf
+            .chunks_exact(4)
+            .filter(|p| p[1] > p[0] + 20 && p[1] > p[2] + 20)
+            .count();
+        assert!(
+            green > 200,
+            "le quad vert doit couvrir une bonne part de l'image ({green})"
+        );
     }
 
     #[test]
@@ -408,13 +461,32 @@ mod tests {
                 indices: vec![0, 2, 1], // front-facing (cf. backface culling)
                 texture: Some(0),
             }],
-            textures: vec![Texture { width: 1, height: 1, rgba: vec![230, 40, 40, 255] }],
+            textures: vec![Texture {
+                width: 1,
+                height: 1,
+                rgba: vec![230, 40, 40, 255],
+            }],
         };
-        let cam = Camera { eye: [0.0, 0.6, 3.0], target: [0.0, 0.6, 0.0], up: [0.0, 1.0, 0.0], fov_y: 0.8 };
-        let inst = [Instance { model: &model, transform: mat_identity(), two_sided: false }];
+        let cam = Camera {
+            eye: [0.0, 0.6, 3.0],
+            target: [0.0, 0.6, 0.0],
+            up: [0.0, 1.0, 0.0],
+            fov_y: 0.8,
+        };
+        let inst = [Instance {
+            model: &model,
+            transform: mat_identity(),
+            two_sided: false,
+        }];
         let buf = render_scene(&[], &inst, &cam, 96, 96, [20, 24, 40], [20, 24, 40]);
-        let red = buf.chunks_exact(4).filter(|p| p[0] > 90 && p[0] > p[1] + 40 && p[0] > p[2] + 40).count();
-        assert!(red > 30, "le triangle texturé rouge instancié doit apparaître ({red})");
+        let red = buf
+            .chunks_exact(4)
+            .filter(|p| p[0] > 90 && p[0] > p[1] + 40 && p[0] > p[2] + 40)
+            .count();
+        assert!(
+            red > 30,
+            "le triangle texturé rouge instancié doit apparaître ({red})"
+        );
     }
 
     #[test]
@@ -422,10 +494,24 @@ mod tests {
         // Caméra à l'origine regardant +z ; triangle dont un sommet est DERRIÈRE (z<0). Sans
         // clipping il serait rejeté entièrement ; avec clipping, sa partie visible se rend.
         let g = [60u8, 180, 90];
-        let tris = vec![Tri { p: [[-2.0, -1.0, -1.0], [2.0, -1.0, 3.0], [0.0, 2.0, 3.0]], color: g }];
-        let cam = Camera { eye: [0.0, 0.0, 0.0], target: [0.0, 0.0, 1.0], up: [0.0, 1.0, 0.0], fov_y: 1.2 };
+        let tris = vec![Tri {
+            p: [[-2.0, -1.0, -1.0], [2.0, -1.0, 3.0], [0.0, 2.0, 3.0]],
+            color: g,
+        }];
+        let cam = Camera {
+            eye: [0.0, 0.0, 0.0],
+            target: [0.0, 0.0, 1.0],
+            up: [0.0, 1.0, 0.0],
+            fov_y: 1.2,
+        };
         let buf = render_world(&tris, &cam, 96, 96, [10, 10, 20], [10, 10, 20]);
-        let lit = buf.chunks_exact(4).filter(|p| p[1] > p[0] + 20 && p[1] > p[2] + 20).count();
-        assert!(lit > 80, "la partie visible du triangle traversant doit se rendre ({lit})");
+        let lit = buf
+            .chunks_exact(4)
+            .filter(|p| p[1] > p[0] + 20 && p[1] > p[2] + 20)
+            .count();
+        assert!(
+            lit > 80,
+            "la partie visible du triangle traversant doit se rendre ({lit})"
+        );
     }
 }

@@ -131,7 +131,8 @@ pub fn decode(data: &[u8]) -> Option<Decoded> {
                         "offset": entry.offset,
                         "size": entry.size,
                     })).collect::<Vec<_>>(),
-                })).ok()
+                }))
+                .ok()
             }),
             "awb",
         ),
@@ -186,43 +187,57 @@ fn decode_level5_annexe(data: &[u8]) -> Option<Decoded> {
     // les parse depuis toujours.
     if crate::dxbc::is_dxbc(data) {
         return done(
-            crate::dxbc::parse(data).ok().and_then(|v| serde_json::to_vec(&v).ok()),
+            crate::dxbc::parse(data)
+                .ok()
+                .and_then(|v| serde_json::to_vec(&v).ok()),
             "dxbc",
         );
     }
     if crate::g4mt::is_g4mt(data) {
         return done(
-            crate::g4mt::parse(data).ok().and_then(|v| serde_json::to_vec(&v).ok()),
+            crate::g4mt::parse(data)
+                .ok()
+                .and_then(|v| serde_json::to_vec(&v).ok()),
             "g4mt",
         );
     }
     if crate::g4cm::is_g4cm(data) {
         return done(
-            crate::g4cm::parse(data).ok().and_then(|v| serde_json::to_vec(&v).ok()),
+            crate::g4cm::parse(data)
+                .ok()
+                .and_then(|v| serde_json::to_vec(&v).ok()),
             "g4cm",
         );
     }
     if crate::g4la::is_g4la(data) {
         return done(
-            crate::g4la::parse(data).ok().and_then(|v| serde_json::to_vec(&v).ok()),
+            crate::g4la::parse(data)
+                .ok()
+                .and_then(|v| serde_json::to_vec(&v).ok()),
             "g4la",
         );
     }
     if crate::g4ma::is_g4ma(data) {
         return done(
-            crate::g4ma::parse(data).ok().and_then(|v| serde_json::to_vec(&v).ok()),
+            crate::g4ma::parse(data)
+                .ok()
+                .and_then(|v| serde_json::to_vec(&v).ok()),
             "g4ma",
         );
     }
     if crate::g4vs::is_g4vs(data) {
         return done(
-            crate::g4vs::parse(data).ok().and_then(|v| serde_json::to_vec(&v).ok()),
+            crate::g4vs::parse(data)
+                .ok()
+                .and_then(|v| serde_json::to_vec(&v).ok()),
             "g4vs",
         );
     }
     if crate::col::is_pxcl(data) {
         return done(
-            crate::col::parse(data).ok().and_then(|v| serde_json::to_vec(&v).ok()),
+            crate::col::parse(data)
+                .ok()
+                .and_then(|v| serde_json::to_vec(&v).ok()),
             "col (PXCL)",
         );
     }

@@ -56,7 +56,10 @@ fn w64(buf: &mut [u8], off: usize, val: u64) {
 /// # Panics
 /// Si `buf.len() < STRUCT_SIZE`.
 pub fn construct(buf: &mut [u8], instance_count: u32) -> u32 {
-    assert!(buf.len() >= STRUCT_SIZE, "buffer trop petit pour CEffectObjComponent");
+    assert!(
+        buf.len() >= STRUCT_SIZE,
+        "buffer trop petit pour CEffectObjComponent"
+    );
     // memset [0x00, 0x60) (movups xmm0=0 + stores r8=0)
     buf[0..0x60].fill(0);
     w64(buf, 0x54, u64::from(F1_0)); // 1.0f @0x54, 0 @0x58
@@ -89,7 +92,10 @@ mod tests {
     const GOLDEN_HEX: &str = "508f7b4101000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000803f0000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020410000000000000000000000000000f0410000000000000000000001000000010000010000";
 
     fn hexbuf(h: &str) -> alloc::vec::Vec<u8> {
-        (0..h.len()).step_by(2).map(|i| u8::from_str_radix(&h[i..i + 2], 16).unwrap()).collect()
+        (0..h.len())
+            .step_by(2)
+            .map(|i| u8::from_str_radix(&h[i..i + 2], 16).unwrap())
+            .collect()
     }
 
     #[test]
@@ -115,6 +121,10 @@ mod tests {
     #[test]
     fn counter_wraps() {
         let mut buf = vec![0u8; STRUCT_SIZE];
-        assert_eq!(construct(&mut buf, u32::MAX), 0, "wrap 32 bits comme inc dword");
+        assert_eq!(
+            construct(&mut buf, u32::MAX),
+            0,
+            "wrap 32 bits comme inc dword"
+        );
     }
 }

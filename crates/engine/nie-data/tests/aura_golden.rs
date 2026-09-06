@@ -15,8 +15,8 @@
 mod common;
 
 use nie_data::aura::{
-    build_skill_map, determine_sub_type, parse_all_aura_cmds, resolve_aura_hissatsu, AuraCmd,
-    AuraSubType,
+    AuraCmd, AuraSubType, build_skill_map, determine_sub_type, parse_all_aura_cmds,
+    resolve_aura_hissatsu,
 };
 use nie_data::hash::HashId;
 use nie_data::skill::{SkillCategory, SkillElement, SkillInfo};
@@ -136,9 +136,18 @@ fn hissatsu_resolu_chaine_skillid1_vers_skill_config() {
 #[test]
 fn determine_sub_type_prefixes() {
     assert_eq!(determine_sub_type("wks00020", None), AuraSubType::Keshin);
-    assert_eq!(determine_sub_type("wks00240", Some("Totem de feu")), AuraSubType::Soul);
-    assert_eq!(determine_sub_type("awakening_001", None), AuraSubType::Awakening);
-    assert_eq!(determine_sub_type("mode_change_x", None), AuraSubType::ModeChange);
+    assert_eq!(
+        determine_sub_type("wks00240", Some("Totem de feu")),
+        AuraSubType::Soul
+    );
+    assert_eq!(
+        determine_sub_type("awakening_001", None),
+        AuraSubType::Awakening
+    );
+    assert_eq!(
+        determine_sub_type("mode_change_x", None),
+        AuraSubType::ModeChange
+    );
     assert_eq!(determine_sub_type("wmm00210", None), AuraSubType::Miximax);
     assert_eq!(determine_sub_type("wko00010", None), AuraSubType::Keshin);
     assert_eq!(determine_sub_type("was00010", None), AuraSubType::Keshin);
@@ -152,11 +161,8 @@ fn hissatsu_0f8c620d_resout_whs01780_vrai_fichier() {
     // skill_id_str = "whs01780", power 100-640, element 3 (Feu), category 1 (Tir)
     // (skill_config_4.00.17.00). ~61/1548 auras résolvent réellement.
     let aura_path = "skill/aura_skill_config_1.04.09.00.cfg.bin.json";
-    let skill_path =
-        "skill/skill_config_4.00.17.00.cfg.bin.json";
-    if !std::path::Path::new(aura_path).exists()
-        || !std::path::Path::new(skill_path).exists()
-    {
+    let skill_path = "skill/skill_config_4.00.17.00.cfg.bin.json";
+    if !std::path::Path::new(aura_path).exists() || !std::path::Path::new(skill_path).exists() {
         return;
     }
 
@@ -192,7 +198,7 @@ fn hissatsu_0f8c620d_resout_whs01780_vrai_fichier() {
         .expect("0x0F8C620D doit résoudre vers whs01780 dans skill_config_4.00.17.00");
     assert_eq!(h.skill_id, HashId(0x0F8C_620D));
     assert_eq!(h.skill_id_str.as_deref(), Some("whs01780"));
-    assert_eq!(h.element, SkillElement::Fire);    // element 3
+    assert_eq!(h.element, SkillElement::Fire); // element 3
     assert_eq!(h.category, SkillCategory::Shoot); // category 1
     assert_eq!(h.power, (100, 640));
 }

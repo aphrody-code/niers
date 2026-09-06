@@ -8,11 +8,9 @@
 //! `nameHash → "Mark"` (prénom) et `lastNameHash 0xE5655F9E → "Evans"`.
 
 use nie_data::cfgbin::Node;
-use nie_data::chara_text::{
-    find_name, parse_all_nouns, parse_noun_node, parse_roma_node,
-};
+use nie_data::chara_text::{find_name, parse_all_nouns, parse_noun_node, parse_roma_node};
 use nie_data::hash::HashId;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 fn ivar(v: i64) -> Value {
     json!({ "type": "Int", "value": v.to_string() })
@@ -36,7 +34,11 @@ fn noun(name: &str, hash: i64, strings: &[&str]) -> Value {
 #[test]
 fn primary_name_and_alts() {
     // Première chaîne non vide → name ; suivantes → alt_names ; nettoyage appliqué.
-    let n = noun("NOUN_INFO_0", 0x1, &["<COL:F00>Mark<CLO>", "Marco", "マーク"]);
+    let n = noun(
+        "NOUN_INFO_0",
+        0x1,
+        &["<COL:F00>Mark<CLO>", "Marco", "マーク"],
+    );
     let p = parse_noun_node(&Node::new(&n)).expect("valide");
     assert_eq!(p.hash_id, HashId(0x1));
     assert_eq!(p.name, "Mark"); // balise retirée

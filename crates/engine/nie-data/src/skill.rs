@@ -277,7 +277,10 @@ impl SkillInfo {
             .map(|l| {
                 (
                     (*l).to_string(),
-                    format!("data/dx11/menu/220_img/telop_waza/{l}/{}.g4tx", self.skill_id_str),
+                    format!(
+                        "data/dx11/menu/220_img/telop_waza/{l}/{}.g4tx",
+                        self.skill_id_str
+                    ),
                 )
             })
             .collect();

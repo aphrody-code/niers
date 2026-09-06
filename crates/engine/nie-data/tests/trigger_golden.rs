@@ -22,7 +22,9 @@ fn load(rel: &str) -> Option<serde_json::Value> {
 
 #[test]
 fn qsb_trigger_items_et_conditions() {
-    let Some(root) = load("quest/qsb040400_trigger_0.04.78.cfg.bin.json") else { return };
+    let Some(root) = load("quest/qsb040400_trigger_0.04.78.cfg.bin.json") else {
+        return;
+    };
     let cfg = parse_trigger(&root);
     assert_eq!(cfg.count, 8);
     assert_eq!(cfg.items.len(), 8);
@@ -37,7 +39,10 @@ fn qsb_trigger_items_et_conditions() {
     // DATA_ITEM_3 : 3 feuilles, toutes event-flag (ns 0xBE04A598/0x2A3D4543) → EventFlag multiple.
     let it3 = &cfg.items[3];
     assert_eq!(it3.condition.kind, UnlockType::EventFlag);
-    assert!(it3.condition.required_events.len() >= 2, "plusieurs event-flags requis");
+    assert!(
+        it3.condition.required_events.len() >= 2,
+        "plusieurs event-flags requis"
+    );
 }
 
 #[test]
@@ -56,7 +61,9 @@ fn fbtl_cro_trigger_se_parse() {
 #[test]
 fn dispatch_typed_par_suffixe() {
     use nie_data::typed::{decode_by_key, family_key};
-    let Some(root) = load("quest/qsb040400_trigger_0.04.78.cfg.bin.json") else { return };
+    let Some(root) = load("quest/qsb040400_trigger_0.04.78.cfg.bin.json") else {
+        return;
+    };
     let key = family_key("qsb040400_trigger_0.04.78.cfg.bin");
     assert!(key.ends_with("_trigger"), "clé = {key}");
     let (label, json) = decode_by_key(&key, &root).expect("dispatch suffixe câblé");

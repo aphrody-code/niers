@@ -32,7 +32,10 @@ fn fixture_add_model() {
     assert_eq!(c.data[0].add_model_type, 1);
     assert_eq!(c.data[0].add_model_id, HashId::parse("0x88F99320").unwrap());
     assert_eq!(c.info.len(), 1);
-    assert_eq!(c.info[0].base_chara_id, HashId::parse("0xEE2D74D5").unwrap());
+    assert_eq!(
+        c.info[0].base_chara_id,
+        HashId::parse("0xEE2D74D5").unwrap()
+    );
     assert_eq!((c.info[0].data_offset, c.info[0].data_count), (0, 1));
 }
 
@@ -47,7 +50,10 @@ fn golden_dump_reel() {
     assert_eq!(c.info.len(), 7, "7 liaisons perso de base");
     // Chaque plage Info ⊆ data list.
     for i in &c.info {
-        assert!((i.data_offset + i.data_count) as usize <= c.data.len(), "plage hors data");
+        assert!(
+            (i.data_offset + i.data_count) as usize <= c.data.len(),
+            "plage hors data"
+        );
         assert!(!i.base_chara_id.is_zero());
     }
 }

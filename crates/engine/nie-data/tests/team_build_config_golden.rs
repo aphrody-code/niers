@@ -13,8 +13,8 @@
 //! `0.5`) que inagle tronque via `parseInt` → on valide la même troncature (`12`, `0`).
 
 use nie_data::hash::HashId;
-use nie_data::team_build_config::{parse_team_build_config, NULL_SENTINEL};
-use serde_json::{json, Value};
+use nie_data::team_build_config::{NULL_SENTINEL, parse_team_build_config};
+use serde_json::{Value, json};
 
 // ════════════════════════════════════════════════════════════════════════════════
 //  Données réelles du dump (transcription exacte des `variables[].value`).
@@ -67,30 +67,113 @@ const EFFECT_INFO_COUNT: [i64; 30] = [
     1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5,
 ];
 const EFFECT_INFO_REF: [[i64; 2]; 30] = [
-    [0, 1], [1, 1], [2, 1], [3, 1], [4, 1], [5, 1], [6, 1], [7, 1], [8, 1], [9, 1], [10, 1],
-    [11, 1], [12, 1], [13, 1], [14, 1], [15, 2], [17, 2], [19, 2], [21, 2], [23, 2], [25, 1],
-    [26, 1], [27, 1], [28, 1], [29, 1], [30, 1], [31, 1], [32, 1], [33, 1], [34, 1],
+    [0, 1],
+    [1, 1],
+    [2, 1],
+    [3, 1],
+    [4, 1],
+    [5, 1],
+    [6, 1],
+    [7, 1],
+    [8, 1],
+    [9, 1],
+    [10, 1],
+    [11, 1],
+    [12, 1],
+    [13, 1],
+    [14, 1],
+    [15, 2],
+    [17, 2],
+    [19, 2],
+    [21, 2],
+    [23, 2],
+    [25, 1],
+    [26, 1],
+    [27, 1],
+    [28, 1],
+    [29, 1],
+    [30, 1],
+    [31, 1],
+    [32, 1],
+    [33, 1],
+    [34, 1],
 ];
 
 /// `TEAM_BUILD_UP_DATA` — 9 lignes × 7 vars (type, threshold, multiplier, cv1, cv2, refId, count).
 const UP_DATA: [[i64; 7]; 9] = [
     [1, 25, 1, NULL_SENTINEL, NULL_SENTINEL, -936656357, 1],
-    [2, NULL_SENTINEL, 1, NULL_SENTINEL, NULL_SENTINEL, 1361220513, 1],
-    [3, NULL_SENTINEL, NULL_SENTINEL, NULL_SENTINEL, NULL_SENTINEL, 0, 1],
-    [11, NULL_SENTINEL, NULL_SENTINEL, NULL_SENTINEL, NULL_SENTINEL, 0, 1],
+    [
+        2,
+        NULL_SENTINEL,
+        1,
+        NULL_SENTINEL,
+        NULL_SENTINEL,
+        1361220513,
+        1,
+    ],
+    [
+        3,
+        NULL_SENTINEL,
+        NULL_SENTINEL,
+        NULL_SENTINEL,
+        NULL_SENTINEL,
+        0,
+        1,
+    ],
+    [
+        11,
+        NULL_SENTINEL,
+        NULL_SENTINEL,
+        NULL_SENTINEL,
+        NULL_SENTINEL,
+        0,
+        1,
+    ],
     [4, 15, 1, NULL_SENTINEL, NULL_SENTINEL, 640000823, 1],
     [5, 15, 1, NULL_SENTINEL, NULL_SENTINEL, -1203685740, 1],
     [17, NULL_SENTINEL, 4, 2, NULL_SENTINEL, -817494526, 4],
-    [18, NULL_SENTINEL, NULL_SENTINEL, NULL_SENTINEL, NULL_SENTINEL, 0, 2],
+    [
+        18,
+        NULL_SENTINEL,
+        NULL_SENTINEL,
+        NULL_SENTINEL,
+        NULL_SENTINEL,
+        0,
+        2,
+    ],
     [13, 50, 1, NULL_SENTINEL, NULL_SENTINEL, 1448040376, 1],
 ];
 
 /// `TEAM_BUILD_DOWN_DATA` — 6 lignes × 7 vars.
 const DOWN_DATA: [[i64; 7]; 6] = [
-    [6, NULL_SENTINEL, 3, NULL_SENTINEL, NULL_SENTINEL, -1845035560, 3],
-    [6, NULL_SENTINEL, 1, NULL_SENTINEL, NULL_SENTINEL, -1845035560, 1],
+    [
+        6,
+        NULL_SENTINEL,
+        3,
+        NULL_SENTINEL,
+        NULL_SENTINEL,
+        -1845035560,
+        3,
+    ],
+    [
+        6,
+        NULL_SENTINEL,
+        1,
+        NULL_SENTINEL,
+        NULL_SENTINEL,
+        -1845035560,
+        1,
+    ],
     [16, 2, 1, NULL_SENTINEL, NULL_SENTINEL, 185576546, 1],
-    [7, NULL_SENTINEL, 4, NULL_SENTINEL, NULL_SENTINEL, 2080939252, 4],
+    [
+        7,
+        NULL_SENTINEL,
+        4,
+        NULL_SENTINEL,
+        NULL_SENTINEL,
+        2080939252,
+        4,
+    ],
     [9, 15, 1, NULL_SENTINEL, NULL_SENTINEL, -496236201, 1],
     [15, 45, 1, NULL_SENTINEL, NULL_SENTINEL, -1788134975, 1],
 ];
@@ -191,10 +274,7 @@ fn fixture() -> Value {
         ));
         info.push(child(
             format!("TEAM_BUILD_INFO_REF_EFFECT_INFO_{i}"),
-            vec![
-                var_i(INFO_EFFINFO_REF[i][0]),
-                var_i(INFO_EFFINFO_REF[i][1]),
-            ],
+            vec![var_i(INFO_EFFINFO_REF[i][0]), var_i(INFO_EFFINFO_REF[i][1])],
         ));
     }
 
@@ -343,20 +423,29 @@ fn build_info_groupes_et_refs() {
     assert_eq!(b0.build_level, 1);
     assert_eq!(b0.up_data_ref.map(|r| (r.offset, r.count)), Some((0, 1)));
     assert_eq!(b0.down_data_ref.map(|r| (r.offset, r.count)), Some((0, 1)));
-    assert_eq!(b0.effect_info_ref.map(|r| (r.offset, r.count)), Some((0, 5)));
+    assert_eq!(
+        b0.effect_info_ref.map(|r| (r.offset, r.count)),
+        Some((0, 5))
+    );
 
     // Build 4 : type 1, up[6,2] (2 modifs), down[4,1], effInfo[20,5].
     let b4 = &db.build_infos[4];
     assert_eq!(b4.build_type, 1);
     assert_eq!(b4.up_data_ref.map(|r| (r.offset, r.count)), Some((6, 2)));
-    assert_eq!(b4.effect_info_ref.map(|r| (r.offset, r.count)), Some((20, 5)));
+    assert_eq!(
+        b4.effect_info_ref.map(|r| (r.offset, r.count)),
+        Some((20, 5))
+    );
 
     // Build 5 (dernier) : type 3, up[8,1], down[5,1], effInfo[25,5].
     let b5 = &db.build_infos[5];
     assert_eq!(b5.build_type, 3);
     assert_eq!(b5.up_data_ref.map(|r| (r.offset, r.count)), Some((8, 1)));
     assert_eq!(b5.down_data_ref.map(|r| (r.offset, r.count)), Some((5, 1)));
-    assert_eq!(b5.effect_info_ref.map(|r| (r.offset, r.count)), Some((25, 5)));
+    assert_eq!(
+        b5.effect_info_ref.map(|r| (r.offset, r.count)),
+        Some((25, 5))
+    );
 }
 
 #[test]

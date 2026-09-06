@@ -43,9 +43,19 @@ fn ground() -> Vec<scene::Tri> {
     for i in 0..stripes {
         let z0 = -r + 2.0 * r * (i as f32) / stripes as f32;
         let z1 = -r + 2.0 * r * ((i + 1) as f32) / stripes as f32;
-        let g = if i % 2 == 0 { [46u8, 150, 64] } else { [40u8, 134, 58] };
-        t.push(scene::Tri { p: [[-r, 0.0, z0], [r, 0.0, z0], [r, 0.0, z1]], color: g });
-        t.push(scene::Tri { p: [[-r, 0.0, z0], [r, 0.0, z1], [-r, 0.0, z1]], color: g });
+        let g = if i % 2 == 0 {
+            [46u8, 150, 64]
+        } else {
+            [40u8, 134, 58]
+        };
+        t.push(scene::Tri {
+            p: [[-r, 0.0, z0], [r, 0.0, z0], [r, 0.0, z1]],
+            color: g,
+        });
+        t.push(scene::Tri {
+            p: [[-r, 0.0, z0], [r, 0.0, z1], [-r, 0.0, z1]],
+            color: g,
+        });
     }
     t
 }
@@ -55,7 +65,10 @@ fn place(model: &glb::Model, angle: f32) -> scene::Mat4 {
     let (lo, hi) = aabb(model);
     let s = 1.7 / (hi[1] - lo[1]).max(1e-3);
     let (cx, cz) = ((lo[0] + hi[0]) * 0.5, (lo[2] + hi[2]) * 0.5);
-    let m = scene::mat_mul(&scene::mat_scale(s), &scene::mat_translate([-cx, -lo[1], -cz]));
+    let m = scene::mat_mul(
+        &scene::mat_scale(s),
+        &scene::mat_translate([-cx, -lo[1], -cz]),
+    );
     scene::mat_mul(&scene::mat_rot_y(angle), &m)
 }
 
@@ -97,8 +110,15 @@ fn map_tris(models: &[glb::Model]) -> (Vec<scene::Tri>, [f32; 3], f32) {
         lo[k] = pct(&axes[k], 0.01);
         hi[k] = pct(&axes[k], 0.99);
     }
-    let center = [(lo[0] + hi[0]) * 0.5, (lo[1] + hi[1]) * 0.5, (lo[2] + hi[2]) * 0.5];
-    let extent = (0..3).map(|k| hi[k] - lo[k]).fold(0.0f32, f32::max).max(1.0);
+    let center = [
+        (lo[0] + hi[0]) * 0.5,
+        (lo[1] + hi[1]) * 0.5,
+        (lo[2] + hi[2]) * 0.5,
+    ];
+    let extent = (0..3)
+        .map(|k| hi[k] - lo[k])
+        .fold(0.0f32, f32::max)
+        .max(1.0);
     let (y0, y1) = (lo[1], hi[1].max(lo[1] + 1.0));
     // On ne garde que les triangles dont les 3 sommets sont dans ~1,5× la bbox robuste du centre
     // (élimine les triangles parasites qui relient un sommet valide à un sommet aberrant).
@@ -117,8 +137,15 @@ fn map_tris(models: &[glb::Model]) -> (Vec<scene::Tri>, [f32; 3], f32) {
                     continue;
                 }
                 let yc = (((a[1] + b[1] + c[1]) / 3.0 - y0) / (y1 - y0)).clamp(0.0, 1.0);
-                let col = [(70.0 + 95.0 * yc) as u8, (92.0 + 78.0 * yc) as u8, (72.0 + 58.0 * yc) as u8];
-                tris.push(scene::Tri { p: [a, b, c], color: col });
+                let col = [
+                    (70.0 + 95.0 * yc) as u8,
+                    (92.0 + 78.0 * yc) as u8,
+                    (72.0 + 58.0 * yc) as u8,
+                ];
+                tris.push(scene::Tri {
+                    p: [a, b, c],
+                    color: col,
+                });
             }
         }
     }
@@ -129,7 +156,11 @@ fn map_tris(models: &[glb::Model]) -> (Vec<scene::Tri>, [f32; 3], f32) {
 fn map_camera(center: [f32; 3], extent: f32, angle: f32) -> scene::Camera {
     let r = extent * 1.35;
     scene::Camera {
-        eye: [center[0] + r * angle.sin(), center[1] + extent * 0.65, center[2] + r * angle.cos()],
+        eye: [
+            center[0] + r * angle.sin(),
+            center[1] + extent * 0.65,
+            center[2] + r * angle.cos(),
+        ],
         target: center,
         up: [0.0, 1.0, 0.0],
         fov_y: 0.72,
@@ -137,16 +168,51 @@ fn map_camera(center: [f32; 3], extent: f32, angle: f32) -> scene::Camera {
 }
 
 /// Rend une map en triangles plats colorés par hauteur (caméra orbitale).
-fn render_map_frame(tris: &[scene::Tri], center: [f32; 3], extent: f32, angle: f32, w: u32, h: u32) -> Vec<u8> {
-    scene::render_world(tris, &map_camera(center, extent, angle), w, h, [120, 150, 210], [196, 210, 226])
+fn render_map_frame(
+    tris: &[scene::Tri],
+    center: [f32; 3],
+    extent: f32,
+    angle: f32,
+    w: u32,
+    h: u32,
+) -> Vec<u8> {
+    scene::render_world(
+        tris,
+        &map_camera(center, extent, angle),
+        w,
+        h,
+        [120, 150, 210],
+        [196, 210, 226],
+    )
 }
 
 /// Rend une map TEXTURÉE : les modèles (chunks) en instances (transform identité, déjà en monde),
 /// échantillonnés avec leurs UV + atlas. Caméra orbitale auto-cadrée.
-fn render_map_textured(models: &[glb::Model], center: [f32; 3], extent: f32, angle: f32, w: u32, h: u32) -> Vec<u8> {
-    let inst: Vec<scene::Instance> =
-        models.iter().map(|m| scene::Instance { model: m, transform: scene::mat_identity(), two_sided: true }).collect();
-    scene::render_scene(&[], &inst, &map_camera(center, extent, angle), w, h, [120, 150, 210], [196, 210, 226])
+fn render_map_textured(
+    models: &[glb::Model],
+    center: [f32; 3],
+    extent: f32,
+    angle: f32,
+    w: u32,
+    h: u32,
+) -> Vec<u8> {
+    let inst: Vec<scene::Instance> = models
+        .iter()
+        .map(|m| scene::Instance {
+            model: m,
+            transform: scene::mat_identity(),
+            two_sided: true,
+        })
+        .collect();
+    scene::render_scene(
+        &[],
+        &inst,
+        &map_camera(center, extent, angle),
+        w,
+        h,
+        [120, 150, 210],
+        [196, 210, 226],
+    )
 }
 
 /// Rend un modèle posé sur le sol via le compositeur de scène (caméra monde fixe).
@@ -157,7 +223,11 @@ fn render_scene_frame(model: &glb::Model, angle: f32, w: u32, h: u32) -> Vec<u8>
         up: [0.0, 1.0, 0.0],
         fov_y: 0.72,
     };
-    let inst = [scene::Instance { model, transform: place(model, angle), two_sided: false }];
+    let inst = [scene::Instance {
+        model,
+        transform: place(model, angle),
+        two_sided: false,
+    }];
     scene::render_scene(&ground(), &inst, &cam, w, h, [120, 150, 210], [58, 86, 140])
 }
 
@@ -283,9 +353,17 @@ fn comparer(cpu: &[u8], gpu: &[u8], w: u32, h: u32, tolerance: u8) -> Comparaiso
     Comparaison {
         cpu: n_cpu,
         gpu: n_gpu,
-        iou: if union == 0 { 0.0 } else { inter as f64 * 100.0 / union as f64 },
+        iou: if union == 0 {
+            0.0
+        } else {
+            inter as f64 * 100.0 / union as f64
+        },
         ecart_max,
-        dans_tolerance: if inter == 0 { 0.0 } else { dans as f64 * 100.0 / inter as f64 },
+        dans_tolerance: if inter == 0 {
+            0.0
+        } else {
+            dans as f64 * 100.0 / inter as f64
+        },
     }
 }
 
@@ -297,8 +375,16 @@ fn main() -> Result<()> {
         models.push(glb::parse(&data)?);
     }
     let model = &models[0];
-    let tris: usize = models.iter().flat_map(|m| &m.primitives).map(|p| p.indices.len() / 3).sum();
-    let verts: usize = models.iter().flat_map(|m| &m.primitives).map(|p| p.positions.len()).sum();
+    let tris: usize = models
+        .iter()
+        .flat_map(|m| &m.primitives)
+        .map(|p| p.indices.len() / 3)
+        .sum();
+    let verts: usize = models
+        .iter()
+        .flat_map(|m| &m.primitives)
+        .map(|p| p.positions.len())
+        .sum();
     // Une primitive sans indices ne dessine rien : ni le rastériseur CPU (qui itère les triangles)
     // ni le pipeline GPU ne la voient. Compter ses sommets dans le total laissait croire à une
     // perte au téléversement — sur un keshin, 12 096 annoncés contre 4 070 réellement envoyés.
@@ -309,16 +395,26 @@ fn main() -> Result<()> {
         .map(|p| p.positions.len())
         .sum();
     let nprim: usize = models.iter().map(|m| m.primitives.len()).sum();
-    print!("glb={} primitives={nprim} vertices={verts} triangles={tris}", cli.glb.len());
+    print!(
+        "glb={} primitives={nprim} vertices={verts} triangles={tris}",
+        cli.glb.len()
+    );
     if verts_dessines != verts {
         print!(" (dont {verts_dessines} sommets dessinables — le reste est sans indices)");
     }
     println!();
 
     // Mode map : pré-calcule la géométrie d'environnement une fois (tous les chunks composés).
-    let map_data = if cli.map { Some(map_tris(&models)) } else { None };
+    let map_data = if cli.map {
+        Some(map_tris(&models))
+    } else {
+        None
+    };
     if let Some((tris, _, _)) = &map_data {
-        println!("map_tris={} (après filtrage des submeshes aberrants)", tris.len());
+        println!(
+            "map_tris={} (après filtrage des submeshes aberrants)",
+            tris.len()
+        );
     }
 
     // Map texturée si les modèles portent des textures, sinon coloration par hauteur.
@@ -349,13 +445,16 @@ fn main() -> Result<()> {
              (sol, chunks) que le pipeline GPU ne connaît pas"
         );
         let debut = std::time::Instant::now();
-        let mut renderer = nie_render3d::gpu::GpuRenderer::with_options(nie_render3d::gpu::GpuOptions {
-            backend: cli.backend.unwrap_or_default(),
-            allow_software: !cli.hardware_only,
-        })?;
+        let mut renderer =
+            nie_render3d::gpu::GpuRenderer::with_options(nie_render3d::gpu::GpuOptions {
+                backend: cli.backend.unwrap_or_default(),
+                allow_software: !cli.hardware_only,
+            })?;
         let adapter = renderer.adapter_info();
-        println!("backend={:?} adapter={:?} type={:?} driver={:?}",
-            adapter.backend, adapter.name, adapter.device_type, adapter.driver);
+        println!(
+            "backend={:?} adapter={:?} type={:?} driver={:?}",
+            adapter.backend, adapter.name, adapter.device_type, adapter.driver
+        );
         let gm = renderer.upload(model);
         println!(
             "gpu: {} triangles, {} sommets téléversés en {:?}",
@@ -369,7 +468,11 @@ fn main() -> Result<()> {
         // que tourner l'observateur de −θ — d'où l'inversion ici, sans laquelle `--angle 0.6`
         // désignerait deux vues en miroir selon le chemin de rendu.
         let cam = |angle: f32| {
-            nie_render3d::gpu::Camera { yaw: -angle, ..Default::default() }.clamped()
+            nie_render3d::gpu::Camera {
+                yaw: -angle,
+                ..Default::default()
+            }
+            .clamped()
         };
 
         if cli.verify {
@@ -380,7 +483,10 @@ fn main() -> Result<()> {
             println!("  couverture CPU      : {} px", c.cpu);
             println!("  couverture GPU      : {} px", c.gpu);
             println!("  recouvrement (IoU)  : {:.2}%", c.iou);
-            println!("  écart couleur max   : {}/255 (sur l'intersection)", c.ecart_max);
+            println!(
+                "  écart couleur max   : {}/255 (sur l'intersection)",
+                c.ecart_max
+            );
             println!("  couleur à ≤32/255   : {:.2}%", c.dans_tolerance);
             // Le seuil porte sur la GÉOMÉTRIE. Deux rastériseurs différents ne teintent pas
             // identiquement — filtrage de texture, ordre d'interpolation, gamma — mais ils
@@ -421,7 +527,10 @@ fn main() -> Result<()> {
             let rgba = renderer.render(&gm, cam(angle), cli.width, cli.height)?;
             t_rendu += t0.elapsed();
             let t1 = std::time::Instant::now();
-            std::fs::write(dir.join(format!("f_{i:04}.png")), encode_png(&rgba, cli.width, cli.height)?)?;
+            std::fs::write(
+                dir.join(format!("f_{i:04}.png")),
+                encode_png(&rgba, cli.width, cli.height)?,
+            )?;
             t_png += t1.elapsed();
         }
         let n = f64::from(cli.frames);
@@ -458,7 +567,10 @@ fn main() -> Result<()> {
         let rgba = frame(angle);
         t_rendu += t0.elapsed();
         let t1 = std::time::Instant::now();
-        std::fs::write(dir.join(format!("f_{i:04}.png")), encode_png(&rgba, cli.width, cli.height)?)?;
+        std::fs::write(
+            dir.join(format!("f_{i:04}.png")),
+            encode_png(&rgba, cli.width, cli.height)?,
+        )?;
         t_png += t1.elapsed();
     }
     let n = f64::from(cli.frames);
@@ -479,7 +591,14 @@ fn main() -> Result<()> {
 
 fn encode_video(dir: &Path, fps: u32, out: &Path) -> Result<()> {
     let status = Command::new("ffmpeg")
-        .args(["-y", "-loglevel", "error", "-framerate", &fps.to_string(), "-i"])
+        .args([
+            "-y",
+            "-loglevel",
+            "error",
+            "-framerate",
+            &fps.to_string(),
+            "-i",
+        ])
         .arg(dir.join("f_%04d.png"))
         .args(["-c:v", "libx264", "-pix_fmt", "yuv420p"])
         .arg(out)

@@ -22,13 +22,20 @@ fn main() -> Result<(), String> {
     let racine = nie_formats::vfs::resolve_game_dir();
     let data = racine.join("data");
     if !nie_formats::vfs::donnees_disponibles(&data) {
-        return Err(format!("jeu introuvable sous {} — rien à valider", racine.display()));
+        return Err(format!(
+            "jeu introuvable sous {} — rien à valider",
+            racine.display()
+        ));
     }
     println!("jeu : {}", racine.display());
 
     let mut vfs = Vfs::new();
     vfs.init(&data).map_err(|e| e.to_string())?;
-    println!("VFS : {} fichiers, {} packs\n", vfs.asset_count(), vfs.cpk_count());
+    println!(
+        "VFS : {} fichiers, {} packs\n",
+        vfs.asset_count(),
+        vfs.cpk_count()
+    );
 
     let tmp = std::env::temp_dir().join("nie-viola-validation");
     std::fs::remove_dir_all(&tmp).ok();
@@ -66,7 +73,11 @@ fn main() -> Result<(), String> {
     let rapport = dump_all(&vfs, &sortie, &options, &annuler, &|_| {})?;
     println!(
         "\n[2] dump filtré : {} extraits, {} sautés, {} échecs, {} octets en {:?}",
-        rapport.extraits, rapport.sautes, rapport.echecs, rapport.octets, debut.elapsed()
+        rapport.extraits,
+        rapport.sautes,
+        rapport.echecs,
+        rapport.octets,
+        debut.elapsed()
     );
 
     // Chaque fichier extrait doit être EXACTEMENT ce que rend le VFS.
@@ -85,7 +96,11 @@ fn main() -> Result<(), String> {
         if obtenu != attendu {
             divergents += 1;
             if divergents <= 3 {
-                println!("    divergent : {chemin} ({} vs {} octets)", obtenu.len(), attendu.len());
+                println!(
+                    "    divergent : {chemin} ({} vs {} octets)",
+                    obtenu.len(),
+                    attendu.len()
+                );
             }
         }
     }
@@ -99,7 +114,10 @@ fn main() -> Result<(), String> {
     // Reprise : un second dump ne doit RIEN réécrire.
     let r2 = dump_all(&vfs, &sortie, &options, &annuler, &|_| {})?;
     if r2.extraits == 0 && r2.packs_repris > 0 {
-        println!("    OK — reprise : 2ᵉ passage, {} packs sautés, 0 réécriture", r2.packs_repris);
+        println!(
+            "    OK — reprise : 2ᵉ passage, {} packs sautés, 0 réécriture",
+            r2.packs_repris
+        );
     } else {
         println!("    ECHEC — reprise inopérante ({} réécrits)", r2.extraits);
         echecs += 1;
@@ -117,20 +135,27 @@ fn main() -> Result<(), String> {
 
     let mod_dir = tmp.join("mod");
     let chemin_mod = mod_dir.join(&cible);
-    std::fs::create_dir_all(chemin_mod.parent().ok_or("pas de parent")?).map_err(|e| e.to_string())?;
+    std::fs::create_dir_all(chemin_mod.parent().ok_or("pas de parent")?)
+        .map_err(|e| e.to_string())?;
     let mut modifie = contenu.clone();
     modifie.extend_from_slice(b"\0\0\0\0"); // taille volontairement différente
     std::fs::write(&chemin_mod, &modifie).map_err(|e| e.to_string())?;
 
     let sortie_pack = tmp.join("pack");
-    let pr = pack_mod(&data.join("cpk_list.cfg.bin"), &mod_dir, &sortie_pack, Platform::Pc)?;
+    let pr = pack_mod(
+        &data.join("cpk_list.cfg.bin"),
+        &mod_dir,
+        &sortie_pack,
+        Platform::Pc,
+    )?;
     println!(
         "\n[3] pack : {} mis à jour, {} ajoutés, {} copiés, {} entrées, {} déjà loose",
         pr.mis_a_jour, pr.ajoutes, pr.copies, pr.total, pr.loose_avant
     );
 
     // Relire le cpk_list produit et vérifier l'entrée de la cible.
-    let produit = std::fs::read(sortie_pack.join(Platform::Pc.cpk_list_rel())).map_err(|e| e.to_string())?;
+    let produit =
+        std::fs::read(sortie_pack.join(Platform::Pc.cpk_list_rel())).map_err(|e| e.to_string())?;
     let (cfg_pack, _) = decode_cpk_list(&produit)?;
     let mut trouve = false;
     if let Some(r) = cfg_pack.entries.first() {
@@ -138,10 +163,8 @@ fn main() -> Result<(), String> {
             if enfant.variables.len() < 5 {
                 continue;
             }
-            let (
-                nie_formats::cfgbin::Value::String(dir),
-                nie_formats::cfgbin::Value::String(nom),
-            ) = (&enfant.variables[0], &enfant.variables[1])
+            let (nie_formats::cfgbin::Value::String(dir), nie_formats::cfgbin::Value::String(nom)) =
+                (&enfant.variables[0], &enfant.variables[1])
             else {
                 continue;
             };
@@ -152,7 +175,10 @@ fn main() -> Result<(), String> {
             let pack_vide = matches!(&enfant.variables[3], nie_formats::cfgbin::Value::String(s) if s.is_empty());
             let taille_ok = matches!(&enfant.variables[4], nie_formats::cfgbin::Value::Int(n) if *n as usize == modifie.len());
             if pack_vide && taille_ok {
-                println!("    OK — {cible} : pack vidé, taille {} inscrite", modifie.len());
+                println!(
+                    "    OK — {cible} : pack vidé, taille {} inscrite",
+                    modifie.len()
+                );
             } else {
                 println!("    ECHEC — pack_vide={pack_vide}, taille_ok={taille_ok}");
                 echecs += 1;
@@ -174,16 +200,20 @@ fn main() -> Result<(), String> {
     let mut vanilla = Vec::new();
     let mut variables: Vec<(usize, usize)> = Vec::new();
     for (p, _) in vfs.iter() {
-        if !p.ends_with(".cfg.bin") || nie_formats::cfgbin::is_rdbn(&vfs.read(p).unwrap_or_default())
+        if !p.ends_with(".cfg.bin")
+            || nie_formats::cfgbin::is_rdbn(&vfs.read(p).unwrap_or_default())
         {
             continue;
         }
         let Ok(octets) = vfs.read(p) else { continue };
-        let Ok(cfg) = nie_formats::cfgbin::cfgbin_parse(&octets) else { continue };
+        let Ok(cfg) = nie_formats::cfgbin::cfgbin_parse(&octets) else {
+            continue;
+        };
         // Témoin valable : l'encodeur doit rendre la MÊME STRUCTURE (l'égalité binaire n'est pas
         // garantie par `encode_t2b`, seule l'égalité structurelle l'est). Sans cette condition,
         // un écart mesuré viendrait de l'encodeur et non de la fusion.
-        let Ok(retour) = nie_formats::cfgbin::cfgbin_parse(&nie_formats::cfgbin::encode_t2b(&cfg.entries))
+        let Ok(retour) =
+            nie_formats::cfgbin::cfgbin_parse(&nie_formats::cfgbin::encode_t2b(&cfg.entries))
         else {
             continue;
         };
@@ -211,14 +241,16 @@ fn main() -> Result<(), String> {
         echecs += 1;
     } else {
         let base = nie_formats::cfgbin::cfgbin_parse(&vanilla).map_err(|e| e.to_string())?;
-        let ecrire_variante = |dossier: &str, (i, k): (usize, usize), valeur: i32| -> Result<(), String> {
-            let mut c = base.clone();
-            c.entries[i].variables[k] = nie_formats::cfgbin::Value::Int(valeur);
-            let octets = nie_formats::cfgbin::encode_t2b(&c.entries);
-            let p = tmp.join(dossier).join(&chemin_t2b);
-            std::fs::create_dir_all(p.parent().ok_or("pas de parent")?).map_err(|e| e.to_string())?;
-            std::fs::write(p, octets).map_err(|e| e.to_string())
-        };
+        let ecrire_variante =
+            |dossier: &str, (i, k): (usize, usize), valeur: i32| -> Result<(), String> {
+                let mut c = base.clone();
+                c.entries[i].variables[k] = nie_formats::cfgbin::Value::Int(valeur);
+                let octets = nie_formats::cfgbin::encode_t2b(&c.entries);
+                let p = tmp.join(dossier).join(&chemin_t2b);
+                std::fs::create_dir_all(p.parent().ok_or("pas de parent")?)
+                    .map_err(|e| e.to_string())?;
+                std::fs::write(p, octets).map_err(|e| e.to_string())
+            };
         ecrire_variante("modA", variables[0], 1234)?;
         ecrire_variante("modB", variables[1], 5678)?;
 
@@ -231,7 +263,9 @@ fn main() -> Result<(), String> {
         )?;
         println!(
             "\n[4] merge sémantique sur {chemin_t2b} : {} fusionnés, {} copiés, {} chemins disputés",
-            mr.fusionnes, mr.copies, mr.conflits.len()
+            mr.fusionnes,
+            mr.copies,
+            mr.conflits.len()
         );
         if let Some(c) = mr.conflits.first() {
             println!(
@@ -261,7 +295,11 @@ fn main() -> Result<(), String> {
         .map(|e| e.path())
         .find(|p| p.extension().is_some_and(|x| x == "cpk"))
         .ok_or("aucun .cpk trouvé")?;
-    let nom = pack.file_name().unwrap_or_default().to_string_lossy().to_string();
+    let nom = pack
+        .file_name()
+        .unwrap_or_default()
+        .to_string_lossy()
+        .to_string();
     let cle = CriwareKey::DuNom(nom.clone());
     let a = tmp.join("crypto/a.bin");
     let b = tmp.join("crypto/b.bin");
@@ -278,6 +316,17 @@ fn main() -> Result<(), String> {
     }
 
     std::fs::remove_dir_all(&tmp).ok();
-    println!("\n═══ {} ═══", if echecs == 0 { "TOUT VERT".to_string() } else { format!("{echecs} ECHEC(S)") });
-    if echecs > 0 { Err(format!("{echecs} validation(s) en échec")) } else { Ok(()) }
+    println!(
+        "\n═══ {} ═══",
+        if echecs == 0 {
+            "TOUT VERT".to_string()
+        } else {
+            format!("{echecs} ECHEC(S)")
+        }
+    );
+    if echecs > 0 {
+        Err(format!("{echecs} validation(s) en échec"))
+    } else {
+        Ok(())
+    }
 }

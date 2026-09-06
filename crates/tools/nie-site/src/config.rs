@@ -203,10 +203,19 @@ mod tests {
 
     #[test]
     fn pagination_bornee() {
-        assert_eq!(Pagination::borner(None, None), Pagination { page: 1, per_page: 50 });
+        assert_eq!(
+            Pagination::borner(None, None),
+            Pagination {
+                page: 1,
+                per_page: 50
+            }
+        );
         assert_eq!(Pagination::borner(Some(0), Some(0)).page, 1);
         assert_eq!(Pagination::borner(Some(0), Some(0)).per_page, 1);
-        assert_eq!(Pagination::borner(Some(3), Some(10_000)).per_page, PER_PAGE_MAX);
+        assert_eq!(
+            Pagination::borner(Some(3), Some(10_000)).per_page,
+            PER_PAGE_MAX
+        );
         assert_eq!(Pagination::borner(Some(3), Some(10)).offset(), 20);
     }
 
@@ -214,7 +223,10 @@ mod tests {
     fn defauts_surs() {
         let cfg = Config::default();
         assert_eq!(cfg.adresse.to_string(), ADRESSE_DEFAUT);
-        assert!(cfg.adresse.ip().is_loopback(), "n'ecouter que sur la boucle locale");
+        assert!(
+            cfg.adresse.ip().is_loopback(),
+            "n'ecouter que sur la boucle locale"
+        );
         assert_eq!(cfg.amont, AMONT_DEFAUT);
         assert_eq!(cfg.delai_amont.as_secs(), 10);
     }

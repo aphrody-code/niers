@@ -38,7 +38,7 @@
 mod common;
 
 use nie_data::hash::HashId;
-use nie_data::trophy::{parse_trophy_config, TrophyConfig};
+use nie_data::trophy::{TrophyConfig, parse_trophy_config};
 use serde_json::json;
 
 // ─── Fixture synthétique (valeurs tirées du dump réel) ─────────────────────────
@@ -173,8 +173,7 @@ fn fixture_target_map_vide_ne_panique_pas() {
 
 // ─── Test sur le vrai fichier (skip si absent du VPS) ────────────────────────
 
-const REAL_PATH: &str =
-    "trophy/trophy_config_0.00.00.00.cfg.bin.json";
+const REAL_PATH: &str = "trophy/trophy_config_0.00.00.00.cfg.bin.json";
 
 fn load_real() -> Option<TrophyConfig> {
     let chemin_abs = common::chemin(REAL_PATH)?;
@@ -209,10 +208,17 @@ fn real_file_reward_premier_et_dernier() {
     assert_eq!(cfg.rewards[0].reward_id, HashId(0x1288_1EA4), "reward[0]");
     assert_eq!(cfg.rewards[0].count, 10);
     assert_eq!(cfg.rewards[1].reward_id, HashId(0x8B81_4F1E), "reward[1]");
-    assert_eq!(cfg.rewards[383].reward_id, HashId(0x035D_0718), "reward[383]");
+    assert_eq!(
+        cfg.rewards[383].reward_id,
+        HashId(0x035D_0718),
+        "reward[383]"
+    );
     // la quantité varie (1, 2, 3, 5, 10, 15, 20) : reward[9] = id 0x62E2EA2B, count 5
     assert_eq!(cfg.rewards[9].reward_id, HashId(0x62E2_EA2B), "reward[9]");
-    assert_eq!(cfg.rewards[9].count, 5, "reward[9].count = 5 (pas toujours 10)");
+    assert_eq!(
+        cfg.rewards[9].count, 5,
+        "reward[9].count = 5 (pas toujours 10)"
+    );
 }
 
 #[test]
@@ -306,10 +312,18 @@ fn real_file_plages_tuilent_les_listes() {
     let Some(cfg) = load_real() else { return };
     // La somme des tier_count des trophées = nombre total de paliers.
     let total_tiers: i64 = cfg.infos.iter().map(|i| i.tier_count).sum();
-    assert_eq!(total_tiers as usize, cfg.tiers.len(), "les trophées tuilent les paliers");
+    assert_eq!(
+        total_tiers as usize,
+        cfg.tiers.len(),
+        "les trophées tuilent les paliers"
+    );
     // La somme des reward_count des paliers = nombre total de récompenses.
     let total_rewards: i64 = cfg.tiers.iter().map(|t| t.reward_count).sum();
-    assert_eq!(total_rewards as usize, cfg.rewards.len(), "les paliers tuilent les récompenses");
+    assert_eq!(
+        total_rewards as usize,
+        cfg.rewards.len(),
+        "les paliers tuilent les récompenses"
+    );
 }
 
 #[test]

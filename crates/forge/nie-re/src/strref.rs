@@ -40,7 +40,7 @@ use anyhow::{Context, Result};
 use goblin::pe::PE;
 use hashbrown::{HashMap, HashSet};
 use iced_x86::{Decoder, DecoderOptions, Instruction, Register};
-use nie_index::{rusqlite, Db};
+use nie_index::{Db, rusqlite};
 use tracing::info;
 
 /// Longueur minimale d'une chaîne pour être considérée comme identifiante.
@@ -78,13 +78,20 @@ fn is_ident(s: &str) -> bool {
     if !chars.next().is_some_and(|c| c.is_ascii_alphabetic()) {
         return false;
     }
-    s.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | '/' | '-'))
+    s.chars()
+        .all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | '/' | '-'))
 }
 
 /// Rend `s` utilisable comme identifiant de fonction.
 fn slug(s: &str) -> String {
     s.chars()
-        .map(|c| if c.is_ascii_alphanumeric() || c == '_' { c } else { '_' })
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || c == '_' {
+                c
+            } else {
+                '_'
+            }
+        })
         .collect()
 }
 
@@ -96,8 +103,13 @@ fn slug(s: &str) -> String {
 /// Échoue si le PE est illisible, si `.text` manque, ou sur toute erreur
 /// SQLite.
 #[allow(clippy::too_many_lines)]
-pub fn ingest_string_refs(db: &mut Db, bin: i64, exe_path: &std::path::Path) -> Result<StrRefStats> {
-    let bytes = std::fs::read(exe_path).with_context(|| format!("lecture {}", exe_path.display()))?;
+pub fn ingest_string_refs(
+    db: &mut Db,
+    bin: i64,
+    exe_path: &std::path::Path,
+) -> Result<StrRefStats> {
+    let bytes =
+        std::fs::read(exe_path).with_context(|| format!("lecture {}", exe_path.display()))?;
     let pe = PE::parse(&bytes).context("goblin: parse PE")?;
     let image_base = pe.image_base;
 
@@ -126,7 +138,9 @@ pub fn ingest_string_refs(db: &mut Db, bin: i64, exe_path: &std::path::Path) -> 
         let base = image_base + u64::from(sec.virtual_address);
         let off = sec.pointer_to_raw_data as usize;
         let len = sec.virtual_size.min(sec.size_of_raw_data) as usize;
-        let Some(raw) = bytes.get(off..off + len) else { continue };
+        let Some(raw) = bytes.get(off..off + len) else {
+            continue;
+        };
         let mut start: Option<usize> = None;
         for (i, &b) in raw.iter().enumerate() {
             if (0x20..0x7f).contains(&b) {
@@ -166,13 +180,19 @@ pub fn ingest_string_refs(db: &mut Db, bin: i64, exe_path: &std::path::Path) -> 
     for i in 0..funcs.len() {
         let (a, size) = funcs[i];
         let next = funcs.get(i + 1).map_or(text_end, |&(b, _)| b);
-        let end = if size > 0 { a + size } else { next.min(a + MAX_BODY) };
+        let end = if size > 0 {
+            a + size
+        } else {
+            next.min(a + MAX_BODY)
+        };
         let end = end.min(text_end).min(a + MAX_BODY);
         if end <= a {
             continue;
         }
         let off = text_off + (a - text_va) as usize;
-        let Some(buf) = bytes.get(off..off + (end - a) as usize) else { continue };
+        let Some(buf) = bytes.get(off..off + (end - a) as usize) else {
+            continue;
+        };
         stats.scanned += 1;
         let mut dec = Decoder::with_ip(64, buf, a, DecoderOptions::NONE);
         while dec.can_decode() {
@@ -241,7 +261,8 @@ pub fn ingest_string_refs(db: &mut Db, bin: i64, exe_path: &std::path::Path) -> 
             if discriminants != 1 {
                 continue;
             }
-            stats.named += upd.execute(rusqlite::params![format!("fn_{}", slug(v)), bin, f as i64])?;
+            stats.named +=
+                upd.execute(rusqlite::params![format!("fn_{}", slug(v)), bin, f as i64])?;
         }
     }
     tx.commit()?;

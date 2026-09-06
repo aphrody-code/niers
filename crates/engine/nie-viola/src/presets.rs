@@ -96,7 +96,10 @@ mod tests {
     fn les_21_categories_sont_toutes_presentes() {
         let spec = resoudre("inagle").unwrap();
         for c in CATEGORIES_GAMEDATA {
-            assert!(spec.contains(&format!("gamedata/{c}/**")), "catégorie absente : {c}");
+            assert!(
+                spec.contains(&format!("gamedata/{c}/**")),
+                "catégorie absente : {c}"
+            );
         }
         assert_eq!(CATEGORIES_GAMEDATA.len(), 21);
     }
@@ -107,7 +110,10 @@ mod tests {
         for n in NOMS {
             for glob in resoudre(n).unwrap().split(',') {
                 let corps = glob.strip_prefix('!').unwrap_or(glob);
-                assert!(corps.starts_with("data/"), "{n} : glob non préfixé — {glob}");
+                assert!(
+                    corps.starts_with("data/"),
+                    "{n} : glob non préfixé — {glob}"
+                );
             }
         }
     }

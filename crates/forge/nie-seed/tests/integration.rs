@@ -15,12 +15,10 @@ const NIERS_SQLITE: &str = "var/niers.sqlite";
 const BINARY_ID: i64 = 1;
 
 /// Chemin du fichier RTTI.
-const RTTI_PATH: &str =
-    "refs/iecode-re/research/nie-rtti-classes.txt";
+const RTTI_PATH: &str = "refs/iecode-re/research/nie-rtti-classes.txt";
 
 /// Répertoire des backups SQLite inagle.
-const INAGLE_DIR: &str =
-    "refs/azalee-backups";
+const INAGLE_DIR: &str = "refs/azalee-backups";
 
 /// Ingestion complète via `ingest_all` sur la vraie DB.
 #[test]
@@ -84,7 +82,10 @@ fn ingest_rtti_reel() {
     let count = rtti_classes::ingest_rtti_classes(&mut db, bin, path).expect("ingest_rtti");
 
     println!("Classes RTTI insérées : {count}");
-    assert_eq!(count, 1234, "le fichier doit contenir exactement 1234 classes");
+    assert_eq!(
+        count, 1234,
+        "le fichier doit contenir exactement 1234 classes"
+    );
 
     // Vérifier quelques classes connues.
     for cls in &["BallComponent", "CCamera", "SoccerValidConditionManager"] {

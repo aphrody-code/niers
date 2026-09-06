@@ -41,8 +41,8 @@
 //! restent **hors** de ce port `no_std` : ce module n'expose que le noeud brut, comme
 //! `opponent_team`/`team`.
 
-use alloc::vec::Vec;
 use alloc::string::String;
+use alloc::vec::Vec;
 use serde_json::Value;
 
 use crate::cfgbin::{field_hash, field_i64, list_values};

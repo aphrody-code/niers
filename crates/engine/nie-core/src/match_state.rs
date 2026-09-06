@@ -288,20 +288,29 @@ mod tests {
     #[test]
     fn match_score_encoded() {
         // Formule exacte: minutes * 10000 + secondes
-        let s = MatchScore { minutes: 2, seconds: 45 };
+        let s = MatchScore {
+            minutes: 2,
+            seconds: 45,
+        };
         assert_eq!(s.encoded(), 20045);
     }
 
     #[test]
     fn match_score_roundtrip() {
-        let orig = MatchScore { minutes: 3, seconds: 15 };
+        let orig = MatchScore {
+            minutes: 3,
+            seconds: 15,
+        };
         let decoded = MatchScore::decode(orig.encoded());
         assert_eq!(decoded, orig);
     }
 
     #[test]
     fn match_score_zero() {
-        let s = MatchScore { minutes: 0, seconds: 0 };
+        let s = MatchScore {
+            minutes: 0,
+            seconds: 0,
+        };
         assert_eq!(s.encoded(), 0);
     }
 
@@ -342,7 +351,10 @@ mod tests {
         sm.start_reset_timer();
         sm.on_timer_done(false, TrainingResult::Success);
         assert_eq!(sm.phase(), MatchPhase::Transition);
-        assert!(sm.training_result.is_none(), "pas de resultat en match normal");
+        assert!(
+            sm.training_result.is_none(),
+            "pas de resultat en match normal"
+        );
     }
 
     #[test]

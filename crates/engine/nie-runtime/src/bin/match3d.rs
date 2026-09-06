@@ -8,7 +8,11 @@
 //! ```
 
 #![forbid(unsafe_code)]
-#![allow(clippy::cast_possible_truncation, clippy::cast_precision_loss, clippy::cast_sign_loss)]
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_precision_loss,
+    clippy::cast_sign_loss
+)]
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -20,12 +24,12 @@ use nie_render3d::scene::{
     Camera, Instance, Mat4, Tri, mat_identity, mat_mul, mat_rot_y, mat_scale, mat_translate,
     render_scene,
 };
-use nie_runtime::{
-    GOAL_HALF, GOAL_HEIGHT, HALF_LEN, HALF_WID, Player, Role, World,
-};
+use nie_runtime::{GOAL_HALF, GOAL_HEIGHT, HALF_LEN, HALF_WID, Player, Role, World};
 
 #[derive(Parser, Debug)]
-#[command(about = "Rend un match 3D : la physique nie-runtime pilote le rendu 3D (caméra télé) → MP4")]
+#[command(
+    about = "Rend un match 3D : la physique nie-runtime pilote le rendu 3D (caméra télé) → MP4"
+)]
 struct Cli {
     #[arg(long, default_value = "/tmp/niers-match3d.mp4")]
     out: PathBuf,
@@ -113,20 +117,68 @@ const fn w(x: f32, y: f32, z: f32) -> [f32; 3] {
 }
 
 fn quad(out: &mut Vec<Tri>, a: [f32; 3], b: [f32; 3], c: [f32; 3], d: [f32; 3], color: [u8; 3]) {
-    out.push(Tri { p: [a, b, c], color });
-    out.push(Tri { p: [a, c, d], color });
+    out.push(Tri {
+        p: [a, b, c],
+        color,
+    });
+    out.push(Tri {
+        p: [a, c, d],
+        color,
+    });
 }
 
 /// Boîte alignée sur les axes (min→max), 12 triangles, couleur plate (éclairage deux-faces).
 fn push_box(out: &mut Vec<Tri>, mn: [f32; 3], mx: [f32; 3], color: [u8; 3]) {
     let (x0, y0, z0) = (mn[0], mn[1], mn[2]);
     let (x1, y1, z1) = (mx[0], mx[1], mx[2]);
-    quad(out, w(x0, y0, z0), w(x1, y0, z0), w(x1, y1, z0), w(x0, y1, z0), color); // -z
-    quad(out, w(x1, y0, z1), w(x0, y0, z1), w(x0, y1, z1), w(x1, y1, z1), color); // +z
-    quad(out, w(x0, y0, z1), w(x0, y0, z0), w(x0, y1, z0), w(x0, y1, z1), color); // -x
-    quad(out, w(x1, y0, z0), w(x1, y0, z1), w(x1, y1, z1), w(x1, y1, z0), color); // +x
-    quad(out, w(x0, y1, z0), w(x1, y1, z0), w(x1, y1, z1), w(x0, y1, z1), color); // +y (haut)
-    quad(out, w(x0, y0, z1), w(x1, y0, z1), w(x1, y0, z0), w(x0, y0, z0), color); // -y (bas)
+    quad(
+        out,
+        w(x0, y0, z0),
+        w(x1, y0, z0),
+        w(x1, y1, z0),
+        w(x0, y1, z0),
+        color,
+    ); // -z
+    quad(
+        out,
+        w(x1, y0, z1),
+        w(x0, y0, z1),
+        w(x0, y1, z1),
+        w(x1, y1, z1),
+        color,
+    ); // +z
+    quad(
+        out,
+        w(x0, y0, z1),
+        w(x0, y0, z0),
+        w(x0, y1, z0),
+        w(x0, y1, z1),
+        color,
+    ); // -x
+    quad(
+        out,
+        w(x1, y0, z0),
+        w(x1, y0, z1),
+        w(x1, y1, z1),
+        w(x1, y1, z0),
+        color,
+    ); // +x
+    quad(
+        out,
+        w(x0, y1, z0),
+        w(x1, y1, z0),
+        w(x1, y1, z1),
+        w(x0, y1, z1),
+        color,
+    ); // +y (haut)
+    quad(
+        out,
+        w(x0, y0, z1),
+        w(x1, y0, z1),
+        w(x1, y0, z0),
+        w(x0, y0, z0),
+        color,
+    ); // -y (bas)
 }
 
 /// Segment de ligne blanche au sol (épaisseur `hw`), orientation libre dans le plan terrain.
@@ -170,8 +222,19 @@ fn build_pitch(out: &mut Vec<Tri>) {
     for i in 0..stripes {
         let x0 = -HALF_LEN + 2.0 * HALF_LEN * (i as f32) / stripes as f32;
         let x1 = -HALF_LEN + 2.0 * HALF_LEN * ((i + 1) as f32) / stripes as f32;
-        let g = if i % 2 == 0 { [46u8, 150, 64] } else { [40u8, 134, 58] };
-        quad(out, w(x0, 0.0, -HALF_WID), w(x1, 0.0, -HALF_WID), w(x1, 0.0, HALF_WID), w(x0, 0.0, HALF_WID), g);
+        let g = if i % 2 == 0 {
+            [46u8, 150, 64]
+        } else {
+            [40u8, 134, 58]
+        };
+        quad(
+            out,
+            w(x0, 0.0, -HALF_WID),
+            w(x1, 0.0, -HALF_WID),
+            w(x1, 0.0, HALF_WID),
+            w(x0, 0.0, HALF_WID),
+            g,
+        );
     }
     let hw = 0.12;
     // Bordure + ligne médiane.
@@ -183,21 +246,48 @@ fn build_pitch(out: &mut Vec<Tri>) {
     for i in 0..seg {
         let a0 = std::f32::consts::TAU * (i as f32) / seg as f32;
         let a1 = std::f32::consts::TAU * ((i + 1) as f32) / seg as f32;
-        line(out, r * a0.cos(), r * a0.sin(), r * a1.cos(), r * a1.sin(), hw);
+        line(
+            out,
+            r * a0.cos(),
+            r * a0.sin(),
+            r * a1.cos(),
+            r * a1.sin(),
+            hw,
+        );
     }
-    push_box(out, w(-0.25, 0.04, -0.25), w(0.25, 0.06, 0.25), [232, 235, 238]);
+    push_box(
+        out,
+        w(-0.25, 0.04, -0.25),
+        w(0.25, 0.06, 0.25),
+        [232, 235, 238],
+    );
     // Surfaces de réparation + de but + points de penalty, des deux côtés.
     for &s in &[-1.0f32, 1.0] {
         let gl = s * HALF_LEN; // ligne de but
         line_rect(out, gl, -20.15, gl - s * 16.5, 20.15, hw); // surface de réparation
         line_rect(out, gl, -9.16, gl - s * 5.5, 9.16, hw); // surface de but
-        push_box(out, w(gl - s * 11.0 - 0.2, 0.04, -0.2), w(gl - s * 11.0 + 0.2, 0.06, 0.2), [232, 235, 238]);
+        push_box(
+            out,
+            w(gl - s * 11.0 - 0.2, 0.04, -0.2),
+            w(gl - s * 11.0 + 0.2, 0.06, 0.2),
+            [232, 235, 238],
+        );
         // But : deux poteaux + barre transversale (boîtes blanches).
         let post = 0.12;
         for &gz in &[-GOAL_HALF, GOAL_HALF] {
-            push_box(out, w(gl - post, 0.0, gz - post), w(gl + post, GOAL_HEIGHT, gz + post), [240, 240, 245]);
+            push_box(
+                out,
+                w(gl - post, 0.0, gz - post),
+                w(gl + post, GOAL_HEIGHT, gz + post),
+                [240, 240, 245],
+            );
         }
-        push_box(out, w(gl - post, GOAL_HEIGHT - post, -GOAL_HALF), w(gl + post, GOAL_HEIGHT, GOAL_HALF), [240, 240, 245]);
+        push_box(
+            out,
+            w(gl - post, GOAL_HEIGHT - post, -GOAL_HALF),
+            w(gl + post, GOAL_HEIGHT, GOAL_HALF),
+            [240, 240, 245],
+        );
     }
 }
 
@@ -207,7 +297,7 @@ fn player_color(p: &Player) -> [u8; 3] {
         (0, Role::Goalkeeper) => [240, 205, 50],
         (1, Role::Goalkeeper) => [40, 205, 130],
         (0, _) => [222, 66, 52], // domicile : rouge-orangé
-        (_, _) => [56, 96, 214],  // extérieur : bleu
+        (_, _) => [56, 96, 214], // extérieur : bleu
     }
 }
 
@@ -216,8 +306,18 @@ fn push_player(out: &mut Vec<Tri>, p: &Player) {
     let (px, pz) = (p.pos.x, p.pos.y);
     let col = player_color(p);
     // Corps (boîte), tête (peau).
-    push_box(out, w(px - 0.42, 0.0, pz - 0.30), w(px + 0.42, 1.45, pz + 0.30), col);
-    push_box(out, w(px - 0.26, 1.45, pz - 0.26), w(px + 0.26, 1.95, pz + 0.26), [236, 200, 168]);
+    push_box(
+        out,
+        w(px - 0.42, 0.0, pz - 0.30),
+        w(px + 0.42, 1.45, pz + 0.30),
+        col,
+    );
+    push_box(
+        out,
+        w(px - 0.26, 1.45, pz - 0.26),
+        w(px + 0.26, 1.95, pz + 0.26),
+        [236, 200, 168],
+    );
 }
 
 /// Géométrie plate de la scène : terrain + ballon, plus les joueurs-boîtes si `boxes`
@@ -233,7 +333,12 @@ fn build_flat(world: &World, boxes: bool) -> Vec<Tri> {
     // Ballon (boîte blanche, position 3D : hauteur = z).
     let b = world.ball.pos;
     let s = 0.16;
-    push_box(&mut tris, w(b.x - s, b.z, b.y - s), w(b.x + s, b.z + 2.0 * s, b.y + s), [245, 245, 248]);
+    push_box(
+        &mut tris,
+        w(b.x - s, b.z, b.y - s),
+        w(b.x + s, b.z + 2.0 * s, b.y + s),
+        [245, 245, 248],
+    );
     tris
 }
 
@@ -309,7 +414,12 @@ fn main() -> Result<()> {
             let mut f = Vec::new();
             let b = world.ball.pos;
             let s = 0.16;
-            push_box(&mut f, w(b.x - s, b.z, b.y - s), w(b.x + s, b.z + 2.0 * s, b.y + s), [245, 245, 248]);
+            push_box(
+                &mut f,
+                w(b.x - s, b.z, b.y - s),
+                w(b.x + s, b.z + 2.0 * s, b.y + s),
+                [245, 245, 248],
+            );
             f
         } else {
             build_flat(world, !real)
@@ -317,12 +427,20 @@ fn main() -> Result<()> {
         flat.shrink_to_fit();
         let mut inst = Vec::new();
         for m in &stadium {
-            inst.push(Instance { model: m, transform: mat_identity(), two_sided: true });
+            inst.push(Instance {
+                model: m,
+                transform: mat_identity(),
+                two_sided: true,
+            });
         }
         if let (Some(h), Some(a)) = (&home, &away) {
             for p in &world.players {
                 let pm = if p.team == 0 { h } else { a };
-                inst.push(Instance { model: &pm.model, transform: pm.xform(p.pos.x, p.pos.y, heading(p)), two_sided: false });
+                inst.push(Instance {
+                    model: &pm.model,
+                    transform: pm.xform(p.pos.x, p.pos.y, heading(p)),
+                    two_sided: false,
+                });
             }
         }
         (flat, inst)
@@ -330,9 +448,22 @@ fn main() -> Result<()> {
 
     if cli.png {
         let (flat, inst) = frame_scene(&world);
-        let rgba = render_scene(&flat, &inst, &camera(&world, real, has_stadium), cli.width, cli.height, bw, bh);
+        let rgba = render_scene(
+            &flat,
+            &inst,
+            &camera(&world, real, has_stadium),
+            cli.width,
+            cli.height,
+            bw,
+            bh,
+        );
         std::fs::write(&cli.out, encode_png(&rgba, cli.width, cli.height)?)?;
-        println!("png={} tris={} instances={}", cli.out.display(), flat.len(), inst.len());
+        println!(
+            "png={} tris={} instances={}",
+            cli.out.display(),
+            flat.len(),
+            inst.len()
+        );
         return Ok(());
     }
 
@@ -340,8 +471,19 @@ fn main() -> Result<()> {
     std::fs::create_dir_all(&dir)?;
     for i in 0..cli.frames {
         let (flat, inst) = frame_scene(&world);
-        let rgba = render_scene(&flat, &inst, &camera(&world, real, has_stadium), cli.width, cli.height, bw, bh);
-        std::fs::write(dir.join(format!("f_{i:04}.png")), encode_png(&rgba, cli.width, cli.height)?)?;
+        let rgba = render_scene(
+            &flat,
+            &inst,
+            &camera(&world, real, has_stadium),
+            cli.width,
+            cli.height,
+            bw,
+            bh,
+        );
+        std::fs::write(
+            dir.join(format!("f_{i:04}.png")),
+            encode_png(&rgba, cli.width, cli.height)?,
+        )?;
         world.step(cli.dt);
     }
     encode_video(&dir, cli.fps, &cli.out)?;
@@ -358,7 +500,14 @@ fn main() -> Result<()> {
 
 fn encode_video(dir: &Path, fps: u32, out: &Path) -> Result<()> {
     let status = Command::new("ffmpeg")
-        .args(["-y", "-loglevel", "error", "-framerate", &fps.to_string(), "-i"])
+        .args([
+            "-y",
+            "-loglevel",
+            "error",
+            "-framerate",
+            &fps.to_string(),
+            "-i",
+        ])
         .arg(dir.join("f_%04d.png"))
         .args(["-c:v", "libx264", "-pix_fmt", "yuv420p"])
         .arg(out)

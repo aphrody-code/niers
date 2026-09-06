@@ -5,8 +5,7 @@ mod common;
 use nie_data::hash::HashId;
 use nie_data::soccer_opponent::parse_soccer_opponent_config;
 
-const PATH: &str =
-    "soccer/soccer_opponent_info_0.00.00.cfg.bin.json";
+const PATH: &str = "soccer/soccer_opponent_info_0.00.00.cfg.bin.json";
 
 fn load() -> Option<serde_json::Value> {
     let chemin_abs = common::chemin(PATH)?;
@@ -34,7 +33,10 @@ fn opponents_et_conditions() {
 fn dispatch_typed() {
     use nie_data::typed::{decode_by_key, family_key};
     let Some(root) = load() else { return };
-    assert_eq!(family_key("soccer_opponent_info_0.00.00.cfg.bin"), "soccer_opponent_info");
+    assert_eq!(
+        family_key("soccer_opponent_info_0.00.00.cfg.bin"),
+        "soccer_opponent_info"
+    );
     let (label, json) = decode_by_key("soccer_opponent_info", &root).expect("câblé");
     assert_eq!(label, "soccer_opponent");
     assert_eq!(json["opponents"].as_array().map(Vec::len), Some(154));

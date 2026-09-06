@@ -16,8 +16,8 @@ use axum::http::HeaderMap;
 use axum::response::{IntoResponse, Response};
 
 use crate::error::ErreurSite;
-use crate::state::{EtatSite, ReponseCachee};
 use crate::routes::static_files::{Encodage, etiquette, reponse_octets};
+use crate::state::{EtatSite, ReponseCachee};
 
 /// `Cache-Control` des rendus d'amont : le décodage d'un chemin donné est déterministe, mais
 /// le décodeur évolue — une heure de fraîcheur, une journée de service dégradé toléré.
@@ -65,7 +65,12 @@ pub async fn proxy(
     };
 
     if let Some(cachee) = etat.cache.get(&cle).await {
-        return Ok(reponse_octets(&cachee, CONTROLE, Encodage::Identite, &entetes));
+        return Ok(reponse_octets(
+            &cachee,
+            CONTROLE,
+            Encodage::Identite,
+            &entetes,
+        ));
     }
 
     let url = match &query {
@@ -83,7 +88,10 @@ pub async fn proxy(
 
     let reponse = etat.client.get(&url).send().await.map_err(|e| {
         if e.is_timeout() || e.is_connect() && e.to_string().contains("timed out") {
-            ErreurSite::Delai(format!("nie-model-serve n'a pas repondu en {}s", etat.config.delai_amont.as_secs()))
+            ErreurSite::Delai(format!(
+                "nie-model-serve n'a pas repondu en {}s",
+                etat.config.delai_amont.as_secs()
+            ))
         } else {
             tracing::warn!(erreur = %e, url = %url, "amont injoignable");
             ErreurSite::Amont("nie-model-serve injoignable".to_owned())
@@ -92,10 +100,15 @@ pub async fn proxy(
 
     let statut = reponse.status();
     if statut == reqwest::StatusCode::NOT_FOUND {
-        return Err(ErreurSite::Introuvable(format!("asset inconnu de l'amont: {chemin}")));
+        return Err(ErreurSite::Introuvable(format!(
+            "asset inconnu de l'amont: {chemin}"
+        )));
     }
     if !statut.is_success() {
-        return Err(ErreurSite::Amont(format!("nie-model-serve a repondu {}", statut.as_u16())));
+        return Err(ErreurSite::Amont(format!(
+            "nie-model-serve a repondu {}",
+            statut.as_u16()
+        )));
     }
 
     // Une réponse annoncée trop grosse est refusée avant même d'être lue.
@@ -130,7 +143,16 @@ pub async fn proxy(
         )));
     }
 
-    let cachee = ReponseCachee { etag: etiquette(&corps), type_contenu, corps };
+    let cachee = ReponseCachee {
+        etag: etiquette(&corps),
+        type_contenu,
+        corps,
+    };
     etat.cache.insert(cle, cachee.clone()).await;
-    Ok(reponse_octets(&cachee, CONTROLE, Encodage::Identite, &entetes))
+    Ok(reponse_octets(
+        &cachee,
+        CONTROLE,
+        Encodage::Identite,
+        &entetes,
+    ))
 }

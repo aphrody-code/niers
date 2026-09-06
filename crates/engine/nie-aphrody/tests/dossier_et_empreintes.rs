@@ -51,7 +51,9 @@ fn le_bloc_pet_du_dossier_decrit_le_paquet_embarque() {
     let frames_paquet = u64::try_from(pet_paquet.manifest.exported_frame_count)
         .expect("nombre de frames representable");
     assert_eq!(
-        pet_bloc.get("total_frames").and_then(serde_json::Value::as_u64),
+        pet_bloc
+            .get("total_frames")
+            .and_then(serde_json::Value::as_u64),
         Some(frames_paquet),
     );
     assert_eq!(

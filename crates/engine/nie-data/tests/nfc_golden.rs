@@ -18,8 +18,8 @@ mod common;
 extern crate std;
 
 use nie_data::hash::HashId;
-use nie_data::nfc::{parse_nfc_lottery_config, NfcLotteryConfig};
-use serde_json::{json, Value};
+use nie_data::nfc::{NfcLotteryConfig, parse_nfc_lottery_config};
+use serde_json::{Value, json};
 
 // ─── Helpers de construction de la fixture (forme iecode `entries`) ──────────
 
@@ -57,7 +57,12 @@ fn table_pair(t_idx: usize, table_id: i64, items: &[(i64, i64, i64)]) -> Vec<Val
 }
 
 /// Construit la paire BEG plate `[LOTTERY_n, TABLE_LIST_BEG_n]` pour une loterie à 1 table.
-fn lottery_pair(l_idx: usize, lottery_id: i64, table_id: i64, items: &[(i64, i64, i64)]) -> Vec<Value> {
+fn lottery_pair(
+    l_idx: usize,
+    lottery_id: i64,
+    table_id: i64,
+    items: &[(i64, i64, i64)],
+) -> Vec<Value> {
     vec![
         json!({
             "name": format!("NFC_LOTTERY_INFO_{l_idx}"),
@@ -74,21 +79,21 @@ fn lottery_pair(l_idx: usize, lottery_id: i64, table_id: i64, items: &[(i64, i64
 
 /// 15 items réels de la loterie 1, TABLE_0 (`tableId=0xCBA1009F`).
 const LOTTERY1_TABLE0: &[(i64, i64, i64)] = &[
-    (776289281, 0, 32),    // 0x2E453C01
-    (90730434, 0, 8),      // 0x05686FC2
-    (531441308, 0, 32),    // 0x1FAD269C
-    (880833887, 0, 7),     // 0x3480755F
-    (-754029353, 0, 2),    // 0xD30E6CD7
-    (-131907820, 0, 2),    // 0xF8233F14
-    (-516420011, 0, 2),    // 0xE1380E55
-    (-1367762798, 0, 2),   // 0xAE799892
-    (-1218270765, 0, 2),   // 0xB762A9D3
-    (-1672480240, 0, 2),   // 0x9C4FFA10
-    (-2058040495, 0, 2),   // 0x8554CB51
-    (1806830514, 0, 2),    // 0x6BB20BB2
-    (1084184689, 0, 2),    // 0x409F5871
-    (1501849904, 0, 2),    // 0x59846930
-    (-2009974859, 0, 1),   // 0x883237B5
+    (776289281, 0, 32),  // 0x2E453C01
+    (90730434, 0, 8),    // 0x05686FC2
+    (531441308, 0, 32),  // 0x1FAD269C
+    (880833887, 0, 7),   // 0x3480755F
+    (-754029353, 0, 2),  // 0xD30E6CD7
+    (-131907820, 0, 2),  // 0xF8233F14
+    (-516420011, 0, 2),  // 0xE1380E55
+    (-1367762798, 0, 2), // 0xAE799892
+    (-1218270765, 0, 2), // 0xB762A9D3
+    (-1672480240, 0, 2), // 0x9C4FFA10
+    (-2058040495, 0, 2), // 0x8554CB51
+    (1806830514, 0, 2),  // 0x6BB20BB2
+    (1084184689, 0, 2),  // 0x409F5871
+    (1501849904, 0, 2),  // 0x59846930
+    (-2009974859, 0, 1), // 0x883237B5
 ];
 
 /// 1 item réel de la loterie 2, TABLE_0 (`tableId=0x3319A8FD`).
@@ -125,7 +130,11 @@ fn fixture_nfc() -> Value {
 #[test]
 fn nfc_trois_loteries() {
     let lotteries = parse_nfc_lottery_config(&fixture_nfc());
-    assert_eq!(lotteries.len(), 3, "3 loteries (NFC_LOTTERY_INFO_LIST_BEG var=3)");
+    assert_eq!(
+        lotteries.len(),
+        3,
+        "3 loteries (NFC_LOTTERY_INFO_LIST_BEG var=3)"
+    );
     assert_eq!(lotteries[0].lottery_id, 1, "lotteryId[0] = 1");
     assert_eq!(lotteries[1].lottery_id, 2, "lotteryId[1] = 2");
     assert_eq!(lotteries[2].lottery_id, 3, "lotteryId[2] = 3");
@@ -137,7 +146,11 @@ fn nfc_loterie1_table0_tableid() {
     let l1 = &lotteries[0];
     assert_eq!(l1.tables.len(), 1, "fixture : 1 table représentative");
     // tableId -878640993 & 0xFFFFFFFF = 0xCBA1009F
-    assert_eq!(l1.tables[0].table_id, HashId(0xCBA1009F), "tableId = 0xCBA1009F");
+    assert_eq!(
+        l1.tables[0].table_id,
+        HashId(0xCBA1009F),
+        "tableId = 0xCBA1009F"
+    );
     assert_eq!(l1.tables[0].table_id.to_hex(), "0xCBA1009F");
 }
 
@@ -167,7 +180,11 @@ fn nfc_loterie1_table0_15_items() {
 fn nfc_loterie1_table0_poids_total_100() {
     let lotteries = parse_nfc_lottery_config(&fixture_nfc());
     // 32+8+32+7 + 2×10 + 1 = 100.
-    assert_eq!(lotteries[0].tables[0].total_weight(), 100, "somme des poids = 100");
+    assert_eq!(
+        lotteries[0].tables[0].total_weight(),
+        100,
+        "somme des poids = 100"
+    );
 }
 
 #[test]

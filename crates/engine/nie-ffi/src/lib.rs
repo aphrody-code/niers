@@ -291,14 +291,22 @@ unsafe impl Send for NieBytes {}
 impl NieBytes {
     /// Tampon vide (ptr null, len 0, cap 0) — signal d'erreur ou de non-support.
     fn empty() -> Self {
-        Self { ptr: core::ptr::null_mut(), len: 0, cap: 0 }
+        Self {
+            ptr: core::ptr::null_mut(),
+            len: 0,
+            cap: 0,
+        }
     }
 
     /// Transfère la propriété d'un `Vec<u8>` vers un `NieBytes`.
     /// La mémoire est désormais possédée par JS et doit être libérée via `nie_bytes_free`.
     fn from_vec(v: Vec<u8>) -> Self {
         let mut v = core::mem::ManuallyDrop::new(v);
-        Self { ptr: v.as_mut_ptr(), len: v.len(), cap: v.capacity() }
+        Self {
+            ptr: v.as_mut_ptr(),
+            len: v.len(),
+            cap: v.capacity(),
+        }
     }
 }
 
@@ -368,21 +376,21 @@ const FORMAT_LIP: u32 = 15;
 fn fileformat_to_u32(f: nie_formats::FileFormat) -> u32 {
     use nie_formats::FileFormat as F;
     match f {
-        F::Unknown  =>  0,
-        F::Cpk      =>  1,
-        F::Utf      =>  2,
-        F::CriLayla =>  3,
-        F::Hca      =>  4,
-        F::Acb      =>  5,
-        F::Awb      =>  6,
-        F::Usm      =>  7,
-        F::CfgBin   =>  8,
-        F::G4mg     =>  9,
-        F::G4md     => 10,
-        F::G4tx     => 11,
-        F::G4sk     => 12,
-        F::G4pk     => 13,
-        F::G4nv     => 14,
+        F::Unknown => 0,
+        F::Cpk => 1,
+        F::Utf => 2,
+        F::CriLayla => 3,
+        F::Hca => 4,
+        F::Acb => 5,
+        F::Awb => 6,
+        F::Usm => 7,
+        F::CfgBin => 8,
+        F::G4mg => 9,
+        F::G4md => 10,
+        F::G4tx => 11,
+        F::G4sk => 12,
+        F::G4pk => 13,
+        F::G4nv => 14,
     }
 }
 
@@ -422,23 +430,23 @@ pub unsafe extern "C" fn nie_detect(ptr: *const u8, len: usize) -> u32 {
 #[unsafe(no_mangle)]
 pub extern "C" fn nie_format_name(kind: u32) -> *const c_char {
     let s: &'static [u8] = match kind {
-        0  => b"Unknown\0",
-        1  => b"CPK\0",
-        2  => b"@UTF\0",
-        3  => b"CRILAYLA\0",
-        4  => b"HCA\0",
-        5  => b"ACB\0",
-        6  => b"AWB\0",
-        7  => b"USM\0",
-        8  => b"cfg.bin\0",
-        9  => b"G4MG\0",
+        0 => b"Unknown\0",
+        1 => b"CPK\0",
+        2 => b"@UTF\0",
+        3 => b"CRILAYLA\0",
+        4 => b"HCA\0",
+        5 => b"ACB\0",
+        6 => b"AWB\0",
+        7 => b"USM\0",
+        8 => b"cfg.bin\0",
+        9 => b"G4MG\0",
         10 => b"G4MD\0",
         11 => b"G4TX\0",
         12 => b"G4SK\0",
         13 => b"G4PK\0",
         14 => b"G4NV\0",
         15 => b"LIP\0",
-        _  => b"?\0",
+        _ => b"?\0",
     };
     s.as_ptr().cast()
 }
@@ -627,10 +635,7 @@ pub unsafe extern "C" fn nie_vfs_open(game_data_dir: *const c_char) -> *mut c_vo
 /// - `internal_path` doit être une C-string UTF-8 null-terminée valide.
 /// - null sur l'un ou l'autre des deux paramètres → retourne empty.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn nie_vfs_read(
-    vfs: *mut c_void,
-    internal_path: *const c_char,
-) -> NieBytes {
+pub unsafe extern "C" fn nie_vfs_read(vfs: *mut c_void, internal_path: *const c_char) -> NieBytes {
     if vfs.is_null() || internal_path.is_null() {
         return NieBytes::empty();
     }
@@ -756,7 +761,10 @@ pub unsafe extern "C" fn nie_vfs_count(vfs: *mut c_void) -> u64 {
 /// - `internal_path` doit être une chaîne C null-terminée valide.
 /// - null (l'un ou l'autre) → retourne 0.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn nie_vfs_is_readable(vfs: *mut c_void, internal_path: *const c_char) -> u32 {
+pub unsafe extern "C" fn nie_vfs_is_readable(
+    vfs: *mut c_void,
+    internal_path: *const c_char,
+) -> u32 {
     if vfs.is_null() || internal_path.is_null() {
         return 0;
     }
@@ -949,7 +957,11 @@ fn build_font_ctx(vfs: &nie_formats::vfs::Vfs) -> Option<FontCtx> {
     }
     let start = tex.data_offset + FONT_DDS_PIXEL_OFFSET;
     let atlas = g4tx_bytes.get(start..)?.to_vec();
-    Some(FontCtx { metrics, atlas, atlas_w: tex.width as u32 })
+    Some(FontCtx {
+        metrics,
+        atlas,
+        atlas_w: tex.width as u32,
+    })
 }
 
 /// Implémentation commune : rend `text` sur un canevas RGBA8 ajusté puis encode en PNG.
@@ -987,7 +999,10 @@ fn render_text_impl(ctx: &FontCtx, text: &str, color: [u8; 4]) -> NieBytes {
         None => return NieBytes::empty(),
     };
     let mut png: Vec<u8> = Vec::new();
-    if img.write_to(&mut Cursor::new(&mut png), image::ImageFormat::Png).is_err() {
+    if img
+        .write_to(&mut Cursor::new(&mut png), image::ImageFormat::Png)
+        .is_err()
+    {
         return NieBytes::empty();
     }
     NieBytes::from_vec(png)
@@ -1280,7 +1295,14 @@ pub unsafe extern "C" fn nie_world_ball(w: *const NieWorld, out: *mut NieBall) {
     let b = &world.ball;
     // SAFETY: out est un NieBall inscriptible par contrat.
     unsafe {
-        *out = NieBall { x: b.pos.x, y: b.pos.y, z: b.pos.z, vx: b.vel.x, vy: b.vel.y, vz: b.vel.z };
+        *out = NieBall {
+            x: b.pos.x,
+            y: b.pos.y,
+            z: b.pos.z,
+            vx: b.vel.x,
+            vy: b.vel.y,
+            vz: b.vel.z,
+        };
     }
 }
 
@@ -1460,21 +1482,9 @@ mod tests {
     #[test]
     fn crand_new_vecteur_mt19937_seed_5489() {
         let h = nie_crand_new(5489);
-        assert_eq!(
-            unsafe { nie_crand_next_u32(h) },
-            3_499_211_612,
-            "tirage #1"
-        );
-        assert_eq!(
-            unsafe { nie_crand_next_u32(h) },
-            581_869_302,
-            "tirage #2"
-        );
-        assert_eq!(
-            unsafe { nie_crand_next_u32(h) },
-            3_890_346_734,
-            "tirage #3"
-        );
+        assert_eq!(unsafe { nie_crand_next_u32(h) }, 3_499_211_612, "tirage #1");
+        assert_eq!(unsafe { nie_crand_next_u32(h) }, 581_869_302, "tirage #2");
+        assert_eq!(unsafe { nie_crand_next_u32(h) }, 3_890_346_734, "tirage #3");
         unsafe { nie_crand_free(h) };
     }
 
@@ -1493,10 +1503,9 @@ mod tests {
         // from_u64(n) avec moitié haute nulle == new(n as u32)
         let h64 = nie_crand_from_u64(12_345_u64);
         let h32 = nie_crand_new(12_345_u32);
-        assert_eq!(
-            unsafe { nie_crand_next_u32(h64) },
-            unsafe { nie_crand_next_u32(h32) }
-        );
+        assert_eq!(unsafe { nie_crand_next_u32(h64) }, unsafe {
+            nie_crand_next_u32(h32)
+        });
         unsafe { nie_crand_free(h64) };
         unsafe { nie_crand_free(h32) };
     }
@@ -1558,7 +1567,9 @@ mod tests {
     #[test]
     fn font_render_text_a_real() {
         use std::ffi::CString;
-        let dir = nie_formats::vfs::resolve_game_dir().to_string_lossy().into_owned();
+        let dir = nie_formats::vfs::resolve_game_dir()
+            .to_string_lossy()
+            .into_owned();
         let data = std::path::Path::new(&dir).join("data");
         if !nie_formats::vfs::donnees_disponibles(&data) {
             eprintln!("skip font_render_text_a_real : jeu absent");
@@ -1579,12 +1590,18 @@ mod tests {
 
         // SAFETY: png.ptr..len est un tampon PNG valide alloué par ce crate.
         let bytes = unsafe { core::slice::from_raw_parts(png.ptr, png.len) };
-        let img = image::load_from_memory(bytes).expect("décodage PNG").to_rgba8();
+        let img = image::load_from_memory(bytes)
+            .expect("décodage PNG")
+            .to_rgba8();
         assert_eq!(img.width(), 39, "largeur = avance de 'A'");
         assert_eq!(img.height(), 71, "hauteur = cell_height");
         // 'A' tracé à dst_x = bearing_x = 1 ; le pixel atlas-relatif (row=20, col=0, alpha=251)
         // atterrit donc en (x=1, y=20).
-        assert_eq!(img.get_pixel(1, 20)[3], 251, "alpha du glyphe A décalé de bearing_x=1");
+        assert_eq!(
+            img.get_pixel(1, 20)[3],
+            251,
+            "alpha du glyphe A décalé de bearing_x=1"
+        );
 
         // SAFETY: chaque handle/tampon est libéré exactement une fois.
         unsafe { nie_bytes_free(png) };

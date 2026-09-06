@@ -116,12 +116,19 @@ pub fn find_cl(explicit: Option<&Path>) -> anyhow::Result<PathBuf> {
     }
 
     let mut roots: Vec<PathBuf> = Vec::new();
-    let vswhere = PathBuf::from(
-        r"C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe",
-    );
+    let vswhere =
+        PathBuf::from(r"C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe");
     if vswhere.is_file()
         && let Ok(out) = std::process::Command::new(&vswhere)
-            .args(["-all", "-products", "*", "-format", "value", "-property", "installationPath"])
+            .args([
+                "-all",
+                "-products",
+                "*",
+                "-format",
+                "value",
+                "-property",
+                "installationPath",
+            ])
             .output()
         && out.status.success()
     {
@@ -141,7 +148,12 @@ pub fn find_cl(explicit: Option<&Path>) -> anyhow::Result<PathBuf> {
             continue;
         };
         for e in rd.flatten() {
-            let cl = e.path().join("bin").join("Hostx64").join("x64").join("cl.exe");
+            let cl = e
+                .path()
+                .join("bin")
+                .join("Hostx64")
+                .join("x64")
+                .join("cl.exe");
             if cl.is_file() {
                 found.push(cl);
             }
@@ -277,7 +289,10 @@ void *ret_this_140057350(void *p)
         // Les changer sans re-valider casserait toutes les correspondances.
         let f = default_flags();
         for expected in ["/c", "/O2", "/GS-", "/Gy", "/Zl"] {
-            assert!(f.iter().any(|x| x == expected), "flag manquant : {expected}");
+            assert!(
+                f.iter().any(|x| x == expected),
+                "flag manquant : {expected}"
+            );
         }
     }
 }

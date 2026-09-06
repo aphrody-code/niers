@@ -19,7 +19,7 @@
 //! - Logique de calcul d'arrêt elle-même (update/evaluate) : NON PORTÉE
 //!   — absente du pseudo-C disponible
 
-use crate::{Vec3, INVALID_TARGET_ID};
+use crate::{INVALID_TARGET_ID, Vec3};
 use crate::{
     KEEPER_DIVE_MAX_DIST, KEEPER_DIVE_SPEED, KEEPER_REACTION_TIME_FRAMES,
     KEEPER_SAVE_PROBABILITY_BASE, KEEPER_SAVE_RADIUS_DEFAULT,
@@ -107,7 +107,9 @@ impl KeeperTargetRef {
     /// Crée une référence vide.
     #[must_use]
     pub fn none() -> Self {
-        Self { target_id: INVALID_TARGET_ID }
+        Self {
+            target_id: INVALID_TARGET_ID,
+        }
     }
 
     /// Retourne `true` si aucune cible n'est définie.
@@ -226,7 +228,11 @@ impl KeeperSaveComponent {
     #[must_use]
     pub fn reach_sq(&self, scale: f32) -> f32 {
         keeper_reach_sq(
-            crate::Vec3 { x: self.save_radius, y: self.max_dive_distance, z: self.save_probability },
+            crate::Vec3 {
+                x: self.save_radius,
+                y: self.max_dive_distance,
+                z: self.save_probability,
+            },
             scale,
         )
     }
@@ -278,11 +284,7 @@ pub fn keeper_reach_sq(dive: crate::Vec3, scale: f32) -> f32 {
 pub fn save_zone_heights(shot_heights: [f32; 3], keeper_y: f32) -> [f32; 3] {
     shot_heights.map(|h| {
         let v = h - keeper_y;
-        if v <= 0.0 {
-            0.0
-        } else {
-            v
-        }
+        if v <= 0.0 { 0.0 } else { v }
     })
 }
 
@@ -290,8 +292,8 @@ pub fn save_zone_heights(shot_heights: [f32; 3], keeper_y: f32) -> [f32; 3] {
 mod tests {
     use super::*;
     use crate::{
-        KEEPER_DIVE_MAX_DIST, KEEPER_DIVE_SPEED,
-        KEEPER_SAVE_PROBABILITY_BASE, KEEPER_SAVE_RADIUS_DEFAULT,
+        KEEPER_DIVE_MAX_DIST, KEEPER_DIVE_SPEED, KEEPER_SAVE_PROBABILITY_BASE,
+        KEEPER_SAVE_RADIUS_DEFAULT,
     };
 
     #[test]
@@ -305,8 +307,16 @@ mod tests {
     #[test]
     fn save_reach_xz_strict_vs_decompile() {
         // FUN_1413dcfe0 : distance horizontale² (XZ, Y ignoré) STRICTEMENT < portée².
-        let ball = crate::Vec3 { x: 3.0, y: 99.0, z: 4.0 }; // Y volontairement grand → ignoré
-        let keeper = crate::Vec3 { x: 0.0, y: 0.0, z: 0.0 };
+        let ball = crate::Vec3 {
+            x: 3.0,
+            y: 99.0,
+            z: 4.0,
+        }; // Y volontairement grand → ignoré
+        let keeper = crate::Vec3 {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        };
         // dz²+dx² = 16+9 = 25.
         assert!(is_within_save_reach(ball, keeper, 26.0)); // 25 < 26
         assert!(!is_within_save_reach(ball, keeper, 25.0)); // strict : 25 < 25 faux
@@ -319,18 +329,52 @@ mod tests {
         let k = KeeperSaveComponent::new();
         assert_eq!(k.reach_sq(1.0).to_bits(), 0.8_f32.to_bits());
         // ballon à dist² horizontale 0.49 (dx=0.7) < 0.8 → arrêt ; à 0.81 (dx=0.9) → non.
-        let kp = crate::Vec3 { x: 0.0, y: 0.0, z: 0.0 };
-        assert!(k.attempts_save(crate::Vec3 { x: 0.7, y: 9.0, z: 0.0 }, kp, 1.0));
-        assert!(!k.attempts_save(crate::Vec3 { x: 0.9, y: 0.0, z: 0.0 }, kp, 1.0));
+        let kp = crate::Vec3 {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        };
+        assert!(k.attempts_save(
+            crate::Vec3 {
+                x: 0.7,
+                y: 9.0,
+                z: 0.0
+            },
+            kp,
+            1.0
+        ));
+        assert!(!k.attempts_save(
+            crate::Vec3 {
+                x: 0.9,
+                y: 0.0,
+                z: 0.0
+            },
+            kp,
+            1.0
+        ));
     }
-
 
     #[test]
     fn keeper_reach_sq_min_vs_decompile() {
         // FUN_1413dcfe0 : min des produits (dive·scale). Validé byte-exact vs uemu (validate_keeper_reach.py).
-        let d = crate::Vec3 { x: 3.0, y: 5.0, z: 4.0 };
+        let d = crate::Vec3 {
+            x: 3.0,
+            y: 5.0,
+            z: 4.0,
+        };
         assert_eq!(keeper_reach_sq(d, 1.0).to_bits(), 3.0_f32.to_bits()); // min(3,5,4)
-        assert_eq!(keeper_reach_sq(crate::Vec3 { x: 8.0, y: 2.0, z: 3.0 }, 1.5).to_bits(), 3.0_f32.to_bits()); // min(12,3,4.5)=3
+        assert_eq!(
+            keeper_reach_sq(
+                crate::Vec3 {
+                    x: 8.0,
+                    y: 2.0,
+                    z: 3.0
+                },
+                1.5
+            )
+            .to_bits(),
+            3.0_f32.to_bits()
+        ); // min(12,3,4.5)=3
     }
 
     #[test]
@@ -391,18 +435,34 @@ mod tests {
     #[test]
     fn keeper_can_reach_near() {
         let mut k = KeeperSaveComponent::new();
-        k.shoot_data.keeper_position = Vec3 { x: 0.0, y: 0.0, z: 0.0 };
+        k.shoot_data.keeper_position = Vec3 {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        };
         // Cible à 3.0 unités — dans la portée de 5.0
-        let target = Vec3 { x: 3.0, y: 0.0, z: 0.0 };
+        let target = Vec3 {
+            x: 3.0,
+            y: 0.0,
+            z: 0.0,
+        };
         assert!(k.can_reach(target));
     }
 
     #[test]
     fn keeper_cannot_reach_far() {
         let mut k = KeeperSaveComponent::new();
-        k.shoot_data.keeper_position = Vec3 { x: 0.0, y: 0.0, z: 0.0 };
+        k.shoot_data.keeper_position = Vec3 {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        };
         // Cible à 10.0 unités — hors portée de 5.0
-        let target = Vec3 { x: 10.0, y: 0.0, z: 0.0 };
+        let target = Vec3 {
+            x: 10.0,
+            y: 0.0,
+            z: 0.0,
+        };
         assert!(!k.can_reach(target));
     }
 

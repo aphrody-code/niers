@@ -103,10 +103,7 @@ pub fn detecter(img: &PeImage, cover: &Cover) -> (Vec<(u32, u32)>, Bilan) {
         let Some(rva) = va.checked_sub(img.opt.image_base) else {
             continue;
         };
-        if let (Ok(debut), Ok(len)) = (
-            u32::try_from(rva + d0 as u64),
-            u32::try_from(d1 - d0),
-        ) {
+        if let (Ok(debut), Ok(len)) = (u32::try_from(rva + d0 as u64), u32::try_from(d1 - d0)) {
             plages.push((debut, len));
         }
     }

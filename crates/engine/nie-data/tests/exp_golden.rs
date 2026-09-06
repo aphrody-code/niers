@@ -8,7 +8,7 @@
 
 mod common;
 
-use nie_data::exp::{parse_exp_table, CharaExpEntry, ExpRarityRate};
+use nie_data::exp::{CharaExpEntry, ExpRarityRate, parse_exp_table};
 use serde_json::json;
 
 /// Fixture avec les 10 premiers niveaux réels (suffit pour les cumuls golden lvl5/lvl10).
@@ -46,9 +46,27 @@ fn exp_fixture() -> serde_json::Value {
 fn exp_entries_premiers_niveaux() {
     let t = parse_exp_table(&exp_fixture());
     assert_eq!(t.exp_table.len(), 10);
-    assert_eq!(t.exp_table[0], CharaExpEntry { level: 1, need_exp: 124 });
-    assert_eq!(t.exp_table[1], CharaExpEntry { level: 2, need_exp: 130 });
-    assert_eq!(t.exp_table[2], CharaExpEntry { level: 3, need_exp: 146 });
+    assert_eq!(
+        t.exp_table[0],
+        CharaExpEntry {
+            level: 1,
+            need_exp: 124
+        }
+    );
+    assert_eq!(
+        t.exp_table[1],
+        CharaExpEntry {
+            level: 2,
+            need_exp: 130
+        }
+    );
+    assert_eq!(
+        t.exp_table[2],
+        CharaExpEntry {
+            level: 3,
+            need_exp: 146
+        }
+    );
     assert_eq!(t.exp_for_level(1), Some(124));
     assert_eq!(t.exp_for_level(3), Some(146));
     assert_eq!(t.exp_for_level(999), None);

@@ -92,7 +92,10 @@ impl LocalizedText {
     /// Retourne le premier texte non vide (fr > en > ja).
     #[must_use]
     pub fn best(&self) -> Option<&str> {
-        self.fr.as_deref().or(self.en.as_deref()).or(self.ja.as_deref())
+        self.fr
+            .as_deref()
+            .or(self.en.as_deref())
+            .or(self.ja.as_deref())
     }
 }
 
@@ -391,8 +394,7 @@ pub fn parse_player_passives(
         {
             for (idx, child) in children.iter().enumerate() {
                 let child_name = child.get("name").and_then(Value::as_str).unwrap_or("");
-                if !child_name.starts_with("PASSIVE_SKILL_EFFECT_")
-                    || child_name.contains("_LIST_")
+                if !child_name.starts_with("PASSIVE_SKILL_EFFECT_") || child_name.contains("_LIST_")
                 {
                     continue;
                 }
@@ -445,8 +447,8 @@ pub fn parse_player_passives(
 
     // Étape 2 : collecter les REF_EFFECT et REF_BUFF_ICON par infoId
     // Map: infoId → (effectIndex, buffIconIndex)
-    let mut ref_effects: BTreeMap<usize, (usize, usize)> = BTreeMap::new();   // infoId → (effectIdx, count)
-    let mut ref_icons: BTreeMap<usize, usize> = BTreeMap::new();              // infoId → iconIdx
+    let mut ref_effects: BTreeMap<usize, (usize, usize)> = BTreeMap::new(); // infoId → (effectIdx, count)
+    let mut ref_icons: BTreeMap<usize, usize> = BTreeMap::new(); // infoId → iconIdx
 
     for entry in entries {
         let entry_name = entry.get("name").and_then(Value::as_str).unwrap_or("");
@@ -475,8 +477,7 @@ pub fn parse_player_passives(
                         ref_effects.insert(info_id, (eff_idx, count));
                     }
                 } else if child_name.starts_with("PASSIVE_SKILL_INFO_REF_BUFF_ICON_") {
-                    let id_str =
-                        child_name.trim_start_matches("PASSIVE_SKILL_INFO_REF_BUFF_ICON_");
+                    let id_str = child_name.trim_start_matches("PASSIVE_SKILL_INFO_REF_BUFF_ICON_");
                     if let Ok(info_id) = id_str.parse::<usize>() {
                         let icon_idx = child
                             .get("variables")
@@ -595,9 +596,15 @@ pub fn parse_player_passives(
                 // Texte résolu (placeholder → valeur)
                 let main_val = eff_params.first().copied().unwrap_or(0.0);
                 let text_resolved = LocalizedText {
-                    fr: raw_fr.as_deref().map(|t| resolve_text_placeholder(t, main_val)),
-                    en: raw_en.as_deref().map(|t| resolve_text_placeholder(t, main_val)),
-                    ja: raw_ja.as_deref().map(|t| resolve_text_placeholder(t, main_val)),
+                    fr: raw_fr
+                        .as_deref()
+                        .map(|t| resolve_text_placeholder(t, main_val)),
+                    en: raw_en
+                        .as_deref()
+                        .map(|t| resolve_text_placeholder(t, main_val)),
+                    ja: raw_ja
+                        .as_deref()
+                        .map(|t| resolve_text_placeholder(t, main_val)),
                 };
 
                 out.push(PlayerPassive {
@@ -629,10 +636,7 @@ pub fn parse_player_passives(
 ///
 /// Retourne 21 entrées pour la version 0.00.00.
 #[must_use]
-pub fn parse_team_passives(
-    root: &Value,
-    text_ja: &BTreeMap<u32, String>,
-) -> Vec<TeamPassive> {
+pub fn parse_team_passives(root: &Value, text_ja: &BTreeMap<u32, String>) -> Vec<TeamPassive> {
     let values = match list_values(root, "m_soccerTeamPassiveDataList") {
         Some(v) => v,
         None => return Vec::new(),
@@ -818,14 +822,25 @@ mod tests {
     #[test]
     fn resolve_placeholder_shot_at() {
         // Texte réel vérifié sur dump fr/skill_text.cfg.bin.json NOUN_INFO_926
-        let raw =
-            "ATT des tirs [CPASSIVE01]+<VALUE> %[C] \\npour les joueurs du même élément";
+        let raw = "ATT des tirs [CPASSIVE01]+<VALUE> %[C] \\npour les joueurs du même élément";
         let resolved = resolve_text_placeholder(raw, 0.5_f64);
         // Le template du jeu a un espace entre <VALUE> et % : "+0.50 %"
-        assert!(resolved.contains("+0.50"), "valeur non injectée: resolved={resolved:?}");
-        assert!(!resolved.contains("[CPASSIVE01]"), "balise couleur non supprimée: {resolved:?}");
-        assert!(!resolved.contains("[C]"), "balise fin non supprimée: {resolved:?}");
-        assert!(!resolved.contains("<VALUE>"), "placeholder non remplacé: {resolved:?}");
+        assert!(
+            resolved.contains("+0.50"),
+            "valeur non injectée: resolved={resolved:?}"
+        );
+        assert!(
+            !resolved.contains("[CPASSIVE01]"),
+            "balise couleur non supprimée: {resolved:?}"
+        );
+        assert!(
+            !resolved.contains("[C]"),
+            "balise fin non supprimée: {resolved:?}"
+        );
+        assert!(
+            !resolved.contains("<VALUE>"),
+            "placeholder non remplacé: {resolved:?}"
+        );
     }
 
     #[test]
@@ -841,8 +856,14 @@ mod tests {
         // Les tags japonais [風属性/かぜぞくせい] ne doivent PAS être supprimés
         let raw = "[風属性/かぜぞくせい][選手/せんしゅ]のシュートＡＴ[CPASSIVE01]＋<VALUE>％[C]";
         let resolved = resolve_text_placeholder(raw, 1.0_f64);
-        assert!(resolved.contains("[風属性/かぜぞくせい]"), "tag JA supprimé: {resolved:?}");
-        assert!(!resolved.contains("[CPASSIVE01]"), "couleur non supprimée: {resolved:?}");
+        assert!(
+            resolved.contains("[風属性/かぜぞくせい]"),
+            "tag JA supprimé: {resolved:?}"
+        );
+        assert!(
+            !resolved.contains("[CPASSIVE01]"),
+            "couleur non supprimée: {resolved:?}"
+        );
     }
 
     #[test]
@@ -870,8 +891,10 @@ mod tests {
         let root: Value = serde_json::from_str(json_str).unwrap();
         let texts = load_noun_texts(&root);
         // effectId 1105141741 (signé) = u32 1105141741 (< 2^31, positif)
-        assert_eq!(texts.get(&1105141741_u32).map(|s| s.as_str()),
-            Some("ATT des tirs [CPASSIVE01]+<VALUE> %[C] \\npour les joueurs du même élément"));
+        assert_eq!(
+            texts.get(&1105141741_u32).map(|s| s.as_str()),
+            Some("ATT des tirs [CPASSIVE01]+<VALUE> %[C] \\npour les joueurs du même élément")
+        );
     }
 
     #[test]
@@ -938,8 +961,11 @@ mod tests {
 
         // Textes : effectId 1105141741 → texte FR
         let mut text_fr = BTreeMap::new();
-        text_fr.insert(1105141741_u32,
-            "ATT des tirs [CPASSIVE01]+<VALUE> %[C] \\npour les joueurs du même élément".to_string());
+        text_fr.insert(
+            1105141741_u32,
+            "ATT des tirs [CPASSIVE01]+<VALUE> %[C] \\npour les joueurs du même élément"
+                .to_string(),
+        );
         let text_en = BTreeMap::new();
         let text_ja = BTreeMap::new();
 
@@ -948,12 +974,16 @@ mod tests {
         assert_eq!(passives.len(), 1, "doit parser 1 passive");
         let p = &passives[0];
         assert_eq!(p.passive_id.to_hex(), "0x3A2BCAF4"); // 975948532 → u32
-        assert_eq!(p.effect_id.to_hex(), "0x41DF1FED");  // 1105141741 → u32
+        assert_eq!(p.effect_id.to_hex(), "0x41DF1FED"); // 1105141741 → u32
         assert_eq!(p.string_id, "ps10001");
         assert_eq!(p.rarity, 6);
         assert_eq!(p.element, 0);
         assert_eq!(p.buff_icon_type, Some(2));
-        assert!((p.effect_params[0] - 0.5).abs() < 1e-6, "param={}", p.effect_params[0]);
+        assert!(
+            (p.effect_params[0] - 0.5).abs() < 1e-6,
+            "param={}",
+            p.effect_params[0]
+        );
         // Texte résolu
         let resolved_fr = p.text_resolved.fr.as_deref().unwrap_or("");
         assert!(resolved_fr.contains("+0.50"), "resolved={resolved_fr:?}");

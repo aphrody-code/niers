@@ -188,11 +188,22 @@ mod tests {
     }
 
     fn layout(bones: Vec<G4pkmBone>) -> G4pkmLayout {
-        G4pkmLayout { bones, world_pose_by_name: BTreeMap::new() }
+        G4pkmLayout {
+            bones,
+            world_pose_by_name: BTreeMap::new(),
+        }
     }
 
     fn tf(x: f32, y: f32, sx: f32, sy: f32) -> Transform2D {
-        Transform2D { x, y, scale_x: sx, scale_y: sy, rot: 0.0, anchor_x: 0.5, anchor_y: 0.5 }
+        Transform2D {
+            x,
+            y,
+            scale_x: sx,
+            scale_y: sy,
+            rot: 0.0,
+            anchor_x: 0.5,
+            anchor_y: 0.5,
+        }
     }
 
     /// Layout vide → pose zéro, bone vide, annotation propagée.
@@ -237,7 +248,12 @@ mod tests {
     /// Bone de placement EN écran → retourné tel quel, pas de fallback.
     #[test]
     fn on_screen_placement_returned_directly() {
-        let l = layout(vec![bone(0, "_pos_scl_base01", -1, tf(100.0, 50.0, 0.65, 0.9))]);
+        let l = layout(vec![bone(
+            0,
+            "_pos_scl_base01",
+            -1,
+            tf(100.0, 50.0, 0.65, 0.9),
+        )]);
         let mp = motion_final_pose(&l, false);
         assert_eq!(mp.bone_name, "_pos_scl_base01");
         assert!(!mp.used_ancestor_fallback);
@@ -260,7 +276,10 @@ mod tests {
         assert!(mp.has_open_motion);
         assert!((mp.pose.x - 0.0).abs() < 1e-4, "x du parent");
         assert!((mp.pose.y - 0.0).abs() < 1e-4, "y du parent");
-        assert!((mp.pose.scale_x - 0.65).abs() < 1e-4, "scale du candidat conservée");
+        assert!(
+            (mp.pose.scale_x - 0.65).abs() < 1e-4,
+            "scale du candidat conservée"
+        );
         assert!((mp.pose.scale_y - 0.9).abs() < 1e-4);
         assert!(!mp.pose.is_off_screen_1920(), "pose finale dans l'écran");
     }
@@ -294,32 +313,52 @@ mod tests {
     #[test]
     fn golden_motion_sur_les_paquets_menu_reels() {
         // `title00_09` : le bone de placement est hors écran (x=1873) ⇒ on remonte à un ancêtre.
-        if let Some((chemin, data)) =
-            crate::g4pk::tests_vfs::lire_par_suffixe("title00_09.g4pkm")
-        {
+        if let Some((chemin, data)) = crate::g4pk::tests_vfs::lire_par_suffixe("title00_09.g4pkm") {
             let layout = crate::g4pkm::parse(&data).expect("parse title00_09.g4pkm");
             let mp = motion_final_pose(&layout, true);
             std::eprintln!(
                 "{chemin} : bone={} fallback={} x={} y={}",
-                mp.bone_name, mp.used_ancestor_fallback, mp.pose.x, mp.pose.y
+                mp.bone_name,
+                mp.used_ancestor_fallback,
+                mp.pose.x,
+                mp.pose.y
             );
-            assert!(mp.used_ancestor_fallback, "title00_09 : placement hors écran ⇒ fallback");
-            assert!(!mp.pose.is_off_screen_1920(), "la pose finale doit être dans l'écran");
-            assert!((-960.0..=960.0).contains(&mp.pose.x), "x hors canvas : {}", mp.pose.x);
-            assert!((-540.0..=540.0).contains(&mp.pose.y), "y hors canvas : {}", mp.pose.y);
+            assert!(
+                mp.used_ancestor_fallback,
+                "title00_09 : placement hors écran ⇒ fallback"
+            );
+            assert!(
+                !mp.pose.is_off_screen_1920(),
+                "la pose finale doit être dans l'écran"
+            );
+            assert!(
+                (-960.0..=960.0).contains(&mp.pose.x),
+                "x hors canvas : {}",
+                mp.pose.x
+            );
+            assert!(
+                (-540.0..=540.0).contains(&mp.pose.y),
+                "y hors canvas : {}",
+                mp.pose.y
+            );
             let (px, py) = mp.pose.to_css_1280x720();
             assert!((0.0..=1280.0).contains(&px), "px hors [0,1280] : {px}");
             assert!((0.0..=720.0).contains(&py), "py hors [0,720] : {py}");
         }
 
         // `title00_01` : son bone de placement est déjà dans l'écran ⇒ aucun fallback.
-        if let Some((chemin, data)) =
-            crate::g4pk::tests_vfs::lire_par_suffixe("title00_01.g4pkm")
-        {
+        if let Some((chemin, data)) = crate::g4pk::tests_vfs::lire_par_suffixe("title00_01.g4pkm") {
             let layout = crate::g4pkm::parse(&data).expect("parse title00_01.g4pkm");
             let mp = motion_final_pose(&layout, false);
-            std::eprintln!("{chemin} : bone={} fallback={}", mp.bone_name, mp.used_ancestor_fallback);
-            assert!(!mp.used_ancestor_fallback, "title00_01 : placement en écran ⇒ pas de fallback");
+            std::eprintln!(
+                "{chemin} : bone={} fallback={}",
+                mp.bone_name,
+                mp.used_ancestor_fallback
+            );
+            assert!(
+                !mp.used_ancestor_fallback,
+                "title00_01 : placement en écran ⇒ pas de fallback"
+            );
             assert!(
                 contains_ic(&mp.bone_name, "base") || contains_ic(&mp.bone_name, "pos_scl"),
                 "bone de placement inattendu : {}",
@@ -328,12 +367,15 @@ mod tests {
         }
 
         // `option01_02` : 66 bones — mesure de volume, elle attrape une régression de parsing.
-        if let Some((chemin, data)) =
-            crate::g4pk::tests_vfs::lire_par_suffixe("option01_02.g4pkm")
+        if let Some((chemin, data)) = crate::g4pk::tests_vfs::lire_par_suffixe("option01_02.g4pkm")
         {
             let layout = crate::g4pkm::parse(&data).expect("parse option01_02.g4pkm");
             std::eprintln!("{chemin} : {} bones", layout.bone_count());
-            assert_eq!(layout.bone_count(), 66, "option01_02 : bone_count attendu 66");
+            assert_eq!(
+                layout.bone_count(),
+                66,
+                "option01_02 : bone_count attendu 66"
+            );
         }
     }
 }

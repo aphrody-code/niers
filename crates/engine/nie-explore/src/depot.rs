@@ -64,8 +64,15 @@ fn fichier_sensible(nom: &str) -> bool {
         return true;
     }
     const NOMS: &[&str] = &[
-        "id_rsa", "id_ed25519", "id_ecdsa", ".npmrc", ".netrc", ".pgpass", "credentials",
-        "secrets.json", ".htpasswd",
+        "id_rsa",
+        "id_ed25519",
+        "id_ecdsa",
+        ".npmrc",
+        ".netrc",
+        ".pgpass",
+        "credentials",
+        "secrets.json",
+        ".htpasswd",
     ];
     NOMS.contains(&bas.as_str())
 }
@@ -175,7 +182,10 @@ impl Depot {
         let reelle = std::fs::canonicalize(racine)
             .with_context(|| format!("racine du dépôt introuvable : {}", racine.display()))?;
         if !reelle.is_dir() {
-            bail!("la racine du dépôt n'est pas un dossier : {}", reelle.display());
+            bail!(
+                "la racine du dépôt n'est pas un dossier : {}",
+                reelle.display()
+            );
         }
         Ok(Self {
             racine: reelle,
@@ -297,8 +307,8 @@ impl Depot {
     /// Si le chemin est refusé par [`Self::resoudre`], ou vise un dossier.
     pub fn lire(&self, chemin: &str, max_octets: Option<u64>) -> Result<FichierDepot> {
         let reel = self.resoudre(chemin)?;
-        let meta = std::fs::metadata(&reel)
-            .with_context(|| format!("lecture impossible : {chemin}"))?;
+        let meta =
+            std::fs::metadata(&reel).with_context(|| format!("lecture impossible : {chemin}"))?;
         if meta.is_dir() {
             bail!("'{chemin}' est un dossier — utiliser lister()");
         }
@@ -328,7 +338,9 @@ impl Depot {
         let mut tampon = vec![0_u8; usize::try_from(a_lire).unwrap_or(usize::MAX)];
         let mut f = std::fs::File::open(&reel)
             .with_context(|| format!("ouverture impossible : {chemin}"))?;
-        let lus = f.read(&mut tampon).with_context(|| format!("lecture impossible : {chemin}"))?;
+        let lus = f
+            .read(&mut tampon)
+            .with_context(|| format!("lecture impossible : {chemin}"))?;
         tampon.truncate(lus);
 
         // Détection binaire : un octet nul dans les 8 premiers Kio suffit (même règle que la
@@ -374,7 +386,9 @@ impl Depot {
         }
 
         let mut sortie = Vec::new();
-        for entree in std::fs::read_dir(&reel).with_context(|| format!("listing impossible : {chemin}"))? {
+        for entree in
+            std::fs::read_dir(&reel).with_context(|| format!("listing impossible : {chemin}"))?
+        {
             let Ok(e) = entree else { continue };
             let p = e.path();
             if self.verifier_exclusion(&p).is_err() {
@@ -421,7 +435,9 @@ impl Depot {
                 return true;
             };
             match rel.components().next() {
-                Some(premier) => !exclus.contains(&premier.as_os_str().to_string_lossy().to_string()),
+                Some(premier) => {
+                    !exclus.contains(&premier.as_os_str().to_string_lossy().to_string())
+                }
                 None => true,
             }
         });
@@ -436,7 +452,11 @@ impl Depot {
     /// Si un glob est invalide, ou le sous-dossier de départ refusé.
     pub fn trouver(&self, motif: &str, o: &OptionsParcours) -> Result<Vec<String>> {
         let set = construire_globs(&o.globs, &o.extensions)?;
-        let aiguille = if o.sensible_casse { motif.to_string() } else { motif.to_lowercase() };
+        let aiguille = if o.sensible_casse {
+            motif.to_string()
+        } else {
+            motif.to_lowercase()
+        };
 
         let hits: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
         let vus = Arc::new(AtomicUsize::new(0));
@@ -451,7 +471,9 @@ impl Depot {
             let limite = o.limite;
             let sensible = o.sensible_casse;
             Box::new(move |entree| {
-                let Ok(e) = entree else { return WalkState::Continue };
+                let Ok(e) = entree else {
+                    return WalkState::Continue;
+                };
                 if !e.file_type().is_some_and(|t| t.is_file()) {
                     return WalkState::Continue;
                 }
@@ -467,7 +489,11 @@ impl Depot {
                     .to_string_lossy()
                     .replace('\\', "/");
                 if !aiguille.is_empty() {
-                    let foin = if sensible { rel.clone() } else { rel.to_lowercase() };
+                    let foin = if sensible {
+                        rel.clone()
+                    } else {
+                        rel.to_lowercase()
+                    };
                     if !foin.contains(&aiguille) {
                         return WalkState::Continue;
                     }
@@ -525,7 +551,9 @@ impl Depot {
                 .line_number(true)
                 .build();
             Box::new(move |entree| {
-                let Ok(e) = entree else { return WalkState::Continue };
+                let Ok(e) = entree else {
+                    return WalkState::Continue;
+                };
                 if !e.file_type().is_some_and(|t| t.is_file()) {
                     return WalkState::Continue;
                 }
@@ -619,7 +647,9 @@ pub fn construire_globs(globs: &[String], exts: &[String]) -> Result<Option<Glob
     }
     for e in exts {
         let e = e.trim_start_matches('.');
-        b.add(Glob::new(&format!("**/*.{e}")).with_context(|| format!("extension invalide : {e}"))?);
+        b.add(
+            Glob::new(&format!("**/*.{e}")).with_context(|| format!("extension invalide : {e}"))?,
+        );
     }
     Ok(Some(b.build().context("construction du GlobSet")?))
 }
@@ -638,7 +668,9 @@ mod tests {
     #[test]
     fn lit_un_fichier_du_depot() {
         let d = depot();
-        let f = d.lire("crates/engine/nie-explore/Cargo.toml", None).expect("lecture");
+        let f = d
+            .lire("crates/engine/nie-explore/Cargo.toml", None)
+            .expect("lecture");
         assert!(!f.binaire, "un Cargo.toml n'est pas binaire");
         assert!(f.contenu.expect("contenu").contains("nie-explore"));
         assert_eq!(f.chemin, "crates/engine/nie-explore/Cargo.toml");
@@ -655,7 +687,10 @@ mod tests {
     fn refuse_les_dossiers_exclus() {
         let d = depot();
         for interdit in ["data/anime/episodes.db", "target/debug", ".git/HEAD"] {
-            assert!(d.resoudre(interdit).is_err(), "{interdit} aurait dû être refusé");
+            assert!(
+                d.resoudre(interdit).is_err(),
+                "{interdit} aurait dû être refusé"
+            );
         }
     }
 
@@ -698,7 +733,10 @@ mod tests {
             ..Default::default()
         };
         let hits = d.chercher("DOSSIERS_EXCLUS", &o).expect("recherche");
-        assert!(!hits.is_empty(), "la constante doit être trouvée dans ce module");
+        assert!(
+            !hits.is_empty(),
+            "la constante doit être trouvée dans ce module"
+        );
         assert!(hits.iter().all(|c| c.ligne >= 1));
     }
 
@@ -706,22 +744,38 @@ mod tests {
     fn refuse_les_fichiers_de_secrets() {
         // Le dépôt porte un vrai `.env.local` : sans barrière, `lire` en rendait le contenu.
         let d = depot();
-        for secret in [".env.local", ".env", "apps/azalee/.env.local", "cle.pem", "id_rsa"] {
+        for secret in [
+            ".env.local",
+            ".env",
+            "apps/azalee/.env.local",
+            "cle.pem",
+            "id_rsa",
+        ] {
             assert!(
                 d.lire(secret, None).is_err(),
                 "'{secret}' ne doit jamais être lisible"
             );
         }
         assert!(fichier_sensible(".env.production"));
-        assert!(fichier_sensible("serveur.KEY"), "la casse ne doit pas contourner le filtre");
+        assert!(
+            fichier_sensible("serveur.KEY"),
+            "la casse ne doit pas contourner le filtre"
+        );
         assert!(!fichier_sensible("lib.rs"));
-        assert!(!fichier_sensible("environment.ts"), "un nom qui commence par 'env' sans point");
+        assert!(
+            !fichier_sensible("environment.ts"),
+            "un nom qui commence par 'env' sans point"
+        );
     }
 
     #[test]
     fn les_secrets_ne_remontent_pas_dans_une_recherche() {
         let d = depot();
-        let o = OptionsParcours { caches: true, limite: 500, ..Default::default() };
+        let o = OptionsParcours {
+            caches: true,
+            limite: 500,
+            ..Default::default()
+        };
         let hits = d.trouver(".env", &o).expect("recherche");
         assert!(
             hits.iter().all(|h| !h.contains(".env")),

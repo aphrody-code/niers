@@ -90,7 +90,12 @@ pub fn compare(reference: &[u8], got: &[u8], max_ranges: usize) -> DiffReport {
 /// réécrit par une relocation : l'adresse diffère entre l'objet compilé et
 /// l'image liée, mais le code est bien identique).
 #[must_use]
-pub fn compare_masked(reference: &[u8], got: &[u8], mask: &[bool], max_ranges: usize) -> DiffReport {
+pub fn compare_masked(
+    reference: &[u8],
+    got: &[u8],
+    mask: &[bool],
+    max_ranges: usize,
+) -> DiffReport {
     let n = reference.len().min(got.len());
     let mut masked_ref = reference[..n].to_vec();
     let mut masked_got = got[..n].to_vec();

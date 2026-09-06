@@ -213,8 +213,20 @@ mod tests {
             sha256: String::new(),
             units: vec![
                 unit("hdr", UnitKind::PeHeaders, 0, 100, None),
-                unit("fn.140001000", UnitKind::Function, 100, 400, Some(0x1_4000_1000)),
-                unit("fn.140002000", UnitKind::Function, 500, 200, Some(0x1_4000_2000)),
+                unit(
+                    "fn.140001000",
+                    UnitKind::Function,
+                    100,
+                    400,
+                    Some(0x1_4000_1000),
+                ),
+                unit(
+                    "fn.140002000",
+                    UnitKind::Function,
+                    500,
+                    200,
+                    Some(0x1_4000_2000),
+                ),
                 unit("res..text.2bc", UnitKind::CodeResidue, 700, 100, None),
                 unit("data.rdata", UnitKind::SectionData, 800, 200, None),
             ],
@@ -300,8 +312,15 @@ mod tests {
         let mut c = cover();
         c.units[2].len = 3; // fn.140002000 fait désormais exactement 3 octets
         let r = Report::build(&c, &Registry::default(), &asm).unwrap();
-        assert_eq!(r.assembled.units, 1, "seule l'unité de taille compatible compte");
+        assert_eq!(
+            r.assembled.units, 1,
+            "seule l'unité de taille compatible compte"
+        );
         assert_eq!(r.assembled.bytes, 3);
-        assert_eq!(r.produced_bytes(), 103, "en-têtes (100) + corps assemblé (3)");
+        assert_eq!(
+            r.produced_bytes(),
+            103,
+            "en-têtes (100) + corps assemblé (3)"
+        );
     }
 }

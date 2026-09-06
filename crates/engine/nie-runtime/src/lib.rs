@@ -91,7 +91,11 @@ pub struct Ball {
 
 impl Default for Ball {
     fn default() -> Self {
-        Self { pos: V3::new(0.0, 0.0, 0.11), vel: V3::default(), gravity: BALL_GRAVITY }
+        Self {
+            pos: V3::new(0.0, 0.0, 0.11),
+            vel: V3::default(),
+            gravity: BALL_GRAVITY,
+        }
     }
 }
 
@@ -156,10 +160,22 @@ impl World {
         for &(xf, yf, role) in &FORMATION_442 {
             // Domicile : attaque +x, sa moitié = −x.
             let home0 = V2::new(xf * HALF_LEN, yf * HALF_WID);
-            players.push(Player { pos: home0, vel: V2::default(), team: 0, role, home: home0 });
+            players.push(Player {
+                pos: home0,
+                vel: V2::default(),
+                team: 0,
+                role,
+                home: home0,
+            });
             // Extérieur : miroir (attaque −x).
             let home1 = V2::new(-xf * HALF_LEN, yf * HALF_WID);
-            players.push(Player { pos: home1, vel: V2::default(), team: 1, role, home: home1 });
+            players.push(Player {
+                pos: home1,
+                vel: V2::default(),
+                team: 1,
+                role,
+                home: home1,
+            });
         }
         Self {
             ball: Ball::default(),
@@ -226,7 +242,9 @@ impl World {
         let carrier = self.possessor;
         // Joueur sous contrôle : seulement s'il y a une direction demandée. Sans entrée, il
         // reste piloté par l'IA — la simulation autonome doit rester identique au bit près.
-        let pilote = (self.input.dir.len() > 0.01).then(|| self.controlled()).flatten();
+        let pilote = (self.input.dir.len() > 0.01)
+            .then(|| self.controlled())
+            .flatten();
         // Plus proche par équipe.
         let mut nearest = [usize::MAX, usize::MAX];
         let mut best = [f32::MAX, f32::MAX];
@@ -242,7 +260,10 @@ impl World {
             let target = if carrier == Some(i) {
                 // Porteur : sprinte vers le but adverse en GARDANT sa position latérale
                 // (jeu 2D ; léger recentrage pour finir face au but).
-                V2::new(if p.team == 0 { HALF_LEN } else { -HALF_LEN }, p.pos.y * 0.85)
+                V2::new(
+                    if p.team == 0 { HALF_LEN } else { -HALF_LEN },
+                    p.pos.y * 0.85,
+                )
             } else if nearest[p.team as usize] == i
                 && !(p.role == Role::Goalkeeper && ball2.x.abs() < HALF_LEN * 0.5)
             {
@@ -368,7 +389,11 @@ impl World {
                 .iter()
                 .find(|p| p.team != team && p.role == Role::Goalkeeper)
                 .map_or(0.0, |g| g.pos.y);
-            let post = if gk_y >= 0.0 { -GOAL_HALF * 0.82 } else { GOAL_HALF * 0.82 };
+            let post = if gk_y >= 0.0 {
+                -GOAL_HALF * 0.82
+            } else {
+                GOAL_HALF * 0.82
+            };
             let dir = (V2::new(goal_x, post) - ball2).norm();
             self.ball.vel = V3::new(dir.x * KICK_POWER, dir.y * KICK_POWER, KICK_LOFT);
             self.kick_timer = KICK_COOLDOWN;
@@ -392,8 +417,10 @@ impl World {
             if (ball2.x - own_goal_x).abs() > 16.5 {
                 continue; // hors du tiers défensif proche du but.
             }
-            let Some(gk) =
-                self.players.iter().position(|p| p.team == team && p.role == Role::Goalkeeper)
+            let Some(gk) = self
+                .players
+                .iter()
+                .position(|p| p.team == team && p.role == Role::Goalkeeper)
             else {
                 continue;
             };
@@ -455,7 +482,13 @@ mod tests {
         let w = World::kickoff();
         assert_eq!(w.players.len(), 22);
         assert_eq!(w.players.iter().filter(|p| p.team == 0).count(), 11);
-        assert_eq!(w.players.iter().filter(|p| p.role == Role::Goalkeeper).count(), 2);
+        assert_eq!(
+            w.players
+                .iter()
+                .filter(|p| p.role == Role::Goalkeeper)
+                .count(),
+            2
+        );
         assert!(w.ball.pos.ground().len() < 0.01, "ballon au centre");
         assert_eq!(w.ball.gravity, BALL_GRAVITY);
     }
@@ -470,7 +503,11 @@ mod tests {
         for _ in 0..10 {
             w.step(1.0 / 60.0);
         }
-        assert!(w.ball.pos.z < z0, "le ballon descend ({} < {z0})", w.ball.pos.z);
+        assert!(
+            w.ball.pos.z < z0,
+            "le ballon descend ({} < {z0})",
+            w.ball.pos.z
+        );
     }
 
     #[test]
@@ -480,7 +517,11 @@ mod tests {
         w.ball.pos = V3::new(0.0, 0.0, 0.05);
         w.ball.vel = V3::new(0.0, 0.0, -5.0);
         w.step(1.0 / 60.0);
-        assert!(w.ball.vel.z > 0.0, "rebond : vitesse verticale inversée ({})", w.ball.vel.z);
+        assert!(
+            w.ball.vel.z > 0.0,
+            "rebond : vitesse verticale inversée ({})",
+            w.ball.vel.z
+        );
         assert!(w.ball.vel.z < 5.0, "rebond amorti (restitution < 1)");
     }
 

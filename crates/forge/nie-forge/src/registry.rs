@@ -76,7 +76,11 @@ impl RegistryEntry {
     /// # Erreurs
     /// Retourne une erreur si `va` n'est pas un entier hexadécimal `0x…`.
     pub fn va_value(&self) -> anyhow::Result<u64> {
-        let s = self.va.trim().trim_start_matches("0x").trim_start_matches("0X");
+        let s = self
+            .va
+            .trim()
+            .trim_start_matches("0x")
+            .trim_start_matches("0X");
         u64::from_str_radix(s, 16)
             .map_err(|e| anyhow::anyhow!("adresse invalide `{}` : {e}", self.va))
     }

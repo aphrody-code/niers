@@ -9,7 +9,11 @@ fn main() {
     let mg = std::fs::read(&args[2]).expect("g4mg");
     let md = g4md::parse(&md_bytes).expect("parse g4md");
 
-    println!("submeshes={} bone_count={} attributs:", md.submeshes.len(), md.header.bone_count);
+    println!(
+        "submeshes={} bone_count={} attributs:",
+        md.submeshes.len(),
+        md.header.bone_count
+    );
     for a in &md.attributes {
         let sem = match a.vtype {
             1 => "POS",
@@ -21,7 +25,10 @@ fn main() {
             10..=14 => "UV/TAN",
             _ => "?",
         };
-        println!("  vtype={:2}({sem}) offset={} datatype={}", a.vtype, a.offset, a.datatype);
+        println!(
+            "  vtype={:2}({sem}) offset={} datatype={}",
+            a.vtype, a.offset, a.datatype
+        );
     }
 
     if md.find_attribute(5).is_none() {
@@ -47,11 +54,30 @@ fn main() {
             bad += 1;
         }
         if v < 6 {
-            let w4: Vec<f32> = s.weights.iter().take(4).map(|x| (x * 100.0).round() / 100.0).collect();
-            println!("  v{v}: w[..4]={w4:?} sum={sum:.3} idx[..4]={:?}", &s.bones[..4]);
+            let w4: Vec<f32> = s
+                .weights
+                .iter()
+                .take(4)
+                .map(|x| (x * 100.0).round() / 100.0)
+                .collect();
+            println!(
+                "  v{v}: w[..4]={w4:?} sum={sum:.3} idx[..4]={:?}",
+                &s.bones[..4]
+            );
         }
     }
-    println!("poids somment à 1 : {ok}/{} (mauvais {bad}), index d'os max={max_idx} (bone_count={})", ok + bad, md.header.bone_count);
+    println!(
+        "poids somment à 1 : {ok}/{} (mauvais {bad}), index d'os max={max_idx} (bone_count={})",
+        ok + bad,
+        md.header.bone_count
+    );
     let valid = ok > bad * 5 && max_idx < md.header.bone_count.max(1);
-    println!("{}", if valid { "VALIDÉ ✓" } else { "ÉCHEC ✗ (datatype poids à ajuster ?)" });
+    println!(
+        "{}",
+        if valid {
+            "VALIDÉ ✓"
+        } else {
+            "ÉCHEC ✗ (datatype poids à ajuster ?)"
+        }
+    );
 }

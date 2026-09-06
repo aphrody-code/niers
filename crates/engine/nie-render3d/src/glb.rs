@@ -42,7 +42,9 @@ fn decode_png(bytes: &[u8]) -> Result<Texture> {
     let mut dec = png::Decoder::new(std::io::Cursor::new(bytes));
     dec.set_transformations(png::Transformations::normalize_to_color8());
     let mut reader = dec.read_info().context("png read_info")?;
-    let bufsz = reader.output_buffer_size().context("png output_buffer_size (overflow)")?;
+    let bufsz = reader
+        .output_buffer_size()
+        .context("png output_buffer_size (overflow)")?;
     let mut buf = vec![0u8; bufsz];
     let info = reader.next_frame(&mut buf).context("png next_frame")?;
     let (w, h) = (info.width, info.height);
@@ -78,7 +80,11 @@ fn decode_png(bytes: &[u8]) -> Result<Texture> {
         }
         png::ColorType::Indexed => bail!("PNG indexé non normalisé"),
     }
-    Ok(Texture { width: w, height: h, rgba })
+    Ok(Texture {
+        width: w,
+        height: h,
+        rgba,
+    })
 }
 
 /// `primitive.material → materials[m].pbr.baseColorTexture.index → textures[t].source` (indice image).
@@ -121,19 +127,24 @@ pub fn parse(data: &[u8]) -> Result<Model> {
     let root: Value = serde_json::from_slice(json).context("JSON glTF invalide")?;
 
     let accessors = root["accessors"].as_array().context("accessors absents")?;
-    let views = root["bufferViews"].as_array().context("bufferViews absents")?;
+    let views = root["bufferViews"]
+        .as_array()
+        .context("bufferViews absents")?;
 
     // Lit un accessor scalaire/vecteur en f32 (composantes consécutives).
     let read_floats = |acc_idx: usize, ncomp: usize| -> Result<Vec<f32>> {
         let acc = accessors.get(acc_idx).context("accessor hors limites")?;
-        let bv = views.get(acc["bufferView"].as_u64().context("bufferView")? as usize)
+        let bv = views
+            .get(acc["bufferView"].as_u64().context("bufferView")? as usize)
             .context("bufferView hors limites")?;
         let comp_ty = acc["componentType"].as_u64().context("componentType")?;
         let count = acc["count"].as_u64().context("count")? as usize;
         let view_start = bv["byteOffset"].as_u64().unwrap_or(0) as usize;
-        let view_end = view_start.checked_add(bv["byteLength"].as_u64().context("byteLength")? as usize)
+        let view_end = view_start
+            .checked_add(bv["byteLength"].as_u64().context("byteLength")? as usize)
             .context("bufferView déborde")?;
-        let base = view_start.checked_add(acc["byteOffset"].as_u64().unwrap_or(0) as usize)
+        let base = view_start
+            .checked_add(acc["byteOffset"].as_u64().unwrap_or(0) as usize)
             .context("offset accessor déborde")?;
         let comp_sz = match comp_ty {
             5126 => 4,
@@ -142,11 +153,19 @@ pub fn parse(data: &[u8]) -> Result<Model> {
             5121 => 1,
             other => bail!("componentType {other} non géré"),
         };
-        let stride = bv["byteStride"].as_u64().map(|s| s as usize).unwrap_or(ncomp * comp_sz);
+        let stride = bv["byteStride"]
+            .as_u64()
+            .map(|s| s as usize)
+            .unwrap_or(ncomp * comp_sz);
         let element_size = ncomp * comp_sz;
-        let end = if count == 0 { base } else {
-            (count - 1).checked_mul(stride).and_then(|n| base.checked_add(n))
-                .and_then(|n| n.checked_add(element_size)).context("taille accessor déborde")?
+        let end = if count == 0 {
+            base
+        } else {
+            (count - 1)
+                .checked_mul(stride)
+                .and_then(|n| base.checked_add(n))
+                .and_then(|n| n.checked_add(element_size))
+                .context("taille accessor déborde")?
         };
         if stride < element_size || end > view_end || view_end > bin.len() {
             bail!("accessor hors du bufferView ou du chunk BIN");
@@ -178,7 +197,9 @@ pub fn parse(data: &[u8]) -> Result<Model> {
             let bo = bv["byteOffset"].as_u64().unwrap_or(0) as usize;
             let bl = bv["byteLength"].as_u64().context("image byteLength")? as usize;
             let end = bo.checked_add(bl).context("image déborde")?;
-            textures.push(decode_png(bin.get(bo..end).context("image hors du chunk BIN")?)?);
+            textures.push(decode_png(
+                bin.get(bo..end).context("image hors du chunk BIN")?,
+            )?);
         }
     }
 
@@ -187,7 +208,9 @@ pub fn parse(data: &[u8]) -> Result<Model> {
     for mesh in root["meshes"].as_array().unwrap_or(&empty) {
         for prim in mesh["primitives"].as_array().unwrap_or(&empty) {
             let attrs = &prim["attributes"];
-            let Some(pos_acc) = attrs["POSITION"].as_u64() else { continue };
+            let Some(pos_acc) = attrs["POSITION"].as_u64() else {
+                continue;
+            };
             let pf = read_floats(pos_acc as usize, 3)?;
             let positions: Vec<[f32; 3]> = pf.chunks_exact(3).map(|c| [c[0], c[1], c[2]]).collect();
             let normals: Vec<[f32; 3]> = match attrs["NORMAL"].as_u64() {
@@ -198,11 +221,17 @@ pub fn parse(data: &[u8]) -> Result<Model> {
                 None => Vec::new(),
             };
             let uv: Vec<[f32; 2]> = match attrs["TEXCOORD_0"].as_u64() {
-                Some(a) => read_floats(a as usize, 2)?.chunks_exact(2).map(|c| [c[0], c[1]]).collect(),
+                Some(a) => read_floats(a as usize, 2)?
+                    .chunks_exact(2)
+                    .map(|c| [c[0], c[1]])
+                    .collect(),
                 None => Vec::new(),
             };
             let indices: Vec<u32> = match prim["indices"].as_u64() {
-                Some(a) => read_floats(a as usize, 1)?.iter().map(|&f| f as u32).collect(),
+                Some(a) => read_floats(a as usize, 1)?
+                    .iter()
+                    .map(|&f| f as u32)
+                    .collect(),
                 None => (0..positions.len() as u32).collect(),
             };
             let texture = prim["material"]
@@ -212,13 +241,22 @@ pub fn parse(data: &[u8]) -> Result<Model> {
             if indices.iter().any(|&i| i as usize >= positions.len()) {
                 bail!("indice de sommet hors limites");
             }
-            primitives.push(Primitive { positions, normals, uv, indices, texture });
+            primitives.push(Primitive {
+                positions,
+                normals,
+                uv,
+                indices,
+                texture,
+            });
         }
     }
     if primitives.is_empty() {
         bail!("aucune primitive de mesh dans le GLB");
     }
-    Ok(Model { primitives, textures })
+    Ok(Model {
+        primitives,
+        textures,
+    })
 }
 
 #[cfg(test)]
@@ -227,7 +265,9 @@ mod tests {
 
     fn fixture(root: Value) -> Vec<u8> {
         let mut json = serde_json::to_vec(&root).unwrap();
-        while !json.len().is_multiple_of(4) { json.push(b' '); }
+        while !json.len().is_multiple_of(4) {
+            json.push(b' ');
+        }
         let mut data = b"glTF".to_vec();
         data.extend_from_slice(&2u32.to_le_bytes());
         data.extend_from_slice(&((12 + 8 + json.len() + 8 + 12) as u32).to_le_bytes());

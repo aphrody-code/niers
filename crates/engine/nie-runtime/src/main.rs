@@ -6,7 +6,11 @@
 //! ```
 
 #![forbid(unsafe_code)]
-#![allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, clippy::cast_precision_loss)]
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_precision_loss
+)]
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -92,8 +96,13 @@ fn main() -> Result<()> {
 
     println!(
         "tick={} time={:.1}s score={}-{} ball=({:.1},{:.1},{:.2}) {width}x{height}",
-        world.tick, world.time, world.score[0], world.score[1], world.ball.pos.x,
-        world.ball.pos.y, world.ball.pos.z
+        world.tick,
+        world.time,
+        world.score[0],
+        world.score[1],
+        world.ball.pos.x,
+        world.ball.pos.y,
+        world.ball.pos.z
     );
 
     if cli.no_video {
@@ -118,12 +127,23 @@ fn main() -> Result<()> {
 fn encode_video(dir: &Path, fps: u32, out: &Path) -> Result<()> {
     let pattern = dir.join("frame_%05d.png");
     let status = Command::new("ffmpeg")
-        .args(["-y", "-loglevel", "error", "-framerate", &fps.to_string(), "-i"])
+        .args([
+            "-y",
+            "-loglevel",
+            "error",
+            "-framerate",
+            &fps.to_string(),
+            "-i",
+        ])
         .arg(&pattern)
         .args(["-c:v", "libx264", "-pix_fmt", "yuv420p"])
         .arg(out)
         .status()
         .context("lancer ffmpeg (installé ? sinon --no-video)")?;
-    anyhow::ensure!(status.success(), "ffmpeg a échoué (code {:?})", status.code());
+    anyhow::ensure!(
+        status.success(),
+        "ffmpeg a échoué (code {:?})",
+        status.code()
+    );
     Ok(())
 }

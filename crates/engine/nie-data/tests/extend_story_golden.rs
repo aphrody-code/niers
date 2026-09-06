@@ -9,7 +9,7 @@
 
 use nie_data::extend_story::parse_extend_story_config;
 use nie_data::hash::HashId;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 /// Reconstruit EXACTEMENT le JSON iecode du dump réel `extend_story_data_config_0.00.02.00`.
 fn node_fixture() -> Value {
@@ -112,7 +112,9 @@ fn extend_story_game_data_paires_de_config() {
 fn extend_story_recherches_par_id() {
     let cfg = parse_extend_story_config(&node_fixture());
     // L'extendStoryDataId de l'histoire pointe vers l'extendStoryGameId du bloc de données.
-    let story = cfg.find_by_story_id(HashId(0xB7DE_3E13)).expect("histoire trouvée");
+    let story = cfg
+        .find_by_story_id(HashId(0xB7DE_3E13))
+        .expect("histoire trouvée");
     let game = cfg
         .find_game_data(story.extend_story_data_id)
         .expect("données de jeu reliées trouvées");

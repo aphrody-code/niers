@@ -391,7 +391,10 @@ pub fn parse_inacode_config(root: &Value) -> InacodeConfig {
         cfg.stamps = values.iter().map(InacodeStampData::from_value).collect();
     }
     if let Some(values) = list_values(root, "m_InacodeAuthorNameDataList") {
-        cfg.authors = values.iter().map(InacodeAuthorNameData::from_value).collect();
+        cfg.authors = values
+            .iter()
+            .map(InacodeAuthorNameData::from_value)
+            .collect();
     }
     if let Some(values) = list_values(root, "m_InacodePhotoImgDataList") {
         cfg.photo_imgs = values.iter().map(InacodePhotoImgData::from_value).collect();
@@ -409,7 +412,10 @@ pub fn parse_inacode_config(root: &Value) -> InacodeConfig {
         cfg.rooms = values.iter().map(InacodeRoomData::from_value).collect();
     }
     if let Some(values) = list_values(root, "m_InacodeSelectionDataList") {
-        cfg.selections = values.iter().map(InacodeSelectionData::from_value).collect();
+        cfg.selections = values
+            .iter()
+            .map(InacodeSelectionData::from_value)
+            .collect();
     }
     if let Some(values) = list_values(root, "m_InacodeMentionDataList") {
         cfg.mentions = values.iter().map(InacodeMentionData::from_value).collect();

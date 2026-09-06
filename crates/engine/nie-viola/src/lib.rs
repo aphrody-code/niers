@@ -38,8 +38,8 @@ pub mod presets;
 pub mod verify;
 
 pub use crypto::{CriwareKey, crypt_bytes, crypt_file};
-pub use filtre::Filtre;
 pub use dump::{DumpOptions, DumpProgress, DumpReport, Echec, Raison, dump_all};
+pub use filtre::Filtre;
 pub use manifeste::{Dependance, FichierMod, Manifeste, Version, ordonner};
 pub use merge::{Conflit, MergeReport, MergeStrategy, merge_dirs};
 pub use pack::{CpkListCrypto, PackReport, Platform, decode_cpk_list, encode_cpk_list, pack_mod};
@@ -53,7 +53,9 @@ use std::path::{Path, PathBuf};
 #[must_use]
 pub fn glob_match(motif: &str, texte: &str) -> bool {
     let mut morceaux = motif.split('*');
-    let Some(debut) = morceaux.next() else { return true };
+    let Some(debut) = morceaux.next() else {
+        return true;
+    };
     if !texte.starts_with(debut) {
         return false;
     }
@@ -96,7 +98,9 @@ pub fn enumerer(racine: &Path) -> Result<Vec<(PathBuf, String)>, String> {
             match e.file_type() {
                 Ok(t) if t.is_dir() => pile.push(chemin),
                 Ok(t) if t.is_file() => {
-                    let Ok(rel) = chemin.strip_prefix(racine) else { continue };
+                    let Ok(rel) = chemin.strip_prefix(racine) else {
+                        continue;
+                    };
                     out.push((chemin.clone(), rel.to_string_lossy().replace('\\', "/")));
                 }
                 // Les liens et les entrées illisibles sont ignorés plutôt que de faire échouer
@@ -122,7 +126,10 @@ mod tests {
         assert!(glob_match("*chr*g4md", "data/chr/c01.g4md"));
         assert!(glob_match("*", "n'importe quoi"));
         assert!(glob_match("exact", "exact"));
-        assert!(!glob_match("exact", "exactement"), "sans joker, l'égalité est stricte");
+        assert!(
+            !glob_match("exact", "exactement"),
+            "sans joker, l'égalité est stricte"
+        );
         assert!(!glob_match("exact", "inexact"));
     }
 
@@ -134,7 +141,11 @@ mod tests {
         std::fs::write(dir.join("b/c/a.bin"), b"a").expect("a");
         let v = enumerer(&dir).expect("énumération");
         let rels: Vec<&str> = v.iter().map(|(_, r)| r.as_str()).collect();
-        assert_eq!(rels, vec!["b/c/a.bin", "z.bin"], "récursif, trié, séparateurs normalisés");
+        assert_eq!(
+            rels,
+            vec!["b/c/a.bin", "z.bin"],
+            "récursif, trié, séparateurs normalisés"
+        );
         std::fs::remove_dir_all(&dir).ok();
     }
 }

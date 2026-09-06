@@ -6,9 +6,7 @@
 //! **6470/7223** personnages ont un prénom résolu ; Endou `c01000010` (charaId `0x99A1C150`) →
 //! prénom « Mark », nom « Evans », bio « La passion du football l'emportera toujours.… ».
 
-use nie_data::chara_base::{
-    resolve_description, resolve_first_name, resolve_last_name, CharaBase,
-};
+use nie_data::chara_base::{CharaBase, resolve_description, resolve_first_name, resolve_last_name};
 use nie_data::chara_description::ParsedDescription;
 use nie_data::chara_text::ParsedNoun;
 use nie_data::hash::HashId;
@@ -28,8 +26,16 @@ fn endou() -> CharaBase {
 
 fn nouns() -> Vec<ParsedNoun> {
     vec![
-        ParsedNoun { hash_id: HashId(0xE551_FF12), name: "Mark".into(), alt_names: vec![] },
-        ParsedNoun { hash_id: HashId(0xE565_5F9E), name: "Evans".into(), alt_names: vec![] },
+        ParsedNoun {
+            hash_id: HashId(0xE551_FF12),
+            name: "Mark".into(),
+            alt_names: vec![],
+        },
+        ParsedNoun {
+            hash_id: HashId(0xE565_5F9E),
+            name: "Evans".into(),
+            alt_names: vec![],
+        },
     ]
 }
 

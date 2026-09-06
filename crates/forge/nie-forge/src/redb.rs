@@ -39,16 +39,13 @@ impl ReNames {
         if !db.is_file() {
             return Ok(Self::default());
         }
-        let conn = rusqlite::Connection::open_with_flags(
-            db,
-            rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY,
-        )
-        .with_context(|| format!("ouverture de {}", db.display()))?;
+        let conn =
+            rusqlite::Connection::open_with_flags(db, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)
+                .with_context(|| format!("ouverture de {}", db.display()))?;
 
         let mut names = BTreeMap::new();
-        let mut stmt = conn.prepare(
-            "SELECT vaddr, name FROM function WHERE name IS NOT NULL AND name <> ''",
-        )?;
+        let mut stmt =
+            conn.prepare("SELECT vaddr, name FROM function WHERE name IS NOT NULL AND name <> ''")?;
         let rows = stmt.query_map([], |r| {
             Ok((r.get::<_, i64>(0)? as u64, r.get::<_, String>(1)?))
         })?;

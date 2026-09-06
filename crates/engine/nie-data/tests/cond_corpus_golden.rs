@@ -8,8 +8,6 @@ mod common;
 
 use nie_data::cond::CondBlob;
 
-
-
 /// Décode base64 (alphabet standard, padding optionnel) → octets. `None` si invalide.
 fn b64(s: &str) -> Option<Vec<u8>> {
     const INV: u8 = 0xFF;
@@ -83,7 +81,9 @@ fn walk_files(dir: &std::path::Path, files: &mut Vec<std::path::PathBuf>, cap: u
     if files.len() >= cap {
         return;
     }
-    let Ok(rd) = std::fs::read_dir(dir) else { return };
+    let Ok(rd) = std::fs::read_dir(dir) else {
+        return;
+    };
     for e in rd.flatten() {
         let p = e.path();
         if p.is_dir() {
@@ -127,7 +127,11 @@ fn cadrage_version0_prouve_sur_corpus_reel() {
             collect(&v, &mut blobs);
         }
     }
-    assert!(blobs.len() > 1000, "corpus de blobs cond conséquent (eu {})", blobs.len());
+    assert!(
+        blobs.len() > 1000,
+        "corpus de blobs cond conséquent (eu {})",
+        blobs.len()
+    );
 
     let mut v0 = 0usize;
     let mut v0_bad = 0usize;
@@ -146,14 +150,22 @@ fn cadrage_version0_prouve_sur_corpus_reel() {
         }
     }
     // Cadrage version-0 prouvé : AUCUN blob version-0 ne viole declared_len == len-5.
-    assert_eq!(v0_bad, 0, "{v0_bad} blobs version-0 violent le cadrage (sur {v0})");
+    assert_eq!(
+        v0_bad, 0,
+        "{v0_bad} blobs version-0 violent le cadrage (sur {v0})"
+    );
     assert!(v0 > 1000, "majorité de blobs version-0 (eu {v0})");
-    eprintln!("cond corpus: {} blobs | v0={v0} (cadrage OK) | v1(liste)={versions_other}", blobs.len());
+    eprintln!(
+        "cond corpus: {} blobs | v0={v0} (cadrage OK) | v1(liste)={versions_other}",
+        blobs.len()
+    );
 
     // ── Décodage SÉMANTIQUE complet sur tout le corpus (unlock_condition, port d'inagle) ──────
     // Prouve que le décodeur de clauses (tokens 0x35/0x34/0x32, namespaces story/event-flag,
     // opcodes single/AND/trivial) tient sur les 17 k+ blobs RÉELS, pas seulement les fixtures.
-    use nie_data::unlock_condition::{decode_unlock_condition_bytes, story_threshold_to_episode, UnlockType};
+    use nie_data::unlock_condition::{
+        UnlockType, decode_unlock_condition_bytes, story_threshold_to_episode,
+    };
     let (mut always, mut story, mut eventflag, mut composite) = (0u32, 0u32, 0u32, 0u32);
     let mut story_on_grid = 0u32;
     let mut total_events = 0u32;
@@ -173,9 +185,20 @@ fn cadrage_version0_prouve_sur_corpus_reel() {
         total_events += u32::try_from(c.required_events.len()).unwrap_or(0);
     }
     // Le décodeur trouve de VRAIES conditions (pas tout trivial) : story + event-flags présents.
-    assert!(story + composite > 100, "seuils de progression story décodés (eu {})", story + composite);
-    assert!(eventflag + composite > 100, "event-flags décodés (eu {})", eventflag + composite);
-    assert!(total_events > 1000, "feuilles event-flag décodées (eu {total_events})");
+    assert!(
+        story + composite > 100,
+        "seuils de progression story décodés (eu {})",
+        story + composite
+    );
+    assert!(
+        eventflag + composite > 100,
+        "event-flags décodés (eu {})",
+        eventflag + composite
+    );
+    assert!(
+        total_events > 1000,
+        "feuilles event-flag décodées (eu {total_events})"
+    );
     eprintln!(
         "unlock_condition corpus: always={always} story={story} eventFlag={eventflag} composite={composite} | story alignés grille={story_on_grid} | feuilles event={total_events}"
     );

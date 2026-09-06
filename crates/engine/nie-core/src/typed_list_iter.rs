@@ -129,7 +129,11 @@ pub fn resolve(desc: &Descriptor, tag: u8, value: u32) -> DerefOutcome {
                     return DerefOutcome::Sentinel0;
                 }
                 if value & 0x8000_0000 == 0 && value < desc.bound {
-                    let base = if desc.ptr_58 != 0 { desc.ptr_58 } else { desc.ptr_50 };
+                    let base = if desc.ptr_58 != 0 {
+                        desc.ptr_58
+                    } else {
+                        desc.ptr_50
+                    };
                     return DerefOutcome::Resolved(base.wrapping_add(u64::from(value)));
                 }
             }
@@ -167,7 +171,12 @@ mod tests {
     }
 
     fn desc_tag3() -> Descriptor {
-        Descriptor { flag_a1: 0, ptr_30: 0x1000, count_38: 5, ..Default::default() }
+        Descriptor {
+            flag_a1: 0,
+            ptr_30: 0x1000,
+            count_38: 5,
+            ..Default::default()
+        }
     }
     fn desc_tag0() -> Descriptor {
         Descriptor {

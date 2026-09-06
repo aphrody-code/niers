@@ -136,7 +136,10 @@ pub fn is_g4sk(data: &[u8]) -> bool {
 /// - [`FormatError::BadMagic`] si le magic n'est pas G4SK.
 pub fn parse_header(data: &[u8]) -> Result<G4skHeader, FormatError> {
     if data.len() < 0x22 {
-        return Err(FormatError::TooShort { got: data.len(), need: 0x22 });
+        return Err(FormatError::TooShort {
+            got: data.len(),
+            need: 0x22,
+        });
     }
     if !is_g4sk(data) {
         return Err(FormatError::BadMagic { format: "G4SK" });
@@ -180,7 +183,10 @@ pub fn parse_hierarchy(data: &[u8], header: &G4skHeader) -> G4skBones {
 fn try_parse_real_hierarchy(data: &[u8], header: &G4skHeader) -> Option<G4skBones> {
     let n = header.bone_count as usize;
     if n == 0 {
-        return Some(G4skBones { bones: Vec::new(), heuristic: false });
+        return Some(G4skBones {
+            bones: Vec::new(),
+            heuristic: false,
+        });
     }
 
     let parents_off = slot_offset(data, SLOT_PARENTS)?;
@@ -227,10 +233,17 @@ fn try_parse_real_hierarchy(data: &[u8], header: &G4skHeader) -> Option<G4skBone
     }
 
     let bones = (0..n)
-        .map(|i| Bone { index: i, parent_index: normalized[i], name: names[i].clone() })
+        .map(|i| Bone {
+            index: i,
+            parent_index: normalized[i],
+            name: names[i].clone(),
+        })
         .collect();
 
-    Some(G4skBones { bones, heuristic: false })
+    Some(G4skBones {
+        bones,
+        heuristic: false,
+    })
 }
 
 /// Vrai si `parents` (où `-1` = racine) forme une forêt acyclique d'indices valides.
@@ -311,10 +324,17 @@ pub fn parse_parents_heuristic(data: &[u8], header: &G4skHeader) -> G4skBones {
             Some(off) => read_u16(data, off + i * 2).unwrap_or(0) as i16,
             None => -1,
         };
-        bones.push(Bone { index: i, parent_index, name: alloc::format!("Bone_{i}") });
+        bones.push(Bone {
+            index: i,
+            parent_index,
+            name: alloc::format!("Bone_{i}"),
+        });
     }
 
-    G4skBones { bones, heuristic: true }
+    G4skBones {
+        bones,
+        heuristic: true,
+    }
 }
 
 /// Lit une chaîne nulle-terminée **imprimable** (ASCII 0x20..=0x7E) à `off`. `None` si le
@@ -418,7 +438,10 @@ pub fn parse_poses(data: &[u8], header: &G4skHeader) -> Option<Vec<BonePose>> {
             quat: [cf(4)?, cf(5)?, cf(6)?, cf(7)?],
             translation: [cf(8)?, cf(9)?, cf(10)?],
         };
-        poses.push(BonePose { local, inverse_bind });
+        poses.push(BonePose {
+            local,
+            inverse_bind,
+        });
     }
     Some(poses)
 }
@@ -525,10 +548,16 @@ mod tests {
 
     #[test]
     fn rejette_petit_et_mauvais_magic() {
-        assert!(matches!(parse_header(&[0u8; 8]), Err(FormatError::TooShort { .. })));
+        assert!(matches!(
+            parse_header(&[0u8; 8]),
+            Err(FormatError::TooShort { .. })
+        ));
         let mut buf = build_header(1, 1);
         buf[..4].copy_from_slice(b"XXXX");
-        assert!(matches!(parse_header(&buf), Err(FormatError::BadMagic { .. })));
+        assert!(matches!(
+            parse_header(&buf),
+            Err(FormatError::BadMagic { .. })
+        ));
     }
 
     // ------------------------------------------------------------------
@@ -562,7 +591,10 @@ mod tests {
         let res = parse_hierarchy(&g4sk, &h);
 
         // C'est la résolution réelle, PAS l'heuristique.
-        assert!(!res.heuristic, "la hiérarchie réelle doit être résolue (heuristic=false)");
+        assert!(
+            !res.heuristic,
+            "la hiérarchie réelle doit être résolue (heuristic=false)"
+        );
         assert_eq!(res.bones.len(), 19);
 
         // Parents recoupés (sentinelle bone_count=19 normalisée en -1 pour les racines 0 et 15).
@@ -573,10 +605,25 @@ mod tests {
 
         // Noms recoupés.
         let expected_names = [
-            "s28g001b_map", "bk00_s28g001b", "spatial_b_00", "range_00_1", "model_a_00",
-            "model_r_00", "ao200", "ao241", "s28g001g01", "s28g001g02", "s28g001g03",
-            "s28g001g04", "s28g001g05", "s28g001g06", "s28g001g07", "instance", "bk00",
-            "ao241_bk00_01", "ao241_bk00_02",
+            "s28g001b_map",
+            "bk00_s28g001b",
+            "spatial_b_00",
+            "range_00_1",
+            "model_a_00",
+            "model_r_00",
+            "ao200",
+            "ao241",
+            "s28g001g01",
+            "s28g001g02",
+            "s28g001g03",
+            "s28g001g04",
+            "s28g001g05",
+            "s28g001g06",
+            "s28g001g07",
+            "instance",
+            "bk00",
+            "ao241_bk00_01",
+            "ao241_bk00_02",
         ];
         let got_names: Vec<&str> = res.bones.iter().map(|b| b.name.as_str()).collect();
         assert_eq!(got_names, expected_names);
@@ -588,10 +635,17 @@ mod tests {
         let h = parse_header(&g4sk).unwrap();
         let res = parse_hierarchy(&g4sk, &h);
         let parents: Vec<i16> = res.bones.iter().map(|b| b.parent_index).collect();
-        assert!(is_acyclic_forest(&parents), "l'arbre d'os réel doit être acyclique");
+        assert!(
+            is_acyclic_forest(&parents),
+            "l'arbre d'os réel doit être acyclique"
+        );
         // Deux racines réelles : os 0 (s28g001b_map) et os 15 (instance).
-        let roots: Vec<usize> =
-            res.bones.iter().filter(|b| b.parent_index == -1).map(|b| b.index).collect();
+        let roots: Vec<usize> = res
+            .bones
+            .iter()
+            .filter(|b| b.parent_index == -1)
+            .map(|b| b.index)
+            .collect();
         assert_eq!(roots, alloc::vec![0, 15]);
     }
 
@@ -618,7 +672,10 @@ mod tests {
         // slot[4] et slot[8] pointent vers des zones de 0xAB → parents hors plage → invalide.
         let h = parse_header(&buf).unwrap();
         let res = parse_hierarchy(&buf, &h);
-        assert!(res.heuristic, "table invalide ⇒ retombe en heuristique, pas de fabrication");
+        assert!(
+            res.heuristic,
+            "table invalide ⇒ retombe en heuristique, pas de fabrication"
+        );
         assert_eq!(res.bones.len(), 8);
     }
 
@@ -632,9 +689,17 @@ mod tests {
         buf[0x1002..0x1004].copy_from_slice(&0i16.to_le_bytes());
         buf[0x1004..0x1006].copy_from_slice(&1i16.to_le_bytes());
 
-        let h = G4skHeader { header_size: 0x20, type_id: 0, file_size: 0, bone_count: 3 };
+        let h = G4skHeader {
+            header_size: 0x20,
+            type_id: 0,
+            file_size: 0,
+            bone_count: 3,
+        };
         let res = parse_parents_heuristic(&buf, &h);
-        assert!(res.heuristic, "la hiérarchie heuristique DOIT être marquée non fiable");
+        assert!(
+            res.heuristic,
+            "la hiérarchie heuristique DOIT être marquée non fiable"
+        );
         assert_eq!(res.bones.len(), 3);
         assert_eq!(res.bones[0].parent_index, -1);
         assert_eq!(res.bones[1].parent_index, 0);

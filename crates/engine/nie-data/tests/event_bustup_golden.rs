@@ -5,8 +5,7 @@ mod common;
 use nie_data::event_bustup::parse_event_bustup_talk;
 use nie_data::hash::HashId;
 
-const PATH: &str =
-    "event/event_bustup_talk_data_config_c23_3.00.06.cfg.bin.json";
+const PATH: &str = "event/event_bustup_talk_data_config_c23_3.00.06.cfg.bin.json";
 
 fn load() -> Option<serde_json::Value> {
     let chemin_abs = common::chemin(PATH)?;
@@ -38,7 +37,10 @@ fn dispatch_typed_prefixe() {
     use nie_data::typed::{decode_by_key, family_key};
     let Some(root) = load() else { return };
     let key = family_key("event_bustup_talk_data_config_c23_3.00.06.cfg.bin");
-    assert!(key.starts_with("event_bustup_talk_data_config"), "clé={key}");
+    assert!(
+        key.starts_with("event_bustup_talk_data_config"),
+        "clé={key}"
+    );
     let (label, json) = decode_by_key(&key, &root).expect("dispatch câblé");
     assert_eq!(label, "event_bustup");
     assert_eq!(json["chr_slots"].as_array().map(Vec::len), Some(6));

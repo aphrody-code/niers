@@ -42,8 +42,8 @@ mod common;
 
 use nie_data::hash::HashId;
 use nie_data::weather::{
-    parse_weather_convert, parse_weather_schedule, WeatherConvert, WeatherRegionInfo,
-    WeatherScheduleConfig, WeatherScheduleData, WeatherScheduleInfo,
+    WeatherConvert, WeatherRegionInfo, WeatherScheduleConfig, WeatherScheduleData,
+    WeatherScheduleInfo, parse_weather_convert, parse_weather_schedule,
 };
 use serde_json::json;
 
@@ -244,7 +244,10 @@ fn convert_entree_7_derniere() {
     let e: &WeatherConvert = &cfg[7];
     // weather_convert_0.00.00 lignes 37-39 (index 7)
     assert_eq!(e.detail_weather, 7);
-    assert_eq!(e.game_weather, 0, "gameWeather=0 (clair) pour detailWeather=7");
+    assert_eq!(
+        e.game_weather, 0,
+        "gameWeather=0 (clair) pour detailWeather=7"
+    );
     assert_eq!(e.map_weather, 4);
 }
 
@@ -254,8 +257,16 @@ fn convert_entree_7_derniere() {
 fn schedule_compte_total() {
     let cfg: WeatherScheduleConfig = parse_weather_schedule(&fixture_schedule());
     // Fixture : 1 schedule, 2 data entries, 1 région
-    assert_eq!(cfg.schedules.len(), 1, "1 WeatherScheduleInfo dans la fixture");
-    assert_eq!(cfg.data_entries.len(), 2, "2 WeatherScheduleData dans la fixture");
+    assert_eq!(
+        cfg.schedules.len(),
+        1,
+        "1 WeatherScheduleInfo dans la fixture"
+    );
+    assert_eq!(
+        cfg.data_entries.len(),
+        2,
+        "2 WeatherScheduleData dans la fixture"
+    );
     assert!(cfg.region_info.is_some(), "region_info présent");
 }
 
@@ -276,7 +287,11 @@ fn data_0_champs_base() {
     let cfg = parse_weather_schedule(&fixture_schedule());
     let d: &WeatherScheduleData = &cfg.data_entries[0];
     // DATA_0.var[0]=-1892953670 -> HashId(0x8F2BD1BA)
-    assert_eq!(d.data_id, HashId(0x8F2B_D1BA), "DATA_0 data_id = 0x8F2BD1BA");
+    assert_eq!(
+        d.data_id,
+        HashId(0x8F2B_D1BA),
+        "DATA_0 data_id = 0x8F2BD1BA"
+    );
     // DATA_0.var[1]=1
     assert_eq!(d.weather_type, 1, "DATA_0 weather_type=1");
     // DATA_0.var[25]=30 (base_probability)
@@ -296,13 +311,23 @@ fn data_1_slots_non_nuls() {
     let cfg = parse_weather_schedule(&fixture_schedule());
     let d: &WeatherScheduleData = &cfg.data_entries[1];
     // DATA_1.var[0]=371359744 -> HashId(0x16228000)
-    assert_eq!(d.data_id, HashId(0x1622_8000), "DATA_1 data_id = 0x16228000");
+    assert_eq!(
+        d.data_id,
+        HashId(0x1622_8000),
+        "DATA_1 data_id = 0x16228000"
+    );
     // DATA_1.var[1]=2
     assert_eq!(d.weather_type, 2, "DATA_1 weather_type=2");
     // DATA_1.var[6]=1 -> detail_weights[4]=1 (var[6] = index 6 - 2 = slot 4)
-    assert_eq!(d.detail_weights[4], 1, "DATA_1 detail_weights[4]=1 (var[6])");
+    assert_eq!(
+        d.detail_weights[4], 1,
+        "DATA_1 detail_weights[4]=1 (var[6])"
+    );
     // DATA_1.var[22]=2 -> detail_weights[20]=2 (var[22] = index 22 - 2 = slot 20)
-    assert_eq!(d.detail_weights[20], 2, "DATA_1 detail_weights[20]=2 (var[22])");
+    assert_eq!(
+        d.detail_weights[20], 2,
+        "DATA_1 detail_weights[20]=2 (var[22])"
+    );
     // DATA_1.var[25]=20
     assert_eq!(d.base_probability, 20, "DATA_1 base_probability=20");
 }
@@ -314,9 +339,17 @@ fn region_info_champs() {
     // WEATHER_REGION_INFO_0.var[0]=1
     assert_eq!(r.region_type, 1, "region_type=1");
     // var[1]=-1268820937 -> 0xB45F5437
-    assert_eq!(r.schedule_ids[0], HashId(0xB45F_5437), "schedule_ids[0]=0xB45F5437");
+    assert_eq!(
+        r.schedule_ids[0],
+        HashId(0xB45F_5437),
+        "schedule_ids[0]=0xB45F5437"
+    );
     // var[2]=-1219327315 -> 0xB7528AAD
-    assert_eq!(r.schedule_ids[1], HashId(0xB752_8AAD), "schedule_ids[1]=0xB7528AAD");
+    assert_eq!(
+        r.schedule_ids[1],
+        HashId(0xB752_8AAD),
+        "schedule_ids[1]=0xB7528AAD"
+    );
     assert_eq!(r.schedule_ids.len(), 2, "2 schedule_ids");
 }
 
@@ -340,10 +373,8 @@ fn find_schedule_absent() {
 
 // ─── Tests sur les vrais fichiers (skip silencieux si absents du VPS) ─────────
 
-const REAL_CONVERT_PATH: &str =
-    "weather/weather_convert_0.00.00.cfg.bin.json";
-const REAL_SCHEDULE_PATH: &str =
-    "weather/weather_schedule_0.00.00.cfg.bin.json";
+const REAL_CONVERT_PATH: &str = "weather/weather_convert_0.00.00.cfg.bin.json";
+const REAL_SCHEDULE_PATH: &str = "weather/weather_schedule_0.00.00.cfg.bin.json";
 
 fn load_real_convert() -> Option<Vec<nie_data::weather::WeatherConvert>> {
     let chemin_abs = common::chemin(REAL_CONVERT_PATH)?;
@@ -377,7 +408,11 @@ fn real_file_convert_comptes() {
         return;
     };
     // weather_convert_0.00.00 : exactement 8 entrées (detailWeather 0..7)
-    assert_eq!(cfg.len(), 8, "8 entrées WeatherConvert dans le vrai fichier");
+    assert_eq!(
+        cfg.len(),
+        8,
+        "8 entrées WeatherConvert dans le vrai fichier"
+    );
 }
 
 #[test]
@@ -423,7 +458,11 @@ fn real_file_schedule_comptes() {
     };
     // weather_schedule_0.00.00 : 2 schedules, 18 données, 1 région
     assert_eq!(cfg.schedules.len(), 2, "2 WeatherScheduleInfo");
-    assert_eq!(cfg.data_entries.len(), 18, "18 WeatherScheduleData (9 par schedule)");
+    assert_eq!(
+        cfg.data_entries.len(),
+        18,
+        "18 WeatherScheduleData (9 par schedule)"
+    );
     assert!(cfg.region_info.is_some(), "1 WeatherRegionInfo");
 }
 
@@ -473,10 +512,20 @@ fn real_file_data_1_detail_weights() {
     };
     // DATA_1.var[6]=1 -> detail_weights[4]=1 ; var[22]=2 -> detail_weights[20]=2
     let d = &cfg.data_entries[1];
-    assert_eq!(d.data_id, HashId(0x1622_8000), "DATA_1 data_id = 0x16228000");
+    assert_eq!(
+        d.data_id,
+        HashId(0x1622_8000),
+        "DATA_1 data_id = 0x16228000"
+    );
     assert_eq!(d.weather_type, 2, "DATA_1 weather_type=2");
-    assert_eq!(d.detail_weights[4], 1, "DATA_1 detail_weights[4]=1 (var[6])");
-    assert_eq!(d.detail_weights[20], 2, "DATA_1 detail_weights[20]=2 (var[22])");
+    assert_eq!(
+        d.detail_weights[4], 1,
+        "DATA_1 detail_weights[4]=1 (var[6])"
+    );
+    assert_eq!(
+        d.detail_weights[20], 2,
+        "DATA_1 detail_weights[20]=2 (var[22])"
+    );
     assert_eq!(d.base_probability, 20, "DATA_1 base_probability=20");
     assert_eq!(d.reserved, 0, "DATA_1 reserved=0");
 }
@@ -487,8 +536,14 @@ fn real_file_schedule_somme_probabilites() {
         return;
     };
     // Chaque groupe de 9 données doit sommer à 100 en base_probability
-    let schedule_0_probs: i64 = cfg.data_entries[0..9].iter().map(|d| d.base_probability).sum();
-    let schedule_1_probs: i64 = cfg.data_entries[9..18].iter().map(|d| d.base_probability).sum();
+    let schedule_0_probs: i64 = cfg.data_entries[0..9]
+        .iter()
+        .map(|d| d.base_probability)
+        .sum();
+    let schedule_1_probs: i64 = cfg.data_entries[9..18]
+        .iter()
+        .map(|d| d.base_probability)
+        .sum();
     assert_eq!(
         schedule_0_probs, 100,
         "schedule 0 : somme base_probability = 100"
@@ -508,8 +563,16 @@ fn real_file_region_info() {
     let r = cfg.region_info.as_ref().unwrap();
     assert_eq!(r.region_type, 1, "region_type=1");
     assert_eq!(r.schedule_ids.len(), 2, "2 schedule_ids");
-    assert_eq!(r.schedule_ids[0], HashId(0xB45F_5437), "schedule_ids[0]=0xB45F5437");
-    assert_eq!(r.schedule_ids[1], HashId(0xB752_8AAD), "schedule_ids[1]=0xB7528AAD");
+    assert_eq!(
+        r.schedule_ids[0],
+        HashId(0xB45F_5437),
+        "schedule_ids[0]=0xB45F5437"
+    );
+    assert_eq!(
+        r.schedule_ids[1],
+        HashId(0xB752_8AAD),
+        "schedule_ids[1]=0xB7528AAD"
+    );
 }
 
 #[test]
@@ -519,7 +582,11 @@ fn real_file_data_9_schedule1_debut() {
     };
     // DATA_9.var[0]=933371288 -> HashId(0x37A21D98), var[1]=5, var[25]=30
     let d = &cfg.data_entries[9];
-    assert_eq!(d.data_id, HashId(0x37A2_1D98), "DATA_9 data_id = 0x37A21D98");
+    assert_eq!(
+        d.data_id,
+        HashId(0x37A2_1D98),
+        "DATA_9 data_id = 0x37A21D98"
+    );
     assert_eq!(d.weather_type, 5, "DATA_9 weather_type=5 (schedule 1)");
     assert_eq!(d.base_probability, 30, "DATA_9 base_probability=30");
 }

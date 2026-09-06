@@ -29,7 +29,7 @@ mod common;
 
 use nie_data::hash::HashId;
 use nie_data::photo_mode::{
-    parse_photo_mode_random_pose_config, PhotoModeRandomPoseConfig, RandomPose,
+    PhotoModeRandomPoseConfig, RandomPose, parse_photo_mode_random_pose_config,
 };
 use serde_json::json;
 
@@ -132,7 +132,11 @@ fn load_real() -> Option<PhotoModeRandomPoseConfig> {
 fn real_file_compte_total() {
     let Some(cfg) = load_real() else { return };
     // photo_mode_random_pose_config : 91 entrées dans m_randomPoseList
-    assert_eq!(cfg.poses.len(), 91, "91 entrées RANDOM_POSE dans le dump réel");
+    assert_eq!(
+        cfg.poses.len(),
+        91,
+        "91 entrées RANDOM_POSE dans le dump réel"
+    );
 }
 
 #[test]
@@ -207,6 +211,9 @@ fn real_file_body_type_0_unique() {
 fn real_file_find_by_motion() {
     let Some(cfg) = load_real() else { return };
     let found = cfg.find_by_motion(HashId(0xF8CC_8EDE));
-    assert!(found.is_some(), "find_by_motion(0xF8CC8EDE) doit trouver l'entrée 0");
+    assert!(
+        found.is_some(),
+        "find_by_motion(0xF8CC8EDE) doit trouver l'entrée 0"
+    );
     assert_eq!(found.unwrap().chara_body_type, 0);
 }

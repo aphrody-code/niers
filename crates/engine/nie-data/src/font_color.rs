@@ -69,8 +69,9 @@ impl FontColor {
 /// Parse `font_color.cfg.bin.json` → la palette de texte, dans l'ordre du fichier.
 #[must_use]
 pub fn parse_font_colors(root: &Value) -> Vec<FontColor> {
-    list_values(root, "m_FontColorDataList")
-        .map_or_else(Vec::new, |vs| vs.iter().map(FontColor::from_value).collect())
+    list_values(root, "m_FontColorDataList").map_or_else(Vec::new, |vs| {
+        vs.iter().map(FontColor::from_value).collect()
+    })
 }
 
 /// Retrouve une couleur par son identifiant.

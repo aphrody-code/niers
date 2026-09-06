@@ -9,8 +9,8 @@
 
 use nie_data::hash::HashId;
 use nie_data::movie::{
-    parse_movie_playing_config, MoviePlayingConfig, MoviePlayingInfo, MovieSubtitleMenuData,
-    NONE_SENTINEL,
+    MoviePlayingConfig, MoviePlayingInfo, MovieSubtitleMenuData, NONE_SENTINEL,
+    parse_movie_playing_config,
 };
 use serde_json::json;
 
@@ -86,8 +86,16 @@ fn parsed() -> MoviePlayingConfig {
 fn comptes_des_trois_listes() {
     let cfg = parsed();
     assert_eq!(cfg.subtitle_menus.len(), 3, "3 MOVIE_SUBTITLE_MENU_DATA");
-    assert_eq!(cfg.song_captions.len(), 0, "0 MOVIE_SONG_CAPTION_DATA (liste vide réelle)");
-    assert_eq!(cfg.playing_infos.len(), 5, "5 lignes MOVIE_PLAYING_INFO échantillonnées");
+    assert_eq!(
+        cfg.song_captions.len(),
+        0,
+        "0 MOVIE_SONG_CAPTION_DATA (liste vide réelle)"
+    );
+    assert_eq!(
+        cfg.playing_infos.len(),
+        5,
+        "5 lignes MOVIE_PLAYING_INFO échantillonnées"
+    );
 }
 
 #[test]
@@ -139,7 +147,10 @@ fn playing_info_avec_sous_titres_et_menu() {
     let m = &cfg.playing_infos[1];
     assert_eq!(m.movie_id, HashId(0xD1B7_673E));
     assert_eq!(m.menu_id, HashId(0xC8A5_975A));
-    assert_eq!(m.subtitle_text(), Some("common/text/<LG>/event/ev01_00150.cfg.bin"));
+    assert_eq!(
+        m.subtitle_text(),
+        Some("common/text/<LG>/event/ev01_00150.cfg.bin")
+    );
     assert_eq!(
         m.subtitle_setting(),
         Some("common/gamedata/event/subtitle/<VLG>/Subtitle_ev01_00150.cfg.bin")
@@ -173,7 +184,9 @@ fn playing_info_not_stop_bgm_et_fade_method() {
 #[test]
 fn find_movie_par_hash() {
     let cfg = parsed();
-    let found = cfg.find_movie(HashId(0xAE86_2D22)).expect("ev01_00200 trouvé");
+    let found = cfg
+        .find_movie(HashId(0xAE86_2D22))
+        .expect("ev01_00200 trouvé");
     assert_eq!(found.movie_path, "common/movie/ev01_00200.usm");
     assert_eq!(found.staffroll_data_name, "ev01_00200");
     assert!(cfg.find_movie(HashId(0xDEAD_BEEF)).is_none());

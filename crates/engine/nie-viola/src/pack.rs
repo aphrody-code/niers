@@ -52,9 +52,10 @@ pub enum CpkListCrypto {
 /// Si aucune des trois lectures ne produit un `cfg.bin` analysable.
 pub fn decode_cpk_list(brut: &[u8]) -> Result<(CfgBinFile, CpkListCrypto), String> {
     if let Ok(clair) = cpk::decrypt_cpk_list(brut)
-        && let Ok(cfg) = cfgbin::cfgbin_parse(&clair) {
-            return Ok((cfg, CpkListCrypto::Aes));
-        }
+        && let Ok(cfg) = cfgbin::cfgbin_parse(&clair)
+    {
+        return Ok((cfg, CpkListCrypto::Aes));
+    }
     let mut viola = brut.to_vec();
     cpk::decrypt_block(&mut viola, 0, cpk::VIOLA_FIXED_KEY);
     if let Ok(cfg) = cfgbin::cfgbin_parse(&viola) {
@@ -157,7 +158,8 @@ pub fn pack_mod(
         if enfant.variables.len() < 5 {
             continue;
         }
-        if let (Value::String(dir), Value::String(nom)) = (&enfant.variables[0], &enfant.variables[1])
+        if let (Value::String(dir), Value::String(nom)) =
+            (&enfant.variables[0], &enfant.variables[1])
         {
             existantes.insert(format!("{dir}{nom}"), i);
         }
@@ -198,8 +200,9 @@ pub fn pack_mod(
             continue;
         }
         let taille = std::fs::metadata(absolu).map(|m| m.len()).unwrap_or(0);
-        let taille = i32::try_from(taille)
-            .map_err(|_| format!("{rel} : dépasse 2 Gio, taille non représentable dans cpk_list"))?;
+        let taille = i32::try_from(taille).map_err(|_| {
+            format!("{rel} : dépasse 2 Gio, taille non représentable dans cpk_list")
+        })?;
 
         if let Some(&i) = existantes.get(rel) {
             let e = &mut racine.children[i];
@@ -232,7 +235,8 @@ pub fn pack_mod(
     rapport.total = racine.children.len();
     // L'entrée racine porte le compte des entrées : le laisser périmé rend la liste incohérente.
     if let Some(Value::Int(n)) = racine.variables.first_mut() {
-        *n = i32::try_from(rapport.total).map_err(|_| "trop d'entrées pour cpk_list".to_string())?;
+        *n =
+            i32::try_from(rapport.total).map_err(|_| "trop d'entrées pour cpk_list".to_string())?;
     }
 
     // ── Recopie des fichiers, en parallèle ───────────────────────────────────────────────────
@@ -274,11 +278,17 @@ pub fn pack_mod(
             }
         }
     });
-    let echecs = echecs.into_inner().map_err(|_| "verrou d'échecs empoisonné".to_string())?;
+    let echecs = echecs
+        .into_inner()
+        .map_err(|_| "verrou d'échecs empoisonné".to_string())?;
     if !echecs.is_empty() {
         // Un pack partiellement recopié produirait un `cpk_list` annonçant des fichiers absents,
         // donc un jeu qui cherche ce qui n'existe pas : mieux vaut échouer franchement.
-        return Err(format!("{} fichier(s) non copié(s) : {}", echecs.len(), echecs.join(" ; ")));
+        return Err(format!(
+            "{} fichier(s) non copié(s) : {}",
+            echecs.len(),
+            echecs.join(" ; ")
+        ));
     }
     rapport.copies = copies.into_inner();
 
@@ -302,7 +312,10 @@ mod tests {
     #[test]
     fn l_emplacement_du_cpk_list_depend_de_la_plateforme() {
         assert_eq!(Platform::Pc.cpk_list_rel(), "data/cpk_list.cfg.bin");
-        assert_eq!(Platform::Switch.cpk_list_rel(), "romfs/data/cpk_list.cfg.bin");
+        assert_eq!(
+            Platform::Switch.cpk_list_rel(),
+            "romfs/data/cpk_list.cfg.bin"
+        );
     }
 
     #[test]

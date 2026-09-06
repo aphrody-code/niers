@@ -342,7 +342,11 @@ mod golden_tests {
     fn embedded_passive_counts() {
         let db = PassiveSkillEffectDb::load_embedded();
         assert_eq!(db.effects.len(), 8, "m_soccerPassiveSkillEffectList = 8");
-        assert_eq!(db.ranges.len(), 1, "m_soccerPassiveSkillEffectRangeList = 1");
+        assert_eq!(
+            db.ranges.len(),
+            1,
+            "m_soccerPassiveSkillEffectRangeList = 1"
+        );
     }
 
     /// Golden : premier effet réel (0x20DFBB4B, param1 = 1.5).

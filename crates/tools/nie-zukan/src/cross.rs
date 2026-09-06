@@ -14,12 +14,8 @@ use std::path::Path;
 use tracing::info;
 
 /// Effectue le croisement entre les données zukan (JP) et le miroir inagle.
-pub fn cross_with_inagle(
-    zukan_charas: &[ZukanChara],
-    mirror_path: &Path,
-) -> Result<CrossResult> {
-    let conn = Connection::open(mirror_path)
-        .context("ouverture miroir SQLite")?;
+pub fn cross_with_inagle(zukan_charas: &[ZukanChara], mirror_path: &Path) -> Result<CrossResult> {
+    let conn = Connection::open(mirror_path).context("ouverture miroir SQLite")?;
 
     // Charger tous les internal_code distincts d'inagle (= IDs de jeu style c01000010)
     // Note : chara_id dans inagle = hash 0x... ; internal_code = ID de jeu alphanumérique
@@ -43,7 +39,7 @@ pub fn cross_with_inagle(
              description_ja, element, position
              FROM inagle_characters
              WHERE internal_code IS NOT NULL
-             GROUP BY internal_code"
+             GROUP BY internal_code",
         )?;
         stmt.query_map([], |row| {
             Ok((
@@ -99,22 +95,23 @@ pub fn cross_with_inagle(
 
         // Exemple 1 : description localisée (le zukan a souvent une bio que le wiki n'a pas)
         if let Some(ref desc) = chara.description
-            && !desc.is_empty() {
-                let inagle_desc = if inagle.description_ja.is_empty() {
-                    None
-                } else {
-                    Some(inagle.description_ja.chars().take(50).collect::<String>())
-                };
-                if inagle_desc.is_none() || inagle_desc.as_deref() != Some(desc.as_str()) {
-                    enrichment_examples.push(EnrichmentExample {
-                        game_id: chara.game_id.clone(),
-                        name_ja: inagle.name_ja.clone(),
-                        field: "description_ja".to_owned(),
-                        zukan_value: desc.chars().take(80).collect(),
-                        inagle_value: inagle_desc,
-                    });
-                }
+            && !desc.is_empty()
+        {
+            let inagle_desc = if inagle.description_ja.is_empty() {
+                None
+            } else {
+                Some(inagle.description_ja.chars().take(50).collect::<String>())
+            };
+            if inagle_desc.is_none() || inagle_desc.as_deref() != Some(desc.as_str()) {
+                enrichment_examples.push(EnrichmentExample {
+                    game_id: chara.game_id.clone(),
+                    name_ja: inagle.name_ja.clone(),
+                    field: "description_ja".to_owned(),
+                    zukan_value: desc.chars().take(80).collect(),
+                    inagle_value: inagle_desc,
+                });
             }
+        }
 
         // Exemple 2 : courbes de stats (le zukan donne des valeurs Lv50 différentes)
         if let Some(ref stats) = chara.stats.lv50 {
@@ -132,15 +129,16 @@ pub fn cross_with_inagle(
 
         // Exemple 3 : acquisition (入手方法 — absent d'inagle)
         if let Some(ref acq) = chara.acquisition
-            && !acq.is_empty() {
-                enrichment_examples.push(EnrichmentExample {
-                    game_id: chara.game_id.clone(),
-                    name_ja: inagle.name_ja.clone(),
-                    field: "acquisition_ja".to_owned(),
-                    zukan_value: acq.chars().take(100).collect(),
-                    inagle_value: None, // inagle n'a pas ce champ
-                });
-            }
+            && !acq.is_empty()
+        {
+            enrichment_examples.push(EnrichmentExample {
+                game_id: chara.game_id.clone(),
+                name_ja: inagle.name_ja.clone(),
+                field: "acquisition_ja".to_owned(),
+                zukan_value: acq.chars().take(100).collect(),
+                inagle_value: None, // inagle n'a pas ce champ
+            });
+        }
 
         if enrichment_examples.len() >= 15 {
             break;

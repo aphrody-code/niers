@@ -109,7 +109,10 @@ fn pousser<'a>(out: &mut Vec<Nal<'a>>, brut: &'a [u8]) {
         return;
     }
     let bytes = &brut[..fin];
-    out.push(Nal { kind: bytes[0] & 0x1F, bytes });
+    out.push(Nal {
+        kind: bytes[0] & 0x1F,
+        bytes,
+    });
 }
 
 /// Retire les octets d'anti-émulation `0x03` (`00 00 03 xx` → `00 00 xx`) — §7.4.1.1.
@@ -185,7 +188,11 @@ impl<'a> Bits<'a> {
     fn se(&mut self) -> i32 {
         let k = self.ue();
         let mag = i64::from(k.div_ceil(2));
-        if k.is_multiple_of(2) { -(mag as i32) } else { mag as i32 }
+        if k.is_multiple_of(2) {
+            -(mag as i32)
+        } else {
+            mag as i32
+        }
     }
 
     /// Épuisé ? Sert de garde-fou aux boucles pilotées par des `ue(v)` lus.
@@ -234,10 +241,15 @@ impl Sps {
 /// tronquée, [`FormatError::Corrupt`] si les dimensions calculées sont absurdes.
 pub fn parse_sps(nal_sps: &[u8]) -> Result<Sps, FormatError> {
     if nal_sps.len() < 5 {
-        return Err(FormatError::TooShort { got: nal_sps.len(), need: 5 });
+        return Err(FormatError::TooShort {
+            got: nal_sps.len(),
+            need: 5,
+        });
     }
     if nal_sps[0] & 0x1F != nal::SPS {
-        return Err(FormatError::BadMagic { format: "H.264/SPS" });
+        return Err(FormatError::BadMagic {
+            format: "H.264/SPS",
+        });
     }
     let d = rbsp(&nal_sps[1..]);
     let mut b = Bits::new(&d);
@@ -355,7 +367,9 @@ pub fn parse_sps(nal_sps: &[u8]) -> Result<Sps, FormatError> {
     let coupe_w = (crop_l + crop_r) * sub_w;
     let coupe_h = (crop_t + crop_b) * sub_h * (2 - frame_mbs_only);
     if coupe_w >= brut_w || coupe_h >= brut_h {
-        return Err(FormatError::Corrupt("SPS : recadrage plus grand que l'image"));
+        return Err(FormatError::Corrupt(
+            "SPS : recadrage plus grand que l'image",
+        ));
     }
     let width = brut_w - coupe_w;
     let height = brut_h - coupe_h;
@@ -363,7 +377,15 @@ pub fn parse_sps(nal_sps: &[u8]) -> Result<Sps, FormatError> {
         return Err(FormatError::Corrupt("SPS : dimensions hors bornes"));
     }
 
-    Ok(Sps { profile_idc, constraints, level_idc, width, height, fps_num, fps_den })
+    Ok(Sps {
+        profile_idc,
+        constraints,
+        level_idc,
+        width,
+        height,
+        fps_num,
+        fps_den,
+    })
 }
 
 /// Traverse une liste d'échelle (`scaling_list`, §7.3.2.1.1.1) sans la conserver.
@@ -389,7 +411,10 @@ struct Boites {
 
 impl Boites {
     fn new() -> Self {
-        Self { o: Vec::with_capacity(64 * 1024), ouvertes: Vec::new() }
+        Self {
+            o: Vec::with_capacity(64 * 1024),
+            ouvertes: Vec::new(),
+        }
     }
 
     fn u8(&mut self, v: u8) {
@@ -518,7 +543,13 @@ pub fn muxer_h264(
     unites: &[&[u8]],
     cadence: Option<(u32, u32)>,
 ) -> Result<(Vec<u8>, Resume), FormatError> {
-    muxer_h264_avec(unites, &Options { cadence, affichage: None })
+    muxer_h264_avec(
+        unites,
+        &Options {
+            cadence,
+            affichage: None,
+        },
+    )
 }
 
 /// Muxe des unités d'accès H.264 Annex-B, réglages explicites.
@@ -556,10 +587,15 @@ pub fn muxer_h264_avec(
     };
     let sps = parse_sps(&sps_brut)?;
 
-    let echantillons: Vec<Echantillon> =
-        unites.iter().map(|u| en_avcc(u)).filter(|e| !e.bytes.is_empty()).collect();
+    let echantillons: Vec<Echantillon> = unites
+        .iter()
+        .map(|u| en_avcc(u))
+        .filter(|e| !e.bytes.is_empty())
+        .collect();
     if echantillons.is_empty() {
-        return Err(FormatError::Corrupt("MP4 : aucune unité d'accès exploitable"));
+        return Err(FormatError::Corrupt(
+            "MP4 : aucune unité d'accès exploitable",
+        ));
     }
 
     // Base de temps DÉRIVÉE de la cadence, pas fixée à 90 kHz.
@@ -632,7 +668,9 @@ pub fn muxer_h264_avec(
         affichage,
     );
     if moov2.len() != moov.len() {
-        return Err(FormatError::Corrupt("MP4 : taille de moov instable entre les deux passes"));
+        return Err(FormatError::Corrupt(
+            "MP4 : taille de moov instable entre les deux passes",
+        ));
     }
     moov = moov2;
     b.brut(&moov);
@@ -877,7 +915,11 @@ pub fn boites_racine(mp4: &[u8]) -> Vec<([u8; 4], u64)> {
         let taille = u32::from_be_bytes([mp4[p], mp4[p + 1], mp4[p + 2], mp4[p + 3]]) as u64;
         let mut kind = [0u8; 4];
         kind.copy_from_slice(&mp4[p + 4..p + 8]);
-        let taille = if taille == 0 { (mp4.len() - p) as u64 } else { taille };
+        let taille = if taille == 0 {
+            (mp4.len() - p) as u64
+        } else {
+            taille
+        };
         if taille < 8 || p as u64 + taille > mp4.len() as u64 {
             break;
         }
@@ -903,7 +945,11 @@ mod tests {
 
     impl Ecrivain {
         fn new() -> Self {
-            Self { o: Vec::new(), n: 0, cur: 0 }
+            Self {
+                o: Vec::new(),
+                n: 0,
+                cur: 0,
+            }
         }
         fn bit(&mut self, v: u32) {
             self.cur = (self.cur << 1) | (v as u8 & 1);
@@ -1015,7 +1061,10 @@ mod tests {
 
     #[test]
     fn l_anti_emulation_est_retiree() {
-        assert_eq!(rbsp(&[0x67, 0, 0, 3, 1, 0, 0, 3, 2]), vec![0x67, 0, 0, 1, 0, 0, 2]);
+        assert_eq!(
+            rbsp(&[0x67, 0, 0, 3, 1, 0, 0, 3, 2]),
+            vec![0x67, 0, 0, 1, 0, 0, 2]
+        );
         // Un 0x03 qui ne suit pas deux zéros n'est PAS un octet d'échappement.
         assert_eq!(rbsp(&[1, 3, 0, 3, 4]), vec![1, 3, 0, 3, 4]);
     }
@@ -1047,9 +1096,14 @@ mod tests {
     fn un_sps_qui_n_en_est_pas_un_est_refuse() {
         assert!(matches!(
             parse_sps(&[0x68, 1, 2, 3, 4]),
-            Err(FormatError::BadMagic { format: "H.264/SPS" })
+            Err(FormatError::BadMagic {
+                format: "H.264/SPS"
+            })
         ));
-        assert!(matches!(parse_sps(&[0x67]), Err(FormatError::TooShort { .. })));
+        assert!(matches!(
+            parse_sps(&[0x67]),
+            Err(FormatError::TooShort { .. })
+        ));
     }
 
     #[test]
@@ -1070,13 +1124,23 @@ mod tests {
         assert_eq!((r.sps.width, r.sps.height), (640, 480));
         // 30 i/s exactement : base 60 × 17 = 1020, une image = 2 × 17 = 34 unités.
         assert_eq!((r.timescale, r.duree_image), (1020, 34));
-        assert!((r.secondes() - 0.1).abs() < 1e-9, "3 images à 30 i/s = 0,1 s");
+        assert!(
+            (r.secondes() - 0.1).abs() < 1e-9,
+            "3 images à 30 i/s = 0,1 s"
+        );
 
         let racine = boites_racine(&mp4);
         let types: Vec<&[u8]> = racine.iter().map(|(k, _)| &k[..]).collect();
-        assert_eq!(types, vec![b"ftyp".as_slice(), b"moov".as_slice(), b"mdat".as_slice()]);
+        assert_eq!(
+            types,
+            vec![b"ftyp".as_slice(), b"moov".as_slice(), b"mdat".as_slice()]
+        );
         let total: u64 = racine.iter().map(|(_, t)| t).sum();
-        assert_eq!(total, mp4.len() as u64, "les tailles doivent couvrir tout le fichier");
+        assert_eq!(
+            total,
+            mp4.len() as u64,
+            "les tailles doivent couvrir tout le fichier"
+        );
     }
 
     #[test]
@@ -1094,8 +1158,12 @@ mod tests {
         let attendu = (debut_mdat + 8) as u32;
 
         // `stco` : on la retrouve par son type, puis on lit son unique offset.
-        let pos = mp4.windows(4).position(|w| w == b"stco").expect("stco présente");
-        let offset = u32::from_be_bytes([mp4[pos + 12], mp4[pos + 13], mp4[pos + 14], mp4[pos + 15]]);
+        let pos = mp4
+            .windows(4)
+            .position(|w| w == b"stco")
+            .expect("stco présente");
+        let offset =
+            u32::from_be_bytes([mp4[pos + 12], mp4[pos + 13], mp4[pos + 14], mp4[pos + 15]]);
         assert_eq!(offset, attendu);
         // Et cet offset désigne bien le préfixe de longueur de la première NAL.
         let taille = u32::from_be_bytes([
@@ -1104,7 +1172,11 @@ mod tests {
             mp4[offset as usize + 2],
             mp4[offset as usize + 3],
         ]);
-        assert_eq!(taille as usize, sps.len(), "première NAL du premier échantillon = le SPS");
+        assert_eq!(
+            taille as usize,
+            sps.len(),
+            "première NAL du premier échantillon = le SPS"
+        );
     }
 
     #[test]
@@ -1120,7 +1192,11 @@ mod tests {
         let (_, r) = muxer_h264(&unites, Some((24_000, 1001))).expect("muxage");
         assert_eq!((r.timescale, r.duree_image), (24_000, 1001));
         let attendu = 2243.0 * 1001.0 / 24_000.0;
-        assert!((r.secondes() - attendu).abs() < 1e-9, "durée {}", r.secondes());
+        assert!(
+            (r.secondes() - attendu).abs() < 1e-9,
+            "durée {}",
+            r.secondes()
+        );
     }
 
     #[test]
@@ -1132,25 +1208,49 @@ mod tests {
         let f = annexb(&[&sps, &pps, &idr]);
         let unites: Vec<&[u8]> = vec![&f];
 
-        let opts = Options { cadence: Some((24_000, 1001)), affichage: Some((1920, 1080)) };
+        let opts = Options {
+            cadence: Some((24_000, 1001)),
+            affichage: Some((1920, 1080)),
+        };
         let (mp4, r) = muxer_h264_avec(&unites, &opts).expect("muxage");
-        assert_eq!((r.sps.width, r.sps.height), (1920, 1088), "le SPS reste la taille codée");
+        assert_eq!(
+            (r.sps.width, r.sps.height),
+            (1920, 1088),
+            "le SPS reste la taille codée"
+        );
 
         // `tkhd` : largeur/hauteur 16.16 aux deux derniers champs de la boîte (version 0).
-        let pos = mp4.windows(4).position(|w| w == b"tkhd").expect("tkhd présente");
+        let pos = mp4
+            .windows(4)
+            .position(|w| w == b"tkhd")
+            .expect("tkhd présente");
         let fin = pos + 4 + 84; // 84 octets de charge en version 0 (ISO 14496-12 §8.3.2)
         let lire = |o: usize| u32::from_be_bytes([mp4[o], mp4[o + 1], mp4[o + 2], mp4[o + 3]]);
         assert_eq!(lire(fin - 8) >> 16, 1920);
-        assert_eq!(lire(fin - 4) >> 16, 1080, "tkhd doit annoncer 1080, pas 1088");
+        assert_eq!(
+            lire(fin - 4) >> 16,
+            1080,
+            "tkhd doit annoncer 1080, pas 1088"
+        );
 
         // `avc1` : largeur/hauteur sur 16 bits, 24 octets après le début de la charge. La
         // recherche part de `stsd` — la marque `avc1` figure AUSSI dans la liste de `ftyp`.
-        let stsd = mp4.windows(4).position(|w| w == b"stsd").expect("stsd présente");
-        let av =
-            stsd + mp4[stsd..].windows(4).position(|w| w == b"avc1").expect("avc1 présente");
+        let stsd = mp4
+            .windows(4)
+            .position(|w| w == b"stsd")
+            .expect("stsd présente");
+        let av = stsd
+            + mp4[stsd..]
+                .windows(4)
+                .position(|w| w == b"avc1")
+                .expect("avc1 présente");
         let w = u16::from_be_bytes([mp4[av + 4 + 24], mp4[av + 4 + 25]]);
         let h = u16::from_be_bytes([mp4[av + 4 + 26], mp4[av + 4 + 27]]);
-        assert_eq!((w, h), (1920, 1088), "avc1 garde la taille réellement codée");
+        assert_eq!(
+            (w, h),
+            (1920, 1088),
+            "avc1 garde la taille réellement codée"
+        );
 
         // Sans indication, les deux coïncident.
         let (mp4, _) = muxer_h264(&unites, None).expect("muxage sans affichage");
@@ -1165,8 +1265,14 @@ mod tests {
         let idr = vec![0x65u8, 1, 2, 3];
         let f = annexb(&[&idr]);
         let unites: Vec<&[u8]> = vec![&f];
-        assert!(matches!(muxer_h264(&unites, None), Err(FormatError::Corrupt(_))));
-        assert!(matches!(muxer_h264(&[], None), Err(FormatError::Corrupt(_))));
+        assert!(matches!(
+            muxer_h264(&unites, None),
+            Err(FormatError::Corrupt(_))
+        ));
+        assert!(matches!(
+            muxer_h264(&[], None),
+            Err(FormatError::Corrupt(_))
+        ));
     }
 
     #[test]

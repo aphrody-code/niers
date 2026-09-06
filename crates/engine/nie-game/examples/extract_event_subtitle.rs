@@ -44,10 +44,15 @@ fn load(vfs: &Vfs, suffix: &str, must_contain: &str) -> Option<serde_json::Value
 }
 
 fn main() {
-    let event = std::env::args().nth(1).unwrap_or_else(|| "ev09_05000".into());
-    let dir = nie_formats::vfs::resolve_game_dir().to_string_lossy().into_owned();
+    let event = std::env::args()
+        .nth(1)
+        .unwrap_or_else(|| "ev09_05000".into());
+    let dir = nie_formats::vfs::resolve_game_dir()
+        .to_string_lossy()
+        .into_owned();
     let mut vfs = Vfs::new();
-    vfs.init(Path::new(&dir).join("data").as_path()).expect("vfs init");
+    vfs.init(Path::new(&dir).join("data").as_path())
+        .expect("vfs init");
 
     eprintln!("event = {event}");
     let sub_root = load(&vfs, &format!("Subtitle_{event}.cfg.bin"), "/subtitle/ja/")
@@ -74,15 +79,27 @@ fn main() {
         first.show_start,
         first.show_end
     );
-    let label = washa.iter().find(|w| w.text_hash == first.text_hash).and_then(|w| w.label.clone());
+    let label = washa
+        .iter()
+        .find(|w| w.text_hash == first.text_hash)
+        .and_then(|w| w.label.clone());
     let txt = nie_data::event_subtitle::find_event_text(&text_fr, first.text_hash);
     eprintln!("  washa.label={label:?}");
-    eprintln!("  dialogue fr (brut) = {:?}", txt.map(|t| t.chars().take(60).collect::<String>()));
+    eprintln!(
+        "  dialogue fr (brut) = {:?}",
+        txt.map(|t| t.chars().take(60).collect::<String>())
+    );
 
     // Au moins une jointure dialogue doit aboutir si le fichier fr existe.
     if !text_fr.is_empty() {
-        let joined = subs.iter().filter(|s| find_has(&text_fr, s.text_hash)).count();
-        eprintln!("sous-titres joints à un dialogue fr = {joined}/{}", subs.len());
+        let joined = subs
+            .iter()
+            .filter(|s| find_has(&text_fr, s.text_hash))
+            .count();
+        eprintln!(
+            "sous-titres joints à un dialogue fr = {joined}/{}",
+            subs.len()
+        );
         assert!(joined > 0, "au moins une jointure hash subtitle↔dialogue");
     }
     eprintln!("✓ END-TO-END OK : event_subtitle parse+joint le vrai event {event}");

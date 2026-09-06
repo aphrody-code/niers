@@ -133,9 +133,18 @@ mod tests {
     fn comparaison_des_etiquettes() {
         let e = "\"abc\"";
         assert!(correspond(e, e));
-        assert!(correspond("*", e), "l'etoile vaut pour toute representation");
-        assert!(correspond("\"x\", \"abc\" , \"y\"", e), "liste, espaces compris");
-        assert!(correspond("W/\"abc\"", e), "un intermediaire a le droit de degrader");
+        assert!(
+            correspond("*", e),
+            "l'etoile vaut pour toute representation"
+        );
+        assert!(
+            correspond("\"x\", \"abc\" , \"y\"", e),
+            "liste, espaces compris"
+        );
+        assert!(
+            correspond("W/\"abc\"", e),
+            "un intermediaire a le droit de degrader"
+        );
         assert!(!correspond("\"abcd\"", e), "prefixe n'est pas egalite");
         assert!(!correspond("", e));
         assert!(!correspond("\"x\",\"y\"", e));
@@ -145,7 +154,10 @@ mod tests {
     fn routeur_temoin() -> axum::Router {
         use axum::routing::get;
         axum::Router::new()
-            .route("/json", get(|| async { axum::Json(serde_json::json!({"a": 1, "b": "é"})) }))
+            .route(
+                "/json",
+                get(|| async { axum::Json(serde_json::json!({"a": 1, "b": "é"})) }),
+            )
             // Une route qui pose DÉJÀ son ETag — comme `reponse_octets` le fait pour `/f` et
             // le bundle. La couche doit la laisser strictement intacte.
             .route(
@@ -153,14 +165,14 @@ mod tests {
                 get(|| async { ([(header::ETAG, "\"fige\"")], "corps deja etiquete") }),
             )
             // Une erreur : jamais d'ETag, sans quoi le message d'erreur se ferait cacher.
-            .route("/erreur", get(|| async { (StatusCode::NOT_FOUND, "absent") }))
+            .route(
+                "/erreur",
+                get(|| async { (StatusCode::NOT_FOUND, "absent") }),
+            )
             .layer(axum::middleware::from_fn(conditionnel))
     }
 
-    async fn appel(
-        uri: &str,
-        si_aucun: Option<&str>,
-    ) -> (StatusCode, Option<String>, usize) {
+    async fn appel(uri: &str, si_aucun: Option<&str>) -> (StatusCode, Option<String>, usize) {
         use http_body_util::BodyExt as _;
         use tower::ServiceExt as _;
         let mut b = axum::http::Request::builder().uri(uri);
@@ -172,8 +184,18 @@ mod tests {
             .await
             .expect("reponse");
         let statut = r.status();
-        let etag = r.headers().get(header::ETAG).and_then(|v| v.to_str().ok()).map(str::to_owned);
-        let corps = r.into_body().collect().await.expect("corps").to_bytes().len();
+        let etag = r
+            .headers()
+            .get(header::ETAG)
+            .and_then(|v| v.to_str().ok())
+            .map(str::to_owned);
+        let corps = r
+            .into_body()
+            .collect()
+            .await
+            .expect("corps")
+            .to_bytes()
+            .len();
         (statut, etag, corps)
     }
 
@@ -184,11 +206,18 @@ mod tests {
         let etag = etag.expect("un ETag est pose sur une reponse generee");
         // `blake3` en hexadecimal : 64 caracteres entre guillemets.
         assert_eq!(etag.len(), 66, "\"{{64 hexa}}\"");
-        assert_eq!(taille, 16, "{{\"a\":1,\"b\":\"é\"}} fait 16 octets en UTF-8");
+        assert_eq!(
+            taille, 16,
+            "{{\"a\":1,\"b\":\"é\"}} fait 16 octets en UTF-8"
+        );
 
         // Le meme corps redonne la meme etiquette : sans cela, aucun 304 ne serait jamais rendu.
         let (_, encore, _) = appel("/json", None).await;
-        assert_eq!(encore.as_deref(), Some(etag.as_str()), "l'etiquette est deterministe");
+        assert_eq!(
+            encore.as_deref(),
+            Some(etag.as_str()),
+            "l'etiquette est deterministe"
+        );
 
         // Le client la presente : 304, zero octet, et l'etiquette rappelee (RFC 9110 §15.4.5).
         let (statut, rappel, taille) = appel("/json", Some(&etag)).await;
@@ -209,11 +238,19 @@ mod tests {
         // et l'ecraser servirait une etiquette qui ne decrit pas ce qui est dans le tuyau.
         let (statut, etag, taille) = appel("/deja", None).await;
         assert_eq!(statut, StatusCode::OK);
-        assert_eq!(etag.as_deref(), Some("\"fige\""), "etiquette de la route conservee");
+        assert_eq!(
+            etag.as_deref(),
+            Some("\"fige\""),
+            "etiquette de la route conservee"
+        );
         assert_eq!(taille, "corps deja etiquete".len());
         // Et elle continue de fonctionner : c'est `reponse_octets` qui rend le 304, pas nous.
         let (statut, _, _) = appel("/deja", Some("\"fige\"")).await;
-        assert_eq!(statut, StatusCode::OK, "la couche ne s'immisce pas dans le 304 d'autrui");
+        assert_eq!(
+            statut,
+            StatusCode::OK,
+            "la couche ne s'immisce pas dans le 304 d'autrui"
+        );
 
         // Une erreur ne recoit jamais d'etiquette : elle serait cachee comme une reponse.
         let (statut, etag, _) = appel("/erreur", None).await;

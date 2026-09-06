@@ -239,7 +239,11 @@ fn real_file_banner_count() {
     // Le dump réel contient exactement 3 bannières tutoriel.
     let Some(json) = charger_reel() else { return };
     let cfg = parse_banner_config(&json);
-    assert_eq!(cfg.banners.len(), 3, "m_tutorialBannerInfoList doit avoir 3 entrées");
+    assert_eq!(
+        cfg.banners.len(),
+        3,
+        "m_tutorialBannerInfoList doit avoir 3 entrées"
+    );
 }
 
 #[test]

@@ -24,7 +24,9 @@ const ATTENDUES: [&str; 8] = [
 
 #[test]
 fn le_dispatch_type_couvre_les_familles_attendues() {
-    let Some(racine) = common::chemin("") else { return };
+    let Some(racine) = common::chemin("") else {
+        return;
+    };
     if !racine.is_dir() {
         eprintln!("skip typed_corpus : {} absent", racine.display());
         return;
@@ -34,7 +36,9 @@ fn le_dispatch_type_couvre_les_familles_attendues() {
     let mut par_famille: BTreeMap<String, std::path::PathBuf> = BTreeMap::new();
     let mut pile = vec![racine.clone()];
     while let Some(dir) = pile.pop() {
-        let Ok(entrees) = std::fs::read_dir(&dir) else { continue };
+        let Ok(entrees) = std::fs::read_dir(&dir) else {
+            continue;
+        };
         for e in entrees.flatten() {
             let p = e.path();
             if p.is_dir() {
@@ -45,15 +49,22 @@ fn le_dispatch_type_couvre_les_familles_attendues() {
             }
         }
     }
-    assert!(!par_famille.is_empty(), "corpus présent mais aucun .cfg.bin.json trouvé");
+    assert!(
+        !par_famille.is_empty(),
+        "corpus présent mais aucun .cfg.bin.json trouvé"
+    );
 
     let (mut typees, mut generiques) = (0usize, 0usize);
     let mut labels: BTreeSet<&'static str> = BTreeSet::new();
     let mut repondues: BTreeSet<String> = BTreeSet::new();
 
     for (cle, chemin) in &par_famille {
-        let Ok(texte) = std::fs::read_to_string(chemin) else { continue };
-        let Ok(root) = serde_json::from_str::<serde_json::Value>(&texte) else { continue };
+        let Ok(texte) = std::fs::read_to_string(chemin) else {
+            continue;
+        };
+        let Ok(root) = serde_json::from_str::<serde_json::Value>(&texte) else {
+            continue;
+        };
         match nie_data::typed::decode_by_key(cle, &root) {
             Some((label, valeur)) => {
                 typees += 1;
@@ -86,5 +97,8 @@ fn le_dispatch_type_couvre_les_familles_attendues() {
             "famille attendue non typée : {f}"
         );
     }
-    assert!(typees > 0, "aucune famille typée : le dispatch ne répond plus");
+    assert!(
+        typees > 0,
+        "aucune famille typée : le dispatch ne répond plus"
+    );
 }

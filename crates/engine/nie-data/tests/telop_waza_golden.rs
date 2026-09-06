@@ -10,9 +10,9 @@
 
 use nie_data::hash::HashId;
 use nie_data::telop_waza::{
-    find_by_skill_id, parse_telop_waza_config, LangMargins, ParsedTelopWaza, TELOP_LANGS,
+    LangMargins, ParsedTelopWaza, TELOP_LANGS, find_by_skill_id, parse_telop_waza_config,
 };
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 /// Construit une entrée `m_blankSizeInfoList` depuis 9 couples `(left, right)` donnés dans
 /// l'ordre `TELOP_LANGS` (ja, en, pt, fr, it, de, es, zh_hant, zh_hans), extraits du dump.
@@ -35,18 +35,39 @@ fn blank_head() -> Vec<Value> {
     vec![
         // blank[0]
         blank([
-            (246, 246), (324, 327), (290, 291), (6, 28), (124, 132),
-            (307, 306), (87, 86), (370, 376), (347, 356),
+            (246, 246),
+            (324, 327),
+            (290, 291),
+            (6, 28),
+            (124, 132),
+            (307, 306),
+            (87, 86),
+            (370, 376),
+            (347, 356),
         ]),
         // blank[1]
         blank([
-            (270, 275), (417, 418), (306, 306), (243, 245), (308, 308),
-            (379, 382), (175, 176), (355, 360), (354, 358),
+            (270, 275),
+            (417, 418),
+            (306, 306),
+            (243, 245),
+            (308, 308),
+            (379, 382),
+            (175, 176),
+            (355, 360),
+            (354, 358),
         ]),
         // blank[2]
         blank([
-            (213, 218), (400, 401), (239, 239), (252, 252), (174, 172),
-            (346, 345), (164, 161), (200, 208), (222, 228),
+            (213, 218),
+            (400, 401),
+            (239, 239),
+            (252, 252),
+            (174, 172),
+            (346, 345),
+            (164, 161),
+            (200, 208),
+            (222, 228),
         ]),
     ]
 }
@@ -81,7 +102,10 @@ fn parse_compte_et_champs_de_base() {
     assert_eq!(t0.skill_id, HashId(0x5B6A_04E9));
     assert_eq!(t0.blank_left_index, 0);
     assert_eq!(t0.blank_right_index, 1);
-    assert_eq!(t0.eldorado_id, None, "0x00000000 → None (port inagle ZERO_HASH)");
+    assert_eq!(
+        t0.eldorado_id, None,
+        "0x00000000 → None (port inagle ZERO_HASH)"
+    );
 
     assert_eq!(telops[1].skill_id, HashId(0x7047_572A));
     assert_eq!(telops[1].blank_left_index, 1);
@@ -141,9 +165,8 @@ fn eldorado_id_non_nul_et_index_hors_borne() {
     // La table de blancs de cette fixture n'a que 3 entrées : l'index gauche 195 est hors
     // borne → marges gauche nulles (port inagle « jamais inventer une valeur », l.116),
     // tandis que l'index droit 1 est résolu vers blank[1].right (valeurs réelles).
-    let skills = vec![
-        json!({ "id": "0x886B9D07", "blankSizeInfo": [195, 1], "eldoradoId": "0xDFEF5884" }),
-    ];
+    let skills =
+        vec![json!({ "id": "0x886B9D07", "blankSizeInfo": [195, 1], "eldoradoId": "0xDFEF5884" })];
     let node = json!({
         "lists": [
             { "name": "m_skillTelopInfoList", "typeName": "SkillTelopInfo", "values": skills },

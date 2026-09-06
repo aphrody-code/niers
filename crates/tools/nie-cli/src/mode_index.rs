@@ -708,13 +708,17 @@ fn messages_du_mode(vfs: &Vfs, motif: &str, exe: Option<&std::path::Path>) -> Js
         if b.is_ascii_graphic() || b == b'_' {
             ascii.push(b);
         } else {
-            if ascii.len() >= 4 && let Ok(s) = core::str::from_utf8(&ascii) {
+            if ascii.len() >= 4
+                && let Ok(s) = core::str::from_utf8(&ascii)
+            {
                 collect(s);
             }
             ascii.clear();
         }
     }
-    if ascii.len() >= 4 && let Ok(s) = core::str::from_utf8(&ascii) {
+    if ascii.len() >= 4
+        && let Ok(s) = core::str::from_utf8(&ascii)
+    {
         collect(s);
     }
 
@@ -724,13 +728,17 @@ fn messages_du_mode(vfs: &Vfs, motif: &str, exe: Option<&std::path::Path>) -> Js
         if (0x20..=0x7e).contains(&unit) {
             wide.push(unit);
         } else {
-            if wide.len() >= 4 && let Ok(s) = String::from_utf16(&wide) {
+            if wide.len() >= 4
+                && let Ok(s) = String::from_utf16(&wide)
+            {
                 collect(&s);
             }
             wide.clear();
         }
     }
-    if wide.len() >= 4 && let Ok(s) = String::from_utf16(&wide) {
+    if wide.len() >= 4
+        && let Ok(s) = String::from_utf16(&wide)
+    {
         collect(&s);
     }
 
@@ -941,10 +949,7 @@ pub fn index(db: &nie_index::Db, vfs: &Vfs) -> Result<(usize, usize, usize, usiz
         // jour du VFS. `INSERT OR IGNORE` seul conservait alors des assets fantômes dans SQLite,
         // ce qui rendait l'API différente de l'export JSON courant.
         for table in ["mode_screen", "mode_asset", "mode_text"] {
-            conn.execute(
-                &format!("DELETE FROM {table} WHERE mode_id=?1"),
-                [mode_id],
-            )?;
+            conn.execute(&format!("DELETE FROM {table} WHERE mode_id=?1"), [mode_id])?;
         }
 
         for (stem, path) in &f.screens {

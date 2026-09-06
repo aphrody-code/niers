@@ -128,7 +128,12 @@ impl ProgressReporter {
     /// Rapporte un avancement. Silencieux (pas de panique) si plus personne n'écoute — un job ne
     /// doit jamais planter parce que l'UI qui l'avait lancé a fermé son canal de progression.
     pub fn report(&self, done: u64, total: u64, message: impl Into<Option<String>>) {
-        let _ = self.tx.send(TaskProgress { id: self.id, done, total, message: message.into() });
+        let _ = self.tx.send(TaskProgress {
+            id: self.id,
+            done,
+            total,
+            message: message.into(),
+        });
     }
 }
 
@@ -228,7 +233,11 @@ impl<E: Send + 'static> TaskSystem<E> {
     pub fn new() -> (Self, mpsc::UnboundedReceiver<TaskProgress>) {
         let (progress_tx, progress_rx) = mpsc::unbounded_channel();
         (
-            Self { cancel_senders: Arc::new(Mutex::new(HashMap::new())), progress_tx, _marker: std::marker::PhantomData },
+            Self {
+                cancel_senders: Arc::new(Mutex::new(HashMap::new())),
+                progress_tx,
+                _marker: std::marker::PhantomData,
+            },
             progress_rx,
         )
     }
@@ -242,11 +251,17 @@ impl<E: Send + 'static> TaskSystem<E> {
     {
         let id = task.id();
         let (cancel_tx, cancel_rx) = watch::channel(Signal::Run);
-        self.cancel_senders.lock().expect("cancel_senders mutex empoisonné").insert(id, cancel_tx.clone());
+        self.cancel_senders
+            .lock()
+            .expect("cancel_senders mutex empoisonné")
+            .insert(id, cancel_tx.clone());
 
         let ctx = TaskContext {
             interrupter: Interrupter { rx: cancel_rx },
-            progress: ProgressReporter { id, tx: self.progress_tx.clone() },
+            progress: ProgressReporter {
+                id,
+                tx: self.progress_tx.clone(),
+            },
         };
         let cancel_senders = Arc::clone(&self.cancel_senders);
 
@@ -261,11 +276,18 @@ impl<E: Send + 'static> TaskSystem<E> {
             };
             // Nettoyage du registre à la fin du job, réussite ou non — sans quoi `cancel_senders`
             // croîtrait indéfiniment sur une longue session (nie-explorer reste ouvert des heures).
-            cancel_senders.lock().expect("cancel_senders mutex empoisonné").remove(&id);
+            cancel_senders
+                .lock()
+                .expect("cancel_senders mutex empoisonné")
+                .remove(&id);
             status
         });
 
-        TaskHandle { id, join, cancel_tx }
+        TaskHandle {
+            id,
+            join,
+            cancel_tx,
+        }
     }
 
     /// Annule un job par son identifiant — no-op silencieux s'il est déjà terminé ou inconnu.
@@ -284,7 +306,12 @@ impl<E: Send + 'static> TaskSystem<E> {
     }
 
     fn signal(&self, id: TaskId, signal: Signal) {
-        if let Some(tx) = self.cancel_senders.lock().expect("cancel_senders mutex empoisonné").get(&id) {
+        if let Some(tx) = self
+            .cancel_senders
+            .lock()
+            .expect("cancel_senders mutex empoisonné")
+            .get(&id)
+        {
             let _ = tx.send(signal);
         }
     }
@@ -313,7 +340,10 @@ mod tests {
 
         async fn run(&mut self, ctx: &TaskContext) -> Result<ExecStatus, String> {
             for i in 0..self.n {
-                ctx.interrupter.check().await.map_err(|_| "annulé".to_string())?;
+                ctx.interrupter
+                    .check()
+                    .await
+                    .map_err(|_| "annulé".to_string())?;
                 ctx.progress.report(i + 1, self.n, None);
             }
             Ok(ExecStatus::Done(serde_json::json!({ "counted": self.n })))
@@ -323,7 +353,10 @@ mod tests {
     #[tokio::test]
     async fn job_va_au_bout_et_rapporte_sa_progression() {
         let (system, mut progress) = TaskSystem::<String>::new();
-        let handle = system.dispatch(CountTo { id: TaskId::new(), n: 5 });
+        let handle = system.dispatch(CountTo {
+            id: TaskId::new(),
+            n: 5,
+        });
         let status = handle.wait().await;
         match status {
             TaskStatus::Done(v) => assert_eq!(v["counted"], 5),
@@ -349,7 +382,10 @@ mod tests {
         async fn run(&mut self, ctx: &TaskContext) -> Result<ExecStatus, String> {
             let mut i: u64 = 0;
             loop {
-                ctx.interrupter.check().await.map_err(|_| "annulé".to_string())?;
+                ctx.interrupter
+                    .check()
+                    .await
+                    .map_err(|_| "annulé".to_string())?;
                 i += 1;
                 if i > 10_000_000 {
                     return Ok(ExecStatus::Done(serde_json::Value::Null));

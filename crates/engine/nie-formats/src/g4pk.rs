@@ -136,7 +136,10 @@ pub fn g4pk_kind(data: &[u8]) -> G4pkKind {
 /// - [`FormatError::Corrupt`] si une table déborde du tampon.
 pub fn parse(data: &[u8]) -> Result<G4pk, FormatError> {
     if data.len() < HEADER_SIZE {
-        return Err(FormatError::TooShort { got: data.len(), need: HEADER_SIZE });
+        return Err(FormatError::TooShort {
+            got: data.len(),
+            need: HEADER_SIZE,
+        });
     }
     if !is_g4pk(data) {
         return Err(FormatError::BadMagic { format: "G4PK" });
@@ -323,7 +326,8 @@ mod tests {
 
         // Noms.
         buf[names_pos..names_pos + name_a.len()].copy_from_slice(name_a);
-        buf[names_pos + name_a.len()..names_pos + name_a.len() + name_b.len()].copy_from_slice(name_b);
+        buf[names_pos + name_a.len()..names_pos + name_a.len() + name_b.len()]
+            .copy_from_slice(name_b);
 
         // Payloads (4-alignés).
         buf[payload_start..payload_start + data_a.len()].copy_from_slice(data_a);
@@ -366,7 +370,10 @@ mod tests {
 
     #[test]
     fn rejette_petit_et_mauvais_magic() {
-        assert!(matches!(parse(&[0u8; 8]), Err(FormatError::TooShort { .. })));
+        assert!(matches!(
+            parse(&[0u8; 8]),
+            Err(FormatError::TooShort { .. })
+        ));
         let mut buf = alloc::vec![0u8; HEADER_SIZE];
         buf[..4].copy_from_slice(b"XXXX");
         assert!(matches!(parse(&buf), Err(FormatError::BadMagic { .. })));
@@ -411,7 +418,9 @@ pub(crate) mod tests_vfs {
         use crate::vfs::Vfs;
         use std::path::Path;
 
-        let dir = crate::vfs::resolve_game_dir().to_string_lossy().into_owned();
+        let dir = crate::vfs::resolve_game_dir()
+            .to_string_lossy()
+            .into_owned();
         let data_dir = Path::new(&dir).join("data");
 
         let mut vfs = Vfs::new();
@@ -419,7 +428,10 @@ pub(crate) mod tests_vfs {
             std::eprintln!("skip {suffixe} : jeu absent à {}", data_dir.display());
             return None;
         }
-        let chemin = vfs.iter().map(|(p, _)| p.to_string()).find(|p| p.ends_with(suffixe));
+        let chemin = vfs
+            .iter()
+            .map(|(p, _)| p.to_string())
+            .find(|p| p.ends_with(suffixe));
         let Some(chemin) = chemin else {
             std::eprintln!("skip {suffixe} : non trouvé dans le VFS");
             return None;

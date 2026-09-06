@@ -33,11 +33,31 @@ pub struct UrlPlan {
 /// Les routes de navigation publiées au plan de site. Les espaces `/f` et `/b` n'y sont
 /// **jamais** : ce sont 255 000 fichiers, et un plan de site n'est pas un index d'assets.
 pub const PLAN: [UrlPlan; 5] = [
-    UrlPlan { chemin: "/", frequence: "daily", priorite: "1.0" },
-    UrlPlan { chemin: "/textures", frequence: "weekly", priorite: "0.8" },
-    UrlPlan { chemin: "/modeles", frequence: "weekly", priorite: "0.8" },
-    UrlPlan { chemin: "/sons", frequence: "weekly", priorite: "0.6" },
-    UrlPlan { chemin: "/videos", frequence: "weekly", priorite: "0.6" },
+    UrlPlan {
+        chemin: "/",
+        frequence: "daily",
+        priorite: "1.0",
+    },
+    UrlPlan {
+        chemin: "/textures",
+        frequence: "weekly",
+        priorite: "0.8",
+    },
+    UrlPlan {
+        chemin: "/modeles",
+        frequence: "weekly",
+        priorite: "0.8",
+    },
+    UrlPlan {
+        chemin: "/sons",
+        frequence: "weekly",
+        priorite: "0.6",
+    },
+    UrlPlan {
+        chemin: "/videos",
+        frequence: "weekly",
+        priorite: "0.6",
+    },
 ];
 
 /// Une entrée rendue du plan : son URL absolue et le groupe de ses traductions.
@@ -197,7 +217,11 @@ pub async fn robots(State(etat): State<EtatSite>) -> Response {
 /// que personne ne le voie.
 pub async fn security(State(etat): State<EtatSite>) -> Response {
     texte(
-        Securite { origine: &etat.config.origine, expiration: expiration_dans_un_an() }.render(),
+        Securite {
+            origine: &etat.config.origine,
+            expiration: expiration_dans_un_an(),
+        }
+        .render(),
         "text/plain; charset=utf-8",
     )
 }
@@ -207,12 +231,24 @@ pub async fn security(State(etat): State<EtatSite>) -> Response {
 /// Servi en `text/plain` : c'est ce que la convention demande, et c'est ce qu'un agent obtient
 /// sans négocier. Le document est court **par construction** — il oriente, il ne documente pas.
 pub async fn llms(State(etat): State<EtatSite>) -> Response {
-    texte(Llms { origine: &etat.config.origine }.render(), "text/plain; charset=utf-8")
+    texte(
+        Llms {
+            origine: &etat.config.origine,
+        }
+        .render(),
+        "text/plain; charset=utf-8",
+    )
 }
 
 /// `/llms-full.txt` — la référence complète : conventions d'URL, formats, limites, exemples.
 pub async fn llms_complet(State(etat): State<EtatSite>) -> Response {
-    texte(LlmsComplet { origine: &etat.config.origine }.render(), "text/plain; charset=utf-8")
+    texte(
+        LlmsComplet {
+            origine: &etat.config.origine,
+        }
+        .render(),
+        "text/plain; charset=utf-8",
+    )
 }
 
 /// `/manifest.webmanifest` — le manifeste d'application web.
@@ -260,14 +296,21 @@ pub async fn manifeste(uri: axum::http::Uri) -> Response {
             { "src": "/static/icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
         ],
     });
-    texte(Ok(doc.to_string()), "application/manifest+json; charset=utf-8")
+    texte(
+        Ok(doc.to_string()),
+        "application/manifest+json; charset=utf-8",
+    )
 }
 
 /// `/sitemap.xml`.
 pub async fn sitemap(State(etat): State<EtatSite>) -> Response {
     let urls = plan_trilingue(&etat.config.origine);
     texte(
-        Plan { urls: &urls, lastmod: lastmod_du_gisement(&etat.config.db) }.render(),
+        Plan {
+            urls: &urls,
+            lastmod: lastmod_du_gisement(&etat.config.db),
+        }
+        .render(),
         "application/xml; charset=utf-8",
     )
 }
@@ -279,7 +322,10 @@ pub async fn sitemap(State(etat): State<EtatSite>) -> Response {
 /// introuvable, l'attribut est **omis** : ne rien dire vaut mieux que dire faux.
 fn lastmod_du_gisement(db: &std::path::Path) -> Option<String> {
     let modifie = std::fs::metadata(db).ok()?.modified().ok()?;
-    let secondes = modifie.duration_since(std::time::UNIX_EPOCH).ok()?.as_secs();
+    let secondes = modifie
+        .duration_since(std::time::UNIX_EPOCH)
+        .ok()?
+        .as_secs();
     // Le jour suffit : un plan de site n'a pas de sémantique à la seconde, et une date nue
     // évite d'annoncer une fraîcheur que le contenu n'a pas.
     Some(iso8601_utc(secondes).chars().take(10).collect())
@@ -330,7 +376,12 @@ mod tests {
         assert_eq!(PLAN.len(), 5);
         let urls = plan_trilingue("https://aphrody.com");
         assert_eq!(urls.len(), 15, "5 routes x 3 langues");
-        let rendu = Plan { urls: &urls, lastmod: Some("2026-09-05".to_owned()) }.render().unwrap();
+        let rendu = Plan {
+            urls: &urls,
+            lastmod: Some("2026-09-05".to_owned()),
+        }
+        .render()
+        .unwrap();
         assert_eq!(rendu.matches("<url>").count(), 15);
         assert!(rendu.starts_with("<?xml"));
         assert!(rendu.contains("https://aphrody.com/textures"));
@@ -347,9 +398,17 @@ mod tests {
     #[test]
     fn un_gisement_absent_n_invente_pas_de_date() {
         let urls = plan_trilingue("https://aphrody.com");
-        let rendu = Plan { urls: &urls, lastmod: None }.render().unwrap();
+        let rendu = Plan {
+            urls: &urls,
+            lastmod: None,
+        }
+        .render()
+        .unwrap();
         assert!(!rendu.contains("<lastmod>"), "mieux vaut rien que faux");
-        assert_eq!(lastmod_du_gisement(std::path::Path::new("/nonexistent/x.sqlite")), None);
+        assert_eq!(
+            lastmod_du_gisement(std::path::Path::new("/nonexistent/x.sqlite")),
+            None
+        );
     }
 
     #[test]
@@ -374,14 +433,25 @@ mod tests {
         // 5 routes x 3 langues, moins la racine française déjà couverte par `Allow: /$`.
         assert_eq!(chemins.len(), 14);
         for attendu in ["/textures", "/en/textures", "/ja/textures", "/en", "/ja"] {
-            assert!(chemins.iter().any(|c| c == attendu), "{attendu} non autorisé");
+            assert!(
+                chemins.iter().any(|c| c == attendu),
+                "{attendu} non autorisé"
+            );
         }
-        let r = Robots { origine: "https://aphrody.com", chemins, agents: &AGENTS_IA }
-            .render()
-            .unwrap();
+        let r = Robots {
+            origine: "https://aphrody.com",
+            chemins,
+            agents: &AGENTS_IA,
+        }
+        .render()
+        .unwrap();
         // 22 : 14 chemins + `/$` + `/llms.txt` + `/feed.atom` pour le regime general, puis les
         // 5 du regime des agents (`/`, `/llms.txt`, `/llms-full.txt`, `/feed.atom`, `/api/v1/`).
-        assert_eq!(r.matches("Allow: ").count(), 22, "les deux regimes, chemin par chemin");
+        assert_eq!(
+            r.matches("Allow: ").count(),
+            22,
+            "les deux regimes, chemin par chemin"
+        );
         assert!(r.contains("Allow: /$"));
     }
 
@@ -397,11 +467,20 @@ mod tests {
         // Un `User-agent:` par agent, plus le bloc general.
         assert_eq!(r.matches("User-agent:").count(), AGENTS_IA.len() + 1);
         for agent in ["GPTBot", "ClaudeBot", "PerplexityBot", "Google-Extended"] {
-            assert!(r.contains(&format!("User-agent: {agent}")), "{agent} absent");
+            assert!(
+                r.contains(&format!("User-agent: {agent}")),
+                "{agent} absent"
+            );
         }
         // Le regime general FERME l'API, celui des agents l'OUVRE : les deux doivent coexister.
-        assert!(r.contains("Disallow: /api/"), "l'API reste fermee aux moteurs");
-        assert!(r.contains("Allow: /api/v1/"), "l'API est ouverte aux agents");
+        assert!(
+            r.contains("Disallow: /api/"),
+            "l'API reste fermee aux moteurs"
+        );
+        assert!(
+            r.contains("Allow: /api/v1/"),
+            "l'API est ouverte aux agents"
+        );
         // Les 255 000 fichiers restent hors de portee des deux regimes.
         assert_eq!(r.matches("Disallow: /f/").count(), 2);
         assert_eq!(r.matches("Disallow: /b/").count(), 2);
@@ -410,22 +489,39 @@ mod tests {
 
     #[test]
     fn les_documents_pour_agents_citent_l_origine_configuree() {
-        let court = Llms { origine: "https://exemple.test" }.render().unwrap();
-        let complet = LlmsComplet { origine: "https://exemple.test" }.render().unwrap();
+        let court = Llms {
+            origine: "https://exemple.test",
+        }
+        .render()
+        .unwrap();
+        let complet = LlmsComplet {
+            origine: "https://exemple.test",
+        }
+        .render()
+        .unwrap();
         // Aucune origine en dur : un deploiement de preview doit se decrire lui-meme.
         for doc in [&court, &complet] {
             assert!(!doc.contains("aphrody.com"), "origine codee en dur");
             assert!(doc.contains("https://exemple.test"));
         }
-        assert!(court.starts_with("# Aphrody"), "llms.txt commence par son titre");
+        assert!(
+            court.starts_with("# Aphrody"),
+            "llms.txt commence par son titre"
+        );
         assert!(court.contains("> "), "llms.txt porte son resume");
         // Le court oriente vers le complet, sinon personne ne le trouve.
         assert!(court.contains("/llms-full.txt"));
         // Le complet dit les trois langues et les deux espaces de fichiers.
         for attendu in ["/en/", "/ja/", "/f/", "/b/", "per_page"] {
-            assert!(complet.contains(attendu), "{attendu} absent de llms-full.txt");
+            assert!(
+                complet.contains(attendu),
+                "{attendu} absent de llms-full.txt"
+            );
         }
-        assert!(complet.len() > court.len(), "le complet doit etre plus complet");
+        assert!(
+            complet.len() > court.len(),
+            "le complet doit etre plus complet"
+        );
     }
 
     #[tokio::test]

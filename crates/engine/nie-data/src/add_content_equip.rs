@@ -28,13 +28,19 @@ impl AocEquipConfigInfo {
         if equip_id.is_zero() {
             return None;
         }
-        Some(Self { aoc_condition: String::from(field_str(v, "aocCondition").unwrap_or("")), equip_id })
+        Some(Self {
+            aoc_condition: String::from(field_str(v, "aocCondition").unwrap_or("")),
+            equip_id,
+        })
     }
 }
 
 /// Parse `add_content_equip_config.cfg.bin.json` → la liste des équipements DLC.
 #[must_use]
 pub fn parse_add_content_equip_config(root: &Value) -> Vec<AocEquipConfigInfo> {
-    list_values(root, "m_aocEquipConfigInfo")
-        .map_or_else(Vec::new, |vs| vs.iter().filter_map(AocEquipConfigInfo::from_value).collect())
+    list_values(root, "m_aocEquipConfigInfo").map_or_else(Vec::new, |vs| {
+        vs.iter()
+            .filter_map(AocEquipConfigInfo::from_value)
+            .collect()
+    })
 }

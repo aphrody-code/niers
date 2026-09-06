@@ -79,7 +79,11 @@ impl<'a> Var<'a> {
         if let Some(f) = self.num.and_then(Value::as_f64) {
             return f;
         }
-        self.value.trim().replace(',', ".").parse::<f64>().unwrap_or(0.0)
+        self.value
+            .trim()
+            .replace(',', ".")
+            .parse::<f64>()
+            .unwrap_or(0.0)
     }
 }
 
@@ -123,7 +127,11 @@ impl<'a> Node<'a> {
         // Forme iecode : la clé `value` est présente et porte une chaîne.
         if let Some(value) = v.get("value").and_then(Value::as_str) {
             let ty = v.get("type").and_then(Value::as_str).unwrap_or("");
-            return Some(Var { ty, value, num: None });
+            return Some(Var {
+                ty,
+                value,
+                num: None,
+            });
         }
 
         // Forme native : objet à clé unique, la clé EST le nom du type (`{"Int":13}`).

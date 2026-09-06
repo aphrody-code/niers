@@ -50,7 +50,10 @@ fn fixture_palette() {
     assert_eq!(palette[1].rgb, (255, 0, 128), "bornage 0..255");
 
     let id = HashId::parse("0x270D2BDA").unwrap();
-    assert_eq!(find_color(&palette, id).map(|c| c.rgb), Some((245, 230, 245)));
+    assert_eq!(
+        find_color(&palette, id).map(|c| c.rgb),
+        Some((245, 230, 245))
+    );
     assert!(find_color(&palette, HashId::parse("0xDEADBEEF").unwrap()).is_none());
 }
 
@@ -75,5 +78,9 @@ fn golden_palette_reelle() {
 
     // Chaque couleur rend un hexadécimal CSS de 7 caractères — c'est ce qui la rend utilisable
     // hors du moteur (thème web).
-    assert!(palette.iter().all(|c| c.hex().len() == 7 && c.hex().starts_with('#')));
+    assert!(
+        palette
+            .iter()
+            .all(|c| c.hex().len() == 7 && c.hex().starts_with('#'))
+    );
 }

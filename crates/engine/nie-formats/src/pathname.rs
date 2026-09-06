@@ -55,7 +55,7 @@ mod tests {
             (b"a/b/c", b"c"),
             (b"a/.config", b""), // basename ".config", dernier '.' en tête → vide
             (b"", b""),
-            (b".", b""),  // n<=2, pas de scan ; dernier '.' index 0 → vide
+            (b".", b""), // n<=2, pas de scan ; dernier '.' index 0 → vide
             (b"..", b"."),
             (b"a.", b"a"),
             (b".a", b""),

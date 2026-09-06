@@ -191,18 +191,10 @@ impl SoccerFormPlacementInfo {
             defense_pos: Vec2::parse_hex(field_str(v, "defensePos").unwrap_or("")),
             offense_pos: Vec2::parse_hex(field_str(v, "offensePos").unwrap_or("")),
             start_pos: Vec2::parse_hex(field_str(v, "startPos").unwrap_or("")),
-            ck_defense_left_pos: Vec2::parse_hex(
-                field_str(v, "ckDefenseLeftPos").unwrap_or(""),
-            ),
-            ck_defense_right_pos: Vec2::parse_hex(
-                field_str(v, "ckDefenseRightPos").unwrap_or(""),
-            ),
-            ck_offense_left_pos: Vec2::parse_hex(
-                field_str(v, "ckOffenseLeftPos").unwrap_or(""),
-            ),
-            ck_offense_right_pos: Vec2::parse_hex(
-                field_str(v, "ckOffenseRightPos").unwrap_or(""),
-            ),
+            ck_defense_left_pos: Vec2::parse_hex(field_str(v, "ckDefenseLeftPos").unwrap_or("")),
+            ck_defense_right_pos: Vec2::parse_hex(field_str(v, "ckDefenseRightPos").unwrap_or("")),
+            ck_offense_left_pos: Vec2::parse_hex(field_str(v, "ckOffenseLeftPos").unwrap_or("")),
+            ck_offense_right_pos: Vec2::parse_hex(field_str(v, "ckOffenseRightPos").unwrap_or("")),
             pk_defense_pos: Vec2::parse_hex(field_str(v, "pkDefensePos").unwrap_or("")),
             pk_offense_pos: Vec2::parse_hex(field_str(v, "pkOffensePos").unwrap_or("")),
             bustup_pos: Vec2::parse_hex(field_str(v, "bustupPos").unwrap_or("")),
@@ -386,7 +378,11 @@ impl FormationConfig {
 #[must_use]
 pub fn parse_formation_config(root: &Value) -> FormationConfig {
     FormationConfig {
-        positions: extract_list(root, "m_SoccerPositionInfoList", SoccerPositionInfo::from_value),
+        positions: extract_list(
+            root,
+            "m_SoccerPositionInfoList",
+            SoccerPositionInfo::from_value,
+        ),
         placements: extract_list(
             root,
             "m_SoccerFormPlacementInfoList",

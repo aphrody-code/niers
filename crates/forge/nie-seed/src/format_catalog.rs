@@ -45,8 +45,8 @@
 
 use std::path::Path;
 
-use anyhow::{bail, Context, Result};
-use nie_index::{ingest, Db};
+use anyhow::{Context, Result, bail};
+use nie_index::{Db, ingest};
 use serde::Deserialize;
 use tracing::debug;
 
@@ -149,11 +149,8 @@ pub fn ingest_format_catalog(db: &mut Db, path: &Path) -> Result<CatalogStats> {
 
         // Purge les champs existants de ce format puis réinsère (idempotence
         // sur ré-export). La table format_field n'a pas de contrainte d'unicité.
-        tx.execute(
-            "DELETE FROM format_field WHERE format_id = ?1",
-            [format_id],
-        )
-        .with_context(|| format!("purge format_field({})", fmt.name))?;
+        tx.execute("DELETE FROM format_field WHERE format_id = ?1", [format_id])
+            .with_context(|| format!("purge format_field({})", fmt.name))?;
 
         for field in &fmt.fields {
             tx.execute(
@@ -250,7 +247,9 @@ mod tests {
         // Le format G4TX est présent et ses champs aussi.
         let n_g4tx: i64 = db
             .conn()
-            .query_row("SELECT COUNT(*) FROM format WHERE name='G4TX'", [], |r| r.get(0))
+            .query_row("SELECT COUNT(*) FROM format WHERE name='G4TX'", [], |r| {
+                r.get(0)
+            })
             .unwrap();
         assert_eq!(n_g4tx, 1);
 
@@ -268,7 +267,9 @@ mod tests {
         // Source machine-readable correctement tracée.
         let src: String = db
             .conn()
-            .query_row("SELECT source FROM format WHERE name='G4TX'", [], |r| r.get(0))
+            .query_row("SELECT source FROM format WHERE name='G4TX'", [], |r| {
+                r.get(0)
+            })
             .unwrap();
         assert_eq!(src, "iecode-catalog");
 

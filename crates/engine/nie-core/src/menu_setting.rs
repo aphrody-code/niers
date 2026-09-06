@@ -242,6 +242,9 @@ mod tests {
             assert_eq!(field.tag, 4);
             0x0BAD_F00D_u32 as i32
         });
-        assert_eq!(p.p59c, 0x0BAD_F00D_u32 as i32, "résolveur appelé pour le champ 3");
+        assert_eq!(
+            p.p59c, 0x0BAD_F00D_u32 as i32,
+            "résolveur appelé pour le champ 3"
+        );
     }
 }

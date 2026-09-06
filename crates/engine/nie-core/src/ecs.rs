@@ -26,7 +26,11 @@ pub fn component_type_id(name: &str) -> u32 {
     for &b in name.as_bytes() {
         crc ^= u32::from(b);
         for _ in 0..8 {
-            crc = if crc & 1 != 0 { (crc >> 1) ^ 0xEDB8_8320 } else { crc >> 1 };
+            crc = if crc & 1 != 0 {
+                (crc >> 1) ^ 0xEDB8_8320
+            } else {
+                crc >> 1
+            };
         }
     }
     !crc
@@ -81,7 +85,10 @@ mod tests {
         // Confirmé byte dans le binaire (immédiat .text ×4) :
         assert_eq!(component_type_id("CSoccerEventCheckComponent"), 0x271C_0D99);
         // Dérivés du mécanisme validé (type-IDs corrects, non vus comme immédiats) :
-        assert_eq!(component_type_id("SoccerCalcKeeperSaveComponent"), 0x0C40_DCAC);
+        assert_eq!(
+            component_type_id("SoccerCalcKeeperSaveComponent"),
+            0x0C40_DCAC
+        );
         assert_eq!(component_type_id("CSceneSoccer"), 0xB944_8ABA);
         assert_eq!(component_type_id("BallMoveGoalnet"), 0x9BE8_D63E);
     }

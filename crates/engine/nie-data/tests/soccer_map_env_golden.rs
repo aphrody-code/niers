@@ -29,7 +29,14 @@ fn env_byte_exact() {
 fn dispatch_typed() {
     use nie_data::typed::{decode_by_key, family_key};
     let Some(root) = load() else { return };
-    assert_eq!(family_key("soccer_game_map_enviroment_config_1.02.92.00.cfg.bin.json".strip_suffix(".json").unwrap()), "soccer_game_map_enviroment_config");
+    assert_eq!(
+        family_key(
+            "soccer_game_map_enviroment_config_1.02.92.00.cfg.bin.json"
+                .strip_suffix(".json")
+                .unwrap()
+        ),
+        "soccer_game_map_enviroment_config"
+    );
     let (label, _j) = decode_by_key("soccer_game_map_enviroment_config", &root).expect("câblé");
     assert_eq!(label, "soccer_map_env");
 }

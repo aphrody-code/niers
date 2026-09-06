@@ -14,6 +14,6 @@
 //! par `From` : un `?` dans le code de cette crate continue de fonctionner à l'identique.
 
 pub use nie_formats::g4cm::{
-    decode, encode, is_g4cm, parse, AnimObject, CameraAnim, Channel, ChannelKind, Clip, Track,
-    CHANNEL_ENTRY_LEN, CLIP_ENTRY_LEN, COUNTER_COUNT, MAGIC, NAME_LEN, OBJECT_ENTRY_LEN, VERSION,
+    AnimObject, CHANNEL_ENTRY_LEN, CLIP_ENTRY_LEN, COUNTER_COUNT, CameraAnim, Channel, ChannelKind,
+    Clip, MAGIC, NAME_LEN, OBJECT_ENTRY_LEN, Track, VERSION, decode, encode, is_g4cm, parse,
 };

@@ -10,9 +10,9 @@ use nie_formats::font::{self, LatinAtlas};
 use nie_formats::{cfgbin, g4tx};
 
 #[cfg(not(target_arch = "wasm32"))]
-use crate::character;
-#[cfg(not(target_arch = "wasm32"))]
 use crate::Renderer;
+#[cfg(not(target_arch = "wasm32"))]
+use crate::character;
 use crate::{GameState, MENU};
 
 /// Largeur du canevas de rendu (px).
@@ -83,7 +83,11 @@ impl Font {
         let tx = g4tx::parse(g4tx_bytes).map_err(|e| anyhow::anyhow!("g4tx: {e:?}"))?;
         let t = tx.textures.first().context("pas de texture police")?;
         let dds = &g4tx_bytes[t.data_offset..];
-        let off = if dds.len() >= 88 && &dds[84..88] == b"DX10" { 148 } else { 128 };
+        let off = if dds.len() >= 88 && &dds[84..88] == b"DX10" {
+            148
+        } else {
+            128
+        };
         let atlas = dds[off..].to_vec();
         let (aw, ah) = (t.width as usize, t.height as usize);
         let la = LatinAtlas::from_atlas(&atlas, aw, ah, 946, metrics.dims.cell_height);
@@ -122,7 +126,8 @@ impl Font {
     fn dessiner(&self, canvas: &mut [u8], cw: usize, x: i32, y: i32, texte: &str, fg: [u8; 4]) {
         let rendu = self.texte_rendu(texte);
         let y_cellule = y - i32::from(self.la.ink_top);
-        self.la.blit_line(&self.atlas, self.aw, canvas, cw, x, y_cellule, &rendu, fg);
+        self.la
+            .blit_line(&self.atlas, self.aw, canvas, cw, x, y_cellule, &rendu, fg);
     }
 
     /// Tronque `texte` pour qu'il tienne dans `max_px`, en terminant par « … » s'il a été coupé.
@@ -185,7 +190,10 @@ pub struct Frame<'a> {
 
 impl<'a> Frame<'a> {
     fn new(f: &'a Font) -> Self {
-        Self { buf: vec![0u8; W * H * 4], f }
+        Self {
+            buf: vec![0u8; W * H * 4],
+            f,
+        }
     }
     /// Cadre initialisé depuis une frame RGBA existante (ex. rendu 3D du perso en toile de fond).
     fn from_base(f: &'a Font, base: &[u8]) -> Self {
@@ -199,7 +207,12 @@ impl<'a> Frame<'a> {
         for y in 0..H {
             let t = y as f32 / H as f32;
             let mix = |a: u8, b: u8| (f32::from(a) * (1.0 - t) + f32::from(b) * t) as u8;
-            let c = [mix(top[0], bot[0]), mix(top[1], bot[1]), mix(top[2], bot[2]), 255];
+            let c = [
+                mix(top[0], bot[0]),
+                mix(top[1], bot[1]),
+                mix(top[2], bot[2]),
+                255,
+            ];
             for x in 0..W {
                 let o = (y * W + x) * 4;
                 self.buf[o..o + 4].copy_from_slice(&c);
@@ -213,7 +226,8 @@ impl<'a> Frame<'a> {
             for x in x0.max(0)..x1.min(W as i32) {
                 let o = (y as usize * W + x as usize) * 4;
                 for k in 0..3 {
-                    self.buf[o + k] = (f32::from(c[k]) * a + f32::from(self.buf[o + k]) * (1.0 - a)) as u8;
+                    self.buf[o + k] =
+                        (f32::from(c[k]) * a + f32::from(self.buf[o + k]) * (1.0 - a)) as u8;
                 }
                 self.buf[o + 3] = 255;
             }
@@ -230,7 +244,11 @@ impl<'a> Frame<'a> {
     fn text_wrapped(&mut self, x: i32, y: i32, max_w: i32, line_h: i32, s: &str, color: [u8; 4]) {
         let (mut line, mut row) = (String::new(), 0i32);
         for word in s.split_whitespace() {
-            let trial = if line.is_empty() { word.to_string() } else { format!("{line} {word}") };
+            let trial = if line.is_empty() {
+                word.to_string()
+            } else {
+                format!("{line} {word}")
+            };
             if self.f.largeur(&trial) as i32 > max_w && !line.is_empty() {
                 self.text(x, y + row * line_h, &line, color);
                 row += 1;
@@ -268,7 +286,11 @@ pub fn render_state<'a>(state: &GameState, f: &'a Font, bg: Option<&[u8]>) -> Fr
             for (i, item) in MENU.iter().enumerate() {
                 let y = 100 + i as i32 * 72;
                 let hot = i == *sel;
-                let bg_c = if hot { [60, 130, 220, 235] } else { [16, 22, 44, 210] };
+                let bg_c = if hot {
+                    [60, 130, 220, 235]
+                } else {
+                    [16, 22, 44, 210]
+                };
                 s.rect(70, y, 620, y + 56, bg_c);
                 if hot {
                     s.rect(70, y, 76, y + 56, [120, 220, 255, 255]);
@@ -285,7 +307,13 @@ pub fn render_state<'a>(state: &GameState, f: &'a Font, bg: Option<&[u8]>) -> Fr
             s.text_centered(280, "RAIMON", [255, 240, 180, 255]);
             s.text_centered(380, &format!("{home}  -  {away}"), [255, 255, 255, 255]);
             s.text_centered(480, "ROYAL ACADEMY", [200, 210, 255, 255]);
-            let verdict = if home > away { "RAIMON WINS!" } else if home < away { "DEFEAT..." } else { "DRAW" };
+            let verdict = if home > away {
+                "RAIMON WINS!"
+            } else if home < away {
+                "DEFEAT..."
+            } else {
+                "DRAW"
+            };
             s.text_centered(600, verdict, [120, 255, 160, 255]);
         }
         GameState::Story { speaker, line } => {
@@ -299,7 +327,14 @@ pub fn render_state<'a>(state: &GameState, f: &'a Font, bg: Option<&[u8]>) -> Fr
             s.rect(bx0, by0, bx1, by0 + 3, [90, 200, 255, 255]);
             s.rect(bx0 + 20, by0 - 40, bx0 + 280, by0 + 2, [30, 60, 110, 235]);
             s.text(bx0 + 36, by0 - 32, speaker, [200, 235, 255, 255]);
-            s.text_wrapped(bx0 + 40, by0 + 28, bx1 - bx0 - 80, 46, line, [240, 244, 250, 255]);
+            s.text_wrapped(
+                bx0 + 40,
+                by0 + 28,
+                bx1 - bx0 - 80,
+                46,
+                line,
+                [240, 244, 250, 255],
+            );
         }
     }
     s
@@ -360,7 +395,11 @@ pub fn render_list<'a>(title: &str, items: &[&str], sel: usize, f: &'a Font) -> 
     for (i, item) in items.iter().enumerate() {
         let y = haut_liste + i as i32 * gap;
         let hot = i == sel;
-        let bg_c = if hot { [60, 130, 220, 235] } else { [16, 22, 44, 210] };
+        let bg_c = if hot {
+            [60, 130, 220, 235]
+        } else {
+            [16, 22, 44, 210]
+        };
         s.rect(70, y, W as i32 - 70, y + bh, bg_c);
         if hot {
             s.rect(70, y, 76, y + bh, [120, 220, 255, 255]);
@@ -406,13 +445,24 @@ impl CpuRenderer {
                     &std::fs::read(c.tex)?,
                 )
                 .context("chargement perso 3D")?;
-                let cbg = character::render_character(&model, W as u32, H as u32, 0.55, [30, 40, 80], [12, 16, 30]);
+                let cbg = character::render_character(
+                    &model,
+                    W as u32,
+                    H as u32,
+                    0.55,
+                    [30, 40, 80],
+                    [12, 16, 30],
+                );
                 let mbg = character::render_match_scene(&model, W as u32, H as u32);
                 (Some(cbg), Some(mbg))
             }
             None => (None, None),
         };
-        Ok(Self { font, char_bg, match_bg })
+        Ok(Self {
+            font,
+            char_bg,
+            match_bg,
+        })
     }
 }
 
@@ -440,7 +490,8 @@ mod tests {
     fn tout_le_francais_a_un_repli() {
         // Les caractères réellement produits par les textes du jeu, minuscules et majuscules,
         // plus la ponctuation typographique française.
-        for c in "éèêëàâäîïôöùûüçÉÈÊËÀÂÄÎÏÔÖÙÛÜÇœŒæÆ«»’…–—·•×°".chars() {
+        for c in "éèêëàâäîïôöùûüçÉÈÊËÀÂÄÎÏÔÖÙÛÜÇœŒæÆ«»’…–—·•×°".chars()
+        {
             assert!(repli_ascii(c).is_some(), "aucun repli pour « {c} »");
         }
     }
@@ -463,7 +514,11 @@ mod tests {
     #[test]
     fn l_ascii_n_est_pas_replie() {
         for c in "AZaz09 !?,.-'\"".chars() {
-            assert_eq!(repli_ascii(c), None, "« {c} » ne doit pas passer par le repli");
+            assert_eq!(
+                repli_ascii(c),
+                None,
+                "« {c} » ne doit pas passer par le repli"
+            );
         }
     }
 }

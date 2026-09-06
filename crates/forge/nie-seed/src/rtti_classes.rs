@@ -9,7 +9,7 @@
 use std::path::Path;
 
 use anyhow::{Context, Result};
-use nie_index::{ingest, Db};
+use nie_index::{Db, ingest};
 use tracing::debug;
 
 /// Parse `refs/iecode-re/research/nie-rtti-classes.txt` et insère toutes les
@@ -20,8 +20,8 @@ use tracing::debug;
 /// Retourne une erreur si le fichier est illisible ou si une insertion SQLite
 /// échoue.
 pub fn ingest_rtti_classes(db: &mut Db, binary_id: i64, path: &Path) -> Result<usize> {
-    let raw = std::fs::read_to_string(path)
-        .with_context(|| format!("lecture de {}", path.display()))?;
+    let raw =
+        std::fs::read_to_string(path).with_context(|| format!("lecture de {}", path.display()))?;
 
     let tx = db
         .conn_mut()
@@ -36,8 +36,8 @@ pub fn ingest_rtti_classes(db: &mut Db, binary_id: i64, path: &Path) -> Result<u
             continue;
         }
 
-        let (class_name, namespace) = parse_rtti_line(line)
-            .with_context(|| format!("format inattendu : {:?}", line))?;
+        let (class_name, namespace) =
+            parse_rtti_line(line).with_context(|| format!("format inattendu : {:?}", line))?;
 
         // Namespace complet : "game::<ClassName>" ou "lives::<ClassName>"
         let full_ns = format!("{namespace}::{class_name}");

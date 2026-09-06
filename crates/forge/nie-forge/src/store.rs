@@ -43,18 +43,16 @@ impl ForgeStore {
     ///
     /// # Erreurs
     /// Mêmes conditions que [`ForgeStore::split_from`].
-    pub fn split_from_with(
-        exe: &Path,
-        root: &Path,
-        extra: &[(u64, u32)],
-    ) -> anyhow::Result<Self> {
+    pub fn split_from_with(exe: &Path, root: &Path, extra: &[(u64, u32)]) -> anyhow::Result<Self> {
         let bytes = std::fs::read(exe).with_context(|| format!("lecture de {}", exe.display()))?;
         let img = PeImage::parse(bytes).with_context(|| format!("parsing de {}", exe.display()))?;
         let base = img.opt.image_base;
         let extra_rva: Vec<(u32, u32)> = extra
             .iter()
             .filter_map(|&(va, len)| {
-                u32::try_from(va.checked_sub(base)?).ok().map(|rva| (rva, len))
+                u32::try_from(va.checked_sub(base)?)
+                    .ok()
+                    .map(|rva| (rva, len))
             })
             .collect();
         let cover = Cover::split_with(&img, &extra_rva).context("découpage en unités")?;
@@ -124,7 +122,8 @@ impl ReferenceBinary {
     /// # Erreurs
     /// Retourne une erreur si le fichier diffère du binaire ayant servi au découpage.
     pub fn load_checked(path: &Path, cover: &Cover) -> anyhow::Result<Self> {
-        let bytes = std::fs::read(path).with_context(|| format!("lecture de {}", path.display()))?;
+        let bytes =
+            std::fs::read(path).with_context(|| format!("lecture de {}", path.display()))?;
         if bytes.len() != cover.total_len {
             bail!(
                 "référence {} : {} octets, {} attendus (recouvrement d'un autre build ?)",
@@ -150,8 +149,7 @@ impl ReferenceBinary {
     /// Retourne une erreur de lecture disque.
     pub fn load_raw(path: &Path) -> anyhow::Result<Self> {
         Ok(Self {
-            bytes: std::fs::read(path)
-                .with_context(|| format!("lecture de {}", path.display()))?,
+            bytes: std::fs::read(path).with_context(|| format!("lecture de {}", path.display()))?,
         })
     }
 

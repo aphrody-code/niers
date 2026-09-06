@@ -54,7 +54,9 @@ impl SoccerMapEnvConfig {
     pub fn tags_of(&self, e: &MapEnv) -> &[MapTagData] {
         let n = self.tag_data.len();
         let start = (e.ref_map_tag[0].max(0) as usize).min(n);
-        let end = start.saturating_add(e.ref_map_tag[1].max(0) as usize).min(n);
+        let end = start
+            .saturating_add(e.ref_map_tag[1].max(0) as usize)
+            .min(n);
         self.tag_data.get(start..end).unwrap_or(&[])
     }
 }

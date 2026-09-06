@@ -8,9 +8,9 @@
 //! plateau = `toHex(BOARD_INFO_N.var0)` → empile `REF_EFFECT_N.var0` (frère de même index).
 //! Vérité terrain = la sortie d'inagle sur le vrai fichier. Valeurs extraites du VFS, non inventées.
 
-use nie_data::ability_learning::{parse_ability_learning_config, AbilityBoardEffect};
+use nie_data::ability_learning::{AbilityBoardEffect, parse_ability_learning_config};
 use nie_data::hash::HashId;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 /// Construit un nœud `{name, variables:[Int...], children:[]}` à partir de valeurs entières brutes.
 fn node(name: &str, vars: &[i64]) -> Value {
@@ -25,15 +25,42 @@ fn node(name: &str, vars: &[i64]) -> Value {
 fn fixture() -> Value {
     // ABILITY_LEARNING_BOARD_EFFECT_N : [var0(hash), var1, var2(type), var3(value), var4, var5].
     let effects = vec![
-        node("ABILITY_LEARNING_BOARD_EFFECT_0", &[1_530_105_677, 0, 0, 0, 0, 0]),
-        node("ABILITY_LEARNING_BOARD_EFFECT_1", &[-2_085_093_640, 0, 0, 0, 0, 0]),
-        node("ABILITY_LEARNING_BOARD_EFFECT_2", &[-1_036_329_225, 0, 0, 0, 0, 0]),
-        node("ABILITY_LEARNING_BOARD_EFFECT_3", &[448_704_322, 0, 0, 0, 0, 0]),
-        node("ABILITY_LEARNING_BOARD_EFFECT_4", &[-1_254_232_479, 0, 0, 0, 0, 0]),
-        node("ABILITY_LEARNING_BOARD_EFFECT_5", &[-1_099_900_038, 0, 0, 0, 0, 0]),
-        node("ABILITY_LEARNING_BOARD_EFFECT_28", &[-992_181_094, 0, 1, 0, 0, 0]),
-        node("ABILITY_LEARNING_BOARD_EFFECT_34", &[541_516_885, 0, 6, 0, 0, 0]),
-        node("ABILITY_LEARNING_BOARD_EFFECT_35", &[541_516_885, 0, 12, 0, 0, 0]),
+        node(
+            "ABILITY_LEARNING_BOARD_EFFECT_0",
+            &[1_530_105_677, 0, 0, 0, 0, 0],
+        ),
+        node(
+            "ABILITY_LEARNING_BOARD_EFFECT_1",
+            &[-2_085_093_640, 0, 0, 0, 0, 0],
+        ),
+        node(
+            "ABILITY_LEARNING_BOARD_EFFECT_2",
+            &[-1_036_329_225, 0, 0, 0, 0, 0],
+        ),
+        node(
+            "ABILITY_LEARNING_BOARD_EFFECT_3",
+            &[448_704_322, 0, 0, 0, 0, 0],
+        ),
+        node(
+            "ABILITY_LEARNING_BOARD_EFFECT_4",
+            &[-1_254_232_479, 0, 0, 0, 0, 0],
+        ),
+        node(
+            "ABILITY_LEARNING_BOARD_EFFECT_5",
+            &[-1_099_900_038, 0, 0, 0, 0, 0],
+        ),
+        node(
+            "ABILITY_LEARNING_BOARD_EFFECT_28",
+            &[-992_181_094, 0, 1, 0, 0, 0],
+        ),
+        node(
+            "ABILITY_LEARNING_BOARD_EFFECT_34",
+            &[541_516_885, 0, 6, 0, 0, 0],
+        ),
+        node(
+            "ABILITY_LEARNING_BOARD_EFFECT_35",
+            &[541_516_885, 0, 12, 0, 0, 0],
+        ),
     ];
     // ABILITY_LEARNING_BOARD_INFO_N : [var0(boardId hash), var1] ;
     // ABILITY_LEARNING_BOARD_INFO_REF_EFFECT_N : [var0(offset effet), var1(nb)].
@@ -49,7 +76,10 @@ fn fixture() -> Value {
         node("ABILITY_LEARNING_BOARD_INFO_REF_EFFECT_3", &[40, 6]),
         node("ABILITY_LEARNING_BOARD_INFO_4", &[-210_370_828, 0]),
         node("ABILITY_LEARNING_BOARD_INFO_REF_EFFECT_4", &[46, 6]),
-        node("ABILITY_LEARNING_BOARD_INFO_5", &[-1_688_650_719, -1_331_090_332]),
+        node(
+            "ABILITY_LEARNING_BOARD_INFO_5",
+            &[-1_688_650_719, -1_331_090_332],
+        ),
         node("ABILITY_LEARNING_BOARD_INFO_REF_EFFECT_5", &[52, 53]),
         node("ABILITY_LEARNING_BOARD_INFO_6", &[38_825_371, 698_383_838]),
         node("ABILITY_LEARNING_BOARD_INFO_REF_EFFECT_6", &[105, 76]),

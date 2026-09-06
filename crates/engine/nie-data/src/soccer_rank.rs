@@ -91,7 +91,11 @@ pub fn parse_soccer_rank_config(root: &Value) -> SoccerRankConfig {
             });
         }
     }
-    SoccerRankConfig { ranks, rates, prizes }
+    SoccerRankConfig {
+        ranks,
+        rates,
+        prizes,
+    }
 }
 
 #[cfg(test)]

@@ -10,16 +10,13 @@ mod common;
 
 use nie_data::hash::HashId;
 use nie_data::input::{
-    parse_adaptive_trigger_def, parse_haptic_feedback_def, parse_vibration_def, AdaptiveTriggerDef,
-    HapticFeedbackDef, VibrationDef,
+    AdaptiveTriggerDef, HapticFeedbackDef, VibrationDef, parse_adaptive_trigger_def,
+    parse_haptic_feedback_def, parse_vibration_def,
 };
 
-const ADAPTIVE_PATH: &str =
-    "input/adaptive_trigger_def_0.00.00.cfg.bin.json";
-const HAPTIC_PATH: &str =
-    "input/haptic_feedback_def_0.00.00.cfg.bin.json";
-const VIBRATION_PATH: &str =
-    "input/vibration_def_0.00.09.cfg.bin.json";
+const ADAPTIVE_PATH: &str = "input/adaptive_trigger_def_0.00.00.cfg.bin.json";
+const HAPTIC_PATH: &str = "input/haptic_feedback_def_0.00.00.cfg.bin.json";
+const VIBRATION_PATH: &str = "input/vibration_def_0.00.09.cfg.bin.json";
 
 fn load(path: &str) -> Option<serde_json::Value> {
     let path = common::chemin(path)?;
@@ -27,8 +24,8 @@ fn load(path: &str) -> Option<serde_json::Value> {
         eprintln!("skip : {} absent du corpus", path.display());
         return None;
     }
-    let content =
-        std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("Impossible de lire {}: {e}", path.display()));
+    let content = std::fs::read_to_string(&path)
+        .unwrap_or_else(|e| panic!("Impossible de lire {}: {e}", path.display()));
     Some(serde_json::from_str(&content).unwrap_or_else(|e| panic!("JSON invalide: {e}")))
 }
 
@@ -227,7 +224,11 @@ fn vibration_derniere_avec_wav() {
 fn vibration_wavpath_compte() {
     let Some(cfg) = load_vibration() else { return };
     // 16 des 63 entrées ont un wavPath non vide dans le dump réel.
-    let n = cfg.vibrations.iter().filter(|v| !v.wav_path.is_empty()).count();
+    let n = cfg
+        .vibrations
+        .iter()
+        .filter(|v| !v.wav_path.is_empty())
+        .count();
     assert_eq!(n, 16);
 }
 

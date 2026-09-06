@@ -36,10 +36,10 @@ pub mod aob;
 pub mod catalog;
 pub mod lancement;
 pub mod recette;
-#[cfg(target_os = "linux")]
-pub mod wine_memory;
 #[cfg(windows)]
 pub mod win_memory;
+#[cfg(target_os = "linux")]
+pub mod wine_memory;
 
 pub use aob::Pattern;
 
@@ -83,11 +83,31 @@ impl MapEntry {
 #[derive(Debug, Error)]
 pub enum MemError {
     #[error("{op} a échoué pid={pid} addr=0x{addr:x} len={len} errno={errno}{hint}")]
-    Syscall { op: &'static str, pid: i32, addr: u64, len: usize, errno: i32, hint: &'static str },
+    Syscall {
+        op: &'static str,
+        pid: i32,
+        addr: u64,
+        len: usize,
+        errno: i32,
+        hint: &'static str,
+    },
     #[error("{op} a échoué pid={pid} addr=0x{addr:x} len={len} GetLastError={code}{hint}")]
-    Win { op: &'static str, pid: i32, addr: u64, len: usize, code: u32, hint: &'static str },
+    Win {
+        op: &'static str,
+        pid: i32,
+        addr: u64,
+        len: usize,
+        code: u32,
+        hint: &'static str,
+    },
     #[error("{op} lecture partielle pid={pid} addr=0x{addr:x} demandé={requested} lu={got}")]
-    Partial { op: &'static str, pid: i32, addr: u64, requested: usize, got: usize },
+    Partial {
+        op: &'static str,
+        pid: i32,
+        addr: u64,
+        requested: usize,
+        got: usize,
+    },
     #[error("lecture mémoire indisponible sur cette plateforme")]
     Unsupported,
 }
@@ -104,7 +124,11 @@ pub fn read(pid: i32, addr: u64, dest: &mut [u8]) -> Result<usize, MemError> {
     #[cfg(not(any(target_os = "linux", windows)))]
     {
         let _ = (pid, addr);
-        if dest.is_empty() { Ok(0) } else { Err(MemError::Unsupported) }
+        if dest.is_empty() {
+            Ok(0)
+        } else {
+            Err(MemError::Unsupported)
+        }
     }
 }
 
@@ -121,7 +145,11 @@ pub fn write(pid: i32, addr: u64, src: &[u8]) -> Result<usize, MemError> {
     #[cfg(not(any(target_os = "linux", windows)))]
     {
         let _ = (pid, addr);
-        if src.is_empty() { Ok(0) } else { Err(MemError::Unsupported) }
+        if src.is_empty() {
+            Ok(0)
+        } else {
+            Err(MemError::Unsupported)
+        }
     }
 }
 
@@ -190,10 +218,14 @@ pub fn module_regions(pid: i32, fragment: &str, all: bool) -> Vec<MapEntry> {
         return regions;
     }
     match module_range(pid, fragment) {
-        Some((base, end)) if end > base => {
-            regions.into_iter().filter(|m| m.start < end && m.end > base).collect()
-        }
-        _ => regions.into_iter().filter(|m| m.path.to_lowercase().contains(&fragment.to_lowercase())).collect(),
+        Some((base, end)) if end > base => regions
+            .into_iter()
+            .filter(|m| m.start < end && m.end > base)
+            .collect(),
+        _ => regions
+            .into_iter()
+            .filter(|m| m.path.to_lowercase().contains(&fragment.to_lowercase()))
+            .collect(),
     }
 }
 
@@ -202,7 +234,13 @@ pub fn read_exact(pid: i32, addr: u64, length: usize) -> Result<Vec<u8>, MemErro
     let mut buf = vec![0u8; length];
     let got = read(pid, addr, &mut buf)?;
     if got != length {
-        return Err(MemError::Partial { op: "read", pid, addr, requested: length, got });
+        return Err(MemError::Partial {
+            op: "read",
+            pid,
+            addr,
+            requested: length,
+            got,
+        });
     }
     Ok(buf)
 }
@@ -216,7 +254,9 @@ pub fn read_u32(pid: i32, addr: u64) -> Result<u32, MemError> {
 /// Lit un `u64` little-endian (x86-64).
 pub fn read_u64(pid: i32, addr: u64) -> Result<u64, MemError> {
     let b = read_exact(pid, addr, 8)?;
-    Ok(u64::from_le_bytes([b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]]))
+    Ok(u64::from_le_bytes([
+        b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7],
+    ]))
 }
 
 /// Lit un `u8`.
@@ -246,7 +286,13 @@ pub fn read_f32(pid: i32, addr: u64) -> Result<f32, MemError> {
 pub fn write_exact(pid: i32, addr: u64, src: &[u8]) -> Result<(), MemError> {
     let put = write(pid, addr, src)?;
     if put != src.len() {
-        return Err(MemError::Partial { op: "write", pid, addr, requested: src.len(), got: put });
+        return Err(MemError::Partial {
+            op: "write",
+            pid,
+            addr,
+            requested: src.len(),
+            got: put,
+        });
     }
     Ok(())
 }
@@ -301,7 +347,11 @@ pub fn resolve_chain(pid: i32, base: u64, offsets: &[i64]) -> Result<u64, MemErr
 /// `addr + off` avec `off` signé, saturé dans `u64`.
 #[must_use]
 fn add_offset(addr: u64, off: i64) -> u64 {
-    if off >= 0 { addr.wrapping_add(off as u64) } else { addr.wrapping_sub(off.unsigned_abs()) }
+    if off >= 0 {
+        addr.wrapping_add(off as u64)
+    } else {
+        addr.wrapping_sub(off.unsigned_abs())
+    }
 }
 
 // ─── EAC patch (port de scripts/patch-eac.sh) ──────────────────────────────────────
@@ -320,7 +370,11 @@ pub enum EacPatchError {
     #[error("E/S sur le patch EAC : {0}")]
     Io(#[from] std::io::Error),
     #[error("octets @0x{offset:X} = {got}, attendu {want} — build de nie.exe différent, abandon")]
-    Mismatch { offset: u64, got: String, want: String },
+    Mismatch {
+        offset: u64,
+        got: String,
+        want: String,
+    },
 }
 
 /// Compte-rendu d'un patch EAC réussi.
@@ -354,7 +408,12 @@ pub fn patch_eac(src: &Path, dst: &Path) -> Result<EacPatchReport, EacPatchError
     f.flush()?;
     let dst_len = f.metadata()?.len();
 
-    Ok(EacPatchReport { offset: EAC_PATCH_OFFSET, original: EAC_PATCH_ORIG, patched: EAC_PATCH_NOP, dst_len })
+    Ok(EacPatchReport {
+        offset: EAC_PATCH_OFFSET,
+        original: EAC_PATCH_ORIG,
+        patched: EAC_PATCH_NOP,
+        dst_len,
+    })
 }
 
 fn hex5(b: &[u8; 5]) -> String {
@@ -403,7 +462,13 @@ pub fn dump_regions(pid: i32, regions: &[MapEntry], out_dir: &Path) -> std::io::
 
 /// Cherche `needle` dans les plages **lisibles**, jusqu'à `limit` hits. `base` sert à calculer la RVA.
 #[must_use]
-pub fn scan_regions(pid: i32, regions: &[MapEntry], base: Option<u64>, needle: &[u8], limit: usize) -> Vec<ScanHit> {
+pub fn scan_regions(
+    pid: i32,
+    regions: &[MapEntry],
+    base: Option<u64>,
+    needle: &[u8],
+    limit: usize,
+) -> Vec<ScanHit> {
     let mut hits = Vec::new();
     if needle.is_empty() {
         return hits;
@@ -420,10 +485,16 @@ pub fn scan_regions(pid: i32, regions: &[MapEntry], base: Option<u64>, needle: &
         let span = &buf[..got];
         let mut from = 0usize;
         while hits.len() < limit {
-            let Some(idx) = find_subslice(&span[from..], needle) else { break };
+            let Some(idx) = find_subslice(&span[from..], needle) else {
+                break;
+            };
             let at = m.start + (from + idx) as u64;
             let rva = base.filter(|&b| at >= b).map(|b| at - b);
-            hits.push(ScanHit { addr: at, perms: m.perms.clone(), rva });
+            hits.push(ScanHit {
+                addr: at,
+                perms: m.perms.clone(),
+                rva,
+            });
             from += idx + 1;
         }
     }
@@ -463,7 +534,11 @@ pub fn scan_regions_masked(
         for idx in pattern.find_all(&buf[..got], remaining) {
             let at = m.start + idx as u64;
             let rva = base.filter(|&b| at >= b).map(|b| at - b);
-            hits.push(ScanHit { addr: at, perms: m.perms.clone(), rva });
+            hits.push(ScanHit {
+                addr: at,
+                perms: m.perms.clone(),
+                rva,
+            });
         }
     }
     hits
@@ -490,7 +565,13 @@ mod tests {
 
     #[test]
     fn map_entry_perms() {
-        let e = MapEntry { start: 0x1000, end: 0x2000, perms: "r-x".into(), offset: 0, path: "m".into() };
+        let e = MapEntry {
+            start: 0x1000,
+            end: 0x2000,
+            perms: "r-x".into(),
+            offset: 0,
+            path: "m".into(),
+        };
         assert!(e.is_readable() && !e.is_writable() && e.is_executable());
         assert_eq!(e.size(), 0x1000);
     }
@@ -505,7 +586,8 @@ mod tests {
         // Faux binaire assez grand pour contenir l'offset EAC (~18 Mo), avec le `call` à l'offset.
         let size = EAC_PATCH_OFFSET as usize + 0x1000;
         let mut data = vec![0u8; size];
-        data[EAC_PATCH_OFFSET as usize..EAC_PATCH_OFFSET as usize + 5].copy_from_slice(&EAC_PATCH_ORIG);
+        data[EAC_PATCH_OFFSET as usize..EAC_PATCH_OFFSET as usize + 5]
+            .copy_from_slice(&EAC_PATCH_ORIG);
         fs::write(&src, &data).unwrap();
 
         let report = patch_eac(&src, &dst).expect("patch ok");
@@ -513,16 +595,25 @@ mod tests {
         assert_eq!(report.patched, EAC_PATCH_NOP);
 
         let src_after = fs::read(&src).unwrap();
-        assert_eq!(&src_after[EAC_PATCH_OFFSET as usize..EAC_PATCH_OFFSET as usize + 5], &EAC_PATCH_ORIG);
+        assert_eq!(
+            &src_after[EAC_PATCH_OFFSET as usize..EAC_PATCH_OFFSET as usize + 5],
+            &EAC_PATCH_ORIG
+        );
         let dst_after = fs::read(&dst).unwrap();
-        assert_eq!(&dst_after[EAC_PATCH_OFFSET as usize..EAC_PATCH_OFFSET as usize + 5], &EAC_PATCH_NOP);
+        assert_eq!(
+            &dst_after[EAC_PATCH_OFFSET as usize..EAC_PATCH_OFFSET as usize + 5],
+            &EAC_PATCH_NOP
+        );
 
         let bad_src = dir.join("bad.bin");
         let bad_dst = dir.join("bad_dst.bin");
         let mut bad = vec![0u8; size];
         bad[EAC_PATCH_OFFSET as usize] = 0xCC;
         fs::write(&bad_src, &bad).unwrap();
-        assert!(matches!(patch_eac(&bad_src, &bad_dst), Err(EacPatchError::Mismatch { .. })));
+        assert!(matches!(
+            patch_eac(&bad_src, &bad_dst),
+            Err(EacPatchError::Mismatch { .. })
+        ));
 
         let _ = fs::remove_dir_all(&dir);
     }

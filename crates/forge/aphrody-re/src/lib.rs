@@ -71,9 +71,7 @@
 /// [`headers::HeaderProbe::from_bytes`].
 pub mod headers;
 
-use iced_x86::{
-    Decoder, DecoderOptions, Formatter as _, Instruction, IntelFormatter,
-};
+use iced_x86::{Decoder, DecoderOptions, Formatter as _, Instruction, IntelFormatter};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use thiserror::Error;
@@ -394,7 +392,11 @@ fn triage_pe(
     strings_sample: Vec<String>,
 ) -> TriageReport {
     let format = if pe.is_64 { Format::Pe64 } else { Format::Pe32 };
-    let arch = Some(if pe.is_64 { "x86_64".to_owned() } else { "i386".to_owned() });
+    let arch = Some(if pe.is_64 {
+        "x86_64".to_owned()
+    } else {
+        "i386".to_owned()
+    });
     let entry_point = Some(pe.entry as u64);
 
     let sections = pe
@@ -409,7 +411,11 @@ fn triage_pe(
         .collect();
 
     let imports = pe.imports.iter().map(|i| i.name.to_string()).collect();
-    let exports = pe.exports.iter().filter_map(|e| e.name.map(|n| n.to_owned())).collect();
+    let exports = pe
+        .exports
+        .iter()
+        .filter_map(|e| e.name.map(|n| n.to_owned()))
+        .collect();
 
     TriageReport {
         format,
@@ -431,7 +437,11 @@ fn triage_elf(
     sha256: String,
     strings_sample: Vec<String>,
 ) -> TriageReport {
-    let format = if elf.is_64 { Format::Elf64 } else { Format::Elf32 };
+    let format = if elf.is_64 {
+        Format::Elf64
+    } else {
+        Format::Elf32
+    };
     let arch = Some(elf_arch_name(elf.header.e_machine));
     let entry_point = Some(elf.entry);
 
@@ -439,26 +449,46 @@ fn triage_elf(
         .section_headers
         .iter()
         .map(|sh| {
-            let name = elf.shdr_strtab.get_at(sh.sh_name).unwrap_or("<bad-strtab>").to_owned();
+            let name = elf
+                .shdr_strtab
+                .get_at(sh.sh_name)
+                .unwrap_or("<bad-strtab>")
+                .to_owned();
             let offset = sh.sh_offset as usize;
             let len = sh.sh_size as usize;
             let entropy = bytes
                 .get(offset..offset.saturating_add(len))
                 .filter(|s| !s.is_empty())
                 .map(shannon_entropy);
-            Section { name, vaddr: sh.sh_addr, size: sh.sh_size, entropy }
+            Section {
+                name,
+                vaddr: sh.sh_addr,
+                size: sh.sh_size,
+                entropy,
+            }
         })
         .collect();
 
-    let imports = elf.dynsyms.iter().filter(|s| s.is_import()).filter_map(|s| {
-        elf.dynstrtab.get_at(s.st_name).map(std::borrow::ToOwned::to_owned)
-    }).collect();
+    let imports = elf
+        .dynsyms
+        .iter()
+        .filter(|s| s.is_import())
+        .filter_map(|s| {
+            elf.dynstrtab
+                .get_at(s.st_name)
+                .map(std::borrow::ToOwned::to_owned)
+        })
+        .collect();
 
     let exports = elf
         .dynsyms
         .iter()
         .filter(|s| !s.is_import() && s.st_name != 0)
-        .filter_map(|s| elf.dynstrtab.get_at(s.st_name).map(std::borrow::ToOwned::to_owned))
+        .filter_map(|s| {
+            elf.dynstrtab
+                .get_at(s.st_name)
+                .map(std::borrow::ToOwned::to_owned)
+        })
         .collect();
 
     TriageReport {
@@ -531,23 +561,25 @@ pub fn extract_strings(bytes: &[u8], min_len: usize, limit: usize) -> Vec<String
             (false, Some(s)) => {
                 let len = i - s;
                 if len >= min_len
-                    && let Ok(text) = std::str::from_utf8(&bytes[s..i]) {
-                        push_unique(&mut out, &mut seen, text.to_owned(), limit);
-                        if out.len() >= limit {
-                            return out;
-                        }
+                    && let Ok(text) = std::str::from_utf8(&bytes[s..i])
+                {
+                    push_unique(&mut out, &mut seen, text.to_owned(), limit);
+                    if out.len() >= limit {
+                        return out;
                     }
+                }
                 start = None;
-            },
-            _ => {},
+            }
+            _ => {}
         }
     }
     if let Some(s) = start {
         let len = bytes.len() - s;
         if len >= min_len
-            && let Ok(text) = std::str::from_utf8(&bytes[s..]) {
-                push_unique(&mut out, &mut seen, text.to_owned(), limit);
-            }
+            && let Ok(text) = std::str::from_utf8(&bytes[s..])
+        {
+            push_unique(&mut out, &mut seen, text.to_owned(), limit);
+        }
     }
 
     // UTF-16LE pass: pairs of (printable_ascii, 0x00).
@@ -643,12 +675,21 @@ mod tests {
         let bytes = b"\x00\x00hello world\x00\x01\x02foobar\xffmidstream short\x00THIS_IS_AN_API";
         let s = extract_strings(bytes, 6, 16);
         // `contains` iterates &String elements; use predicate to compare via as_str().
-        expect_that!(s, contains(predicate(|x: &String| x.as_str() == "hello world")));
+        expect_that!(
+            s,
+            contains(predicate(|x: &String| x.as_str() == "hello world"))
+        );
         expect_that!(s, contains(predicate(|x: &String| x.as_str() == "foobar")));
         // 'short' is 5 chars, below min_len=6 → excluded.
-        expect_that!(s, not(contains(predicate(|x: &String| x.as_str() == "short"))));
+        expect_that!(
+            s,
+            not(contains(predicate(|x: &String| x.as_str() == "short")))
+        );
         // THIS_IS_AN_API is 14 chars >= 6 → included.
-        assert!(s.iter().any(|x| x.contains("THIS_IS_AN_API")), "missing THIS_IS_AN_API in {s:?}");
+        assert!(
+            s.iter().any(|x| x.contains("THIS_IS_AN_API")),
+            "missing THIS_IS_AN_API in {s:?}"
+        );
     }
 
     #[gtest]

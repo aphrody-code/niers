@@ -39,7 +39,10 @@ impl EventWeaponInfo {
     /// Parse une entrée (infaillible : position significative).
     #[must_use]
     pub fn from_value(v: &Value) -> Self {
-        Self { weapon_id: field_hash(v, "weapon_id"), weight: field_i64(v, "weight").unwrap_or(0) }
+        Self {
+            weapon_id: field_hash(v, "weapon_id"),
+            weight: field_i64(v, "weight").unwrap_or(0),
+        }
     }
 }
 
@@ -190,7 +193,11 @@ fn slice<T>(list: &[T], range: [i64; 2]) -> &[T] {
 pub fn parse_happen_event_npc_common(root: &Value) -> HappenEventNpcCommon {
     HappenEventNpcCommon {
         weapon_info: parse_all(root, "m_EventWeaponInfo", EventWeaponInfo::from_value),
-        weapon_another_info: parse_all(root, "m_EventWeaponAnotherInfo", EventWeaponInfo::from_value),
+        weapon_another_info: parse_all(
+            root,
+            "m_EventWeaponAnotherInfo",
+            EventWeaponInfo::from_value,
+        ),
         aimed_info: parse_all(root, "m_EventAimedInfo", EventAimedInfo::from_value),
         common_info: parse_all(root, "m_EventCommonInfo", EventCommonInfo::from_value),
     }
@@ -248,7 +255,13 @@ mod tests {
     #[test]
     fn weapon_et_aimed_byte_exact() {
         let cfg = parse_happen_event_npc_common(&fixture());
-        assert_eq!(cfg.weapon_info[0], EventWeaponInfo { weapon_id: HashId(0xC4C2_C944), weight: 3 });
+        assert_eq!(
+            cfg.weapon_info[0],
+            EventWeaponInfo {
+                weapon_id: HashId(0xC4C2_C944),
+                weight: 3
+            }
+        );
         let a = &cfg.aimed_info[0];
         assert_eq!(a.npc_type_id, HashId(0x11F1_F540));
         assert_eq!(a.on_loop_mot_id, HashId::ZERO); // 0x00000000 = aucune motion

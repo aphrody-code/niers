@@ -46,8 +46,16 @@ pub struct AddModelInfo {
 impl AddModelInfo {
     fn from_value(v: &Value) -> Self {
         let arr = v.get("addModel").and_then(Value::as_array);
-        let at = |i: usize| arr.and_then(|a| a.get(i)).and_then(Value::as_i64).unwrap_or(0);
-        Self { base_chara_id: field_hash(v, "baseCharaId"), data_offset: at(0), data_count: at(1) }
+        let at = |i: usize| {
+            arr.and_then(|a| a.get(i))
+                .and_then(Value::as_i64)
+                .unwrap_or(0)
+        };
+        Self {
+            base_chara_id: field_hash(v, "baseCharaId"),
+            data_offset: at(0),
+            data_count: at(1),
+        }
     }
 }
 
@@ -63,9 +71,11 @@ pub struct AddModelConfig {
 #[must_use]
 pub fn parse_add_model_config(root: &Value) -> AddModelConfig {
     AddModelConfig {
-        data: list_values(root, "m_addModelDataList")
-            .map_or_else(Vec::new, |vs| vs.iter().map(AddModelData::from_value).collect()),
-        info: list_values(root, "m_addModelInfoList")
-            .map_or_else(Vec::new, |vs| vs.iter().map(AddModelInfo::from_value).collect()),
+        data: list_values(root, "m_addModelDataList").map_or_else(Vec::new, |vs| {
+            vs.iter().map(AddModelData::from_value).collect()
+        }),
+        info: list_values(root, "m_addModelInfoList").map_or_else(Vec::new, |vs| {
+            vs.iter().map(AddModelInfo::from_value).collect()
+        }),
     }
 }

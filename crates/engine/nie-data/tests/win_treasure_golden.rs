@@ -236,7 +236,11 @@ fn aplatit_les_113_feuilles_items() {
 #[test]
 fn apparie_les_22_coffres() {
     let chests = collect_chests(&node_fixture());
-    assert_eq!(chests.len(), 22, "22 coffres ITBL_BASE appariés à leur _REF_ITEMS");
+    assert_eq!(
+        chests.len(),
+        22,
+        "22 coffres ITBL_BASE appariés à leur _REF_ITEMS"
+    );
 
     // 1er coffre : -252444957 → 0xF0F3FEE3, tranche [0, 9).
     assert_eq!(chests[0].chest_id, HashId::from_signed(-252444957));
@@ -260,7 +264,11 @@ fn apparie_les_22_coffres() {
 #[test]
 fn parse_complet_lignes_golden() {
     let rows = parse_win_treasure(&node_fixture());
-    assert_eq!(rows.len(), 113, "113 lignes (une par item, chaque item référencé une fois)");
+    assert_eq!(
+        rows.len(),
+        113,
+        "113 lignes (une par item, chaque item référencé une fois)"
+    );
 
     // Ordinaux contigus 0..113.
     for (i, r) in rows.iter().enumerate() {

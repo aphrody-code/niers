@@ -155,14 +155,38 @@ pub fn formats_pour(path: &str) -> Vec<FormatExport> {
     match ext.as_str() {
         "g4tx" => {
             out.extend(formats_image());
-            out.push(FormatExport::new("json", "json", "JSON (en-têtes de texture)", false, true));
+            out.push(FormatExport::new(
+                "json",
+                "json",
+                "JSON (en-têtes de texture)",
+                false,
+                true,
+            ));
         }
         "g4md" | "g4mg" => {
-            out.push(FormatExport::new("glb", "glb", "glTF binaire (géométrie + texture)", false, true));
-            out.push(FormatExport::new("json", "json", "JSON (structure décodée)", false, true));
+            out.push(FormatExport::new(
+                "glb",
+                "glb",
+                "glTF binaire (géométrie + texture)",
+                false,
+                true,
+            ));
+            out.push(FormatExport::new(
+                "json",
+                "json",
+                "JSON (structure décodée)",
+                false,
+                true,
+            ));
         }
         "acb" | "awb" | "hca" | "adx" => {
-            out.push(FormatExport::new("wav", "wav", "WAV PCM 16 bits", false, true));
+            out.push(FormatExport::new(
+                "wav",
+                "wav",
+                "WAV PCM 16 bits",
+                false,
+                true,
+            ));
         }
         // Un `.usm` n'a plus besoin d'`ffmpeg` : le remux vit dans `nie_formats::mp4`/`webm`.
         // Les cinq formats sont proposés d'emblée parce que cette table est dérivée du NOM, sans
@@ -170,11 +194,41 @@ pub fn formats_pour(path: &str) -> Vec<FormatExport> {
         // franchement (« ce film est en VP9, exportez-le en WebM ») plutôt que de produire un
         // conteneur que rien ne lit.
         "usm" => {
-            out.push(FormatExport::new("mp4", "mp4", "MP4 — H.264 remuxé, sans réencodage", false, true));
-            out.push(FormatExport::new("webm", "webm", "WebM — VP9 remuxé, sans réencodage", false, true));
-            out.push(FormatExport::new("wav", "wav", "WAV — bande-son décodée", false, true));
-            out.push(FormatExport::new("h264", "h264", "Flux H.264 élémentaire", false, true));
-            out.push(FormatExport::new("m2v", "m2v", "Flux MPEG-2 élémentaire", false, true));
+            out.push(FormatExport::new(
+                "mp4",
+                "mp4",
+                "MP4 — H.264 remuxé, sans réencodage",
+                false,
+                true,
+            ));
+            out.push(FormatExport::new(
+                "webm",
+                "webm",
+                "WebM — VP9 remuxé, sans réencodage",
+                false,
+                true,
+            ));
+            out.push(FormatExport::new(
+                "wav",
+                "wav",
+                "WAV — bande-son décodée",
+                false,
+                true,
+            ));
+            out.push(FormatExport::new(
+                "h264",
+                "h264",
+                "Flux H.264 élémentaire",
+                false,
+                true,
+            ));
+            out.push(FormatExport::new(
+                "m2v",
+                "m2v",
+                "Flux MPEG-2 élémentaire",
+                false,
+                true,
+            ));
         }
         _ => {}
     }
@@ -182,7 +236,13 @@ pub fn formats_pour(path: &str) -> Vec<FormatExport> {
     // `.cfg.bin` a une DOUBLE extension : le match ci-dessus ne la voit pas. Le JSON n'est ajouté
     // qu'une fois — un `.g4tx` a déjà le sien.
     if est_donnee_structuree(path, &ext) && !out.iter().any(|f| f.id == "json") {
-        out.push(FormatExport::new("json", "json", "JSON (données décodées)", false, true));
+        out.push(FormatExport::new(
+            "json",
+            "json",
+            "JSON (données décodées)",
+            false,
+            true,
+        ));
     }
     out
 }
@@ -257,7 +317,9 @@ fn video_usm(path: &str, data: &[u8], format: &str) -> Result<Vec<u8>, String> {
                 .ok_or_else(|| alloc::format!("« {nom} » n'a pas de piste sonore"))?;
             nie_formats::cri_audio::decode_to_wav(&piste.octets)
         }
-        autre => Err(alloc::format!("format d'export inconnu pour une vidéo : « {autre} »")),
+        autre => Err(alloc::format!(
+            "format d'export inconnu pour une vidéo : « {autre} »"
+        )),
     }
 }
 
@@ -289,7 +351,11 @@ pub fn produire(path: &str, data: Vec<u8>, format: &str) -> Result<Vec<u8>, Stri
         autre => {
             let img = nie_formats::image_out::ImageOut::depuis_extension(autre)
                 .ok_or_else(|| alloc::format!("format d'export inconnu : « {autre} »"))?;
-            nie_formats::image_out::g4tx_vers(&data, nie_formats::g4tx_decode::basename_of(path), img)
+            nie_formats::image_out::g4tx_vers(
+                &data,
+                nie_formats::g4tx_decode::basename_of(path),
+                img,
+            )
         }
     }
 }
@@ -300,7 +366,15 @@ mod tests {
 
     #[test]
     fn le_brut_est_toujours_propose_et_en_tete() {
-        for p in ["a/b.g4tx", "a/b.g4md", "a/b.awb", "a/b.usm", "a/b.cfg.bin", "a/b.inconnu", "sansext"] {
+        for p in [
+            "a/b.g4tx",
+            "a/b.g4md",
+            "a/b.awb",
+            "a/b.usm",
+            "a/b.cfg.bin",
+            "a/b.inconnu",
+            "sansext",
+        ] {
             let f = formats_pour(p);
             assert_eq!(f[0].id, "raw", "{p}");
             assert!(f[0].brut, "{p}");
@@ -327,7 +401,10 @@ mod tests {
     fn seul_glb_demande_encore_un_contexte() {
         assert!(necessite_contexte("glb"));
         for f in ["mp4", "webm", "wav", "h264", "m2v", "raw", "png", "json"] {
-            assert!(!necessite_contexte(f), "{f} ne devrait plus exiger de contexte");
+            assert!(
+                !necessite_contexte(f),
+                "{f} ne devrait plus exiger de contexte"
+            );
         }
     }
 
@@ -335,16 +412,27 @@ mod tests {
     #[test]
     fn convertir_des_octets_qui_ne_sont_pas_un_usm_echoue_proprement() {
         let e = produire("a/b.usm", vec![0; 64], "mp4").expect_err("doit échouer");
-        assert!(e.contains("magic") || e.contains("CRID"), "message peu clair : {e}");
+        assert!(
+            e.contains("magic") || e.contains("CRID"),
+            "message peu clair : {e}"
+        );
         // Le format brut, lui, marche toujours : il ne regarde pas les octets.
-        assert_eq!(produire("a/b.usm", vec![1, 2, 3], "raw").expect("brut"), vec![1, 2, 3]);
+        assert_eq!(
+            produire("a/b.usm", vec![1, 2, 3], "raw").expect("brut"),
+            vec![1, 2, 3]
+        );
     }
 
     #[test]
     fn une_texture_propose_les_huit_formats_image_et_le_json() {
         let ids: Vec<String> = formats_pour("x/y.g4tx").into_iter().map(|f| f.id).collect();
-        for attendu in ["raw", "png", "webp", "gif", "jpg", "bmp", "tga", "tiff", "qoi", "json"] {
-            assert!(ids.contains(&attendu.to_string()), "{attendu} manquant : {ids:?}");
+        for attendu in [
+            "raw", "png", "webp", "gif", "jpg", "bmp", "tga", "tiff", "qoi", "json",
+        ] {
+            assert!(
+                ids.contains(&attendu.to_string()),
+                "{attendu} manquant : {ids:?}"
+            );
         }
     }
 
@@ -356,7 +444,10 @@ mod tests {
     /// que le prochain parseur branché reste invisible dans l'interface.
     #[test]
     fn les_familles_level5_annexes_proposent_le_json() {
-        for ext in ["g4sk", "g4nv", "g4mt", "g4cm", "g4la", "g4ma", "g4vs", "col", "vfxo", "pfxo", "gfxo", "cfxo"] {
+        for ext in [
+            "g4sk", "g4nv", "g4mt", "g4cm", "g4la", "g4ma", "g4vs", "col", "vfxo", "pfxo", "gfxo",
+            "cfxo",
+        ] {
             let ids: Vec<String> = formats_pour(&alloc::format!("a/b.{ext}"))
                 .into_iter()
                 .map(|f| f.id)
@@ -371,7 +462,12 @@ mod tests {
     #[test]
     fn les_formats_avec_perte_sont_annonces() {
         let f = formats_pour("x/y.g4tx");
-        let perte = |id: &str| f.iter().find(|f| f.id == id).expect("format présent").sans_perte;
+        let perte = |id: &str| {
+            f.iter()
+                .find(|f| f.id == id)
+                .expect("format présent")
+                .sans_perte
+        };
         assert!(perte("png"));
         assert!(perte("webp"));
         assert!(!perte("jpg"), "JPEG perd de l'information");
@@ -380,7 +476,12 @@ mod tests {
 
     #[test]
     fn chaque_famille_propose_sa_conversion() {
-        let ids = |p: &str| formats_pour(p).into_iter().map(|f| f.id).collect::<Vec<_>>();
+        let ids = |p: &str| {
+            formats_pour(p)
+                .into_iter()
+                .map(|f| f.id)
+                .collect::<Vec<_>>()
+        };
         assert!(ids("c/x.g4md").contains(&"glb".to_string()));
         assert!(ids("c/x.awb").contains(&"wav".to_string()));
         assert!(ids("c/x.hca").contains(&"wav".to_string()));
@@ -393,7 +494,10 @@ mod tests {
 
     #[test]
     fn le_json_n_est_jamais_propose_deux_fois() {
-        let ids = formats_pour("x/y.g4tx").into_iter().map(|f| f.id).collect::<Vec<_>>();
+        let ids = formats_pour("x/y.g4tx")
+            .into_iter()
+            .map(|f| f.id)
+            .collect::<Vec<_>>();
         assert_eq!(ids.iter().filter(|i| *i == "json").count(), 1);
     }
 
@@ -404,7 +508,10 @@ mod tests {
         assert_eq!(nom_propose("a/b/x.g4md", "glb"), "x.glb");
         assert_eq!(nom_propose("a/b/x.awb", "wav"), "x.wav");
         // La double extension doit disparaître ENTIÈREMENT, pas laisser un `.cfg`.
-        assert_eq!(nom_propose("a/b/skill_config.cfg.bin", "json"), "skill_config.json");
+        assert_eq!(
+            nom_propose("a/b/skill_config.cfg.bin", "json"),
+            "skill_config.json"
+        );
         // `jpg`, pas `jpeg` : le nom suit l'extension canonique du format.
         assert_eq!(nom_propose("a/b/t.g4tx", "jpg"), "t.jpg");
     }
@@ -441,7 +548,10 @@ mod tests {
         let racine = nie_formats::vfs::resolve_game_dir();
         let mut vfs = nie_formats::vfs::Vfs::new();
         if vfs.init(racine.join("data")).is_err() {
-            eprintln!("SAUTÉ : VFS réel indisponible sous {} (corpus du jeu absent)", racine.display());
+            eprintln!(
+                "SAUTÉ : VFS réel indisponible sous {} (corpus du jeu absent)",
+                racine.display()
+            );
             return;
         }
 
@@ -465,11 +575,18 @@ mod tests {
         assert_eq!(produire(&tex, data.clone(), "raw").expect("brut"), data);
 
         // Données structurées → JSON réellement parsable.
-        if let Some(cfg) = vfs.iter().map(|(p, _)| p.to_string()).find(|p| p.ends_with(".cfg.bin")) {
+        if let Some(cfg) = vfs
+            .iter()
+            .map(|(p, _)| p.to_string())
+            .find(|p| p.ends_with(".cfg.bin"))
+        {
             let brut = vfs.read(&cfg).expect("lecture cfg.bin");
             let json = produire(&cfg, brut, "json").expect("export JSON");
             let valeur: serde_json::Value = serde_json::from_slice(&json).expect("JSON valide");
-            assert!(valeur.is_object() || valeur.is_array(), "JSON structuré attendu");
+            assert!(
+                valeur.is_object() || valeur.is_array(),
+                "JSON structuré attendu"
+            );
         }
     }
 
@@ -506,15 +623,25 @@ mod tests {
             nie_formats::usm::CodecVideo::H264 => {
                 let mp4 = produire(&film, data.clone(), "mp4").expect("export MP4");
                 assert_eq!(&mp4[4..8], b"ftyp", "un MP4 commence par une boîte ftyp");
-                assert!(mp4.windows(4).any(|w| w == b"moov"), "table d'échantillons attendue");
+                assert!(
+                    mp4.windows(4).any(|w| w == b"moov"),
+                    "table d'échantillons attendue"
+                );
                 // Le conteneur qui ne correspond pas au codec est REFUSÉ, pas produit à vide.
                 let e = produire(&film, data.clone(), "webm").expect_err("WebM sur du H.264");
                 assert!(e.contains("h264"), "message peu clair : {e}");
             }
             nie_formats::usm::CodecVideo::Vp9 => {
                 let webm = produire(&film, data.clone(), "webm").expect("export WebM");
-                assert_eq!(&webm[..4], &[0x1A, 0x45, 0xDF, 0xA3], "en-tête EBML attendu");
-                assert!(produire(&film, data.clone(), "mp4").is_err(), "MP4 sur du VP9");
+                assert_eq!(
+                    &webm[..4],
+                    &[0x1A, 0x45, 0xDF, 0xA3],
+                    "en-tête EBML attendu"
+                );
+                assert!(
+                    produire(&film, data.clone(), "mp4").is_err(),
+                    "MP4 sur du VP9"
+                );
             }
             autre => panic!("codec inattendu pour {film} : {}", autre.nom()),
         }
@@ -553,7 +680,8 @@ mod tests {
         for path in &echantillon {
             let data = vfs.read(path).expect("lecture g4tx");
             let base = nie_formats::g4tx_decode::basename_of(path);
-            let plein = nie_formats::g4tx_decode::decode_best_to_png(&data, base).expect("PNG plein");
+            let plein =
+                nie_formats::g4tx_decode::decode_best_to_png(&data, base).expect("PNG plein");
             let vignette = nie_formats::image_out::g4tx_vignette(
                 &data,
                 base,
@@ -593,7 +721,11 @@ mod tests {
         }
         // `.awb` et non `.hca` : le jeu n'expose pas de HCA autonome, ils vivent tous dans un banc
         // AWB — c'est donc le vrai chemin d'export audio de l'explorateur.
-        let Some(son) = vfs.iter().map(|(p, _)| p.to_string()).find(|p| p.ends_with(".awb")) else {
+        let Some(son) = vfs
+            .iter()
+            .map(|(p, _)| p.to_string())
+            .find(|p| p.ends_with(".awb"))
+        else {
             eprintln!("SAUTÉ : aucun .awb dans le VFS monté");
             return;
         };

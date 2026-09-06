@@ -86,10 +86,7 @@ impl FastTravelMapInfo {
             map_id: field_hash(v, "mapId"),
             map_text_id: field_hash(v, "mapTextId"),
             pos: parse_pos4(v),
-            chara_rotate_y: v
-                .get("charaRotateY")
-                .and_then(Value::as_f64)
-                .unwrap_or(0.0) as f32,
+            chara_rotate_y: v.get("charaRotateY").and_then(Value::as_f64).unwrap_or(0.0) as f32,
         })
     }
 }
@@ -210,7 +207,10 @@ impl FastTravelConfig {
     /// ```
     #[must_use]
     pub fn find_by_map(&self, map_id: HashId) -> Vec<&FastTravelMapInfo> {
-        self.map_infos.iter().filter(|m| m.map_id == map_id).collect()
+        self.map_infos
+            .iter()
+            .filter(|m| m.map_id == map_id)
+            .collect()
     }
 }
 

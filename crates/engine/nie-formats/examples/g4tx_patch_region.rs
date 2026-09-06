@@ -34,8 +34,14 @@ fn main() {
         .unwrap_or_else(|| panic!("région « {region_name} » absente"));
 
     let (tw, th) = (tex.width as u32, tex.height as u32);
-    println!("atlas     {tw}x{th}  data_offset=0x{:X} data_size={}", tex.data_offset, tex.data_size);
-    println!("région    « {} » x={} y={} {}x{}", region.name, region.x, region.y, region.width, region.height);
+    println!(
+        "atlas     {tw}x{th}  data_offset=0x{:X} data_size={}",
+        tex.data_offset, tex.data_size
+    );
+    println!(
+        "région    « {} » x={} y={} {}x{}",
+        region.name, region.x, region.y, region.width, region.height
+    );
 
     // ── 1. décoder les pixels BC7 de l'atlas ────────────────────────────────────
     let pixels = &original[tex.data_offset + DDS_DX10_HEADER..tex.data_offset + tex.data_size];
@@ -91,29 +97,47 @@ fn main() {
         "taille BC7 réencodée ({}) ≠ taille d'origine ({expected}) — refus d'écrire",
         encoded.data.len()
     );
-    println!("réencodé  {} octets BC7 (identique à l'origine)", encoded.data.len());
+    println!(
+        "réencodé  {} octets BC7 (identique à l'origine)",
+        encoded.data.len()
+    );
 
     // ── 4. patch en place : seuls les octets de pixels changent ─────────────────
     let mut out = original.clone();
     let start = tex.data_offset + DDS_DX10_HEADER;
     out[start..start + encoded.data.len()].copy_from_slice(&encoded.data);
-    assert_eq!(out.len(), original.len(), "taille de fichier modifiée — refus d'écrire");
+    assert_eq!(
+        out.len(),
+        original.len(),
+        "taille de fichier modifiée — refus d'écrire"
+    );
 
     // ── 5. relecture de contrôle : la structure doit être inchangée ─────────────
     let g2 = nie_formats::g4tx::parse(&out).expect("le fichier produit doit se reparser");
     let t2 = g2.textures.first().expect("texture");
-    assert_eq!(g2.header.sub_texture_count, g.header.sub_texture_count, "nb de régions modifié");
+    assert_eq!(
+        g2.header.sub_texture_count, g.header.sub_texture_count,
+        "nb de régions modifié"
+    );
     assert_eq!(t2.data_offset, tex.data_offset, "offset de données modifié");
     assert_eq!(t2.data_size, tex.data_size, "taille de données modifiée");
     for (x, y) in t2.sub_textures.iter().zip(tex.sub_textures.iter()) {
-        assert_eq!((x.id, x.x, x.y, x.width, x.height), (y.id, y.x, y.y, y.width, y.height), "région « {} » déplacée", y.name);
+        assert_eq!(
+            (x.id, x.x, x.y, x.width, x.height),
+            (y.id, y.x, y.y, y.width, y.height),
+            "région « {} » déplacée",
+            y.name
+        );
         assert_eq!(x.name, y.name, "nom de région modifié");
     }
     // Hors zone de pixels, le fichier doit être identique octet pour octet.
     assert_eq!(out[..start], original[..start], "en-tête modifié");
     let tail = start + encoded.data.len();
     assert_eq!(out[tail..], original[tail..], "queue de fichier modifiée");
-    println!("contrôle  structure identique, {} régions préservées", t2.sub_textures.len());
+    println!(
+        "contrôle  structure identique, {} régions préservées",
+        t2.sub_textures.len()
+    );
 
     std::fs::write(dst, &out).expect("écriture");
     println!("écrit     {dst} ({} octets)", out.len());

@@ -13,12 +13,17 @@ const FONT_CFG: &str = "data/common/font/font/font_def/font.cfg.bin";
 
 fn main() -> Result<(), String> {
     let vfs = vfs::open_game().map_err(|e| format!("VFS : {e:?}"))?;
-    let octets = vfs.read(FONT_CFG).map_err(|e| format!("{FONT_CFG} : {e:?}"))?;
+    let octets = vfs
+        .read(FONT_CFG)
+        .map_err(|e| format!("{FONT_CFG} : {e:?}"))?;
     let cfg = nie_formats::cfgbin::parse_t2b(&octets).map_err(|e| format!("cfg : {e:?}"))?;
     let metrics = nie_formats::font::parse_metrics(&cfg);
 
     println!("glyphes (police 0) : {}", metrics.glyph_count());
-    println!("cell_height={} ascent={}", metrics.dims.cell_height, metrics.dims.ascent);
+    println!(
+        "cell_height={} ascent={}",
+        metrics.dims.cell_height, metrics.dims.ascent
+    );
 
     // Les caractères que le français exige réellement, minuscules et majuscules.
     const FR: &str = "éèêëàâäîïôöùûüçÉÈÊËÀÂÄÎÏÔÖÙÛÜÇœŒ«»…–—’";
@@ -49,16 +54,33 @@ fn main() -> Result<(), String> {
         }
         presents.iter().map(|(c, _)| *c).collect()
     };
-    println!("\naccents PRÉSENTS dans les métriques ({}) : {}", presents.len(), presents.iter().collect::<String>());
-    println!("accents ABSENTS ({}) : {}", absents.len(), absents.iter().collect::<String>());
+    println!(
+        "\naccents PRÉSENTS dans les métriques ({}) : {}",
+        presents.len(),
+        presents.iter().collect::<String>()
+    );
+    println!(
+        "accents ABSENTS ({}) : {}",
+        absents.len(),
+        absents.iter().collect::<String>()
+    );
 
     // Où vivent-ils dans l'atlas ? Un Y différent de la rangée ASCII expliquerait que l'edge-scan
     // ne les voie pas — et donnerait l'adresse pour les atteindre.
-    let ascii_y: Vec<u16> = "AZaz09".chars().filter_map(|c| metrics.glyph(c as u32).map(|g| g.y)).collect();
+    let ascii_y: Vec<u16> = "AZaz09"
+        .chars()
+        .filter_map(|c| metrics.glyph(c as u32).map(|g| g.y))
+        .collect();
     println!("\nY des glyphes ASCII : {ascii_y:?}");
     for c in presents.iter().take(8) {
-        if let Some(g) = metrics.glyph(*c as u32).or_else(|| metrics.glyph(cle_empaquetee(*c))) {
-            println!("  '{c}' → x={} y={} avance={} bearing_x={}", g.x, g.y, g.advance, g.bearing_x);
+        if let Some(g) = metrics
+            .glyph(*c as u32)
+            .or_else(|| metrics.glyph(cle_empaquetee(*c)))
+        {
+            println!(
+                "  '{c}' → x={} y={} avance={} bearing_x={}",
+                g.x, g.y, g.advance, g.bearing_x
+            );
         }
     }
     // L'atlas latin (`font_def`) est edge-scanné depuis la rangée ASCII : si celle-ci contient
@@ -71,7 +93,11 @@ fn main() -> Result<(), String> {
     let tx = nie_formats::g4tx::parse(&g4tx).map_err(|e| format!("g4tx : {e:?}"))?;
     let t = tx.textures.first().ok_or("pas de texture")?;
     let dds = &g4tx[t.data_offset..];
-    let off = if dds.len() >= 88 && &dds[84..88] == b"DX10" { 148 } else { 128 };
+    let off = if dds.len() >= 88 && &dds[84..88] == b"DX10" {
+        148
+    } else {
+        128
+    };
     let atlas = &dds[off..];
     let la = nie_formats::font::LatinAtlas::from_atlas(
         atlas,
@@ -80,7 +106,12 @@ fn main() -> Result<(), String> {
         946,
         metrics.dims.cell_height,
     );
-    println!("\natlas {}x{} — spans edge-scannés : {}", t.width, t.height, la.spans.len());
+    println!(
+        "\natlas {}x{} — spans edge-scannés : {}",
+        t.width,
+        t.height,
+        la.spans.len()
+    );
     println!("ASCII imprimable = 0x21..=0x7E = 94 glyphes ; au-delà, la rangée continue avec :");
     for (i, (x0, x1)) in la.spans.iter().enumerate().skip(94).take(12) {
         let cp = 0x21 + i as u32;

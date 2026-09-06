@@ -216,7 +216,13 @@ fn parse_list<T>(root: &Value, name: &str, f: impl Fn(&Value) -> Option<T>) -> V
     out
 }
 
-fn parse_slices(root: &Value, name: &str, key: &str, id_key: &str, slice_key: &str) -> Vec<SuggestSlice> {
+fn parse_slices(
+    root: &Value,
+    name: &str,
+    key: &str,
+    id_key: &str,
+    slice_key: &str,
+) -> Vec<SuggestSlice> {
     let mut out = Vec::new();
     if let Some(values) = list_values(root, name) {
         for v in values {
@@ -249,10 +255,26 @@ pub fn parse_soccer_suggest_config(root: &Value) -> SoccerSuggestConfig {
     }
     SoccerSuggestConfig {
         suggests: parse_list(root, "m_soccerSuggestInfoList", SuggestInfo::from_value),
-        cameras: parse_list(root, "m_soccerSuggestCameraInfoList", SuggestCameraInfo::from_value),
+        cameras: parse_list(
+            root,
+            "m_soccerSuggestCameraInfoList",
+            SuggestCameraInfo::from_value,
+        ),
         predict_mots,
-        predict_phases: parse_slices(root, "m_soccerSuggestPredictPhaseList", "phase", "", "motList"),
-        predict_objects: parse_slices(root, "m_soccerSuggestPredictObjectList", "type", "", "phaseList"),
+        predict_phases: parse_slices(
+            root,
+            "m_soccerSuggestPredictPhaseList",
+            "phase",
+            "",
+            "motList",
+        ),
+        predict_objects: parse_slices(
+            root,
+            "m_soccerSuggestPredictObjectList",
+            "type",
+            "",
+            "phaseList",
+        ),
         predict_infos: parse_slices(root, "m_soccerSuggestPredictInfoList", "", "id", "objList"),
         pass_extension_data,
         pass_extension_infos: parse_slices(

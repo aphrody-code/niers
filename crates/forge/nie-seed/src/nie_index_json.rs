@@ -10,7 +10,7 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 
-use nie_index::{ingest, Db};
+use nie_index::{Db, ingest};
 use serde::Deserialize;
 
 use crate::Stats;
@@ -65,17 +65,24 @@ fn parse_dat_vaddr(key: &str) -> Option<i64> {
 }
 
 fn parse_hex_const(s: &str) -> Option<i64> {
-    let hex = s.strip_prefix("0x").or_else(|| s.strip_prefix("0X")).unwrap_or(s);
+    let hex = s
+        .strip_prefix("0x")
+        .or_else(|| s.strip_prefix("0X"))
+        .unwrap_or(s);
     u64::from_str_radix(hex, 16).ok().map(|v| v as i64)
 }
 
 /// Charge tout `nie-index.json` et le déverse dans la base sous une seule transaction.
 /// Renvoie les compteurs d'ingestion.
 pub fn ingest_file(db: &mut Db, binary_id: i64, path: &Path) -> anyhow::Result<Stats> {
-    let file = File::open(path)
-        .map_err(|e| anyhow::anyhow!("ouverture {}: {e}", path.display()))?;
+    let file =
+        File::open(path).map_err(|e| anyhow::anyhow!("ouverture {}: {e}", path.display()))?;
     let idx: NieIndex = serde_json::from_reader(BufReader::new(file))?;
-    tracing::info!(functions = idx.functions.len(), declared = idx.total_functions, "nie-index.json chargé");
+    tracing::info!(
+        functions = idx.functions.len(),
+        declared = idx.total_functions,
+        "nie-index.json chargé"
+    );
 
     // 1re passe (en mémoire) : clé de fonction → adresse virtuelle stable.
     let mut keymap: HashMap<&str, i64> = HashMap::with_capacity(idx.functions.len());
@@ -101,10 +108,27 @@ pub fn ingest_file(db: &mut Db, binary_id: i64, path: &Path) -> anyhow::Result<S
         let role = f.ro.as_deref().unwrap_or("");
         let confidence = if named { 1.0 } else { 0.0 };
 
-        let fid = ingest::function(&tx, binary_id, vaddr, name, Some("ghidra"), ns, role, confidence)?;
+        let fid = ingest::function(
+            &tx,
+            binary_id,
+            vaddr,
+            name,
+            Some("ghidra"),
+            ns,
+            role,
+            confidence,
+        )?;
         let pagerank = idx.pagerank_scores.get(key).copied().unwrap_or(0.0);
         let n_lines = (f.el - f.sl).max(0);
-        ingest::function_meta(&tx, fid, f.rt.as_deref(), f.p.as_deref(), f.cx, n_lines, pagerank)?;
+        ingest::function_meta(
+            &tx,
+            fid,
+            f.rt.as_deref(),
+            f.p.as_deref(),
+            f.cx,
+            n_lines,
+            pagerank,
+        )?;
         stats.functions += 1;
 
         for s in &f.st {
@@ -135,7 +159,10 @@ pub fn ingest_file(db: &mut Db, binary_id: i64, path: &Path) -> anyhow::Result<S
     for (key, f) in &idx.functions {
         let from = keymap[key.as_str()];
         for callee in &f.ce {
-            let to = keymap.get(callee.as_str()).copied().or_else(|| parse_fun_vaddr(callee));
+            let to = keymap
+                .get(callee.as_str())
+                .copied()
+                .or_else(|| parse_fun_vaddr(callee));
             if let Some(to) = to {
                 ingest::xref(&tx, binary_id, from, to, "call")?;
                 stats.xrefs += 1;

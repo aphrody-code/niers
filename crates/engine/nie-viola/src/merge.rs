@@ -96,8 +96,11 @@ fn fusion_t2b(
 
         for (k, valeur_base) in entree.variables.iter().enumerate() {
             // Ne retenir que les versions qui s'écartent réellement du vanilla.
-            let modifs: Vec<&Value> =
-                vues.iter().map(|e| &e.variables[k]).filter(|v| !t2b_egal(v, valeur_base)).collect();
+            let modifs: Vec<&Value> = vues
+                .iter()
+                .map(|e| &e.variables[k])
+                .filter(|v| !t2b_egal(v, valeur_base))
+                .collect();
             match modifs.len() {
                 0 => {}
                 _ => {
@@ -174,7 +177,8 @@ fn fusionner_cfgbin(
     versions: &[Vec<u8>],
 ) -> Result<(Vec<u8>, usize, usize), String> {
     if cfgbin::is_rdbn(vanilla) {
-        let base_rdbn = cfgbin::parse(vanilla).map_err(|e| format!("vanilla RDBN illisible : {e}"))?;
+        let base_rdbn =
+            cfgbin::parse(vanilla).map_err(|e| format!("vanilla RDBN illisible : {e}"))?;
         let base = cfgbin::read_values(&base_rdbn, vanilla);
         let mut decodees = Vec::with_capacity(versions.len());
         for v in versions {
@@ -188,7 +192,8 @@ fn fusionner_cfgbin(
         let octets = cfgbin::encode_rdbn(&fusion)?;
         Ok((octets, f, d))
     } else {
-        let base = cfgbin::cfgbin_parse(vanilla).map_err(|e| format!("vanilla T2B illisible : {e}"))?;
+        let base =
+            cfgbin::cfgbin_parse(vanilla).map_err(|e| format!("vanilla T2B illisible : {e}"))?;
         let mut decodees = Vec::with_capacity(versions.len());
         for v in versions {
             decodees
@@ -196,8 +201,9 @@ fn fusionner_cfgbin(
         }
         let refs: Vec<&[CfgEntry]> = decodees.iter().map(|d| d.entries.as_slice()).collect();
         let (mut f, mut d) = (0, 0);
-        let fusion = fusion_t2b(&base.entries, &refs, &mut f, &mut d)
-            .ok_or_else(|| "structures T2B divergentes (entrées ajoutées ou retirées)".to_string())?;
+        let fusion = fusion_t2b(&base.entries, &refs, &mut f, &mut d).ok_or_else(|| {
+            "structures T2B divergentes (entrées ajoutées ou retirées)".to_string()
+        })?;
         Ok((cfgbin::encode_t2b(&fusion), f, d))
     }
 }
@@ -228,7 +234,8 @@ pub fn merge_dirs(
         }
 
         if versions.len() == 1 {
-            std::fs::copy(&versions[0].1, &dest).map_err(|e| format!("{} : {e}", dest.display()))?;
+            std::fs::copy(&versions[0].1, &dest)
+                .map_err(|e| format!("{} : {e}", dest.display()))?;
             rapport.copies += 1;
             continue;
         }
@@ -310,7 +317,10 @@ mod tests {
         let b = vec![entree("PERSO", &[1, 2, 77])];
         let (mut f, mut d) = (0, 0);
         let out = fusion_t2b(&base, &[&a, &b], &mut f, &mut d).expect("structures identiques");
-        assert_eq!(out[0].variables, vec![Value::Int(99), Value::Int(2), Value::Int(77)]);
+        assert_eq!(
+            out[0].variables,
+            vec![Value::Int(99), Value::Int(2), Value::Int(77)]
+        );
         assert_eq!((f, d), (2, 0), "deux changements retenus, aucun désaccord");
     }
 
@@ -321,7 +331,11 @@ mod tests {
         let b = vec![entree("PERSO", &[20])];
         let (mut f, mut d) = (0, 0);
         let out = fusion_t2b(&base, &[&a, &b], &mut f, &mut d).expect("structures identiques");
-        assert_eq!(out[0].variables, vec![Value::Int(10)], "le plus prioritaire gagne");
+        assert_eq!(
+            out[0].variables,
+            vec![Value::Int(10)],
+            "le plus prioritaire gagne"
+        );
         assert_eq!((f, d), (0, 1), "et le désaccord est signalé, pas masqué");
     }
 
@@ -333,7 +347,11 @@ mod tests {
         let b = vec![entree("PERSO", &[1])];
         let (mut f, mut d) = (0, 0);
         let out = fusion_t2b(&base, &[&b, &a], &mut f, &mut d).expect("structures identiques");
-        assert_eq!(out[0].variables, vec![Value::Int(42)], "seul un vrai changement compte");
+        assert_eq!(
+            out[0].variables,
+            vec![Value::Int(42)],
+            "seul un vrai changement compte"
+        );
         assert_eq!((f, d), (1, 0));
     }
 

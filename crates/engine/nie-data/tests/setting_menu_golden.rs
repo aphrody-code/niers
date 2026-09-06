@@ -36,8 +36,8 @@
 mod common;
 
 use nie_data::hash::HashId;
-use nie_data::setting_menu::{parse_setting_list_config, SettingListConfig};
-use serde_json::{json, Value};
+use nie_data::setting_menu::{SettingListConfig, parse_setting_list_config};
+use serde_json::{Value, json};
 
 // ─── Fixture synthétique (valeurs réelles) ────────────────────────────────────
 
@@ -135,7 +135,11 @@ fn fixture_obj_info_ref_resolue() {
     assert_eq!(o.key, HashId(0x6D40_83D3));
     assert_eq!(
         o.objects,
-        vec![HashId(0x9CEB_E295), HashId(0x05E2_B32F), HashId(0x72E5_83B9)]
+        vec![
+            HashId(0x9CEB_E295),
+            HashId(0x05E2_B32F),
+            HashId(0x72E5_83B9)
+        ]
     );
 }
 
@@ -169,8 +173,7 @@ fn fixture_liste_vide() {
 
 // ─── Test sur le vrai fichier (skip si absent du VPS) ─────────────────────────
 
-const REAL_PATH: &str =
-    "setting_menu/setting_list_config_3.00.18.cfg.bin.json";
+const REAL_PATH: &str = "setting_menu/setting_list_config_3.00.18.cfg.bin.json";
 
 fn load_real() -> Option<SettingListConfig> {
     let chemin_abs = common::chemin(REAL_PATH)?;
@@ -194,7 +197,11 @@ fn real_comptes_logiques() {
     assert_eq!(cfg.platform_types.len(), 7, "SETTING_PLATFORM_TYPE_INFO");
     assert_eq!(cfg.obj_infos.len(), 29, "SETTING_OBJ_INFO");
     assert_eq!(cfg.mapping_infos.len(), 86, "KEYCONFIG_MAPPING_LIST_INFO");
-    assert_eq!(cfg.explanation_texts.len(), 90, "EXPLANATION_TEXT_LIST_INFO");
+    assert_eq!(
+        cfg.explanation_texts.len(),
+        90,
+        "EXPLANATION_TEXT_LIST_INFO"
+    );
     assert_eq!(cfg.pad_groupkeys.len(), 11, "PAD_GROUPKEY_LIST_INFO");
 }
 
@@ -261,7 +268,11 @@ fn real_obj_info_2_ref_resolue() {
     assert_eq!(o.key, HashId(0x6D40_83D3));
     assert_eq!(
         o.objects,
-        vec![HashId(0x9CEB_E295), HashId(0x05E2_B32F), HashId(0x72E5_83B9)]
+        vec![
+            HashId(0x9CEB_E295),
+            HashId(0x05E2_B32F),
+            HashId(0x72E5_83B9)
+        ]
     );
     // Les deux premières entrées ont une plage vide ([0,0]).
     assert!(cfg.obj_infos[0].objects.is_empty());

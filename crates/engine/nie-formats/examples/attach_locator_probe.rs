@@ -56,7 +56,9 @@ fn main() {
     let mut n_os = 0usize;
     for p in &g4pkm_paths {
         let Ok(bytes) = vfs.read(p) else { continue };
-        let Ok(layout) = nie_formats::g4pkm::parse(&bytes) else { continue };
+        let Ok(layout) = nie_formats::g4pkm::parse(&bytes) else {
+            continue;
+        };
         for b in &layout.bones {
             n_os += 1;
             let h = crc32(b.name.as_bytes());
@@ -109,9 +111,13 @@ fn main() {
 
     for p in &obj_paths {
         let Ok(bytes) = vfs.read(p) else { continue };
-        let Ok(obj) = objbin::parse(&bytes) else { continue };
+        let Ok(obj) = objbin::parse(&bytes) else {
+            continue;
+        };
         for c in &obj.components {
-            let MenuComponent::AttachLocator(a) = c else { continue };
+            let MenuComponent::AttachLocator(a) = c else {
+                continue;
+            };
             n_locators += 1;
             if !a.null_layer_hashes.len().is_multiple_of(4) {
                 non_multiple_de_4 += 1;
@@ -122,9 +128,12 @@ fn main() {
                 if let Some((nom, fichiers)) = par_hash.get(h) {
                     resolus[slot] += 1;
                     if exemples.len() < 12 && slot != 3 {
-                        exemples.push((obj.name.clone(), slot, *h, format!(
-                            "{nom}  ({} squelette(s))", fichiers.len()
-                        )));
+                        exemples.push((
+                            obj.name.clone(),
+                            slot,
+                            *h,
+                            format!("{nom}  ({} squelette(s))", fichiers.len()),
+                        ));
                     }
                 }
                 if par_objet.contains_key(h) {
@@ -144,7 +153,13 @@ fn main() {
     for slot in 0..4 {
         let v = vus[slot];
         #[allow(clippy::cast_precision_loss)]
-        let pct = |n: usize| if v == 0 { 0.0 } else { n as f64 * 100.0 / v as f64 };
+        let pct = |n: usize| {
+            if v == 0 {
+                0.0
+            } else {
+                n as f64 * 100.0 / v as f64
+            }
+        };
         println!(
             "  {slot}    {:>6}/{:<6} = {:>6.2} %    {:>6}/{:<6} = {:>6.2} %",
             resolus[slot],
@@ -157,7 +172,9 @@ fn main() {
     }
 
     if exemples.is_empty() {
-        println!("\naucune résolution : l'hypothèse « CRC-32 de nom d'os » est réfutée telle quelle.");
+        println!(
+            "\naucune résolution : l'hypothèse « CRC-32 de nom d'os » est réfutée telle quelle."
+        );
     } else {
         println!("\nexemples résolus :");
         for (obj, slot, h, nom) in &exemples {
@@ -174,10 +191,15 @@ fn main() {
     let mut squelette_de_objet: BTreeMap<String, String> = BTreeMap::new();
     for p in &obj_paths {
         let Ok(bytes) = vfs.read(p) else { continue };
-        let Ok(obj) = objbin::parse(&bytes) else { continue };
+        let Ok(obj) = objbin::parse(&bytes) else {
+            continue;
+        };
         if let Some(g) = &obj.g4pkm_path {
-            let chemin =
-                if g.starts_with("data/") { g.clone() } else { format!("data/{g}") };
+            let chemin = if g.starts_with("data/") {
+                g.clone()
+            } else {
+                format!("data/{g}")
+            };
             squelette_de_objet.insert(obj.name.clone(), chemin);
         }
     }
@@ -189,34 +211,51 @@ fn main() {
     let mut cache: BTreeMap<String, Option<nie_formats::g4pkm::G4pkmLayout>> = BTreeMap::new();
 
     let charger = |chemin: &str,
-                       cache: &mut BTreeMap<String, Option<nie_formats::g4pkm::G4pkmLayout>>|
-     -> bool { cache.contains_key(chemin) || {
-            let v = vfs.read(chemin).ok().and_then(|b| nie_formats::g4pkm::parse(&b).ok());
+                   cache: &mut BTreeMap<String, Option<nie_formats::g4pkm::G4pkmLayout>>|
+     -> bool {
+        cache.contains_key(chemin) || {
+            let v = vfs
+                .read(chemin)
+                .ok()
+                .and_then(|b| nie_formats::g4pkm::parse(&b).ok());
             cache.insert(chemin.to_string(), v);
             true
-        } };
+        }
+    };
 
     for p in &obj_paths {
         let Ok(bytes) = vfs.read(p) else { continue };
-        let Ok(obj) = objbin::parse(&bytes) else { continue };
+        let Ok(obj) = objbin::parse(&bytes) else {
+            continue;
+        };
         let sk_porteur = obj.g4pkm_path.as_ref().map(|g| {
-            if g.starts_with("data/") { g.clone() } else { format!("data/{g}") }
+            if g.starts_with("data/") {
+                g.clone()
+            } else {
+                format!("data/{g}")
+            }
         });
         for c in &obj.components {
-            let MenuComponent::AttachLocator(a) = c else { continue };
+            let MenuComponent::AttachLocator(a) = c else {
+                continue;
+            };
             for quad in a.null_layer_hashes.chunks_exact(4) {
                 couples_vus += 1;
                 let (h_os, h_autre) = (quad[1], quad[2]);
-                let Some((nom_os, _)) = par_hash.get(&h_os) else { continue };
+                let Some((nom_os, _)) = par_hash.get(&h_os) else {
+                    continue;
+                };
 
                 // Variante A : dans le squelette de l'objet nommé au slot 2.
                 if let Some(nom_autre) = par_objet.get(&h_autre)
                     && let Some(sk) = squelette_de_objet.get(nom_autre)
                 {
                     charger(sk, &mut cache);
-                    if cache.get(sk).and_then(|o| o.as_ref()).is_some_and(|l| {
-                        l.world_pose(nom_os).is_some()
-                    }) {
+                    if cache
+                        .get(sk)
+                        .and_then(|o| o.as_ref())
+                        .is_some_and(|l| l.world_pose(nom_os).is_some())
+                    {
                         dans_hote += 1;
                     }
                 }
@@ -246,7 +285,13 @@ fn main() {
     }
 
     #[allow(clippy::cast_precision_loss)]
-    let pct = |n: usize, d: usize| if d == 0 { 0.0 } else { n as f64 * 100.0 / d as f64 };
+    let pct = |n: usize, d: usize| {
+        if d == 0 {
+            0.0
+        } else {
+            n as f64 * 100.0 / d as f64
+        }
+    };
     println!("\nvalidation de l'algorithme — quel squelette porte l'os du slot 1 ?");
     println!("  quadruplets                                {couples_vus}");
     println!(

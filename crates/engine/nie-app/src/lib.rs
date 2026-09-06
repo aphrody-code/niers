@@ -24,10 +24,10 @@ pub mod render;
 pub mod roster;
 pub mod story;
 
-pub use render::{Font, Frame, H, W};
 /// Renderer CPU natif (charge les assets disque) — absent en wasm (le web utilise [`render::render_state`]).
 #[cfg(not(target_arch = "wasm32"))]
 pub use render::CpuRenderer;
+pub use render::{Font, Frame, H, W};
 
 /// État du jeu — la machine à états centrale, partagée par tous les front-ends.
 ///
@@ -48,20 +48,26 @@ pub enum GameState {
 /// (types {10,20,30,70,40,80,60,50,90} → obj_hash CRC32 + text_id). Libellés = vrais textes FR
 /// (`data/common/text/fr/menu_text.cfg.bin.json`, résolus par hash). Source vérifiée, pas inventé.
 pub const MENU: [&str; 9] = [
-    "Composition d'équipe",       // team_dock_menu
-    "Objets",                     // item_menu
+    "Composition d'équipe",        // team_dock_menu
+    "Objets",                      // item_menu
     "Marque-pages d'informations", // info_bookmark_menu
-    "Inacord",                    // inacode_menu
-    "Fichier de données",         // datafile_menu
-    "Adversaires",                // opponent_team_menu (→ sélection de mode/match)
-    "Aide",                       // help_menu
-    "Options",                    // setting_menu
-    "Sauvegarder",                // rpg_save_menu
+    "Inacord",                     // inacode_menu
+    "Fichier de données",          // datafile_menu
+    "Adversaires",                 // opponent_team_menu (→ sélection de mode/match)
+    "Aide",                        // help_menu
+    "Options",                     // setting_menu
+    "Sauvegarder",                 // rpg_save_menu
 ];
 
 /// Les 5 MODES DE JEU racine d'IEVR (libellés FR réels, hash menu_text). Atteints via « Adversaires ».
 /// Source : menu_text + cfg `*_mode_top_menu_setting.cfg.bin` / `bb_stadium_top_menu_setting.cfg.bin`.
-pub const MODES: [&str; 5] = ["Mode Histoire", "Mode Chronique", "Mode Compétition", "Victory Road", "Stade BB"];
+pub const MODES: [&str; 5] = [
+    "Mode Histoire",
+    "Mode Chronique",
+    "Mode Compétition",
+    "Victory Road",
+    "Stade BB",
+];
 
 /// Abstraction de rendu : un front-end fournit un `Renderer` qui transforme un état en frame RGBA
 /// (1280×720, 4 octets/px). CPU (`CpuRenderer`) aujourd'hui, wgpu demain (nie-game, Phase 4).

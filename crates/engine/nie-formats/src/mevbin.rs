@@ -32,8 +32,8 @@
 extern crate alloc;
 use alloc::vec::Vec;
 
-use crate::cfgbin::{cfgbin_parse, Format, Value};
 use crate::FormatError;
+use crate::cfgbin::{Format, Value, cfgbin_parse};
 
 // ── Types publics ─────────────────────────────────────────────────────────────
 
@@ -194,7 +194,11 @@ pub fn parse(data: &[u8]) -> Result<MevbinDocument, FormatError> {
         });
     }
 
-    Ok(MevbinDocument { motions, header_motion_count, header_event_count })
+    Ok(MevbinDocument {
+        motions,
+        header_motion_count,
+        header_event_count,
+    })
 }
 
 // ── Helpers internes ──────────────────────────────────────────────────────────
@@ -211,7 +215,11 @@ fn build_event(vars: &[Value]) -> MevbinEvent {
         Some(v) => {
             let is_float = matches!(v, Value::Float(_));
             let raw = val_as_uint(v);
-            let fval = if is_float { val_as_float_direct(v) } else { 0.0 };
+            let fval = if is_float {
+                val_as_float_direct(v)
+            } else {
+                0.0
+            };
             (raw, is_float, fval)
         }
         None => (0u32, false, 0.0f32),
@@ -222,13 +230,25 @@ fn build_event(vars: &[Value]) -> MevbinEvent {
         Some(v) => {
             let is_float = matches!(v, Value::Float(_));
             let raw = val_as_uint(v);
-            let fval = if is_float { val_as_float_direct(v) } else { 0.0 };
+            let fval = if is_float {
+                val_as_float_direct(v)
+            } else {
+                0.0
+            };
             (raw, is_float, fval)
         }
         None => (0u32, false, 0.0f32),
     };
 
-    MevbinEvent { time, type_raw, type_is_float, type_float, param_raw, param_is_float, param_float }
+    MevbinEvent {
+        time,
+        type_raw,
+        type_is_float,
+        type_float,
+        param_raw,
+        param_is_float,
+        param_float,
+    }
 }
 
 /// Extrait une valeur entière signée depuis un `Value` T2B (port de `AsInt` C#).
@@ -294,7 +314,9 @@ mod tests {
     /// `Decode_RealSample_HeaderCountsMatchParsed`.
     #[test]
     fn real_file_golden() {
-        let dir = crate::vfs::resolve_game_dir().to_string_lossy().into_owned();
+        let dir = crate::vfs::resolve_game_dir()
+            .to_string_lossy()
+            .into_owned();
         let data_dir = std::path::Path::new(&dir).join("data");
 
         let mut vfs = crate::vfs::Vfs::new();
@@ -333,11 +355,7 @@ mod tests {
         // Invariant temporel : time >= 0.0 pour tous les événements.
         for motion in &doc.motions {
             for ev in &motion.events {
-                assert!(
-                    ev.time >= 0.0,
-                    "time négatif ({}) dans {path}",
-                    ev.time
-                );
+                assert!(ev.time >= 0.0, "time négatif ({}) dans {path}", ev.time);
             }
         }
 
@@ -383,14 +401,20 @@ mod tests {
         // val_as_uint : Float → bits du f32 réinterprétés en u32
         let f = 1.0f32;
         assert_eq!(val_as_uint(&Value::Float(f)), f.to_bits());
-        assert_eq!(val_as_uint(&Value::String(alloc::string::String::new())), 0u32);
+        assert_eq!(
+            val_as_uint(&Value::String(alloc::string::String::new())),
+            0u32
+        );
 
         // val_as_float : Float → valeur directe
         assert_eq!(val_as_float(&Value::Float(2.5)), 2.5f32);
         // val_as_float : Int → bits réinterprétés (BitConverter.Int32BitsToSingle)
         let bits = 1.5f32.to_bits() as i32;
         assert_eq!(val_as_float(&Value::Int(bits)), 1.5f32);
-        assert_eq!(val_as_float(&Value::String(alloc::string::String::new())), 0.0f32);
+        assert_eq!(
+            val_as_float(&Value::String(alloc::string::String::new())),
+            0.0f32
+        );
 
         // val_as_float_direct : seul Float renvoie une valeur non nulle
         assert_eq!(val_as_float_direct(&Value::Float(7.0)), 7.0f32);

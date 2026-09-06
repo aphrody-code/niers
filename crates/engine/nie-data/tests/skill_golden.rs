@@ -8,8 +8,8 @@ mod common;
 
 use nie_data::hash::HashId;
 use nie_data::skill::{
-    join_skill_text, parse_skill_config, parse_skill_text, SkillCategory, SkillElement,
-    SkillInfo, SkillPartnerType,
+    SkillCategory, SkillElement, SkillInfo, SkillPartnerType, join_skill_text, parse_skill_config,
+    parse_skill_text,
 };
 use serde_json::json;
 
@@ -159,13 +159,22 @@ fn skill_text_join_whs00010() {
         Some("Trampoline du tonnerre")
     );
     assert_eq!(
-        text.descriptions.get(&HashId(0x87AB_9FB9)).map(String::as_str),
-        Some("En vous sautant dessus comme un tremplin,\nvotre coéquipier exécutera un tir foudroyant.")
+        text.descriptions
+            .get(&HashId(0x87AB_9FB9))
+            .map(String::as_str),
+        Some(
+            "En vous sautant dessus comme un tremplin,\nvotre coéquipier exécutera un tir foudroyant."
+        )
     );
 
     // Jointure complète skill ↔ texte.
     let skills = parse_skill_config(&skill_config_fixture());
     let joined = join_skill_text(&skills[0], &text);
     assert_eq!(joined.name.as_deref(), Some("Trampoline du tonnerre"));
-    assert!(joined.description.unwrap().starts_with("En vous sautant dessus"));
+    assert!(
+        joined
+            .description
+            .unwrap()
+            .starts_with("En vous sautant dessus")
+    );
 }

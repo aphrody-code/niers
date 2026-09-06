@@ -114,10 +114,26 @@ pub const FOLDER_ROLES: &[FolderRole] = &[
         role: "Vidéos (.usm, conteneur Sofdec2)",
         status: "✓ exploité (flux H.264 démuxé → MP4 ; VP9 non remuxé)",
     },
-    FolderRole { prefix: "data/dx11/font", role: "Polices", status: "✗ non exploité (non requis)" },
-    FolderRole { prefix: "data/common/font", role: "Polices", status: "✗ non exploité (non requis)" },
-    FolderRole { prefix: "data/common/craft", role: "Artisanat (cfg.bin)", status: "✓ exploité" },
-    FolderRole { prefix: "data/common/action", role: "Tables d'action", status: "partiel" },
+    FolderRole {
+        prefix: "data/dx11/font",
+        role: "Polices",
+        status: "✗ non exploité (non requis)",
+    },
+    FolderRole {
+        prefix: "data/common/font",
+        role: "Polices",
+        status: "✗ non exploité (non requis)",
+    },
+    FolderRole {
+        prefix: "data/common/craft",
+        role: "Artisanat (cfg.bin)",
+        status: "✓ exploité",
+    },
+    FolderRole {
+        prefix: "data/common/action",
+        role: "Tables d'action",
+        status: "partiel",
+    },
     // ── Sous-dossiers vérifiés en direct contre le VFS réel (session 2026-08-07) ────────────
     FolderRole {
         prefix: "data/common/chr/_face",

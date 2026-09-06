@@ -98,7 +98,10 @@ impl Reglage {
     /// plusieurs requêtes là où `nie.` en coûte une.
     #[must_use]
     pub const fn defaut() -> Self {
-        Self { par_seconde: 30.0, rafale: 180.0 }
+        Self {
+            par_seconde: 30.0,
+            rafale: 180.0,
+        }
     }
 
     /// Dit si le réglage limite réellement quelque chose.
@@ -159,10 +162,8 @@ impl Limiteur {
         // Un seau plein ne porte aucune information : passé le temps qu'il faut pour le
         // remplir entièrement, l'oublier et le recréer donnent exactement le même verdict.
         // C'est ce qui rend l'éviction par inactivité sûre plutôt qu'approximative.
-        let remplissage =
-            Duration::from_secs_f64((reglage.rafale / reglage.par_seconde).max(1.0)).min(
-                Duration::from_secs(3600),
-            );
+        let remplissage = Duration::from_secs_f64((reglage.rafale / reglage.par_seconde).max(1.0))
+            .min(Duration::from_secs(3600));
         Some(Self {
             reglage,
             seaux: Cache::builder()
@@ -196,13 +197,18 @@ impl Limiteur {
         let seau = self
             .seaux
             .get_with(ip, async move {
-                Arc::new(Mutex::new(Seau { jetons: rafale, dernier: maintenant }))
+                Arc::new(Mutex::new(Seau {
+                    jetons: rafale,
+                    dernier: maintenant,
+                }))
             })
             .await;
         // Verrou pris et relâché sans point d'attente au milieu : aucun `await` ne traverse la
         // section critique, donc aucun risque de retenir le seau d'une IP sur un fil bloqué.
         let mut s = seau.lock();
-        let ecoule = maintenant.saturating_duration_since(s.dernier).as_secs_f64();
+        let ecoule = maintenant
+            .saturating_duration_since(s.dernier)
+            .as_secs_f64();
         s.dernier = maintenant;
         s.jetons = (s.jetons + ecoule * self.reglage.par_seconde).min(rafale);
         if s.jetons >= 1.0 {
@@ -274,68 +280,134 @@ mod tests {
 
     #[test]
     fn un_reglage_nul_ne_construit_aucun_limiteur() {
-        assert!(Limiteur::nouveau(Reglage { par_seconde: 0.0, rafale: 100.0 }).is_none());
-        assert!(Limiteur::nouveau(Reglage { par_seconde: 10.0, rafale: 0.0 }).is_none());
+        assert!(
+            Limiteur::nouveau(Reglage {
+                par_seconde: 0.0,
+                rafale: 100.0
+            })
+            .is_none()
+        );
+        assert!(
+            Limiteur::nouveau(Reglage {
+                par_seconde: 10.0,
+                rafale: 0.0
+            })
+            .is_none()
+        );
         assert!(Limiteur::nouveau(Reglage::defaut()).is_some());
     }
 
     #[tokio::test]
     async fn la_rafale_est_exactement_consommee() {
-        let l = Limiteur::nouveau(Reglage { par_seconde: 1.0, rafale: 5.0 }).expect("actif");
+        let l = Limiteur::nouveau(Reglage {
+            par_seconde: 1.0,
+            rafale: 5.0,
+        })
+        .expect("actif");
         let t = Instant::now();
         // Cinq jetons, cinq passages — au même instant, donc sans un iota de remplissage.
         for i in 0..5 {
             assert_eq!(l.consommer_a(ip(1), t).await, Verdict::Passe, "requete {i}");
         }
-        assert_eq!(l.consommer_a(ip(1), t).await, Verdict::Refuse { retenter: 1 }, "la 6e");
-        assert_eq!(l.ip_suivies(), 0, "moka compte en differe, pas en synchrone");
+        assert_eq!(
+            l.consommer_a(ip(1), t).await,
+            Verdict::Refuse { retenter: 1 },
+            "la 6e"
+        );
+        assert_eq!(
+            l.ip_suivies(),
+            0,
+            "moka compte en differe, pas en synchrone"
+        );
     }
 
     #[tokio::test]
     async fn les_ip_ne_se_partagent_pas_leur_seau() {
-        let l = Limiteur::nouveau(Reglage { par_seconde: 1.0, rafale: 2.0 }).expect("actif");
+        let l = Limiteur::nouveau(Reglage {
+            par_seconde: 1.0,
+            rafale: 2.0,
+        })
+        .expect("actif");
         let t = Instant::now();
         for _ in 0..2 {
             assert_eq!(l.consommer_a(ip(1), t).await, Verdict::Passe);
         }
-        assert!(matches!(l.consommer_a(ip(1), t).await, Verdict::Refuse { .. }));
+        assert!(matches!(
+            l.consommer_a(ip(1), t).await,
+            Verdict::Refuse { .. }
+        ));
         // Le voisin n'a rien consommé : il doit repartir d'un seau plein.
         for _ in 0..2 {
-            assert_eq!(l.consommer_a(ip(2), t).await, Verdict::Passe, "IP distincte");
+            assert_eq!(
+                l.consommer_a(ip(2), t).await,
+                Verdict::Passe,
+                "IP distincte"
+            );
         }
     }
 
     #[tokio::test]
     async fn le_seau_se_remplit_avec_le_temps() {
-        let l = Limiteur::nouveau(Reglage { par_seconde: 10.0, rafale: 2.0 }).expect("actif");
+        let l = Limiteur::nouveau(Reglage {
+            par_seconde: 10.0,
+            rafale: 2.0,
+        })
+        .expect("actif");
         let t = Instant::now();
         for _ in 0..2 {
             assert_eq!(l.consommer_a(ip(3), t).await, Verdict::Passe);
         }
-        assert!(matches!(l.consommer_a(ip(3), t).await, Verdict::Refuse { .. }));
+        assert!(matches!(
+            l.consommer_a(ip(3), t).await,
+            Verdict::Refuse { .. }
+        ));
         // 100 ms a 10 r/s = exactement un jeton : un passage, puis de nouveau un refus.
         let plus_tard = t + Duration::from_millis(100);
-        assert_eq!(l.consommer_a(ip(3), plus_tard).await, Verdict::Passe, "un jeton rendu");
-        assert!(matches!(l.consommer_a(ip(3), plus_tard).await, Verdict::Refuse { .. }));
+        assert_eq!(
+            l.consommer_a(ip(3), plus_tard).await,
+            Verdict::Passe,
+            "un jeton rendu"
+        );
+        assert!(matches!(
+            l.consommer_a(ip(3), plus_tard).await,
+            Verdict::Refuse { .. }
+        ));
         // Et jamais au-dela de la capacite, meme apres une heure d'inactivite.
         let bien_plus_tard = t + Duration::from_secs(3600);
         for _ in 0..2 {
             assert_eq!(l.consommer_a(ip(3), bien_plus_tard).await, Verdict::Passe);
         }
-        assert!(matches!(l.consommer_a(ip(3), bien_plus_tard).await, Verdict::Refuse { .. }));
+        assert!(matches!(
+            l.consommer_a(ip(3), bien_plus_tard).await,
+            Verdict::Refuse { .. }
+        ));
     }
 
     #[tokio::test]
     async fn retry_after_annonce_une_attente_utile() {
         // A 2 requetes par seconde, un jeton met 500 ms a revenir : arrondi a 1 s.
-        let l = Limiteur::nouveau(Reglage { par_seconde: 2.0, rafale: 1.0 }).expect("actif");
+        let l = Limiteur::nouveau(Reglage {
+            par_seconde: 2.0,
+            rafale: 1.0,
+        })
+        .expect("actif");
         let t = Instant::now();
         assert_eq!(l.consommer_a(ip(4), t).await, Verdict::Passe);
-        assert_eq!(l.consommer_a(ip(4), t).await, Verdict::Refuse { retenter: 1 });
+        assert_eq!(
+            l.consommer_a(ip(4), t).await,
+            Verdict::Refuse { retenter: 1 }
+        );
         // A 0,1 requete par seconde, il faut dix secondes.
-        let lent = Limiteur::nouveau(Reglage { par_seconde: 0.1, rafale: 1.0 }).expect("actif");
+        let lent = Limiteur::nouveau(Reglage {
+            par_seconde: 0.1,
+            rafale: 1.0,
+        })
+        .expect("actif");
         assert_eq!(lent.consommer_a(ip(5), t).await, Verdict::Passe);
-        assert_eq!(lent.consommer_a(ip(5), t).await, Verdict::Refuse { retenter: 10 });
+        assert_eq!(
+            lent.consommer_a(ip(5), t).await,
+            Verdict::Refuse { retenter: 10 }
+        );
     }
 
     #[test]
@@ -344,14 +416,29 @@ mod tests {
         assert_eq!(ip_du_client(&h), None, "aucun en-tete: pas de cle");
         // Un `X-Forwarded-For` seul ne donne AUCUNE cle : sa premiere entree est celle que le
         // client a envoyee, nginx ne fait que la prefixer (`$proxy_add_x_forwarded_for`).
-        h.insert("x-forwarded-for", HeaderValue::from_static("1.2.3.4, 10.0.0.1"));
-        assert_eq!(ip_du_client(&h), None, "x-forwarded-for est falsifiable, donc ignore");
+        h.insert(
+            "x-forwarded-for",
+            HeaderValue::from_static("1.2.3.4, 10.0.0.1"),
+        );
+        assert_eq!(
+            ip_du_client(&h),
+            None,
+            "x-forwarded-for est falsifiable, donc ignore"
+        );
         h.insert(ENTETE_IP, HeaderValue::from_static("203.0.113.9"));
         assert_eq!(ip_du_client(&h), Some(ip(9)));
         h.insert(ENTETE_IP, HeaderValue::from_static("pas-une-ip"));
-        assert_eq!(ip_du_client(&h), None, "illisible vaut absent, jamais cle litterale");
+        assert_eq!(
+            ip_du_client(&h),
+            None,
+            "illisible vaut absent, jamais cle litterale"
+        );
         h.insert(ENTETE_IP, HeaderValue::from_static("  2001:db8::1  "));
-        assert_eq!(ip_du_client(&h), "2001:db8::1".parse().ok(), "IPv6 acceptee");
+        assert_eq!(
+            ip_du_client(&h),
+            "2001:db8::1".parse().ok(),
+            "IPv6 acceptee"
+        );
     }
 
     #[test]
@@ -359,7 +446,13 @@ mod tests {
         let r = Reglage::defaut();
         // 60 vignettes + le document + la feuille + le script + le manifeste + le favicon.
         let page = crate::routes::pages::PAR_PAGE as f64 + 5.0;
-        assert!(r.rafale >= page * 2.0, "deux pages completes doivent passer sans borne");
-        assert!(r.par_seconde >= 10.0, "au moins ce que nginx accorde a nie.");
+        assert!(
+            r.rafale >= page * 2.0,
+            "deux pages completes doivent passer sans borne"
+        );
+        assert!(
+            r.par_seconde >= 10.0,
+            "au moins ce que nginx accorde a nie."
+        );
     }
 }

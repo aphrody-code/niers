@@ -134,9 +134,7 @@ impl StatBlock {
     /// Interprète un noeud JSON `{kick, control, technique, physical/physique, pressure, agility, intelligence}`.
     pub fn from_json(v: &serde_json::Value) -> Option<Self> {
         let obj = v.as_object()?;
-        let get = |k: &str| -> u16 {
-            obj.get(k).and_then(|x| x.as_u64()).unwrap_or(0) as u16
-        };
+        let get = |k: &str| -> u16 { obj.get(k).and_then(|x| x.as_u64()).unwrap_or(0) as u16 };
         // TS utilise "physical" comme clé, parfois "physique" (FR)
         let physical = get("physical").max(get("physique"));
         Some(StatBlock {

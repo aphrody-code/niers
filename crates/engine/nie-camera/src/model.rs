@@ -334,7 +334,11 @@ pub fn cross(a: V3, b: V3) -> V3 {
 #[must_use]
 pub fn normalize(a: V3) -> V3 {
     let n = dot(a, a).sqrt();
-    if n <= f32::EPSILON { a } else { scale(a, 1.0 / n) }
+    if n <= f32::EPSILON {
+        a
+    } else {
+        scale(a, 1.0 / n)
+    }
 }
 
 #[cfg(test)]
@@ -394,7 +398,10 @@ mod tests {
     #[test]
     fn lerp_borne() {
         let a = CameraState::default();
-        let b = CameraState { fov_deg: 90.0, ..CameraState::default() };
+        let b = CameraState {
+            fov_deg: 90.0,
+            ..CameraState::default()
+        };
         assert_eq!(CameraState::lerp(&a, &b, -1.0).fov_deg, 45.0);
         assert_eq!(CameraState::lerp(&a, &b, 2.0).fov_deg, 90.0);
         assert!((CameraState::lerp(&a, &b, 0.5).fov_deg - 67.5).abs() < 1e-4);

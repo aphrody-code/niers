@@ -27,7 +27,7 @@
 
 use anyhow::{Context, Result};
 use goblin::pe::PE;
-use nie_index::{rusqlite, Db};
+use nie_index::{Db, rusqlite};
 use tracing::info;
 
 /// `UNW_FLAG_CHAININFO` : l'entrée est un fragment chaîné à une fonction parente,
@@ -119,14 +119,24 @@ pub fn parse_roots(bytes: &[u8]) -> Result<Vec<RootFn>> {
     }
     roots.sort_unstable_by_key(|r| r.start);
     roots.dedup_by_key(|r| r.start);
-    info!("pdata: {} entrées, {} fragments chaînés, {} fonctions racines", table.len() / 12, chained, roots.len());
+    info!(
+        "pdata: {} entrées, {} fragments chaînés, {} fonctions racines",
+        table.len() / 12,
+        chained,
+        roots.len()
+    );
     Ok(roots)
 }
 
 /// Découvre les fonctions racines via `.pdata`, les stocke dans `pdata_func`, et
 /// mesure le désalignement de l'index Ghidra (`function`) déjà chargé.
-pub fn discover_into(db: &mut Db, binary_id: i64, exe_path: &std::path::Path) -> Result<PdataStats> {
-    let bytes = std::fs::read(exe_path).with_context(|| format!("lecture {}", exe_path.display()))?;
+pub fn discover_into(
+    db: &mut Db,
+    binary_id: i64,
+    exe_path: &std::path::Path,
+) -> Result<PdataStats> {
+    let bytes =
+        std::fs::read(exe_path).with_context(|| format!("lecture {}", exe_path.display()))?;
     let roots = parse_roots(&bytes)?;
 
     let total_entries = {
@@ -136,7 +146,9 @@ pub fn discover_into(db: &mut Db, binary_id: i64, exe_path: &std::path::Path) ->
             .sections
             .iter()
             .find(|s| s.name().is_ok_and(|n| n.starts_with(".pdata")));
-        pdata.map_or(0, |s| (s.virtual_size.min(s.size_of_raw_data)) as usize / 12)
+        pdata.map_or(0, |s| {
+            (s.virtual_size.min(s.size_of_raw_data)) as usize / 12
+        })
     };
 
     // Insertion des racines.
@@ -260,7 +272,8 @@ pub fn rebuild_from_pdata(
     dst_bin: i64,
     exe_path: &std::path::Path,
 ) -> Result<RebuildStats> {
-    let bytes = std::fs::read(exe_path).with_context(|| format!("lecture {}", exe_path.display()))?;
+    let bytes =
+        std::fs::read(exe_path).with_context(|| format!("lecture {}", exe_path.display()))?;
     let roots = parse_roots(&bytes)?;
     let starts: Vec<u64> = roots.iter().map(|r| r.start).collect();
     let find_root = |a: u64| -> Option<u64> { root_containing(&starts, &roots, a) };
@@ -270,34 +283,47 @@ pub fn rebuild_from_pdata(
         let mut q = db.conn().prepare(
             "SELECT f.vaddr, s.value FROM func_str_ref s JOIN function f ON f.id=s.function_id WHERE f.binary_id=?1",
         )?;
-        q.query_map([src_bin], |r| Ok((r.get::<_, i64>(0)? as u64, r.get::<_, String>(1)?)))?
-            .collect::<std::result::Result<_, _>>()?
+        q.query_map([src_bin], |r| {
+            Ok((r.get::<_, i64>(0)? as u64, r.get::<_, String>(1)?))
+        })?
+        .collect::<std::result::Result<_, _>>()?
     };
     let const_rows: Vec<(u64, i64)> = {
         let mut q = db.conn().prepare(
             "SELECT f.vaddr, c.value FROM func_const c JOIN function f ON f.id=c.function_id WHERE f.binary_id=?1",
         )?;
-        q.query_map([src_bin], |r| Ok((r.get::<_, i64>(0)? as u64, r.get::<_, i64>(1)?)))?
-            .collect::<std::result::Result<_, _>>()?
+        q.query_map([src_bin], |r| {
+            Ok((r.get::<_, i64>(0)? as u64, r.get::<_, i64>(1)?))
+        })?
+        .collect::<std::result::Result<_, _>>()?
     };
     let ce_rows: Vec<(u64, u64)> = {
         let mut q = db
             .conn()
             .prepare("SELECT from_addr, to_addr FROM xref WHERE binary_id=?1 AND kind='call'")?;
-        q.query_map([src_bin], |r| Ok((r.get::<_, i64>(0)? as u64, r.get::<_, i64>(1)? as u64)))?
-            .collect::<std::result::Result<_, _>>()?
+        q.query_map([src_bin], |r| {
+            Ok((r.get::<_, i64>(0)? as u64, r.get::<_, i64>(1)? as u64))
+        })?
+        .collect::<std::result::Result<_, _>>()?
     };
     let rtti_rows: Vec<(String, Option<String>, Option<String>)> = {
         let mut q = db
             .conn()
             .prepare("SELECT name, namespace, mangled FROM rtti_class WHERE binary_id=?1")?;
         q.query_map([src_bin], |r| {
-            Ok((r.get::<_, String>(0)?, r.get::<_, Option<String>>(1)?, r.get::<_, Option<String>>(2)?))
+            Ok((
+                r.get::<_, String>(0)?,
+                r.get::<_, Option<String>>(1)?,
+                r.get::<_, Option<String>>(2)?,
+            ))
         })?
         .collect::<std::result::Result<_, _>>()?
     };
 
-    let mut stats = RebuildStats { roots: roots.len(), ..Default::default() };
+    let mut stats = RebuildStats {
+        roots: roots.len(),
+        ..Default::default()
+    };
     let tx = db.conn_mut().transaction()?;
 
     // --- 1. Insère les fonctions racines (vraies entrées + tailles) -----------
@@ -307,14 +333,20 @@ pub fn rebuild_from_pdata(
              VALUES(?1,?2,?3,'pdata','standalone',0.0)",
         )?;
         for r in &roots {
-            ins.execute(rusqlite::params![dst_bin, r.start as i64, (r.end - r.start) as i64])?;
+            ins.execute(rusqlite::params![
+                dst_bin,
+                r.start as i64,
+                (r.end - r.start) as i64
+            ])?;
         }
     }
     // Carte vaddr → function_id pour la cible.
     let mut root_fid: hashbrown::HashMap<u64, i64> = hashbrown::HashMap::with_capacity(roots.len());
     {
         let mut q = tx.prepare("SELECT vaddr, id FROM function WHERE binary_id=?1")?;
-        let rows = q.query_map([dst_bin], |r| Ok((r.get::<_, i64>(0)? as u64, r.get::<_, i64>(1)?)))?;
+        let rows = q.query_map([dst_bin], |r| {
+            Ok((r.get::<_, i64>(0)? as u64, r.get::<_, i64>(1)?))
+        })?;
         for row in rows {
             let (v, id) = row?;
             root_fid.insert(v, id);
@@ -338,7 +370,8 @@ pub fn rebuild_from_pdata(
     }
     // --- 3. Ré-ancre les constantes -------------------------------------------
     {
-        let mut ins = tx.prepare_cached("INSERT INTO func_const(function_id, value) VALUES(?1,?2)")?;
+        let mut ins =
+            tx.prepare_cached("INSERT INTO func_const(function_id, value) VALUES(?1,?2)")?;
         for (va, val) in &const_rows {
             if let Some(&fid) = find_root(*va).and_then(|s| root_fid.get(&s)) {
                 ins.execute(rusqlite::params![fid, val])?;
@@ -352,7 +385,9 @@ pub fn rebuild_from_pdata(
             "INSERT OR IGNORE INTO xref(binary_id, from_addr, to_addr, kind) VALUES(?1,?2,?3,'call')",
         )?;
         for (from, to) in &ce_rows {
-            if let (Some(rf), Some(rt)) = (find_root(*from), find_root(*to)) && rf != rt {
+            if let (Some(rf), Some(rt)) = (find_root(*from), find_root(*to))
+                && rf != rt
+            {
                 ins.execute(rusqlite::params![dst_bin, rf as i64, rt as i64])?;
                 stats.ce_edges_mapped += 1;
             }
@@ -372,7 +407,12 @@ pub fn rebuild_from_pdata(
     tx.commit()?;
     info!(
         "rebuild: {} racines, {} str ré-ancrées ({} perdues), {} consts, {} arêtes ce, {} rtti",
-        stats.roots, stats.str_refs_moved, stats.unmapped, stats.consts_moved, stats.ce_edges_mapped, stats.rtti_copied
+        stats.roots,
+        stats.str_refs_moved,
+        stats.unmapped,
+        stats.consts_moved,
+        stats.ce_edges_mapped,
+        stats.rtti_copied
     );
     Ok(stats)
 }
@@ -399,8 +439,14 @@ mod tests {
     #[test]
     fn inclusion_dans_la_fonction_racine() {
         let roots = [
-            RootFn { start: 0x1000, end: 0x1100 },
-            RootFn { start: 0x2000, end: 0x2400 },
+            RootFn {
+                start: 0x1000,
+                end: 0x1100,
+            },
+            RootFn {
+                start: 0x2000,
+                end: 0x2400,
+            },
         ];
         let starts: Vec<u64> = roots.iter().map(|r| r.start).collect();
         // Début exact → la fonction elle-même.
@@ -419,9 +465,18 @@ mod tests {
     #[test]
     fn roots_tries_et_dedupliques() {
         let mut v = [
-            RootFn { start: 0x2000, end: 0x2100 },
-            RootFn { start: 0x1000, end: 0x1100 },
-            RootFn { start: 0x2000, end: 0x2100 },
+            RootFn {
+                start: 0x2000,
+                end: 0x2100,
+            },
+            RootFn {
+                start: 0x1000,
+                end: 0x1100,
+            },
+            RootFn {
+                start: 0x2000,
+                end: 0x2100,
+            },
         ]
         .to_vec();
         v.sort_unstable_by_key(|r| r.start);

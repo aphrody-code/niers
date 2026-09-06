@@ -105,12 +105,12 @@ const NESTED_BLOB_HEADER_SIZE: usize = 12;
 const INNER_VERSION_SIZE: usize = 4;
 
 // Hashes scalaires validés octets réels (002AB8F4-USERDATALIVE, 2026-05-08 12:41:54)
-const TLV_HASH_YEAR:          u32 = 0x9AB3_67EA;
-const TLV_HASH_MONTH:         u32 = 0x76F5_8F7B;
-const TLV_HASH_DAY:           u32 = 0x604_041A4;
-const TLV_HASH_HOUR:          u32 = 0x512F_0593;
-const TLV_HASH_MINUTE:        u32 = 0x408E_E5AB;
-const TLV_HASH_SECOND:        u32 = 0x9853_5F77;
+const TLV_HASH_YEAR: u32 = 0x9AB3_67EA;
+const TLV_HASH_MONTH: u32 = 0x76F5_8F7B;
+const TLV_HASH_DAY: u32 = 0x604_041A4;
+const TLV_HASH_HOUR: u32 = 0x512F_0593;
+const TLV_HASH_MINUTE: u32 = 0x408E_E5AB;
+const TLV_HASH_SECOND: u32 = 0x9853_5F77;
 const TLV_HASH_PLAYTIME_SECS: u32 = 0x3A40_C52C;
 
 // ---------------------------------------------------------------------------
@@ -216,7 +216,11 @@ pub fn parse_autosave_roster(body: &[u8]) -> Result<AutosaveRoster, SaveError> {
     let scalars = parse_scalars(body);
     let (owned, roster_slots) = parse_roster(body)?;
 
-    Ok(AutosaveRoster { scalars, owned, roster_slots })
+    Ok(AutosaveRoster {
+        scalars,
+        owned,
+        roster_slots,
+    })
 }
 
 // ---------------------------------------------------------------------------
@@ -233,12 +237,12 @@ fn parse_scalars(body: &[u8]) -> Option<AutosaveScalars> {
     }
     let tlv_area = &body[4..];
 
-    let save_year    = tlv_read_u16(tlv_area, TLV_HASH_YEAR)?;
-    let save_month   = tlv_read_u8(tlv_area, TLV_HASH_MONTH)?;
-    let save_day     = tlv_read_u8(tlv_area, TLV_HASH_DAY)?;
-    let save_hour    = tlv_read_u8(tlv_area, TLV_HASH_HOUR)?;
-    let save_minute  = tlv_read_u8(tlv_area, TLV_HASH_MINUTE)?;
-    let save_second  = tlv_read_u8(tlv_area, TLV_HASH_SECOND)?;
+    let save_year = tlv_read_u16(tlv_area, TLV_HASH_YEAR)?;
+    let save_month = tlv_read_u8(tlv_area, TLV_HASH_MONTH)?;
+    let save_day = tlv_read_u8(tlv_area, TLV_HASH_DAY)?;
+    let save_hour = tlv_read_u8(tlv_area, TLV_HASH_HOUR)?;
+    let save_minute = tlv_read_u8(tlv_area, TLV_HASH_MINUTE)?;
+    let save_second = tlv_read_u8(tlv_area, TLV_HASH_SECOND)?;
     let playtime_secs = tlv_read_u32(tlv_area, TLV_HASH_PLAYTIME_SECS)?;
 
     Some(AutosaveScalars {
@@ -272,7 +276,9 @@ fn parse_roster(body: &[u8]) -> Result<(alloc::vec::Vec<CharaId>, usize), SaveEr
     let inner_start = nested_offset + inner_skip;
 
     if inner_start > body.len() {
-        return Err(SaveError::Corrupt("blob 0x0510 tronqué avant le flux TLV interne"));
+        return Err(SaveError::Corrupt(
+            "blob 0x0510 tronqué avant le flux TLV interne",
+        ));
     }
 
     let inner_area = &body[inner_start..];
@@ -341,7 +347,9 @@ fn parse_roster(body: &[u8]) -> Result<(alloc::vec::Vec<CharaId>, usize), SaveEr
 fn tlv_read_u8(area: &[u8], target_hash: u32) -> Option<u8> {
     let off = find_tlv_by_hash(area, target_hash)?;
     let len = u32::from_le_bytes(area.get(off + 4..off + 8)?.try_into().ok()?) as usize;
-    if len != 1 { return None; }
+    if len != 1 {
+        return None;
+    }
     area.get(off + 8).copied()
 }
 
@@ -351,7 +359,9 @@ fn tlv_read_u8(area: &[u8], target_hash: u32) -> Option<u8> {
 fn tlv_read_u16(area: &[u8], target_hash: u32) -> Option<u16> {
     let off = find_tlv_by_hash(area, target_hash)?;
     let len = u32::from_le_bytes(area.get(off + 4..off + 8)?.try_into().ok()?) as usize;
-    if len != 2 { return None; }
+    if len != 2 {
+        return None;
+    }
     let data = area.get(off + 8..off + 10)?;
     Some(u16::from_le_bytes(data.try_into().ok()?))
 }
@@ -362,7 +372,9 @@ fn tlv_read_u16(area: &[u8], target_hash: u32) -> Option<u16> {
 fn tlv_read_u32(area: &[u8], target_hash: u32) -> Option<u32> {
     let off = find_tlv_by_hash(area, target_hash)?;
     let len = u32::from_le_bytes(area.get(off + 4..off + 8)?.try_into().ok()?) as usize;
-    if len != 4 { return None; }
+    if len != 4 {
+        return None;
+    }
     let data = area.get(off + 8..off + 12)?;
     Some(u32::from_le_bytes(data.try_into().ok()?))
 }
@@ -389,9 +401,7 @@ fn find_bytes(haystack: &[u8], needle: &[u8]) -> Option<usize> {
     if needle.is_empty() || haystack.len() < needle.len() {
         return None;
     }
-    haystack
-        .windows(needle.len())
-        .position(|w| w == needle)
+    haystack.windows(needle.len()).position(|w| w == needle)
 }
 
 // ---------------------------------------------------------------------------
@@ -471,9 +481,9 @@ mod tests {
 
         // Blob imbriqué EEFF 0x0510 (header 12B + version 4B + TLV roster)
         // En-tête blob : EEFF 0510 payload_size(opaque) field8(opaque)
-        body.extend_from_slice(&NESTED_BLOB_MAGIC);     // EE FF 05 10
-        body.extend_from_slice(&0u32.to_le_bytes());    // payload_size (opaque)
-        body.extend_from_slice(&0u32.to_le_bytes());    // field8 (opaque)
+        body.extend_from_slice(&NESTED_BLOB_MAGIC); // EE FF 05 10
+        body.extend_from_slice(&0u32.to_le_bytes()); // payload_size (opaque)
+        body.extend_from_slice(&0u32.to_le_bytes()); // field8 (opaque)
         // Version interne (opaque)
         body.extend_from_slice(&[0x00, 0x00, 0x00, 0x01]);
 
@@ -482,9 +492,9 @@ mod tests {
         body.extend_from_slice(&TLV_HASH_ROSTER.to_le_bytes());
         body.extend_from_slice(&roster_byte_len.to_le_bytes());
         body.extend_from_slice(&0xDEAD_BEEFu32.to_le_bytes()); // slot 0 : id=0xDEADBEEF
-        body.extend_from_slice(&0u32.to_le_bytes());             // slot 1 : vide
+        body.extend_from_slice(&0u32.to_le_bytes()); // slot 1 : vide
         body.extend_from_slice(&0xCAFE_BABEu32.to_le_bytes()); // slot 2 : id=0xCAFEBABE
-        body.extend_from_slice(&0u32.to_le_bytes());             // slot 3 : vide
+        body.extend_from_slice(&0u32.to_le_bytes()); // slot 3 : vide
 
         // Parser
         let result = parse_autosave_roster(&body).expect("parse ne doit pas échouer");
@@ -580,7 +590,7 @@ mod tests {
     #[test]
     #[cfg_attr(not(feature = "real-saves"), ignore)]
     fn integration_vps_userdatalive() {
-        use crate::{io::read_save, BlobSubtype};
+        use crate::{BlobSubtype, io::read_save};
         use std::path::Path;
 
         let path = Path::new("data/saves/002AB8F4-USERDATALIVE");

@@ -24,15 +24,30 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
     let cfg_bytes = std::fs::read(&args[1]).expect("lire font.cfg.bin");
     let g4tx_bytes = std::fs::read(&args[2]).expect("lire font.g4tx");
-    let out = args.get(3).map_or("/tmp/font_atlas_dump.png", String::as_str);
+    let out = args
+        .get(3)
+        .map_or("/tmp/font_atlas_dump.png", String::as_str);
 
     // Métriques.
     let cfg = cfgbin::parse_t2b(&cfg_bytes).expect("parse font.cfg.bin (T2B)");
     let metrics = font::parse_metrics(&cfg);
-    println!("glyphes={} cell_h={} ascent={}", metrics.glyph_count(), metrics.dims.cell_height, metrics.dims.ascent);
+    println!(
+        "glyphes={} cell_h={} ascent={}",
+        metrics.glyph_count(),
+        metrics.dims.cell_height,
+        metrics.dims.ascent
+    );
     for cp in [65u32, 66, 97] {
         if let Some(m) = metrics.glyph(cp) {
-            println!("  cp={cp} ({:?}) x={} y={} w={} adv={} page={}", char::from_u32(cp), m.x, m.y, m.width, m.advance, m.page);
+            println!(
+                "  cp={cp} ({:?}) x={} y={} w={} adv={} page={}",
+                char::from_u32(cp),
+                m.x,
+                m.y,
+                m.width,
+                m.advance,
+                m.page
+            );
         }
     }
     // Sonde : records CHR bruts sur différents scripts (rangées atlas différentes) + histo col[4].
@@ -51,7 +66,10 @@ fn main() {
                 && probe.contains(&cp)
             {
                 let cols: Vec<i32> = e.variables.iter().map(asi).collect();
-                println!("  CHR U+{cp:04X} ({:?}) cols={cols:?}", char::from_u32(cp as u32));
+                println!(
+                    "  CHR U+{cp:04X} ({:?}) cols={cols:?}",
+                    char::from_u32(cp as u32)
+                );
             }
         }
         let mut hist: std::collections::BTreeMap<i32, u32> = std::collections::BTreeMap::new();
@@ -60,19 +78,34 @@ fn main() {
                 *hist.entry(asi(&e.variables[4])).or_default() += 1;
             }
         }
-        println!("  col[4] : {} valeurs distinctes, échantillon={:?}", hist.len(), hist.iter().take(14).collect::<Vec<_>>());
+        println!(
+            "  col[4] : {} valeurs distinctes, échantillon={:?}",
+            hist.len(),
+            hist.iter().take(14).collect::<Vec<_>>()
+        );
     }
 
     // Atlas → DDS BGRA8 mip0.
     let tx = g4tx::parse(&g4tx_bytes).expect("parse g4tx");
     let t = &tx.textures[0];
     let dds = &g4tx_bytes[t.data_offset..t.data_offset + t.data_size];
-    let px_off = if dds.len() >= 88 && &dds[84..88] == b"DX10" { 148 } else { 128 };
+    let px_off = if dds.len() >= 88 && &dds[84..88] == b"DX10" {
+        148
+    } else {
+        128
+    };
     let atlas = &dds[px_off..];
     let (aw, ah) = (t.width as usize, t.height as usize);
-    println!("atlas {aw}×{ah} BGRA8 (dds@{} mip0@+{px_off}) sub_textures={}", t.data_offset, t.sub_textures.len());
+    println!(
+        "atlas {aw}×{ah} BGRA8 (dds@{} mip0@+{px_off}) sub_textures={}",
+        t.data_offset,
+        t.sub_textures.len()
+    );
     for st in t.sub_textures.iter().take(6) {
-        println!("    sub id={} name={:?} x={} y={} w={} h={}", st.id, st.name, st.x, st.y, st.width, st.height);
+        println!(
+            "    sub id={} name={:?} x={} y={} w={} h={}",
+            st.id, st.name, st.x, st.y, st.width, st.height
+        );
     }
 
     // Crop ciblé pleine résolution de la zone Latin (env CROP="x0,x1,y0,y1"), alpha en gris,
@@ -103,7 +136,10 @@ fn main() {
     // SCAN des bords de glyphes dans la rangée ASCII physique (y≈[955,1015]) : colonnes d'alpha
     // → spans de glyphes. Comparer aux col[3] métriques pour décoder le mapping X.
     {
-        let yb: usize = std::env::var("YROW").ok().and_then(|s| s.parse().ok()).unwrap_or(950);
+        let yb: usize = std::env::var("YROW")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(950);
         let mut runs: Vec<(usize, usize)> = Vec::new();
         let (mut on, mut start) = (false, 0usize);
         for ax in 300..2700usize {
@@ -126,7 +162,15 @@ fn main() {
         // ALIGNEMENT : glyphes ASCII visibles triés par col3 ↔ spans physiques triés par X.
         // → (char, col3 métrique, X physique, diff) pour révéler la fonction X.
         let mut glyphs: Vec<(char, i32, i32)> = (33u32..127)
-            .filter_map(|cp| metrics.glyph(cp).map(|m| (char::from_u32(cp).unwrap(), i32::from(m.x), i32::from(m.width))))
+            .filter_map(|cp| {
+                metrics.glyph(cp).map(|m| {
+                    (
+                        char::from_u32(cp).unwrap(),
+                        i32::from(m.x),
+                        i32::from(m.width),
+                    )
+                })
+            })
             .collect();
         glyphs.sort_by_key(|&(_, x, _)| x);
         let mut spans = runs.clone();
@@ -141,7 +185,10 @@ fn main() {
 
     // TEST rendu ASCII : blit une chaîne en forçant le Y physique de la rangée ASCII (env YBASE).
     if let Ok(txt) = std::env::var("TEXT") {
-        let yb: u16 = std::env::var("YBASE").ok().and_then(|s| s.parse().ok()).unwrap_or(946);
+        let yb: u16 = std::env::var("YBASE")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(946);
         let cell_h = metrics.dims.cell_height;
         let (tw, th) = (1200u32, cell_h as u32 + 30);
         let mut canvas = vec![0u8; (tw * th * 4) as usize];
@@ -151,11 +198,24 @@ fn main() {
         let mut pen = 12i32;
         for c in txt.chars() {
             if let Some(m) = metrics.glyph(c as u32) {
-                let xoff: i32 = std::env::var("XOFF").ok().and_then(|s| s.parse().ok()).unwrap_or(0);
+                let xoff: i32 = std::env::var("XOFF")
+                    .ok()
+                    .and_then(|s| s.parse().ok())
+                    .unwrap_or(0);
                 let mut m2 = *m;
                 m2.y = yb; // override : Y physique de la rangée ASCII
                 m2.x = (i32::from(m.x) + xoff).clamp(0, aw as i32 - 1) as u16;
-                font::glyph_blitter(atlas, aw as u32, &m2, cell_h, &mut canvas, tw * 4, pen + i32::from(m.bearing_x), 14, [245, 245, 250, 255]);
+                font::glyph_blitter(
+                    atlas,
+                    aw as u32,
+                    &m2,
+                    cell_h,
+                    &mut canvas,
+                    tw * 4,
+                    pen + i32::from(m.bearing_x),
+                    14,
+                    [245, 245, 250, 255],
+                );
                 pen += i32::from(m.advance);
             } else {
                 pen += i32::from(cell_h) / 3;

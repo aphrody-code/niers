@@ -57,7 +57,9 @@ impl StatBlock {
     /// Retourne les stats comme tableau ordonné `[Kc, Cr, Tc, Pr, Ps, Ag, It]`.
     #[must_use]
     pub fn as_array(self) -> [u16; 7] {
-        [self.kc, self.cr, self.tc, self.pr, self.ps, self.ag, self.it]
+        [
+            self.kc, self.cr, self.tc, self.pr, self.ps, self.ag, self.it,
+        ]
     }
 
     /// Crée un `StatBlock` depuis un tableau `[Kc, Cr, Tc, Pr, Ps, Ag, It]`.
@@ -329,13 +331,13 @@ mod tests {
     #[test]
     fn rarity_to_growth_rank_known_values() {
         // Confirmé par stat-calculator.ts
-        assert_eq!(rarity_to_growth_rank(0), 0);  // N
-        assert_eq!(rarity_to_growth_rank(2), 2);  // R
-        assert_eq!(rarity_to_growth_rank(3), 3);  // SR
-        assert_eq!(rarity_to_growth_rank(4), 4);  // SSR
-        assert_eq!(rarity_to_growth_rank(5), 5);  // UR
-        assert_eq!(rarity_to_growth_rank(6), 5);  // LR → UR
-        assert_eq!(rarity_to_growth_rank(7), 5);  // Legend → UR
+        assert_eq!(rarity_to_growth_rank(0), 0); // N
+        assert_eq!(rarity_to_growth_rank(2), 2); // R
+        assert_eq!(rarity_to_growth_rank(3), 3); // SR
+        assert_eq!(rarity_to_growth_rank(4), 4); // SSR
+        assert_eq!(rarity_to_growth_rank(5), 5); // UR
+        assert_eq!(rarity_to_growth_rank(6), 5); // LR → UR
+        assert_eq!(rarity_to_growth_rank(7), 5); // Legend → UR
         assert_eq!(rarity_to_growth_rank(20), 5); // BASARA → UR
     }
 

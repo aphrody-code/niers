@@ -11,7 +11,7 @@
 
 use nie_data::hash::HashId;
 use nie_data::soccer_chara_unique_rarity::{
-    hero_type_for_param, parse_hero_config, variants_for_chara, HeroType, HeroVariantInfo,
+    HeroType, HeroVariantInfo, hero_type_for_param, parse_hero_config, variants_for_chara,
 };
 use serde_json::json;
 
@@ -106,9 +106,18 @@ fn flag_faux_mais_id_non_nul_reste_none() {
 fn hero_type_for_param_resout_les_variantes_exposees() {
     let list = parse_hero_config(&node_fixture());
     // Param ids réellement exposés → type correct.
-    assert_eq!(hero_type_for_param(&list, HashId(0x9634_AFB0)), Some(HeroType::Black));
-    assert_eq!(hero_type_for_param(&list, HashId(0xBFFC_1B42)), Some(HeroType::Pink));
-    assert_eq!(hero_type_for_param(&list, HashId(0x2D3C_A337)), Some(HeroType::Fire));
+    assert_eq!(
+        hero_type_for_param(&list, HashId(0x9634_AFB0)),
+        Some(HeroType::Black)
+    );
+    assert_eq!(
+        hero_type_for_param(&list, HashId(0xBFFC_1B42)),
+        Some(HeroType::Pink)
+    );
+    assert_eq!(
+        hero_type_for_param(&list, HashId(0x2D3C_A337)),
+        Some(HeroType::Fire)
+    );
     // Param id présent dans le dump mais NON exposé (flag faux) → introuvable.
     assert_eq!(hero_type_for_param(&list, HashId(0x04F4_17C5)), None);
     assert_eq!(hero_type_for_param(&list, HashId(0x8033_C66B)), None);

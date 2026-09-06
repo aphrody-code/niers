@@ -10,8 +10,8 @@
 use anyhow::{Context, Result};
 use clap::Parser;
 use nie_app::render::CharAssets;
-use nie_app::{demo_flow, CpuRenderer, Renderer, H, W};
-use nie_core::match_sim::{simulate_match, TeamSetup};
+use nie_app::{CpuRenderer, H, Renderer, W, demo_flow};
+use nie_core::match_sim::{TeamSetup, simulate_match};
 use nie_core::stats::StatBlock;
 
 #[derive(Parser)]
@@ -57,8 +57,9 @@ struct Cli {
 
 /// Charge une vraie scène de dialogue (lignes EN consécutives d'un event), nettoyées.
 fn load_scene(db: &std::path::Path, event_id: &str) -> Result<Vec<String>> {
-    let conn = rusqlite::Connection::open_with_flags(db, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)
-        .context("ouverture DB")?;
+    let conn =
+        rusqlite::Connection::open_with_flags(db, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)
+            .context("ouverture DB")?;
     let mut stmt = conn.prepare(
         "SELECT text_en FROM inagle_event_subtitles WHERE event_id=?1 AND text_en IS NOT NULL \
          AND length(text_en)>0 ORDER BY line_index",
@@ -76,7 +77,15 @@ fn load_scene(db: &std::path::Path, event_id: &str) -> Result<Vec<String>> {
 fn team(name: &str, base: u16) -> TeamSetup {
     TeamSetup::new(
         name,
-        StatBlock { kc: base, cr: base, tc: base, pr: base, ps: base, ag: base, it: base },
+        StatBlock {
+            kc: base,
+            cr: base,
+            tc: base,
+            pr: base,
+            ps: base,
+            ag: base,
+            it: base,
+        },
     )
 }
 
@@ -121,7 +130,10 @@ fn assets_police(cli: &Cli) -> Result<(std::path::PathBuf, std::path::PathBuf)> 
         Some(p) => p.clone(),
         None => mat(FONT_G4TX)?,
     };
-    println!("[nie-play] police resolue par le VFS ({montage}) : {}", cfg.display());
+    println!(
+        "[nie-play] police resolue par le VFS ({montage}) : {}",
+        cfg.display()
+    );
     Ok((cfg, g4tx))
 }
 
@@ -154,17 +166,33 @@ fn main() -> Result<()> {
     // scène de dialogue IEVR (sinon le flow de démo).
     let flow: Vec<(nie_app::GameState, u32)> = if let Some(db) = &cli.db {
         let scene = load_scene(db, &cli.event_id).context("chargement scène")?;
-        println!("[nie-play] scène réelle '{}' = {} lignes de dialogue", cli.event_id, scene.len());
+        println!(
+            "[nie-play] scène réelle '{}' = {} lignes de dialogue",
+            cli.event_id,
+            scene.len()
+        );
         let mut f = vec![
             (nie_app::GameState::Title, 30),
             (nie_app::GameState::MainMenu { sel: 0 }, 20),
-            (nie_app::GameState::Match { home: res.home_score, away: res.away_score }, 40),
+            (
+                nie_app::GameState::Match {
+                    home: res.home_score,
+                    away: res.away_score,
+                },
+                40,
+            ),
             (nie_app::GameState::MainMenu { sel: 1 }, 20),
         ];
         // Locuteur exact non résolu (line_label = id, pas un nom) → libellé de scène honnête.
         let speaker = format!("Mode Histoire — {}", cli.event_id);
         for line in scene {
-            f.push((nie_app::GameState::Story { speaker: speaker.clone(), line }, 35));
+            f.push((
+                nie_app::GameState::Story {
+                    speaker: speaker.clone(),
+                    line,
+                },
+                35,
+            ));
         }
         f.push((nie_app::GameState::MainMenu { sel: 3 }, 20));
         f
@@ -185,7 +213,10 @@ fn main() -> Result<()> {
                     write_png(&fr.px, &cli.out.join(format!("f{frame:04}.png")))?;
                     frame += 1;
                 }
-                println!("[nie-play]   match JOUÉ (nie-runtime, physique) score={:?}", world.score);
+                println!(
+                    "[nie-play]   match JOUÉ (nie-runtime, physique) score={:?}",
+                    world.score
+                );
             }
             _ => {
                 let buf = renderer.render(state);

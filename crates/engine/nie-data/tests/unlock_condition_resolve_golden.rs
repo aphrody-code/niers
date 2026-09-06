@@ -7,7 +7,7 @@
 //! Ce test fige 5 paires confirmées + la résolution end-to-end (blob event-flag → event_id).
 
 use nie_data::unlock_condition::{
-    build_event_crc_lookup, crc32_str, decode_unlock_condition_bytes, UnlockType,
+    UnlockType, build_event_crc_lookup, crc32_str, decode_unlock_condition_bytes,
 };
 
 #[test]
@@ -42,10 +42,16 @@ fn resolution_event_flag_end_to_end() {
     assert_eq!(cond.required_events.len(), 1);
     assert_eq!(cond.required_events[0].crc, crc);
     assert_eq!(cond.required_events[0].count, 1);
-    assert!(cond.required_events[0].event_id.is_none(), "non résolu avant lookup");
+    assert!(
+        cond.required_events[0].event_id.is_none(),
+        "non résolu avant lookup"
+    );
 
     // Résolution via le lookup CRC→event_id.
     let lookup = build_event_crc_lookup(["qsb010200", "qsb080100", "ev07_00125"]);
     cond.resolve_events(&lookup);
-    assert_eq!(cond.required_events[0].event_id.as_deref(), Some("qsb010200"));
+    assert_eq!(
+        cond.required_events[0].event_id.as_deref(),
+        Some("qsb010200")
+    );
 }

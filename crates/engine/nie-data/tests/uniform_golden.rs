@@ -33,7 +33,7 @@
 mod common;
 
 use nie_data::hash::HashId;
-use nie_data::uniform::{parse_uniform_config, UniformConfig};
+use nie_data::uniform::{UniformConfig, parse_uniform_config};
 use serde_json::json;
 
 // ─── Fixture : valeurs extraites octet-pour-octet du dump réel ──────────────────
@@ -208,14 +208,35 @@ fn fixture_model0_tous_les_champs() {
     assert_eq!(m.uniform_keeper_model_id_crc, HashId(0x55CB_3260));
     assert_eq!(m.uniform_director_model_id_crc, HashId::ZERO);
     assert_eq!(m.uniform_manager_model_id_crc, HashId::ZERO);
-    assert_eq!(m.uniform_fielder_shoulder_baring_model_id_crc, HashId(0xF1E2_CE0F));
+    assert_eq!(
+        m.uniform_fielder_shoulder_baring_model_id_crc,
+        HashId(0xF1E2_CE0F)
+    );
     assert_eq!(m.uniform_keeper_shoulder_baring_model_id_crc, HashId::ZERO);
-    assert_eq!(m.uniform_fielder_short_sleeve_roll_up_arm_model_id_crc, HashId(0x18B6_DEDC));
-    assert_eq!(m.uniform_fielder_shoulder_baring_patterned_model_id_crc, HashId(0xD740_CC5B));
-    assert_eq!(m.uniform_keeper_long_sleeve_roll_up_arm_model_id_crc, HashId(0xE5EB_204D));
-    assert_eq!(m.uniform_keeper_long_sleeve_roll_up_sleeve_model_id_crc, HashId(0xE286_E454));
-    assert_eq!(m.uniform_fielder_navel_baring_model_id_crc, HashId(0xA814_0C3F));
-    assert_eq!(m.uniform_keeper_navel_baring_model_id_crc, HashId(0x4E3D_C77B));
+    assert_eq!(
+        m.uniform_fielder_short_sleeve_roll_up_arm_model_id_crc,
+        HashId(0x18B6_DEDC)
+    );
+    assert_eq!(
+        m.uniform_fielder_shoulder_baring_patterned_model_id_crc,
+        HashId(0xD740_CC5B)
+    );
+    assert_eq!(
+        m.uniform_keeper_long_sleeve_roll_up_arm_model_id_crc,
+        HashId(0xE5EB_204D)
+    );
+    assert_eq!(
+        m.uniform_keeper_long_sleeve_roll_up_sleeve_model_id_crc,
+        HashId(0xE286_E454)
+    );
+    assert_eq!(
+        m.uniform_fielder_navel_baring_model_id_crc,
+        HashId(0xA814_0C3F)
+    );
+    assert_eq!(
+        m.uniform_keeper_navel_baring_model_id_crc,
+        HashId(0x4E3D_C77B)
+    );
     assert_eq!(m.shoes_fielder_model_id_crc, HashId(0x9035_CD57));
     assert_eq!(m.shoes_keeper_model_id_crc, HashId(0x9035_CD57));
     assert_eq!(m.glove_model_id_crc, HashId(0xBE70_ECC5));
@@ -234,7 +255,10 @@ fn fixture_model1_distinct_du_model0() {
     assert_eq!(m.uniform_fielder_model_id_crc, HashId(0xB606_EED3));
     assert_eq!(m.uniform_keeper_model_id_crc, HashId(0x7EE6_61A3));
     assert_eq!(m.glove_model_id_crc, HashId(0x955D_BF06));
-    assert_eq!(m.uniform_keeper_long_sleeve_roll_up_arm_model_id_crc, HashId(0x637F_52E3));
+    assert_eq!(
+        m.uniform_keeper_long_sleeve_roll_up_arm_model_id_crc,
+        HashId(0x637F_52E3)
+    );
     assert_eq!(m.type_id, 1);
     // Chaussures partagées avec l'entrée 0 (vérité terrain).
     assert_eq!(m.shoes_fielder_model_id_crc, HashId(0x9035_CD57));
@@ -315,8 +339,14 @@ fn fixture_resolve_rows_joint_les_modeles() {
     assert_eq!(r0.model_count, 2);
     assert_eq!(r0.type_id, Some(0));
     assert_eq!(r0.models.len(), 2);
-    assert_eq!(r0.models[0].uniform_fielder_model_id_crc, HashId(0x9D2B_BD10));
-    assert_eq!(r0.models[1].uniform_fielder_model_id_crc, HashId(0xB606_EED3));
+    assert_eq!(
+        r0.models[0].uniform_fielder_model_id_crc,
+        HashId(0x9D2B_BD10)
+    );
+    assert_eq!(
+        r0.models[1].uniform_fielder_model_id_crc,
+        HashId(0xB606_EED3)
+    );
 
     // L'uniforme 1 pointe [2, 2] : hors de la fixture (2 modèles seulement) → tranche vide,
     // bornée sans panique (comme inagle slice()).
@@ -354,8 +384,7 @@ fn fixture_liste_manquante_renvoie_vide() {
 
 // ─── Test sur le vrai fichier (skip si absent — dump gitignore) ──────────────────
 
-const REAL_PATH: &str =
-    "character/uniform_config_1.03.52.00.cfg.bin.json";
+const REAL_PATH: &str = "character/uniform_config_1.03.52.00.cfg.bin.json";
 
 fn load_real() -> Option<UniformConfig> {
     let chemin_abs = common::chemin(REAL_PATH)?;

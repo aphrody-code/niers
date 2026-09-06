@@ -8,8 +8,8 @@
 //! (type, op, seuil, épisode, CRC, namespace) sont celles asserées par la suite TS.
 
 use nie_data::unlock_condition::{
-    build_event_crc_lookup, crc32_str, decode_unlock_condition, decode_unlock_condition_bytes,
-    story_threshold_to_episode, UnlockOp, UnlockType, STORY_EPISODE_BASE, STORY_EPISODE_STEP,
+    STORY_EPISODE_BASE, STORY_EPISODE_STEP, UnlockOp, UnlockType, build_event_crc_lookup,
+    crc32_str, decode_unlock_condition, decode_unlock_condition_bytes, story_threshold_to_episode,
 };
 
 /// `gallery openCond`, seuil 20010 (ev01).
@@ -27,7 +27,10 @@ fn hex(s: &str) -> Vec<u8> {
 #[test]
 fn story_threshold_to_episode_grid() {
     assert_eq!(story_threshold_to_episode(STORY_EPISODE_BASE), Some(1));
-    assert_eq!(story_threshold_to_episode(STORY_EPISODE_BASE + STORY_EPISODE_STEP), Some(2));
+    assert_eq!(
+        story_threshold_to_episode(STORY_EPISODE_BASE + STORY_EPISODE_STEP),
+        Some(2)
+    );
     assert_eq!(story_threshold_to_episode(90010), Some(8));
     // Seuils non alignés.
     assert_eq!(story_threshold_to_episode(12345), None);
@@ -73,7 +76,9 @@ fn event_flag_without_lookup() {
 
 #[test]
 fn composite_story_plus_event_0b() {
-    let blob = hex("00000000300b35b91936da000100320000c35a7135dafab70a0013022800060234c05d8c3b2800060232000000013200000001788f");
+    let blob = hex(
+        "00000000300b35b91936da000100320000c35a7135dafab70a0013022800060234c05d8c3b2800060232000000013200000001788f",
+    );
     let c = decode_unlock_condition_bytes(&blob, String::new());
     assert_eq!(c.kind, UnlockType::Composite);
     assert_eq!(c.op, UnlockOp::And);
@@ -85,14 +90,20 @@ fn composite_story_plus_event_0b() {
 
 #[test]
 fn composite_two_event_flags_17() {
-    let blob = hex("0000000048173200000001352a3d4543000a0128000602344dea45163200000001788f32000000018f3200000001352a3d4543000a01280006023456b7ca0e3200000001788f32000000018f90");
+    let blob = hex(
+        "0000000048173200000001352a3d4543000a0128000602344dea45163200000001788f32000000018f3200000001352a3d4543000a01280006023456b7ca0e3200000001788f32000000018f90",
+    );
     let c = decode_unlock_condition_bytes(&blob, String::new());
     assert_eq!(c.kind, UnlockType::EventFlag);
     assert_eq!(c.op, UnlockOp::And);
     assert_eq!(c.required_events.len(), 2);
     assert_eq!(c.required_events[0].crc, crc32_str("ev04_02110"));
     assert_eq!(c.required_events[0].crc_hex(), "0x4DEA4516");
-    assert!(c.required_events.iter().all(|e| e.namespace.to_hex() == "0x2A3D4543"));
+    assert!(
+        c.required_events
+            .iter()
+            .all(|e| e.namespace.to_hex() == "0x2A3D4543")
+    );
 }
 
 #[test]

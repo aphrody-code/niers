@@ -6,7 +6,7 @@
 use std::fs;
 use std::path::Path;
 
-use crate::{parse, LivesContainer};
+use crate::{LivesContainer, parse};
 
 /// Lit, déchiffre et parse un fichier de sauvegarde depuis `path`.
 ///
@@ -21,8 +21,7 @@ pub fn read_save(path: &Path) -> Result<LivesContainer, Box<dyn std::error::Erro
         .and_then(|s| s.to_str())
         .ok_or_else(|| format!("chemin invalide : {}", path.display()))?;
 
-    let data = fs::read(path)
-        .map_err(|e| format!("lecture {} : {e}", path.display()))?;
+    let data = fs::read(path).map_err(|e| format!("lecture {} : {e}", path.display()))?;
 
     Ok(parse(&data, filename)?)
 }
@@ -32,10 +31,12 @@ pub fn read_save(path: &Path) -> Result<LivesContainer, Box<dyn std::error::Erro
 /// # Erreurs
 ///
 /// Propage les erreurs d'I/O et de sérialisation.
-pub fn write_save(container: &LivesContainer, path: &Path) -> Result<(), Box<dyn std::error::Error>> {
+pub fn write_save(
+    container: &LivesContainer,
+    path: &Path,
+) -> Result<(), Box<dyn std::error::Error>> {
     let encrypted = container.encrypt()?;
-    fs::write(path, encrypted)
-        .map_err(|e| format!("écriture {} : {e}", path.display()).into())
+    fs::write(path, encrypted).map_err(|e| format!("écriture {} : {e}", path.display()).into())
 }
 
 /// Affiche un résumé terse du conteneur (format `clé=val`, convention niers).
@@ -47,14 +48,15 @@ pub fn print_summary(container: &LivesContainer) {
         container.entries.len(),
         container.blobs.len(),
     );
-    for (i, (entry, blob)) in container.entries.iter().zip(container.blobs.iter()).enumerate() {
+    for (i, (entry, blob)) in container
+        .entries
+        .iter()
+        .zip(container.blobs.iter())
+        .enumerate()
+    {
         println!(
             "  blob[{i}] name={} size={} crc32=0x{:08X} subtype={:?} field8=0x{:08X}",
-            entry.filename,
-            entry.size,
-            entry.crc32,
-            blob.header.subtype,
-            blob.header.field8,
+            entry.filename, entry.size, entry.crc32, blob.header.subtype, blob.header.field8,
         );
     }
 }

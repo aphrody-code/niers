@@ -5,8 +5,7 @@ mod common;
 use nie_data::game_quest::parse_game_quest_config;
 use nie_data::hash::HashId;
 
-const PATH: &str =
-    "soccer/game_quest_config_1.02.33.cfg.bin.json";
+const PATH: &str = "soccer/game_quest_config_1.02.33.cfg.bin.json";
 
 fn load() -> Option<serde_json::Value> {
     let chemin_abs = common::chemin(PATH)?;
@@ -43,7 +42,10 @@ fn comptes_et_valeurs() {
 fn dispatch_typed() {
     use nie_data::typed::{decode_by_key, family_key};
     let Some(root) = load() else { return };
-    assert_eq!(family_key("game_quest_config_1.02.33.cfg.bin"), "game_quest_config");
+    assert_eq!(
+        family_key("game_quest_config_1.02.33.cfg.bin"),
+        "game_quest_config"
+    );
     let (label, json) = decode_by_key("game_quest_config", &root).expect("câblé");
     assert_eq!(label, "game_quest");
     assert_eq!(json["game_quests"].as_array().map(Vec::len), Some(175));

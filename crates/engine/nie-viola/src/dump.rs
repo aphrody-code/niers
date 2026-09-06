@@ -280,7 +280,9 @@ fn lire_manifeste(sortie: &Path) -> Vec<String> {
 /// pendant l'écriture laisserait sinon un manifeste tronqué, donc un dump « repris » incomplet
 /// et silencieusement faux.
 fn ecrire_manifeste(sortie: &Path, faits: &[String]) {
-    let Ok(json) = serde_json::to_string(faits) else { return };
+    let Ok(json) = serde_json::to_string(faits) else {
+        return;
+    };
     let tmp = sortie.join(format!("{MANIFESTE}.tmp"));
     if std::fs::write(&tmp, json).is_ok() {
         let _ = std::fs::rename(&tmp, sortie.join(MANIFESTE));
@@ -359,7 +361,9 @@ fn ecrire_journal(sortie: &Path, echecs: &[Echec], total: usize, collisions: &[(
         "echecs": liste,
         "collisions_casse": casse,
     });
-    let Ok(json) = serde_json::to_string_pretty(&doc) else { return };
+    let Ok(json) = serde_json::to_string_pretty(&doc) else {
+        return;
+    };
     let _ = std::fs::write(sortie.join(JOURNAL), json);
 }
 
@@ -370,7 +374,9 @@ fn ecrire_journal(sortie: &Path, echecs: &[Echec], total: usize, collisions: &[(
 /// il devient comparable d'un dump à l'autre, ce qui est tout son intérêt.
 fn normaliser_index(sortie: &Path) {
     let chemin = sortie.join(INDEX_CONTENU);
-    let Ok(contenu) = std::fs::read_to_string(&chemin) else { return };
+    let Ok(contenu) = std::fs::read_to_string(&chemin) else {
+        return;
+    };
     let mut lignes: Vec<&str> = contenu.lines().filter(|l| !l.is_empty()).collect();
     lignes.sort_unstable();
     lignes.dedup();
@@ -409,7 +415,10 @@ pub fn dump_all(
     std::fs::create_dir_all(sortie).map_err(|e| format!("{} : {e}", sortie.display()))?;
 
     // Compilé une fois : l'ancien chemin réinterprétait le motif pour chacun des 255 308 chemins.
-    let filtre = options.filtre.as_deref().map_or_else(Filtre::default, Filtre::parse);
+    let filtre = options
+        .filtre
+        .as_deref()
+        .map_or_else(Filtre::default, Filtre::parse);
 
     // ── Regroupement par pack ────────────────────────────────────────────────────────────────
     // Le coût de chaque pack est connu ici même (tailles déjà indexées), ce qui permet de trier
@@ -425,7 +434,11 @@ pub fn dump_all(
         } else {
             let e = par_cpk
                 .entry(entree.cpk_filename.as_str())
-                .or_insert(PlanPack { fichiers: Vec::new(), octets: 0, extra: false });
+                .or_insert(PlanPack {
+                    fichiers: Vec::new(),
+                    octets: 0,
+                    extra: false,
+                });
             e.fichiers.push(chemin);
             e.octets += u64::from(entree.file_size);
         }
@@ -440,9 +453,11 @@ pub fn dump_all(
             if !filtre.accepte(chemin) {
                 continue;
             }
-            let e = par_cpk
-                .entry(cpk)
-                .or_insert(PlanPack { fichiers: Vec::new(), octets: 0, extra: true });
+            let e = par_cpk.entry(cpk).or_insert(PlanPack {
+                fichiers: Vec::new(),
+                octets: 0,
+                extra: true,
+            });
             e.fichiers.push(chemin);
             depuis_extra += 1;
         }
@@ -466,7 +481,10 @@ pub fn dump_all(
     if options.controler_casse {
         let attendus = par_cpk.values().map(|p| p.fichiers.len()).sum::<usize>() + loose.len();
         let mut vus: HashMap<u64, &str> = HashMap::with_capacity(attendus);
-        let tous = par_cpk.values().flat_map(|p| p.fichiers.iter().copied()).chain(loose.iter().copied());
+        let tous = par_cpk
+            .values()
+            .flat_map(|p| p.fichiers.iter().copied())
+            .chain(loose.iter().copied());
         for chemin in tous {
             match vus.entry(hash_insensible(chemin)) {
                 Entry::Occupied(o) => {
@@ -482,8 +500,15 @@ pub fn dump_all(
         }
     }
 
-    let deja: Vec<String> = if options.reprise { lire_manifeste(sortie) } else { Vec::new() };
-    let packs_repris = par_cpk.keys().filter(|c| deja.iter().any(|d| d == *c)).count();
+    let deja: Vec<String> = if options.reprise {
+        lire_manifeste(sortie)
+    } else {
+        Vec::new()
+    };
+    let packs_repris = par_cpk
+        .keys()
+        .filter(|c| deja.iter().any(|d| d == *c))
+        .count();
 
     // Tri par volume décroissant : ordonnancement LPT (cf. doc du module).
     let mut packs: Vec<(&str, PlanPack)> = par_cpk
@@ -520,7 +545,10 @@ pub fn dump_all(
     let noter = |chemin: &str, pack: &str, raison: Raison, detail: String| {
         echecs.fetch_add(1, Ordering::Relaxed);
         par_raison[raison.indice()].fetch_add(1, Ordering::Relaxed);
-        if options.journal && let Ok(mut j) = journal.lock() && j.len() < MAX_ECHECS_JOURNALISES {
+        if options.journal
+            && let Ok(mut j) = journal.lock()
+            && j.len() < MAX_ECHECS_JOURNALISES
+        {
             j.push(Echec {
                 chemin: chemin.to_string(),
                 pack: pack.to_string(),
@@ -535,7 +563,11 @@ pub fn dump_all(
     let signaler = |force: bool| {
         let n = faits.load(Ordering::Relaxed);
         if force || n.is_multiple_of(256) {
-            progres(DumpProgress { faits: n, total, octets: octets.load(Ordering::Relaxed) });
+            progres(DumpProgress {
+                faits: n,
+                total,
+                octets: octets.load(Ordering::Relaxed),
+            });
         }
     };
 
@@ -577,7 +609,8 @@ pub fn dump_all(
         // l'ancien repli prenait le premier venu par un `find` linéaire, donc écrivait parfois
         // le contenu d'un homonyme sous un nom juste — une faute qu'aucune vérification par
         // taille ne rattrape ensuite.
-        let mut par_base: HashMap<&str, Option<usize>> = HashMap::with_capacity(lecteur.entries.len());
+        let mut par_base: HashMap<&str, Option<usize>> =
+            HashMap::with_capacity(lecteur.entries.len());
         for (i, e) in lecteur.entries.iter().enumerate() {
             index.insert(chemin_entree(e), i);
             par_base
@@ -603,7 +636,12 @@ pub fn dump_all(
                     match par_base.get(base) {
                         Some(Some(i)) => Some(*i),
                         Some(None) => {
-                            noter(chemin, cpk, Raison::NomAmbigu, format!("« {base} » désigne plusieurs entrées du pack"));
+                            noter(
+                                chemin,
+                                cpk,
+                                Raison::NomAmbigu,
+                                format!("« {base} » désigne plusieurs entrées du pack"),
+                            );
                             None
                         }
                         None => {
@@ -623,7 +661,20 @@ pub fn dump_all(
                 {
                     sautes.fetch_add(1, Ordering::Relaxed);
                 } else {
-                    traiter_fichier(&lecteur, &mmap, entree, chemin, cpk, &dest, options, &noter, &extraits, &sautes, &octets, index_fichier.as_ref());
+                    traiter_fichier(
+                        &lecteur,
+                        &mmap,
+                        entree,
+                        chemin,
+                        cpk,
+                        &dest,
+                        options,
+                        &noter,
+                        &extraits,
+                        &sautes,
+                        &octets,
+                        index_fichier.as_ref(),
+                    );
                 }
             }
             faits.fetch_add(1, Ordering::Relaxed);
@@ -633,12 +684,13 @@ pub fn dump_all(
         // Le pack n'entre au manifeste que s'il a été traité en entier : un pack interrompu doit
         // être refait, sans quoi la reprise produirait un dump incomplet réputé complet.
         if !annuler.load(Ordering::Relaxed)
-            && let Ok(mut t) = termines.lock() {
-                t.push(cpk.to_string());
-                if options.reprise {
-                    ecrire_manifeste(sortie, &t);
-                }
+            && let Ok(mut t) = termines.lock()
+        {
+            t.push(cpk.to_string());
+            if options.reprise {
+                ecrire_manifeste(sortie, &t);
             }
+        }
     };
 
     // Le nombre de travailleurs est imposé par un pool local : toucher au pool global de rayon
@@ -667,7 +719,12 @@ pub fn dump_all(
         // d'introduction sont annoncées sous `common/` et rangées sous le répertoire de
         // plateforme. Le VFS sait résoudre les deux ; recalculer le chemin ici ne le saurait pas.
         let Some(source) = vfs.resolve_loose_path(chemin) else {
-            noter(chemin, "", Raison::SourceIllisible, "introuvable sous data/".to_string());
+            noter(
+                chemin,
+                "",
+                Raison::SourceIllisible,
+                "introuvable sous data/".to_string(),
+            );
             faits.fetch_add(1, Ordering::Relaxed);
             signaler(false);
             return;
@@ -755,7 +812,11 @@ fn traiter_fichier(
             chemin,
             cpk,
             Raison::TailleInattendue,
-            format!("sommaire {} octets, extraction {}", entree.extract_size, donnees.len()),
+            format!(
+                "sommaire {} octets, extraction {}",
+                entree.extract_size,
+                donnees.len()
+            ),
         );
     }
 
@@ -774,7 +835,12 @@ fn traiter_fichier(
 
 /// Ajoute une ligne à l'index de contenu. Silencieux en cas d'échec : perdre une ligne d'index
 /// ne doit pas faire échouer l'extraction du fichier qu'elle décrit.
-fn noter_index(index: Option<&std::sync::Mutex<std::fs::File>>, chemin: &str, taille: u64, cpk: &str) {
+fn noter_index(
+    index: Option<&std::sync::Mutex<std::fs::File>>,
+    chemin: &str,
+    taille: u64,
+    cpk: &str,
+) {
     if let Some(m) = index
         && let Ok(mut f) = m.lock()
     {
@@ -789,7 +855,11 @@ fn noter_index(index: Option<&std::sync::Mutex<std::fs::File>>, chemin: &str, ta
 /// Si le manifeste existe mais ne peut pas être supprimé.
 pub fn oublier_reprise(sortie: &Path) -> std::io::Result<()> {
     let m = sortie.join(MANIFESTE);
-    if m.exists() { std::fs::remove_file(m) } else { Ok(()) }
+    if m.exists() {
+        std::fs::remove_file(m)
+    } else {
+        Ok(())
+    }
 }
 
 /// Chemin du manifeste, pour l'afficher dans une interface.
@@ -828,9 +898,15 @@ mod tests {
     fn le_manifeste_survit_a_un_aller_retour() {
         let dir = std::env::temp_dir().join(format!("nie-viola-manif-{}", std::process::id()));
         std::fs::create_dir_all(&dir).expect("dossier de test");
-        assert!(lire_manifeste(&dir).is_empty(), "pas de manifeste = rien de repris");
+        assert!(
+            lire_manifeste(&dir).is_empty(),
+            "pas de manifeste = rien de repris"
+        );
         ecrire_manifeste(&dir, &["a.cpk".to_string(), "b.cpk".to_string()]);
-        assert_eq!(lire_manifeste(&dir), vec!["a.cpk".to_string(), "b.cpk".to_string()]);
+        assert_eq!(
+            lire_manifeste(&dir),
+            vec!["a.cpk".to_string(), "b.cpk".to_string()]
+        );
         oublier_reprise(&dir).expect("effacement");
         assert!(lire_manifeste(&dir).is_empty());
         std::fs::remove_dir_all(&dir).ok();
@@ -841,11 +917,27 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("nie-viola-ecrit-{}", std::process::id()));
         std::fs::create_dir_all(&dir).expect("dossier de test");
         let f = dir.join("x.bin");
-        assert!(ecrire(&f, b"1234", true).expect("première écriture"), "fichier absent : écrit");
-        assert!(!ecrire(&f, b"5678", true).expect("seconde"), "même taille : sauté");
-        assert_eq!(std::fs::read(&f).expect("relecture"), b"1234", "le contenu n'a pas bougé");
-        assert!(ecrire(&f, b"123", true).expect("taille différente"), "taille différente : réécrit");
-        assert!(ecrire(&f, b"123", false).expect("sans saut"), "saut désactivé : toujours écrit");
+        assert!(
+            ecrire(&f, b"1234", true).expect("première écriture"),
+            "fichier absent : écrit"
+        );
+        assert!(
+            !ecrire(&f, b"5678", true).expect("seconde"),
+            "même taille : sauté"
+        );
+        assert_eq!(
+            std::fs::read(&f).expect("relecture"),
+            b"1234",
+            "le contenu n'a pas bougé"
+        );
+        assert!(
+            ecrire(&f, b"123", true).expect("taille différente"),
+            "taille différente : réécrit"
+        );
+        assert!(
+            ecrire(&f, b"123", false).expect("sans saut"),
+            "saut désactivé : toujours écrit"
+        );
         std::fs::remove_dir_all(&dir).ok();
     }
 
@@ -871,7 +963,10 @@ mod tests {
             extract_size: 0,
             is_compressed: false,
         };
-        let sans = CpkEntry { directory: String::new(), ..avec.clone() };
+        let sans = CpkEntry {
+            directory: String::new(),
+            ..avec.clone()
+        };
         assert_eq!(chemin_entree(&avec), "data/chr/a.bin");
         // Un `/` de tête ici ferait manquer toutes les entrées de l'index supplémentaire dont
         // le répertoire est vide : leur chemin y est stocké sans préfixe.
@@ -880,17 +975,32 @@ mod tests {
 
     #[test]
     fn le_hachage_ignore_la_casse_et_distingue_le_reste() {
-        assert_eq!(hash_insensible("data/Chr/A.bin"), hash_insensible("DATA/chr/a.BIN"));
-        assert_ne!(hash_insensible("data/chr/a.bin"), hash_insensible("data/chr/b.bin"));
+        assert_eq!(
+            hash_insensible("data/Chr/A.bin"),
+            hash_insensible("DATA/chr/a.BIN")
+        );
+        assert_ne!(
+            hash_insensible("data/chr/a.bin"),
+            hash_insensible("data/chr/b.bin")
+        );
     }
 
     #[test]
     fn la_ventilation_n_affiche_que_les_causes_rencontrees() {
-        let mut r = DumpReport { echecs: 3, ..DumpReport::default() };
+        let mut r = DumpReport {
+            echecs: 3,
+            ..DumpReport::default()
+        };
         r.par_raison[Raison::EntreeIntrouvable.indice()] = 2;
         r.par_raison[Raison::TailleInattendue.indice()] = 1;
         let v: Vec<(Raison, usize)> = r.echecs_par_raison().collect();
-        assert_eq!(v, vec![(Raison::EntreeIntrouvable, 2), (Raison::TailleInattendue, 1)]);
+        assert_eq!(
+            v,
+            vec![
+                (Raison::EntreeIntrouvable, 2),
+                (Raison::TailleInattendue, 1)
+            ]
+        );
     }
 
     #[test]
@@ -915,7 +1025,12 @@ mod tests {
             raison: Raison::EntreeIntrouvable,
             detail: String::new(),
         };
-        ecrire_journal(&dir, std::slice::from_ref(&e), 5000, &[("A".into(), "a".into())]);
+        ecrire_journal(
+            &dir,
+            std::slice::from_ref(&e),
+            5000,
+            &[("A".into(), "a".into())],
+        );
         let lu = std::fs::read_to_string(chemin_journal(&dir)).expect("relecture");
         let v: serde_json::Value = serde_json::from_str(&lu).expect("json");
         assert_eq!(v["echecs_total"], 5000);

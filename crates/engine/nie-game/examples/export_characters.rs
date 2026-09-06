@@ -62,7 +62,12 @@ fn rdbn_value_to_json(v: &cfgbin::RdbnValue) -> serde_json::Value {
 
 fn load_rdbn(vfs: &Vfs, pred: impl Fn(&str) -> bool, what: &str) -> serde_json::Value {
     use serde_json::Map;
-    let path = vfs.iter().map(|(p, _)| p.to_string()).filter(|p| pred(p)).min().unwrap_or_else(|| panic!("{what} introuvable"));
+    let path = vfs
+        .iter()
+        .map(|(p, _)| p.to_string())
+        .filter(|p| pred(p))
+        .min()
+        .unwrap_or_else(|| panic!("{what} introuvable"));
     eprintln!("  {path}");
     let bytes = vfs.read(&path).expect("read");
     let rdbn = cfgbin::parse(&bytes).expect("parse rdbn");
@@ -87,32 +92,57 @@ fn load_rdbn(vfs: &Vfs, pred: impl Fn(&str) -> bool, what: &str) -> serde_json::
 }
 
 fn main() {
-    let out = std::env::args().nth(1).unwrap_or_else(|| "var/characters-resolved.json".into());
-    let dir = nie_formats::vfs::resolve_game_dir().to_string_lossy().into_owned();
+    let out = std::env::args()
+        .nth(1)
+        .unwrap_or_else(|| "var/characters-resolved.json".into());
+    let dir = nie_formats::vfs::resolve_game_dir()
+        .to_string_lossy()
+        .into_owned();
     let mut vfs = Vfs::new();
-    vfs.init(Path::new(&dir).join("data").as_path()).expect("vfs init");
+    vfs.init(Path::new(&dir).join("data").as_path())
+        .expect("vfs init");
 
     let base_root = load(
         &vfs,
-        |p| p.contains("/character/") && p.rsplit('/').next().is_some_and(|b| b.starts_with("chara_base_1") && b.ends_with(".cfg.bin")),
+        |p| {
+            p.contains("/character/")
+                && p.rsplit('/')
+                    .next()
+                    .is_some_and(|b| b.starts_with("chara_base_1") && b.ends_with(".cfg.bin"))
+        },
         "chara_base",
     );
     let bases = nie_data::chara_base::parse_all_chara_base(&base_root);
     let nouns = nie_data::chara_text::parse_all_nouns(&load(
         &vfs,
-        |p| p.contains("/fr/") && p.rsplit('/').next().is_some_and(|b| b == "chara_text.cfg.bin"),
+        |p| {
+            p.contains("/fr/")
+                && p.rsplit('/')
+                    .next()
+                    .is_some_and(|b| b == "chara_text.cfg.bin")
+        },
         "chara_text fr",
     ));
     let descs = nie_data::chara_description::parse_chara_descriptions(&load(
         &vfs,
-        |p| p.contains("/fr/") && p.rsplit('/').next().is_some_and(|b| b == "chara_description_text.cfg.bin"),
+        |p| {
+            p.contains("/fr/")
+                && p.rsplit('/')
+                    .next()
+                    .is_some_and(|b| b == "chara_description_text.cfg.bin")
+        },
         "chara_description fr",
     ));
 
     // Équipes (belong_team RDBN) + noms d'équipe (team_text T2B) pour résoudre l'équipe de chaque perso.
     let teams = nie_data::belong_team::parse_belong_team_config(&load_rdbn(
         &vfs,
-        |p| p.contains("/gamedata/") && p.rsplit('/').next().is_some_and(|b| b.starts_with("belong_team_config") && b.ends_with(".cfg.bin")),
+        |p| {
+            p.contains("/gamedata/")
+                && p.rsplit('/')
+                    .next()
+                    .is_some_and(|b| b.starts_with("belong_team_config") && b.ends_with(".cfg.bin"))
+        },
         "belong_team_config",
     ));
     let team_text = nie_data::text::parse_text_file(&load(
@@ -123,7 +153,12 @@ fn main() {
     // Séries (chara_series RDBN) pour résoudre la série de chaque perso (origine franchise).
     let series = nie_data::chara_series::parse_chara_series_config(&load_rdbn(
         &vfs,
-        |p| p.contains("/character/") && p.rsplit('/').next().is_some_and(|b| b.starts_with("chara_series_config") && b.ends_with(".cfg.bin")),
+        |p| {
+            p.contains("/character/")
+                && p.rsplit('/').next().is_some_and(|b| {
+                    b.starts_with("chara_series_config") && b.ends_with(".cfg.bin")
+                })
+        },
         "chara_series_config",
     ));
 
@@ -163,6 +198,7 @@ fn main() {
     std::fs::write(&out, &txt).unwrap_or_else(|e| panic!("écriture {out} : {e}"));
     eprintln!(
         "✓ export-characters: {} personnages résolus → {out} ({} octets)",
-        doc["count"], txt.len()
+        doc["count"],
+        txt.len()
     );
 }

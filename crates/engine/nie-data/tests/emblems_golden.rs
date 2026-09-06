@@ -10,7 +10,7 @@
 //! `em010001`) et l'unique `basePath` de `m_EmblemResourceBasePathList`.
 
 use nie_data::emblems::{
-    parse_emblem_resources, resolve_resource_id, Emblem, EmblemResourceDatabase, RESOURCE_ID_TOKEN,
+    Emblem, EmblemResourceDatabase, RESOURCE_ID_TOKEN, parse_emblem_resources, resolve_resource_id,
 };
 use nie_data::hash::HashId;
 use serde_json::json;
@@ -60,7 +60,11 @@ fn parsed() -> EmblemResourceDatabase {
 #[test]
 fn comptes_et_base_path() {
     let db = parsed();
-    assert_eq!(db.len(), 2, "2 EMBLEM_RESOURCE_INFO (gabarit default + em010001)");
+    assert_eq!(
+        db.len(),
+        2,
+        "2 EMBLEM_RESOURCE_INFO (gabarit default + em010001)"
+    );
     assert!(!db.is_empty());
     assert_eq!(db.base_path, "#/menu/", "basePath commun");
     // Le basePath est recopié sur chaque entrée.
@@ -74,9 +78,15 @@ fn entree_gabarit_default() {
     assert_eq!(t.emblem_id, "0xE35E00DF");
     assert_eq!(t.emblem_id_hash(), HashId(0xE35E_00DF));
     assert_eq!(t.emblem_name, "default");
-    assert_eq!(t.small_file_path, "200_icon/01_icon_emblem/<resourceID>_s.g4tx");
+    assert_eq!(
+        t.small_file_path,
+        "200_icon/01_icon_emblem/<resourceID>_s.g4tx"
+    );
     assert_eq!(t.small_tex_name, "<resourceID>_s01");
-    assert_eq!(t.large_file_path, "200_icon/01_icon_emblem/<resourceID>.g4tx");
+    assert_eq!(
+        t.large_file_path,
+        "200_icon/01_icon_emblem/<resourceID>.g4tx"
+    );
     assert_eq!(t.large_tex_name, "<resourceID>");
     // isTemplate : emblemName == "default" ET chemins contenant <resourceID>.
     assert!(t.is_template, "l'entrée default est le gabarit");
@@ -118,8 +128,14 @@ fn substitution_gabarit_reproduit_entree_concrete() {
         "200_icon/01_icon_emblem/em010001.g4tx"
     );
     // s_texName / l_texName résolus via le helper libre.
-    assert_eq!(resolve_resource_id(&t.small_tex_name, "em010001"), "em010001_s01");
-    assert_eq!(resolve_resource_id(&t.large_tex_name, "em010001"), "em010001");
+    assert_eq!(
+        resolve_resource_id(&t.small_tex_name, "em010001"),
+        "em010001_s01"
+    );
+    assert_eq!(
+        resolve_resource_id(&t.large_tex_name, "em010001"),
+        "em010001"
+    );
 
     // Les chemins résolus == ceux réellement stockés dans l'entrée concrète.
     let concrete = &db.emblems[1];
@@ -151,7 +167,13 @@ fn vrai_dump_vfs_si_present() {
     // ci-dessus correspond à la structure documentée par inagle. Garde anti-régression :
     // exactement 2 emblèmes, gabarit en premier.
     let db = parsed();
-    assert!(db.emblems[0].is_template, "gabarit toujours en première position");
+    assert!(
+        db.emblems[0].is_template,
+        "gabarit toujours en première position"
+    );
     assert!(!db.emblems[1].is_template);
-    assert_eq!(db.template().map(|e| e.emblem_id.as_str()), Some("0xE35E00DF"));
+    assert_eq!(
+        db.template().map(|e| e.emblem_id.as_str()),
+        Some("0xE35E00DF")
+    );
 }

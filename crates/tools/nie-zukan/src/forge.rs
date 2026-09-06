@@ -24,8 +24,8 @@
 //! ```
 
 use anyhow::{Context, Result};
-use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
-use percent_encoding::{utf8_percent_encode, AsciiSet, CONTROLS};
+use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
+use percent_encoding::{AsciiSet, CONTROLS, utf8_percent_encode};
 
 /// Jeu de caractères à percent-encoder : tout sauf alphanumérique + `-_~.`
 /// (les caractères base64url `_` et `-` ne doivent PAS être encodés).

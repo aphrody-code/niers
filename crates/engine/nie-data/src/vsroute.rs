@@ -54,7 +54,9 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use serde_json::Value;
 
-use crate::cfgbin::{field_bool, field_hash, field_i64, field_str, list_values, owned, walk_named, Node};
+use crate::cfgbin::{
+    Node, field_bool, field_hash, field_i64, field_str, list_values, owned, walk_named,
+};
 use crate::hash::HashId;
 
 // ─── Helpers locaux ──────────────────────────────────────────────────────────
@@ -74,8 +76,14 @@ fn clean(s: &str) -> String {
 #[must_use]
 fn field_pair(v: &Value, key: &str) -> (i64, i64) {
     let arr = v.get(key).and_then(Value::as_array);
-    let off = arr.and_then(|a| a.first()).and_then(Value::as_i64).unwrap_or(0);
-    let cnt = arr.and_then(|a| a.get(1)).and_then(Value::as_i64).unwrap_or(0);
+    let off = arr
+        .and_then(|a| a.first())
+        .and_then(Value::as_i64)
+        .unwrap_or(0);
+    let cnt = arr
+        .and_then(|a| a.get(1))
+        .and_then(Value::as_i64)
+        .unwrap_or(0);
     (off, cnt)
 }
 
@@ -185,7 +193,9 @@ impl PieceEventInfo {
             param_num1: field_i64(v, "paramNum1").unwrap_or(0),
             param_num2: field_i64(v, "paramNum2").unwrap_or(0),
             bustup_event_pre_soccer: clean(field_str(v, "bustupEventPreSoccer").unwrap_or("")),
-            bustup_event_post_win_soccer: clean(field_str(v, "bustupEventPostWinSoccer").unwrap_or("")),
+            bustup_event_post_win_soccer: clean(
+                field_str(v, "bustupEventPostWinSoccer").unwrap_or(""),
+            ),
         })
     }
 }
@@ -604,10 +614,18 @@ impl VsRouteTrigger {
 pub fn parse_chronicle_vs_route_config(root: &Value) -> ChronicleVsRouteConfig {
     ChronicleVsRouteConfig {
         unlock_pieces: extract_list(root, "m_unlockPieceInfoList", UnlockPieceInfo::from_value),
-        move_routes: extract_list(root, "m_pieceMoveRouteInfoList", PieceMoveRouteInfo::from_value),
+        move_routes: extract_list(
+            root,
+            "m_pieceMoveRouteInfoList",
+            PieceMoveRouteInfo::from_value,
+        ),
         events: extract_list(root, "m_pieceEventInfoList", PieceEventInfo::from_value),
         pieces: extract_list(root, "m_pieceInfoList", PieceInfo::from_value),
-        routes: extract_list(root, "m_chronicleVsRouteInfoList", ChronicleVsRouteInfo::from_value),
+        routes: extract_list(
+            root,
+            "m_chronicleVsRouteInfoList",
+            ChronicleVsRouteInfo::from_value,
+        ),
         icons: extract_list(root, "m_pieceIconInfoList", PieceIconInfo::from_value),
         gates: extract_list(root, "m_gateOpenInfoList", GateOpenInfo::from_value),
     }
@@ -619,7 +637,11 @@ pub fn parse_chronicle_vs_route_config(root: &Value) -> ChronicleVsRouteConfig {
 /// (dont 3 à `battleId` nul, conservées).
 #[must_use]
 pub fn parse_opponent_info(root: &Value) -> Vec<VsRouteOpponentInfo> {
-    extract_list(root, "m_vsRouteOpponentInfoList", VsRouteOpponentInfo::from_value)
+    extract_list(
+        root,
+        "m_vsRouteOpponentInfoList",
+        VsRouteOpponentInfo::from_value,
+    )
 }
 
 /// Parse un `chronicle_vs_route_trigger_*.cfg.bin.json` (format `entries`).

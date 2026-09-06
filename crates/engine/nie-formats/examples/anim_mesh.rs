@@ -53,7 +53,11 @@ fn main() {
             bone_target[*b] = Some(t);
         }
     }
-    println!("verts={nverts} os={nb} clip=\"{}\" frames={}", clip.name, clip.frame_count());
+    println!(
+        "verts={nverts} os={nb} clip=\"{}\" frames={}",
+        clip.name,
+        clip.frame_count()
+    );
 
     // Cadre depuis la bind-pose du mesh.
     let (mut lo, mut hi) = ([f32::MAX; 3], [f32::MIN; 3]);
@@ -67,7 +71,10 @@ fn main() {
     let scale = (H as f32 * 0.85) / span;
     let ctr = [(lo[0] + hi[0]) * 0.5, (lo[1] + hi[1]) * 0.5];
     let proj = |p: [f32; 3]| -> (i32, i32) {
-        ((W as f32 * 0.5 + (p[0] - ctr[0]) * scale) as i32, (H as f32 * 0.5 - (p[1] - ctr[1]) * scale) as i32)
+        (
+            (W as f32 * 0.5 + (p[0] - ctr[0]) * scale) as i32,
+            (H as f32 * 0.5 - (p[1] - ctr[1]) * scale) as i32,
+        )
     };
 
     // "frame" -1 = bind pose (référence), 0..N = animé.
@@ -91,8 +98,9 @@ fn main() {
             });
         }
         // skin matrix = world_animé · inverse_bind.
-        let skinm: Vec<[[f32; 4]; 4]> =
-            (0..nb).map(|i| g4sk::mat_mul(&world[i], &poses[i].inverse_bind)).collect();
+        let skinm: Vec<[[f32; 4]; 4]> = (0..nb)
+            .map(|i| g4sk::mat_mul(&world[i], &poses[i].inverse_bind))
+            .collect();
 
         let mut buf = vec![10u8; W * H * 3];
         for v in 0..nverts {
@@ -124,7 +132,11 @@ fn main() {
                 buf[o..o + 3].copy_from_slice(&[150, 220, 255]);
             }
         }
-        let name = if frame < 0 { "bind".to_string() } else { format!("f{frame:03}") };
+        let name = if frame < 0 {
+            "bind".to_string()
+        } else {
+            format!("f{frame:03}")
+        };
         let mut out = Vec::new();
         {
             let mut e = png::Encoder::new(std::io::Cursor::new(&mut out), W as u32, H as u32);

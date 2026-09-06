@@ -27,7 +27,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use serde_json::Value;
 
-use crate::cfgbin::{owned, walk_named, Node};
+use crate::cfgbin::{Node, owned, walk_named};
 use crate::hash::HashId;
 
 /// Index du **niveau** de la 1re technique (LEVEL-first @10, port 1:1 d'inagle chara-param.ts).

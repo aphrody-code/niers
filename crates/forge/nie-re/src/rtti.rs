@@ -51,7 +51,7 @@
 
 use anyhow::{Context, Result};
 use goblin::pe::PE;
-use nie_index::{ingest, Db};
+use nie_index::{Db, ingest};
 use tracing::{debug, warn};
 
 /// Image Base fixe de nie.exe (PE32+, Level-5).
@@ -78,9 +78,10 @@ pub fn parse_and_ingest(db: &mut Db, binary_id: i64, bytes: &[u8]) -> Result<Rtt
     let mut stats = RttiStats::default();
 
     // Trouve .rdata (lecture seule, données initialisées = RTTI vit là).
-    let rdata = pe.sections.iter().find(|s| {
-        s.name().is_ok_and(|n| n.starts_with(".rdata"))
-    });
+    let rdata = pe
+        .sections
+        .iter()
+        .find(|s| s.name().is_ok_and(|n| n.starts_with(".rdata")));
     let Some(rdata_sec) = rdata else {
         warn!("section .rdata non trouvée dans le PE");
         return Ok(stats);
@@ -116,19 +117,25 @@ pub fn parse_and_ingest(db: &mut Db, binary_id: i64, bytes: &[u8]) -> Result<Rtt
 
     // Lit un u32 LE depuis `bytes` à l'offset `off`.
     let read_u32 = |off: usize| -> Option<u32> {
-        bytes.get(off..off + 4).map(|b| u32::from_le_bytes(b.try_into().unwrap()))
+        bytes
+            .get(off..off + 4)
+            .map(|b| u32::from_le_bytes(b.try_into().unwrap()))
     };
 
     // Lit un u64 LE depuis `bytes` à l'offset `off`.
     let read_u64 = |off: usize| -> Option<u64> {
-        bytes.get(off..off + 8).map(|b| u64::from_le_bytes(b.try_into().unwrap()))
+        bytes
+            .get(off..off + 8)
+            .map(|b| u64::from_le_bytes(b.try_into().unwrap()))
     };
 
     // Lit une chaîne C depuis `bytes` à l'offset `off` (jusqu'au premier 0).
     let read_cstr = |off: usize| -> Option<String> {
         let slice = bytes.get(off..)?;
         let end = slice.iter().position(|&b| b == 0)?;
-        std::str::from_utf8(&slice[..end]).ok().map(|s| s.to_owned())
+        std::str::from_utf8(&slice[..end])
+            .ok()
+            .map(|s| s.to_owned())
     };
 
     // Balayage de .rdata par alignement u32 (les COL sont alignés sur 4 octets).
@@ -143,17 +150,29 @@ pub fn parse_and_ingest(db: &mut Db, binary_id: i64, bytes: &[u8]) -> Result<Rtt
         let off_in_rdata = i * 4;
         let file_off = rdata_raw_off + off_in_rdata;
 
-        let Some(sig) = read_u32(file_off) else { continue };
+        let Some(sig) = read_u32(file_off) else {
+            continue;
+        };
         if sig != 1 {
             continue;
         }
 
         // Lecture des 5 champs restants.
-        let Some(_offset_val) = read_u32(file_off + 4) else { continue };
-        let Some(_cd_offset) = read_u32(file_off + 8) else { continue };
-        let Some(rva_type_desc) = read_u32(file_off + 12) else { continue };
-        let Some(rva_chd) = read_u32(file_off + 16) else { continue };
-        let Some(rva_self) = read_u32(file_off + 20) else { continue };
+        let Some(_offset_val) = read_u32(file_off + 4) else {
+            continue;
+        };
+        let Some(_cd_offset) = read_u32(file_off + 8) else {
+            continue;
+        };
+        let Some(rva_type_desc) = read_u32(file_off + 12) else {
+            continue;
+        };
+        let Some(rva_chd) = read_u32(file_off + 16) else {
+            continue;
+        };
+        let Some(rva_self) = read_u32(file_off + 20) else {
+            continue;
+        };
 
         // Validation : pSelf (RVA) doit pointer sur ce COL.
         let col_vaddr = image_base + rdata_vaddr + off_in_rdata as u64;
@@ -166,18 +185,24 @@ pub fn parse_and_ingest(db: &mut Db, binary_id: i64, bytes: &[u8]) -> Result<Rtt
 
         // Résoudre pTypeDescriptor (RVA → offset fichier → lire TypeDescriptor).
         let td_rva = rva_type_desc as u64;
-        let Some(td_file_off) = rva_to_file_offset(td_rva) else { continue };
+        let Some(td_file_off) = rva_to_file_offset(td_rva) else {
+            continue;
+        };
 
         // TypeDescriptor : pVFTable (8 octets) + spare (8 octets) + name[].
         // La vtable de type_info est à un offset connu dans .rdata (on vérifie
         // juste que le champ pointe quelque part dans ImageBase + le PE).
-        let Some(vtable_ptr) = read_u64(td_file_off) else { continue };
+        let Some(vtable_ptr) = read_u64(td_file_off) else {
+            continue;
+        };
         if vtable_ptr < image_base || vtable_ptr >= image_base + bytes.len() as u64 {
             continue;
         }
 
         let name_off = td_file_off + 16;
-        let Some(raw_name) = read_cstr(name_off) else { continue };
+        let Some(raw_name) = read_cstr(name_off) else {
+            continue;
+        };
 
         // Valide le préfixe RTTI : `.?AV` (classe) ou `.?AU` (struct).
         if !raw_name.starts_with(".?AV") && !raw_name.starts_with(".?AU") {
@@ -221,8 +246,16 @@ pub fn parse_and_ingest(db: &mut Db, binary_id: i64, bytes: &[u8]) -> Result<Rtt
         std::collections::HashMap::with_capacity(classes.len());
 
     for cls in &classes {
-        let ns = if cls.namespace.is_empty() { None } else { Some(cls.namespace.as_str()) };
-        let mangled = if cls.mangled.is_empty() { None } else { Some(cls.mangled.as_str()) };
+        let ns = if cls.namespace.is_empty() {
+            None
+        } else {
+            Some(cls.namespace.as_str())
+        };
+        let mangled = if cls.mangled.is_empty() {
+            None
+        } else {
+            Some(cls.mangled.as_str())
+        };
 
         match ingest::rtti_class(&tx, binary_id, &cls.class_name, ns, mangled) {
             Ok(id) => {
@@ -253,14 +286,20 @@ pub fn parse_and_ingest(db: &mut Db, binary_id: i64, bytes: &[u8]) -> Result<Rtt
     // En pratique c'est complexe ; on fait un meilleur effort en associant
     // le nom (mangled) aux RVA connues.
     for cls in &classes {
-        let Some(&class_id) = mangled_to_id.get(&cls.mangled) else { continue };
+        let Some(&class_id) = mangled_to_id.get(&cls.mangled) else {
+            continue;
+        };
 
         for &base_rva in &cls.base_rvas {
             // Résolution du TypeDescriptor de la base.
             let base_td_rva = base_rva as u64;
-            let Some(base_td_file) = rva_to_file_offset(base_td_rva) else { continue };
+            let Some(base_td_file) = rva_to_file_offset(base_td_rva) else {
+                continue;
+            };
             let base_name_off = base_td_file + 16;
-            let Some(base_raw) = read_cstr(base_name_off) else { continue };
+            let Some(base_raw) = read_cstr(base_name_off) else {
+                continue;
+            };
             let (base_class_name, _base_ns) = demangle_msvc_rtti(&base_raw);
 
             // Cherche l'id de la classe de base.
@@ -324,7 +363,12 @@ fn demangle_msvc_rtti(raw: &str) -> (String, String) {
     // Le namespace est la concaténation des parties suivantes, en ordre inverse
     // (les namespaces MSVC vont de l'intérieur vers l'extérieur).
     let namespace = if parts.len() > 1 {
-        parts[1..].iter().rev().cloned().collect::<Vec<_>>().join("::")
+        parts[1..]
+            .iter()
+            .rev()
+            .cloned()
+            .collect::<Vec<_>>()
+            .join("::")
     } else {
         String::new()
     };
@@ -335,7 +379,12 @@ fn demangle_msvc_rtti(raw: &str) -> (String, String) {
 /// Cherche dans `.rdata` un pointeur 64 bits vers `col_abs` et renvoie
 /// l'adresse virtuelle de la vtable (= le pointeur qui précède ce slot).
 /// Retourne `None` si non trouvé.
-fn find_vtable_ptr(rdata_bytes: &[u8], rdata_vaddr: u64, image_base: u64, col_abs: u64) -> Option<u64> {
+fn find_vtable_ptr(
+    rdata_bytes: &[u8],
+    rdata_vaddr: u64,
+    image_base: u64,
+    col_abs: u64,
+) -> Option<u64> {
     let needle = col_abs.to_le_bytes();
     // Balayage par alignement u64.
     let limit = rdata_bytes.len().saturating_sub(8);
@@ -396,11 +445,17 @@ fn parse_chd(
     let mut base_td_rvas = Vec::with_capacity(num_bases as usize);
     for k in 0..num_bases as usize {
         let bcd_rva_off = bca_off + k * 4;
-        let Some(bcd_rva) = read_u32(bcd_rva_off) else { break };
+        let Some(bcd_rva) = read_u32(bcd_rva_off) else {
+            break;
+        };
         // Résout le BaseClassDescriptor.
-        let Some(bcd_off) = rva_to_file_offset(bcd_rva as u64) else { break };
+        let Some(bcd_off) = rva_to_file_offset(bcd_rva as u64) else {
+            break;
+        };
         // BCD + 0 = RVA TypeDescriptor.
-        let Some(td_rva) = read_u32(bcd_off) else { break };
+        let Some(td_rva) = read_u32(bcd_off) else {
+            break;
+        };
         // La première entrée est la classe elle-même ; on saute les entrées nulles.
         if td_rva != 0 {
             base_td_rvas.push(td_rva);

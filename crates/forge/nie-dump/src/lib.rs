@@ -189,7 +189,14 @@ fn u32le(b: &[u8], o: usize) -> u32 {
 }
 fn u64le(b: &[u8], o: usize) -> u64 {
     u64::from_le_bytes([
-        b[o], b[o + 1], b[o + 2], b[o + 3], b[o + 4], b[o + 5], b[o + 6], b[o + 7],
+        b[o],
+        b[o + 1],
+        b[o + 2],
+        b[o + 3],
+        b[o + 4],
+        b[o + 5],
+        b[o + 6],
+        b[o + 7],
     ])
 }
 
@@ -292,11 +299,7 @@ impl Minidump {
                 .map(|c| u16::from_le_bytes([c[0], c[1]]))
                 .collect();
             let full = String::from_utf16_lossy(&units);
-            let name = full
-                .rsplit(['\\', '/'])
-                .next()
-                .unwrap_or(&full)
-                .to_string();
+            let name = full.rsplit(['\\', '/']).next().unwrap_or(&full).to_string();
             mods.push(Module {
                 base,
                 size: isize,
@@ -649,7 +652,10 @@ mod tests {
 
     #[test]
     fn demangle_msvc_rtti() {
-        assert_eq!(demangle(".?AVCUniformBlock@lives@@"), "lives::CUniformBlock");
+        assert_eq!(
+            demangle(".?AVCUniformBlock@lives@@"),
+            "lives::CUniformBlock"
+        );
         assert_eq!(demangle(".?AUFoo@@"), "Foo");
         assert_eq!(demangle(".?AVCObjLua@game@@"), "game::CObjLua");
     }

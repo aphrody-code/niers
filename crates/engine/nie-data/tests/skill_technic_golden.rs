@@ -13,9 +13,7 @@
 //! l'index 3 a un `winSubMotionNameCrc` non nul (`0xF03A0B78`).
 
 use nie_data::hash::HashId;
-use nie_data::skill_technic::{
-    build_by_id, parse_skill_technic_config, SkillTechnicInfo,
-};
+use nie_data::skill_technic::{SkillTechnicInfo, build_by_id, parse_skill_technic_config};
 use serde_json::json;
 
 /// Les 6 lignes exactes de `m_SkillTechnicInfoList` (dump réel 1.01.28.00).
@@ -54,7 +52,11 @@ fn root_fixture() -> serde_json::Value {
 #[test]
 fn skill_technic_six_entrees() {
     let parsed = parse_skill_technic_config(&root_fixture());
-    assert_eq!(parsed.len(), 6, "exactement 6 entrées dans m_SkillTechnicInfoList");
+    assert_eq!(
+        parsed.len(),
+        6,
+        "exactement 6 entrées dans m_SkillTechnicInfoList"
+    );
 }
 
 #[test]

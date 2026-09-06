@@ -32,7 +32,7 @@ use serde::Serialize;
 use serde_json::Value;
 
 use nie_core::{
-    match_sim::{simulate_match, TeamSetup},
+    match_sim::{TeamSetup, simulate_match},
     stats::StatBlock,
 };
 use nie_formats::{FileFormat, cfgbin, cpk, crilayla, detect};
@@ -116,9 +116,13 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
     match cli.commande {
         Commande::Detect { fichier, indent } => cmd_detect(fichier, indent),
-        Commande::SimulerMatch { home, away, seed, home_stats, away_stats } => {
-            cmd_match(home, away, seed, home_stats, away_stats)
-        }
+        Commande::SimulerMatch {
+            home,
+            away,
+            seed,
+            home_stats,
+            away_stats,
+        } => cmd_match(home, away, seed, home_stats, away_stats),
     }
 }
 
@@ -141,8 +145,8 @@ struct Resume {
 
 fn cmd_detect(fichier: PathBuf, indent: usize) -> Result<()> {
     let chemin_str = fichier.display().to_string();
-    let donnees = std::fs::read(&fichier)
-        .with_context(|| format!("impossible de lire '{chemin_str}'"))?;
+    let donnees =
+        std::fs::read(&fichier).with_context(|| format!("impossible de lire '{chemin_str}'"))?;
 
     let taille_octets = donnees.len() as u64;
     let format = detect_etendu(&donnees);
@@ -191,14 +195,13 @@ fn construire_detail(format: FileFormat, donnees: &[u8]) -> Result<Value> {
 }
 
 fn detail_crilayla(donnees: &[u8]) -> Result<Value> {
-    let decompresse = crilayla::decompress(donnees)
-        .map_err(|e| anyhow::anyhow!("CRILAYLA : {e}"))?;
+    let decompresse =
+        crilayla::decompress(donnees).map_err(|e| anyhow::anyhow!("CRILAYLA : {e}"))?;
     Ok(serde_json::json!({ "taille_decompresse": decompresse.len() }))
 }
 
 fn detail_utf(donnees: &[u8]) -> Result<Value> {
-    let table = cpk::parse_utf(donnees)
-        .map_err(|e| anyhow::anyhow!("@UTF : {e}"))?;
+    let table = cpk::parse_utf(donnees).map_err(|e| anyhow::anyhow!("@UTF : {e}"))?;
     Ok(serde_json::json!({
         "nom_table": table.name,
         "colonnes":  table.column_count(),
@@ -207,8 +210,7 @@ fn detail_utf(donnees: &[u8]) -> Result<Value> {
 }
 
 fn detail_cpk(donnees: &[u8]) -> Result<Value> {
-    let header = cpk::parse_cpk(donnees)
-        .map_err(|e| anyhow::anyhow!("CPK : {e}"))?;
+    let header = cpk::parse_cpk(donnees).map_err(|e| anyhow::anyhow!("CPK : {e}"))?;
     Ok(serde_json::json!({
         "nom_table": header.utf.name,
         "colonnes":  header.utf.column_count(),
@@ -217,8 +219,7 @@ fn detail_cpk(donnees: &[u8]) -> Result<Value> {
 }
 
 fn detail_cfgbin(donnees: &[u8]) -> Result<Value> {
-    let rdbn = cfgbin::parse(donnees)
-        .map_err(|e| anyhow::anyhow!("RDBN/cfg.bin : {e}"))?;
+    let rdbn = cfgbin::parse(donnees).map_err(|e| anyhow::anyhow!("RDBN/cfg.bin : {e}"))?;
     Ok(serde_json::json!({
         "version": rdbn.header.version,
         "types":   rdbn.types.len(),
@@ -249,7 +250,9 @@ fn parse_stats(s: &str) -> Result<StatBlock> {
     }
     let mut arr = [0u16; 7];
     for (i, part) in parts.iter().enumerate() {
-        arr[i] = part.trim().parse::<u16>()
+        arr[i] = part
+            .trim()
+            .parse::<u16>()
             .with_context(|| format!("stat#{i} invalide : '{part}'"))?;
     }
     Ok(StatBlock::from_array(arr))

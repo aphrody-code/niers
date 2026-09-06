@@ -33,17 +33,20 @@ fn to_iecode(siblings: &[CfgEntry]) -> Vec<serde_json::Value> {
 }
 
 fn main() {
-    let dir = nie_formats::vfs::resolve_game_dir().to_string_lossy().into_owned();
+    let dir = nie_formats::vfs::resolve_game_dir()
+        .to_string_lossy()
+        .into_owned();
     let mut vfs = Vfs::new();
-    vfs.init(Path::new(&dir).join("data").as_path()).expect("vfs init");
+    vfs.init(Path::new(&dir).join("data").as_path())
+        .expect("vfs init");
     let path = vfs
         .iter()
         .map(|(p, _)| p.to_string())
         .filter(|p| {
             p.contains("/fr/")
-                && p.rsplit('/')
-                    .next()
-                    .is_some_and(|b| b.starts_with("chara_description_text") && b.ends_with(".cfg.bin"))
+                && p.rsplit('/').next().is_some_and(|b| {
+                    b.starts_with("chara_description_text") && b.ends_with(".cfg.bin")
+                })
         })
         .min()
         .expect("chara_description_text fr introuvable");
@@ -57,7 +60,10 @@ fn main() {
     assert!(!descs.is_empty());
 
     // Aucune description ne doit contenir de balise résiduelle `<...>` ni de furigana `[../..]`.
-    let with_tag = descs.iter().filter(|d| d.description.contains('<') && d.description.contains('>')).count();
+    let with_tag = descs
+        .iter()
+        .filter(|d| d.description.contains('<') && d.description.contains('>'))
+        .count();
     eprintln!("descriptions avec balise `<>` résiduelle = {with_tag} (attendu 0)");
     assert_eq!(with_tag, 0, "sanitize_text doit retirer toutes les balises");
 
@@ -67,22 +73,35 @@ fn main() {
     }
 
     // Cross-link Endou : descriptionHash 0xFA43BBBE (de chara_base c01000010).
-    let endou = nie_data::chara_description::find_by_hash(&descs, nie_data::hash::HashId(0xFA43_BBBE))
-        .expect("description d'Endou (0xFA43BBBE) présente en fr");
+    let endou =
+        nie_data::chara_description::find_by_hash(&descs, nie_data::hash::HashId(0xFA43_BBBE))
+            .expect("description d'Endou (0xFA43BBBE) présente en fr");
     let snippet: String = endou.chars().take(80).collect();
     eprintln!("Endou (0xFA43BBBE) : {snippet:?}…");
     assert!(
         endou.starts_with("La passion du football l'emportera toujours."),
         "texte Endou inattendu : {snippet:?}"
     );
-    assert!(endou.contains('\n'), "la description d'Endou a 2 lignes (LF préservé)");
+    assert!(
+        endou.contains('\n'),
+        "la description d'Endou a 2 lignes (LF préservé)"
+    );
 
     // Cross-check : le résolveur GÉNÉRIQUE `text::parse_text_file` doit résoudre le même texte
     // (chara_description_text est un fichier TEXT_INFO → index 2).
     let generic = nie_data::text::parse_text_file(&root);
     let g_endou = nie_data::text::find_text(&generic, nie_data::hash::HashId(0xFA43_BBBE))
         .expect("résolveur générique trouve Endou");
-    assert_eq!(g_endou, endou, "parse_text_file == parse_chara_descriptions sur Endou");
-    eprintln!("✓ cross-check : text::parse_text_file résout {} entrées (générique == spécifique)", generic.len());
-    eprintln!("✓ END-TO-END OK : nie_data::chara_description décode {} descriptions nettoyées", descs.len());
+    assert_eq!(
+        g_endou, endou,
+        "parse_text_file == parse_chara_descriptions sur Endou"
+    );
+    eprintln!(
+        "✓ cross-check : text::parse_text_file résout {} entrées (générique == spécifique)",
+        generic.len()
+    );
+    eprintln!(
+        "✓ END-TO-END OK : nie_data::chara_description décode {} descriptions nettoyées",
+        descs.len()
+    );
 }

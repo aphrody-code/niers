@@ -14,8 +14,8 @@ use std::collections::BTreeMap;
 use std::path::Path;
 
 use nie_data::passives::{
-    element_name, load_noun_texts, load_team_passive_texts, parse_lots,
-    parse_player_passives, parse_team_passives, resolve_text_placeholder,
+    element_name, load_noun_texts, load_team_passive_texts, parse_lots, parse_player_passives,
+    parse_team_passives, resolve_text_placeholder,
 };
 
 /// Racine `data/` du jeu, dérivée de la racine du corpus de dumps (`<…>/data/common/gamedata`
@@ -28,16 +28,21 @@ fn data_root() -> Option<std::path::PathBuf> {
 fn load_json(path: &str) -> serde_json::Value {
     let content = std::fs::read_to_string(path)
         .unwrap_or_else(|e| panic!("Impossible de lire {}: {e}", path));
-    serde_json::from_str(&content)
-        .unwrap_or_else(|e| panic!("JSON invalide dans {}: {e}", path))
+    serde_json::from_str(&content).unwrap_or_else(|e| panic!("JSON invalide dans {}: {e}", path))
 }
 
 fn skill_text_path(racine: &std::path::Path, lang: &str) -> String {
-    format!("{}/common/text/{lang}/skill_text.cfg.bin.json", racine.display())
+    format!(
+        "{}/common/text/{lang}/skill_text.cfg.bin.json",
+        racine.display()
+    )
 }
 
 fn team_passive_text_path(racine: &std::path::Path, lang: &str) -> String {
-    format!("{}/common/text/{lang}/soccer_team_passive_text.cfg.bin.json", racine.display())
+    format!(
+        "{}/common/text/{lang}/soccer_team_passive_text.cfg.bin.json",
+        racine.display()
+    )
 }
 
 // ============================================================================
@@ -47,7 +52,10 @@ fn team_passive_text_path(racine: &std::path::Path, lang: &str) -> String {
 #[test]
 fn passive_skill_config_charge() {
     let Some(racine) = data_root() else { return };
-    let path = format!("{}/common/gamedata/skill/passive_skill_config_5.00.07.00.cfg.bin.json", racine.display());
+    let path = format!(
+        "{}/common/gamedata/skill/passive_skill_config_5.00.07.00.cfg.bin.json",
+        racine.display()
+    );
     if !Path::new(&path).exists() {
         return; // Skip si pas sur le VPS
     }
@@ -135,9 +143,15 @@ fn passive_skill_config_charge() {
     eprintln!("Passives par élément (non-neutre): {elemental}");
 
     // Vérifier les string_ids de style 'mps' (passifs manager/multi)
-    let mps_count = passives.iter().filter(|p| p.string_id.starts_with("mps")).count();
+    let mps_count = passives
+        .iter()
+        .filter(|p| p.string_id.starts_with("mps"))
+        .count();
     eprintln!("Passives mps*: {mps_count}");
-    let ss_count = passives.iter().filter(|p| p.string_id.starts_with("ss_")).count();
+    let ss_count = passives
+        .iter()
+        .filter(|p| p.string_id.starts_with("ss_"))
+        .count();
     eprintln!("Passives ss_*: {ss_count}");
 
     eprintln!(
@@ -153,7 +167,10 @@ fn passive_skill_config_charge() {
 #[test]
 fn passive_skill_textes_resolus_echantillon() {
     let Some(racine) = data_root() else { return };
-    let path = format!("{}/common/gamedata/skill/passive_skill_config_5.00.07.00.cfg.bin.json", racine.display());
+    let path = format!(
+        "{}/common/gamedata/skill/passive_skill_config_5.00.07.00.cfg.bin.json",
+        racine.display()
+    );
     if !Path::new(&path).exists() {
         return;
     }
@@ -226,7 +243,10 @@ fn passive_skill_textes_resolus_echantillon() {
 #[test]
 fn passive_vs_inagle_gain() {
     let Some(racine) = data_root() else { return };
-    let path = format!("{}/common/gamedata/skill/passive_skill_config_5.00.07.00.cfg.bin.json", racine.display());
+    let path = format!(
+        "{}/common/gamedata/skill/passive_skill_config_5.00.07.00.cfg.bin.json",
+        racine.display()
+    );
     if !Path::new(&path).exists() {
         return;
     }
@@ -247,8 +267,14 @@ fn passive_vs_inagle_gain() {
 
     // Compter les champs supplémentaires qu'inagle ne fournit pas
     let has_string_id = passives.iter().filter(|p| !p.string_id.is_empty()).count();
-    let has_buff_icon = passives.iter().filter(|p| p.buff_icon_type.is_some()).count();
-    let has_params = passives.iter().filter(|p| !p.effect_params.is_empty()).count();
+    let has_buff_icon = passives
+        .iter()
+        .filter(|p| p.buff_icon_type.is_some())
+        .count();
+    let has_params = passives
+        .iter()
+        .filter(|p| !p.effect_params.is_empty())
+        .count();
 
     eprintln!(
         "GAIN: total={total} (vs inagle {inagle_count})\n\
@@ -271,8 +297,10 @@ fn passive_vs_inagle_gain() {
 #[test]
 fn team_passives_golden() {
     let Some(racine) = data_root() else { return };
-    let cfg_path =
-        format!("{}/common/gamedata/soccer/soccer_team_passive_config_0.00.00.cfg.bin.json", racine.display());
+    let cfg_path = format!(
+        "{}/common/gamedata/soccer/soccer_team_passive_config_0.00.00.cfg.bin.json",
+        racine.display()
+    );
     if !Path::new(&cfg_path).exists() {
         return;
     }
@@ -284,7 +312,12 @@ fn team_passives_golden() {
     let team = parse_team_passives(&cfg, &text_ja);
 
     // 21 entrées vérifiées par inspection du cfg
-    assert_eq!(team.len(), 21, "attendu 21 team passives, obtenu {}", team.len());
+    assert_eq!(
+        team.len(),
+        21,
+        "attendu 21 team passives, obtenu {}",
+        team.len()
+    );
 
     // Golden: premier passif = "キャプテンのブロック" (Captain's Block)
     let first = &team[0];
@@ -332,7 +365,8 @@ fn team_passives_golden() {
 fn lots_golden() {
     let Some(racine) = data_root() else { return };
     let path = format!(
-        "{}/common/gamedata/character/team_passive_lot_table_config_0.00.00.cfg.bin.json", racine.display()
+        "{}/common/gamedata/character/team_passive_lot_table_config_0.00.00.cfg.bin.json",
+        racine.display()
     );
     if !Path::new(&path).exists() {
         return;
@@ -364,7 +398,10 @@ fn lots_golden() {
 fn cross_check_vs_inagle_passives() {
     // Vérifie que nos 128 effectIds uniques correspondent aux 128 de inagle_passives
     let Some(racine) = data_root() else { return };
-    let path = format!("{}/common/gamedata/skill/passive_skill_config_5.00.07.00.cfg.bin.json", racine.display());
+    let path = format!(
+        "{}/common/gamedata/skill/passive_skill_config_5.00.07.00.cfg.bin.json",
+        racine.display()
+    );
     if !Path::new(&path).exists() {
         return;
     }

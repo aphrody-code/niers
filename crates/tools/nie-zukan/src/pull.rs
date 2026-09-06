@@ -108,8 +108,8 @@ pub fn pull_chara_list(
     let cache_path = client.cache_path(lang.code(), "chara_list", "page_1");
     let url_p1 = format!("{base}?page=1");
     let html = client.get_cached(&url_p1, &cache_path)?;
-    let (entries, total_pages) = parser::parse_chara_list(&html)
-        .context("parse chara_list page 1")?;
+    let (entries, total_pages) =
+        parser::parse_chara_list(&html).context("parse chara_list page 1")?;
 
     info!(lang = %lang, total_pages, "pages chara_list détectées");
     all_entries.extend(entries);
@@ -119,16 +119,14 @@ pub fn pull_chara_list(
         let cache_path = client.cache_path(lang.code(), "chara_list", &format!("page_{page}"));
         let url = format!("{base}?page={page}");
         match client.get_cached(&url, &cache_path) {
-            Ok(html) => {
-                match parser::parse_chara_list(&html) {
-                    Ok((entries, _)) => {
-                        all_entries.extend(entries);
-                    }
-                    Err(e) => {
-                        warn!(lang = %lang, page, error = %e, "parse chara_list échoué");
-                    }
+            Ok(html) => match parser::parse_chara_list(&html) {
+                Ok((entries, _)) => {
+                    all_entries.extend(entries);
                 }
-            }
+                Err(e) => {
+                    warn!(lang = %lang, page, error = %e, "parse chara_list échoué");
+                }
+            },
             Err(e) => {
                 warn!(lang = %lang, page, error = %e, "fetch chara_list échoué");
             }
@@ -198,23 +196,21 @@ pub fn pull_chara_params(
         let url = format!("{base}?q={q}");
 
         match client.get_cached(&url, &cache_path) {
-            Ok(html) => {
-                match parser::parse_chara_param(&html, &entry.game_id, lang) {
-                    Ok(charas) => {
-                        for chara in &charas {
-                            let line = serde_json::to_string(chara)?;
-                            writeln!(out, "{line}")?;
-                            count += 1;
-                        }
-                        if charas.is_empty() {
-                            warn!(id = %entry.game_id, lang = %lang, "aucun chara parsé");
-                        }
+            Ok(html) => match parser::parse_chara_param(&html, &entry.game_id, lang) {
+                Ok(charas) => {
+                    for chara in &charas {
+                        let line = serde_json::to_string(chara)?;
+                        writeln!(out, "{line}")?;
+                        count += 1;
                     }
-                    Err(e) => {
-                        warn!(id = %entry.game_id, lang = %lang, error = %e, "parse chara_param échoué");
+                    if charas.is_empty() {
+                        warn!(id = %entry.game_id, lang = %lang, "aucun chara parsé");
                     }
                 }
-            }
+                Err(e) => {
+                    warn!(id = %entry.game_id, lang = %lang, error = %e, "parse chara_param échoué");
+                }
+            },
             Err(e) => {
                 warn!(id = %entry.game_id, lang = %lang, error = %e, "fetch chara_param échoué");
             }
@@ -232,25 +228,14 @@ pub fn pull_chara_params(
 /// Catégories de skills (pour référence documentaire).
 /// La liste complète est paginée sans filtre catégorie — on pull toutes les pages en une fois.
 #[allow(dead_code)]
-const SKILL_CATEGORIES: &[(&str, u32)] = &[
-    ("shoot", 1),
-    ("offense", 2),
-    ("defense", 3),
-    ("keeper", 4),
-];
+const SKILL_CATEGORIES: &[(&str, u32)] =
+    &[("shoot", 1), ("offense", 2), ("defense", 3), ("keeper", 4)];
 
 /// Pull toutes les pages de skills pour une langue.
-pub fn pull_skills(
-    client: &ZukanClient,
-    lang: Lang,
-    config: &PullConfig,
-) -> Result<usize> {
+pub fn pull_skills(client: &ZukanClient, lang: Lang, config: &PullConfig) -> Result<usize> {
     let base = format!("https://zukan.inazuma.jp{}/skill/", lang.path_prefix());
 
-    let out_path = config
-        .output_root
-        .join(lang.code())
-        .join("skills.ndjson");
+    let out_path = config.output_root.join(lang.code()).join("skills.ndjson");
 
     // Si le fichier existe et n'est pas vide, les skills sont déjà pullés — skip
     if out_path.exists() && std::fs::metadata(&out_path)?.len() > 0 {
@@ -317,20 +302,10 @@ const ITEM_CATEGORIES: &[(&str, &str, u32)] = &[
 ];
 
 /// Pull toutes les pages d'items pour une langue.
-pub fn pull_items(
-    client: &ZukanClient,
-    lang: Lang,
-    config: &PullConfig,
-) -> Result<usize> {
-    let base = format!(
-        "https://zukan.inazuma.jp{}/item/equip/",
-        lang.path_prefix()
-    );
+pub fn pull_items(client: &ZukanClient, lang: Lang, config: &PullConfig) -> Result<usize> {
+    let base = format!("https://zukan.inazuma.jp{}/item/equip/", lang.path_prefix());
 
-    let out_path = config
-        .output_root
-        .join(lang.code())
-        .join("items.ndjson");
+    let out_path = config.output_root.join(lang.code()).join("items.ndjson");
 
     // Si le fichier existe et n'est pas vide, les items sont déjà pullés — skip
     if out_path.exists() && std::fs::metadata(&out_path)?.len() > 0 {
@@ -354,8 +329,7 @@ pub fn pull_items(
         let q = forge::q_for_item_category(cat_id)?;
 
         // Page 1 pour connaître le total
-        let cache_path =
-            client.cache_path(lang.code(), "item", &format!("{cat_key}_page_1"));
+        let cache_path = client.cache_path(lang.code(), "item", &format!("{cat_key}_page_1"));
         let url_p1 = format!("{base}?page=1&q={q}");
         let html_p1 = match client.get_cached(&url_p1, &cache_path) {
             Ok(h) => h,
@@ -381,26 +355,21 @@ pub fn pull_items(
 
         // Pages restantes
         for page in 2..=total_pages {
-            let cache_path = client.cache_path(
-                lang.code(),
-                "item",
-                &format!("{cat_key}_page_{page}"),
-            );
+            let cache_path =
+                client.cache_path(lang.code(), "item", &format!("{cat_key}_page_{page}"));
             let url = format!("{base}?page={page}&q={q}");
             match client.get_cached(&url, &cache_path) {
-                Ok(html) => {
-                    match crate::parser::parse_item_list(&html, lang, cat_name, page) {
-                        Ok(items) => {
-                            for item in &items {
-                                writeln!(out, "{}", serde_json::to_string(item)?)?;
-                                count += 1;
-                            }
-                        }
-                        Err(e) => {
-                            warn!(lang = %lang, cat = cat_key, page, error = %e, "parse item échoué");
+                Ok(html) => match crate::parser::parse_item_list(&html, lang, cat_name, page) {
+                    Ok(items) => {
+                        for item in &items {
+                            writeln!(out, "{}", serde_json::to_string(item)?)?;
+                            count += 1;
                         }
                     }
-                }
+                    Err(e) => {
+                        warn!(lang = %lang, cat = cat_key, page, error = %e, "parse item échoué");
+                    }
+                },
                 Err(e) => {
                     warn!(lang = %lang, cat = cat_key, page, error = %e, "fetch item échoué");
                 }
@@ -436,9 +405,10 @@ fn already_fetched_ids(path: &Path, field: &str) -> Result<std::collections::Has
     let content = std::fs::read_to_string(path)?;
     for line in content.lines() {
         if let Ok(v) = serde_json::from_str::<serde_json::Value>(line)
-            && let Some(id) = v.get(field).and_then(|v| v.as_str()) {
-                set.insert(id.to_owned());
-            }
+            && let Some(id) = v.get(field).and_then(|v| v.as_str())
+        {
+            set.insert(id.to_owned());
+        }
     }
     Ok(set)
 }

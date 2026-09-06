@@ -42,7 +42,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use serde_json::Value;
 
-use crate::cfgbin::{field_bool, field_hash, field_i64, field_str, list_values, owned, Node};
+use crate::cfgbin::{Node, field_bool, field_hash, field_i64, field_str, list_values, owned};
 use crate::hash::HashId;
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
@@ -290,18 +290,18 @@ pub struct AdventCalendarConfig {
 #[must_use]
 pub fn parse_advent_calendar_config(root: &Value) -> AdventCalendarConfig {
     AdventCalendarConfig {
-        calendar: extract_list(root, "m_AdventCalendarInfoList", AdventCalendarInfo::from_value),
+        calendar: extract_list(
+            root,
+            "m_AdventCalendarInfoList",
+            AdventCalendarInfo::from_value,
+        ),
         news: extract_list(root, "m_NewsInfoList", NewsInfo::from_value),
         login_bonus_reward_items: extract_list(
             root,
             "m_LoginBonusRewardItem",
             LoginBonusRewardItem::from_value,
         ),
-        login_bonus_rewards: extract_list(
-            root,
-            "m_LoginBonusReward",
-            LoginBonusReward::from_value,
-        ),
+        login_bonus_rewards: extract_list(root, "m_LoginBonusReward", LoginBonusReward::from_value),
         login_bonus_infos: extract_list(root, "m_LoginBonusInfo", LoginBonusInfo::from_value),
     }
 }

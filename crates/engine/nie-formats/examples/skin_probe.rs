@@ -12,7 +12,11 @@ fn main() {
     let md_bytes = std::fs::read(&p_md).expect("lecture g4md");
     let mg_bytes = std::fs::read(&p_mg).expect("lecture g4mg");
     let md = nie_formats::g4md::parse(&md_bytes).expect("parse g4md");
-    println!("  sous-mailles {} | os déclarés {}", md.submeshes.len(), md.header.bone_count);
+    println!(
+        "  sous-mailles {} | os déclarés {}",
+        md.submeshes.len(),
+        md.header.bone_count
+    );
 
     for (i, _) in md.submeshes.iter().enumerate() {
         match nie_formats::g4mg::extract_skin(&mg_bytes, &md, i) {

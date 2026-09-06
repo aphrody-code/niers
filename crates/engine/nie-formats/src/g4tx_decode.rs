@@ -264,7 +264,15 @@ pub fn decode_named_to_png(g4tx_data: &[u8], nom: &str) -> Option<Vec<u8>> {
 /// rectangle qui déborde est **borné** à la texture plutôt que rejeté — sinon une icône parfaitement
 /// utilisable disparaîtrait pour un pixel de marge.
 #[must_use]
-fn crop_rgba(rgba: &[u8], w: u32, h: u32, x: i16, y: i16, cw: i16, ch: i16) -> Option<(u32, u32, Vec<u8>)> {
+fn crop_rgba(
+    rgba: &[u8],
+    w: u32,
+    h: u32,
+    x: i16,
+    y: i16,
+    cw: i16,
+    ch: i16,
+) -> Option<(u32, u32, Vec<u8>)> {
     if x < 0 || y < 0 || cw <= 0 || ch <= 0 {
         return None;
     }
@@ -348,7 +356,12 @@ mod tests {
     #[test]
     fn dds_uncompressed_bgra8_resolu_a_128() {
         // DDPF_RGB, 32 bpp, B en octet bas (masque B=0xff) → BGRA8 (défaut Level-5).
-        let h = dds_header(0x40, &[0; 4], &[(88, 32), (92, 0x00ff_0000), (100, 0x0000_00ff)], 256);
+        let h = dds_header(
+            0x40,
+            &[0; 4],
+            &[(88, 32), (92, 0x00ff_0000), (100, 0x0000_00ff)],
+            256,
+        );
         let (fmt, off) = dds_format_and_pixel_offset(&h).expect("BGRA8 doit être reconnu");
         assert!(matches!(fmt, ImageFormat::Bgra8Unorm));
         assert_eq!(off, 128);
@@ -356,7 +369,12 @@ mod tests {
 
     #[test]
     fn dds_uncompressed_rgba8_resolu_a_128() {
-        let h = dds_header(0x40, &[0; 4], &[(88, 32), (92, 0x0000_00ff), (100, 0x00ff_0000)], 256);
+        let h = dds_header(
+            0x40,
+            &[0; 4],
+            &[(88, 32), (92, 0x0000_00ff), (100, 0x00ff_0000)],
+            256,
+        );
         let (fmt, _) = dds_format_and_pixel_offset(&h).expect("RGBA8 doit être reconnu");
         assert!(matches!(fmt, ImageFormat::Rgba8Unorm));
     }
@@ -369,7 +387,10 @@ mod tests {
 
     #[test]
     fn basename_retire_dossier_et_extension() {
-        assert_eq!(basename_of("data/dx11/menu/200_icon/02_icon_item/icon_item05.g4tx"), "icon_item05");
+        assert_eq!(
+            basename_of("data/dx11/menu/200_icon/02_icon_item/icon_item05.g4tx"),
+            "icon_item05"
+        );
         assert_eq!(basename_of("icon_item05.g4tx"), "icon_item05");
         assert_eq!(basename_of("icon_item05"), "icon_item05");
         assert_eq!(basename_of(""), "");
@@ -407,7 +428,10 @@ mod tests {
         let racine = crate::vfs::resolve_game_dir();
         let mut vfs = crate::vfs::Vfs::new();
         if vfs.init(racine.join("data")).is_err() {
-            eprintln!("SAUTÉ : VFS réel indisponible sous {} (corpus du jeu absent)", racine.display());
+            eprintln!(
+                "SAUTÉ : VFS réel indisponible sous {} (corpus du jeu absent)",
+                racine.display()
+            );
             return;
         }
         let Ok(data) = vfs.read(CHEMIN) else {
@@ -422,16 +446,28 @@ mod tests {
             .filter(|t| t.is_dds)
             .map(|t| t.name.clone())
             .collect();
-        assert!(noms.len() >= 2, "conteneur multi-textures attendu, vu {} texture(s)", noms.len());
+        assert!(
+            noms.len() >= 2,
+            "conteneur multi-textures attendu, vu {} texture(s)",
+            noms.len()
+        );
 
         // Deux noms DIFFÉRENTS doivent rendre deux images DIFFÉRENTES.
         let a = decode_named_to_png(&data, &noms[0]).expect("1re texture nommée décodée");
-        let b = decode_named_to_png(&data, &noms[noms.len() - 1]).expect("dernière texture nommée décodée");
-        assert_ne!(a, b, "deux noms distincts rendent le même PNG — sélection par nom inopérante");
+        let b = decode_named_to_png(&data, &noms[noms.len() - 1])
+            .expect("dernière texture nommée décodée");
+        assert_ne!(
+            a, b,
+            "deux noms distincts rendent le même PNG — sélection par nom inopérante"
+        );
 
         // La casse ne doit pas compter.
-        let a_maj = decode_named_to_png(&data, &noms[0].to_ascii_uppercase()).expect("nom en majuscules");
-        assert_eq!(a, a_maj, "la comparaison de nom doit être insensible à la casse");
+        let a_maj =
+            decode_named_to_png(&data, &noms[0].to_ascii_uppercase()).expect("nom en majuscules");
+        assert_eq!(
+            a, a_maj,
+            "la comparaison de nom doit être insensible à la casse"
+        );
 
         // Un nom absent ne doit PAS retomber sur une texture arbitraire.
         assert!(
@@ -441,11 +477,15 @@ mod tests {
 
         // Le décodeur « meilleure texture » rend UNE des textures nommées : il ne peut donc pas
         // servir à adresser les 79 autres.
-        let best = decode_best_to_png(&data, basename_of(CHEMIN)).expect("meilleure texture décodée");
+        let best =
+            decode_best_to_png(&data, basename_of(CHEMIN)).expect("meilleure texture décodée");
         let egal_a_une_nommee = noms
             .iter()
             .filter_map(|n| decode_named_to_png(&data, n))
             .any(|png| png == best);
-        assert!(egal_a_une_nommee, "la meilleure texture doit être l'une des textures nommées");
+        assert!(
+            egal_a_une_nommee,
+            "la meilleure texture doit être l'une des textures nommées"
+        );
     }
 }

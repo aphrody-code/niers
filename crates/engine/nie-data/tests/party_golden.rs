@@ -50,8 +50,8 @@ extern crate std;
 
 use nie_data::hash::HashId;
 use nie_data::party::{
-    parse_ctrl_chara_config, parse_guest_limit_config, parse_party_departure,
-    parse_specify_party, SpecifyPartyCharaData, SpecifyPartyData,
+    SpecifyPartyCharaData, SpecifyPartyData, parse_ctrl_chara_config, parse_guest_limit_config,
+    parse_party_departure, parse_specify_party,
 };
 use serde_json::json;
 
@@ -302,8 +302,16 @@ fn party_departure_entree_1() {
 fn specify_party_comptes() {
     let cfg = parse_specify_party(&fixture_specify_party());
     // fixture : 2 SpecifyPartyCharaData + 2 SpecifyPartyData
-    assert_eq!(cfg.chara_list.len(), 2, "chara_list: 2 entrées dans la fixture");
-    assert_eq!(cfg.party_list.len(), 2, "party_list: 2 entrées dans la fixture");
+    assert_eq!(
+        cfg.chara_list.len(),
+        2,
+        "chara_list: 2 entrées dans la fixture"
+    );
+    assert_eq!(
+        cfg.party_list.len(),
+        2,
+        "party_list: 2 entrées dans la fixture"
+    );
 }
 
 #[test]
@@ -355,7 +363,10 @@ fn specify_party_chara_ref_of() {
     let party = &cfg.party_list[0];
     let membres = cfg.chara_ref_of(party);
     assert_eq!(membres.len(), 1, "chara_ref_of(party[0]) → 1 membre");
-    assert_eq!(membres[0].param_id, PARAM_ID_0, "membre[0].param_id = 0xC19FE60C");
+    assert_eq!(
+        membres[0].param_id, PARAM_ID_0,
+        "membre[0].param_id = 0xC19FE60C"
+    );
 }
 
 #[test]
@@ -363,7 +374,10 @@ fn specify_party_find_party() {
     let cfg = parse_specify_party(&fixture_specify_party());
     // find_party(0xA8052252) doit retrouver l'entrée 0
     let found = cfg.find_party(PARTY_ID_0);
-    assert!(found.is_some(), "find_party(0xA8052252) doit trouver party[0]");
+    assert!(
+        found.is_some(),
+        "find_party(0xA8052252) doit trouver party[0]"
+    );
     assert_eq!(found.unwrap().chara_count, 1);
     // hash absent → None
     assert!(cfg.find_party(HashId(0xDEADBEEF)).is_none());
@@ -405,14 +419,10 @@ fn guest_limit_entry_1() {
 
 // ─── Tests sur fichiers réels (skip silencieux si absents) ────────────────────
 
-const REAL_CTRL_CHARA: &str =
-    "party/ctrl_chara_config_1.04.17.00.cfg.bin.json";
-const REAL_DEPARTURE: &str =
-    "party/party_departure_0.00.00.cfg.bin.json";
-const REAL_SPECIFY: &str =
-    "party/supecify_party0.00.00.cfg.bin.json";
-const REAL_GUEST_LIMIT: &str =
-    "party/guest_limit_config.cfg.bin.json";
+const REAL_CTRL_CHARA: &str = "party/ctrl_chara_config_1.04.17.00.cfg.bin.json";
+const REAL_DEPARTURE: &str = "party/party_departure_0.00.00.cfg.bin.json";
+const REAL_SPECIFY: &str = "party/supecify_party0.00.00.cfg.bin.json";
+const REAL_GUEST_LIMIT: &str = "party/guest_limit_config.cfg.bin.json";
 
 fn load_json(path: &str) -> Option<serde_json::Value> {
     let path = common::chemin(path)?;
@@ -422,14 +432,19 @@ fn load_json(path: &str) -> Option<serde_json::Value> {
     }
     let content = std::fs::read_to_string(&path)
         .unwrap_or_else(|e| panic!("Impossible de lire {}: {e}", path.display()));
-    Some(serde_json::from_str(&content).unwrap_or_else(|e| panic!("JSON invalide {}: {e}", path.display())))
+    Some(
+        serde_json::from_str(&content)
+            .unwrap_or_else(|e| panic!("JSON invalide {}: {e}", path.display())),
+    )
 }
 
 // — ctrl_chara_config —
 
 #[test]
 fn real_file_ctrl_chara_compte() {
-    let Some(root) = load_json(REAL_CTRL_CHARA) else { return };
+    let Some(root) = load_json(REAL_CTRL_CHARA) else {
+        return;
+    };
     let data = parse_ctrl_chara_config(&root);
     // ctrl_chara_config_1.04.17.00 : CTRL_CHR_DATA_LIST_BEG_0.var[0] = 155
     assert_eq!(data.len(), 155, "ctrl_chara_config : 155 CTRL_CHR_DATA");
@@ -437,7 +452,9 @@ fn real_file_ctrl_chara_compte() {
 
 #[test]
 fn real_file_ctrl_chara_entry_0() {
-    let Some(root) = load_json(REAL_CTRL_CHARA) else { return };
+    let Some(root) = load_json(REAL_CTRL_CHARA) else {
+        return;
+    };
     let data = parse_ctrl_chara_config(&root);
     // CTRL_CHR_DATA_0 (ligne 13) : var[0]=1751902334 → 0x686BE87E, var[1]=1, var[2]=0
     assert_eq!(data[0].chara_id, CHARA_ID_0, "chara_id[0] = 0x686BE87E");
@@ -447,7 +464,9 @@ fn real_file_ctrl_chara_entry_0() {
 
 #[test]
 fn real_file_ctrl_chara_entry_1() {
-    let Some(root) = load_json(REAL_CTRL_CHARA) else { return };
+    let Some(root) = load_json(REAL_CTRL_CHARA) else {
+        return;
+    };
     let data = parse_ctrl_chara_config(&root);
     // CTRL_CHR_DATA_1 (ligne 31) : var[0]=1128709053 → 0x4346BBBD, var[1]=2
     assert_eq!(data[1].chara_id, CHARA_ID_1, "chara_id[1] = 0x4346BBBD");
@@ -456,7 +475,9 @@ fn real_file_ctrl_chara_entry_1() {
 
 #[test]
 fn real_file_ctrl_chara_distribution_ctrl_type() {
-    let Some(root) = load_json(REAL_CTRL_CHARA) else { return };
+    let Some(root) = load_json(REAL_CTRL_CHARA) else {
+        return;
+    };
     let data = parse_ctrl_chara_config(&root);
     let nb_0 = data.iter().filter(|e| e.ctrl_type == 0).count();
     let nb_1 = data.iter().filter(|e| e.ctrl_type == 1).count();
@@ -469,7 +490,9 @@ fn real_file_ctrl_chara_distribution_ctrl_type() {
 
 #[test]
 fn real_file_ctrl_chara_tous_chara_id_non_nuls() {
-    let Some(root) = load_json(REAL_CTRL_CHARA) else { return };
+    let Some(root) = load_json(REAL_CTRL_CHARA) else {
+        return;
+    };
     let data = parse_ctrl_chara_config(&root);
     let nuls = data.iter().filter(|e| e.chara_id.is_zero()).count();
     assert_eq!(nuls, 0, "aucun chara_id nul dans ctrl_chara_config");
@@ -477,7 +500,9 @@ fn real_file_ctrl_chara_tous_chara_id_non_nuls() {
 
 #[test]
 fn real_file_ctrl_chara_tous_flag_zero() {
-    let Some(root) = load_json(REAL_CTRL_CHARA) else { return };
+    let Some(root) = load_json(REAL_CTRL_CHARA) else {
+        return;
+    };
     let data = parse_ctrl_chara_config(&root);
     let non_zero_flag = data.iter().filter(|e| e.flag != 0).count();
     assert_eq!(non_zero_flag, 0, "tous les flag doivent être 0");
@@ -487,7 +512,9 @@ fn real_file_ctrl_chara_tous_flag_zero() {
 
 #[test]
 fn real_file_party_departure_compte() {
-    let Some(root) = load_json(REAL_DEPARTURE) else { return };
+    let Some(root) = load_json(REAL_DEPARTURE) else {
+        return;
+    };
     let data = parse_party_departure(&root);
     // party_departure_0.00.00 : 7 entrées
     assert_eq!(data.len(), 7, "party_departure : 7 PartyDeparture");
@@ -495,7 +522,9 @@ fn real_file_party_departure_compte() {
 
 #[test]
 fn real_file_party_departure_entree_0() {
-    let Some(root) = load_json(REAL_DEPARTURE) else { return };
+    let Some(root) = load_json(REAL_DEPARTURE) else {
+        return;
+    };
     let data = parse_party_departure(&root);
     // entrée 0 (ligne 9) : charaId=0x686BE87E, textureId=0x3CCD6535
     assert_eq!(data[0].chara_id, CHARA_ID_0, "charaId[0] = 0x686BE87E");
@@ -504,7 +533,9 @@ fn real_file_party_departure_entree_0() {
 
 #[test]
 fn real_file_party_departure_entree_1() {
-    let Some(root) = load_json(REAL_DEPARTURE) else { return };
+    let Some(root) = load_json(REAL_DEPARTURE) else {
+        return;
+    };
     let data = parse_party_departure(&root);
     // entrée 1 (ligne 13) : charaId=0x4346BBBD, textureId=0x17E036F6
     assert_eq!(data[1].chara_id, CHARA_ID_1, "charaId[1] = 0x4346BBBD");
@@ -513,7 +544,9 @@ fn real_file_party_departure_entree_1() {
 
 #[test]
 fn real_file_party_departure_tous_non_nuls() {
-    let Some(root) = load_json(REAL_DEPARTURE) else { return };
+    let Some(root) = load_json(REAL_DEPARTURE) else {
+        return;
+    };
     let data = parse_party_departure(&root);
     let nuls = data.iter().filter(|e| e.chara_id.is_zero()).count();
     assert_eq!(nuls, 0, "aucun charaId nul dans party_departure");
@@ -523,7 +556,9 @@ fn real_file_party_departure_tous_non_nuls() {
 
 #[test]
 fn real_file_specify_party_comptes() {
-    let Some(root) = load_json(REAL_SPECIFY) else { return };
+    let Some(root) = load_json(REAL_SPECIFY) else {
+        return;
+    };
     let cfg = parse_specify_party(&root);
     // supecify_party0.00.00 : 18 SPECIFY_PARTY_CHARA_DATA + 7 SPECIFY_PARTY_DATA
     assert_eq!(cfg.chara_list.len(), 18, "m_PartyRefCharaList : 18 entrées");
@@ -532,7 +567,9 @@ fn real_file_specify_party_comptes() {
 
 #[test]
 fn real_file_specify_party_chara_0() {
-    let Some(root) = load_json(REAL_SPECIFY) else { return };
+    let Some(root) = load_json(REAL_SPECIFY) else {
+        return;
+    };
     let cfg = parse_specify_party(&root);
     // m_PartyRefCharaList[0] (ligne 9) : slot=0, type=3, paramId=0xC19FE60C, lv=0
     let c = &cfg.chara_list[0];
@@ -544,7 +581,9 @@ fn real_file_specify_party_chara_0() {
 
 #[test]
 fn real_file_specify_party_chara_9_niveau_impose() {
-    let Some(root) = load_json(REAL_SPECIFY) else { return };
+    let Some(root) = load_json(REAL_SPECIFY) else {
+        return;
+    };
     let cfg = parse_specify_party(&root);
     // m_PartyRefCharaList[9] (ligne 92) : paramId=0xBB5FB56C, lv=21
     let c = &cfg.chara_list[9];
@@ -555,7 +594,9 @@ fn real_file_specify_party_chara_9_niveau_impose() {
 
 #[test]
 fn real_file_specify_party_list_0() {
-    let Some(root) = load_json(REAL_SPECIFY) else { return };
+    let Some(root) = load_json(REAL_SPECIFY) else {
+        return;
+    };
     let cfg = parse_specify_party(&root);
     // m_SpecifyPartyList[0] (ligne 177) : partyId=0xA8052252, chara=[0, 1]
     let p = &cfg.party_list[0];
@@ -566,7 +607,9 @@ fn real_file_specify_party_list_0() {
 
 #[test]
 fn real_file_specify_party_list_3() {
-    let Some(root) = load_json(REAL_SPECIFY) else { return };
+    let Some(root) = load_json(REAL_SPECIFY) else {
+        return;
+    };
     let cfg = parse_specify_party(&root);
     // m_SpecifyPartyList[3] : partyId=0x51B82450, chara=[4, 5]
     let p = &cfg.party_list[3];
@@ -577,7 +620,9 @@ fn real_file_specify_party_list_3() {
 
 #[test]
 fn real_file_specify_party_chara_ref_of() {
-    let Some(root) = load_json(REAL_SPECIFY) else { return };
+    let Some(root) = load_json(REAL_SPECIFY) else {
+        return;
+    };
     let cfg = parse_specify_party(&root);
     // party[0] → chara_offset=0, chara_count=1 → 1 membre
     let p = &cfg.party_list[0];
@@ -588,7 +633,9 @@ fn real_file_specify_party_chara_ref_of() {
 
 #[test]
 fn real_file_specify_party_find_party() {
-    let Some(root) = load_json(REAL_SPECIFY) else { return };
+    let Some(root) = load_json(REAL_SPECIFY) else {
+        return;
+    };
     let cfg = parse_specify_party(&root);
     let found = cfg.find_party(PARTY_ID_0);
     assert!(found.is_some(), "find_party(0xA8052252)");
@@ -599,7 +646,9 @@ fn real_file_specify_party_find_party() {
 
 #[test]
 fn real_file_guest_limit_compte() {
-    let Some(root) = load_json(REAL_GUEST_LIMIT) else { return };
+    let Some(root) = load_json(REAL_GUEST_LIMIT) else {
+        return;
+    };
     let data = parse_guest_limit_config(&root);
     // guest_limit_config.cfg.bin : GENERAL_LIMIT_INFO_LIST_BEG_0.var[0] = 9
     assert_eq!(data.len(), 9, "guest_limit_config : 9 GeneralLimitInfo");
@@ -607,7 +656,9 @@ fn real_file_guest_limit_compte() {
 
 #[test]
 fn real_file_guest_limit_rule_hash_0() {
-    let Some(root) = load_json(REAL_GUEST_LIMIT) else { return };
+    let Some(root) = load_json(REAL_GUEST_LIMIT) else {
+        return;
+    };
     let data = parse_guest_limit_config(&root);
     // GENERAL_LIMIT_INFO_0 (ligne 17) : -1346664332 → 0xAFBB8874
     assert_eq!(data[0].rule_hash, RULE_HASH_0, "rule_hash[0] = 0xAFBB8874");
@@ -615,7 +666,9 @@ fn real_file_guest_limit_rule_hash_0() {
 
 #[test]
 fn real_file_guest_limit_condition_data_0() {
-    let Some(root) = load_json(REAL_GUEST_LIMIT) else { return };
+    let Some(root) = load_json(REAL_GUEST_LIMIT) else {
+        return;
+    };
     let data = parse_guest_limit_config(&root);
     // GENERAL_LIMIT_INFO_DATA_0 (ligne 39) : condition_data exacte
     assert_eq!(
@@ -627,7 +680,9 @@ fn real_file_guest_limit_condition_data_0() {
 
 #[test]
 fn real_file_guest_limit_rule_hash_1() {
-    let Some(root) = load_json(REAL_GUEST_LIMIT) else { return };
+    let Some(root) = load_json(REAL_GUEST_LIMIT) else {
+        return;
+    };
     let data = parse_guest_limit_config(&root);
     // GENERAL_LIMIT_INFO_1 : 1457222339 → 0x56DB72C3
     assert_eq!(data[1].rule_hash, RULE_HASH_1, "rule_hash[1] = 0x56DB72C3");
@@ -635,7 +690,9 @@ fn real_file_guest_limit_rule_hash_1() {
 
 #[test]
 fn real_file_guest_limit_tous_rule_hash_non_nuls() {
-    let Some(root) = load_json(REAL_GUEST_LIMIT) else { return };
+    let Some(root) = load_json(REAL_GUEST_LIMIT) else {
+        return;
+    };
     let data = parse_guest_limit_config(&root);
     let nuls = data.iter().filter(|e| e.rule_hash.is_zero()).count();
     assert_eq!(nuls, 0, "aucun rule_hash nul dans guest_limit_config");
@@ -643,7 +700,9 @@ fn real_file_guest_limit_tous_rule_hash_non_nuls() {
 
 #[test]
 fn real_file_guest_limit_condition_data_non_vide() {
-    let Some(root) = load_json(REAL_GUEST_LIMIT) else { return };
+    let Some(root) = load_json(REAL_GUEST_LIMIT) else {
+        return;
+    };
     let data = parse_guest_limit_config(&root);
     let vides = data.iter().filter(|e| e.condition_data.is_empty()).count();
     assert_eq!(vides, 0, "aucune condition_data vide");

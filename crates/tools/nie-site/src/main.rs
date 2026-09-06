@@ -21,7 +21,9 @@ async fn main() -> anyhow::Result<()> {
         )
         .init();
 
-    let config = Options::parse().en_config().context("adresse d'ecoute invalide")?;
+    let config = Options::parse()
+        .en_config()
+        .context("adresse d'ecoute invalide")?;
     let adresse = config.adresse;
     tracing::info!(
         version = nie_site::VERSION,

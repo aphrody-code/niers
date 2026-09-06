@@ -96,14 +96,19 @@ fn f32_le(b: &[u8], at: usize) -> f32 {
 /// - [`FormatError::Corrupt`] si la taille déclarée est incohérente avec le contenu.
 pub fn parse(data: &[u8]) -> Result<LipSync, FormatError> {
     if data.len() < FRAMES_OFFSET {
-        return Err(FormatError::TooShort { got: data.len(), need: FRAMES_OFFSET });
+        return Err(FormatError::TooShort {
+            got: data.len(),
+            need: FRAMES_OFFSET,
+        });
     }
     if &data[0..4] != b"lip\0" {
         return Err(FormatError::BadMagic { format: "p3lip" });
     }
     let declared = u32_le(data, 0x08) as usize;
     if declared != data.len() {
-        return Err(FormatError::Corrupt("p3lip : taille déclarée != taille réelle"));
+        return Err(FormatError::Corrupt(
+            "p3lip : taille déclarée != taille réelle",
+        ));
     }
     let duration_s = f32_le(data, 0x14);
 
@@ -180,6 +185,9 @@ mod tests {
 
     #[test]
     fn rejette_trop_court() {
-        assert!(matches!(parse(&[b'l', b'i', b'p', 0]), Err(FormatError::TooShort { .. })));
+        assert!(matches!(
+            parse(&[b'l', b'i', b'p', 0]),
+            Err(FormatError::TooShort { .. })
+        ));
     }
 }

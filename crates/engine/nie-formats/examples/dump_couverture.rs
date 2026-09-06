@@ -28,9 +28,12 @@ fn main() -> Result<(), String> {
     }
 
     let mut packs = Vfs::new();
-    packs.init(&install).map_err(|e| format!("montage packs : {e:?}"))?;
+    packs
+        .init(&install)
+        .map_err(|e| format!("montage packs : {e:?}"))?;
     let mut dump = Vfs::new();
-    dump.init_loose(&dump_dir).map_err(|e| format!("montage dump : {e:?}"))?;
+    dump.init_loose(&dump_dir)
+        .map_err(|e| format!("montage dump : {e:?}"))?;
     println!("packs  {}", install.display());
     println!("dump   {}", dump_dir.display());
 

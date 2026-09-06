@@ -55,8 +55,7 @@ mod common;
 extern crate std;
 
 use nie_data::command::{
-    parse_chara_cmd_common, parse_cmd_actions, parse_cmd_events, AllCmdEventInfo,
-    CharaCmdEventFunc,
+    AllCmdEventInfo, CharaCmdEventFunc, parse_chara_cmd_common, parse_cmd_actions, parse_cmd_events,
 };
 use nie_data::hash::HashId;
 use serde_json::json;
@@ -262,7 +261,10 @@ fn cmd_action_raw_positions_entry_0() {
 fn cmd_action_entry_1() {
     let actions = parse_cmd_actions(&fixture_soccer_cmd_action());
     // CMD_ACTION_INFO_1 : var[0]=-1444322264 → 0xA9C8CB48
-    assert_eq!(actions[1].action_id, ACTION_ID_1_SOCCER, "action_id[1] = 0xA9C8CB48");
+    assert_eq!(
+        actions[1].action_id, ACTION_ID_1_SOCCER,
+        "action_id[1] = 0xA9C8CB48"
+    );
     // var[2]=1783442655 → raw[1] = 0x6A4D2CDF
     assert_eq!(
         actions[1].raw[1],
@@ -301,8 +303,16 @@ fn cmd_action_is_valid() {
 #[test]
 fn cmd_event_comptes() {
     let config = parse_cmd_events(&fixture_soccer_cmd_event());
-    assert_eq!(config.all_cmd_events.len(), 1, "1 ALL_CMD_EVENT_INFO dans la fixture");
-    assert_eq!(config.chara_cmd_funcs.len(), 1, "1 CHARA_CMD_EVENT_FUNC dans la fixture");
+    assert_eq!(
+        config.all_cmd_events.len(),
+        1,
+        "1 ALL_CMD_EVENT_INFO dans la fixture"
+    );
+    assert_eq!(
+        config.chara_cmd_funcs.len(),
+        1,
+        "1 CHARA_CMD_EVENT_FUNC dans la fixture"
+    );
 }
 
 #[test]
@@ -311,7 +321,10 @@ fn all_cmd_event_info_0() {
     let ev: &AllCmdEventInfo = &config.all_cmd_events[0];
 
     // ALL_CMD_EVENT_INFO_0 soccer_cmd_event : var[0]=-566667975 → 0xDE395539
-    assert_eq!(ev.cmd_action_id, ACTION_ID_0_SOCCER, "cmd_action_id = 0xDE395539");
+    assert_eq!(
+        ev.cmd_action_id, ACTION_ID_0_SOCCER,
+        "cmd_action_id = 0xDE395539"
+    );
     // var[1]=1356072398 → 0x50D405CE
     assert_eq!(ev.func_hash, FUNC_HASH_EVENT_0, "func_hash = 0x50D405CE");
 }
@@ -332,7 +345,10 @@ fn cmd_event_find_event() {
     let config = parse_cmd_events(&fixture_soccer_cmd_event());
     // find_event doit retrouver l'événement par cmd_action_id
     let found = config.find_event(ACTION_ID_0_SOCCER);
-    assert!(found.is_some(), "find_event doit trouver ACTION_ID_0_SOCCER");
+    assert!(
+        found.is_some(),
+        "find_event doit trouver ACTION_ID_0_SOCCER"
+    );
     assert_eq!(found.unwrap().func_hash, FUNC_HASH_EVENT_0);
 
     // Identifiant absent → None
@@ -370,16 +386,11 @@ fn chara_cmd_common_list_beg_ignore() {
 
 // ─── Tests sur fichiers réels (skip silencieux si absents) ────────────────────
 
-const REAL_SOCCER_ACTION: &str =
-    "command/soccer_cmd_action_0.07.70.cfg.bin.json";
-const REAL_SOCCER_EVENT: &str =
-    "command/soccer_cmd_event_0.07.70.cfg.bin.json";
-const REAL_RPG_ACTION: &str =
-    "command/rpg_cmd_action_1.03.53.00.cfg.bin.json";
-const REAL_RPG_EVENT: &str =
-    "command/rpg_cmd_event_1.02.75.00.cfg.bin.json";
-const REAL_COMMON: &str =
-    "command/chara_cmd_event_common_0.00.00.cfg.bin.json";
+const REAL_SOCCER_ACTION: &str = "command/soccer_cmd_action_0.07.70.cfg.bin.json";
+const REAL_SOCCER_EVENT: &str = "command/soccer_cmd_event_0.07.70.cfg.bin.json";
+const REAL_RPG_ACTION: &str = "command/rpg_cmd_action_1.03.53.00.cfg.bin.json";
+const REAL_RPG_EVENT: &str = "command/rpg_cmd_event_1.02.75.00.cfg.bin.json";
+const REAL_COMMON: &str = "command/chara_cmd_event_common_0.00.00.cfg.bin.json";
 
 fn load_json(path: &str) -> Option<serde_json::Value> {
     let path = common::chemin(path)?;
@@ -389,14 +400,19 @@ fn load_json(path: &str) -> Option<serde_json::Value> {
     }
     let content = std::fs::read_to_string(&path)
         .unwrap_or_else(|e| panic!("Impossible de lire {}: {e}", path.display()));
-    Some(serde_json::from_str(&content).unwrap_or_else(|e| panic!("JSON invalide {}: {e}", path.display())))
+    Some(
+        serde_json::from_str(&content)
+            .unwrap_or_else(|e| panic!("JSON invalide {}: {e}", path.display())),
+    )
 }
 
 // — soccer_cmd_action —
 
 #[test]
 fn real_file_soccer_action_compte() {
-    let Some(root) = load_json(REAL_SOCCER_ACTION) else { return };
+    let Some(root) = load_json(REAL_SOCCER_ACTION) else {
+        return;
+    };
     let actions = parse_cmd_actions(&root);
     // soccer_cmd_action_0.07.70 : CMD_ACTION_INFO_LIST_BEG_0.var[0] = 88
     assert_eq!(actions.len(), 88, "soccer_cmd_action : 88 CMD_ACTION_INFO");
@@ -404,14 +420,15 @@ fn real_file_soccer_action_compte() {
 
 #[test]
 fn real_file_soccer_action_entry_0() {
-    let Some(root) = load_json(REAL_SOCCER_ACTION) else { return };
+    let Some(root) = load_json(REAL_SOCCER_ACTION) else {
+        return;
+    };
     let actions = parse_cmd_actions(&root);
 
     // soccer_cmd_action_0.07.70 CMD_ACTION_INFO_0 (lignes 13-65)
     // var[0]=-566667975 → action_id = 0xDE395539
     assert_eq!(
-        actions[0].action_id,
-        ACTION_ID_0_SOCCER,
+        actions[0].action_id, ACTION_ID_0_SOCCER,
         "action_id[0] = 0xDE395539"
     );
     // var[6]=-817083886 → secondary_hash = 0xCF4C4A12
@@ -430,12 +447,17 @@ fn real_file_soccer_action_entry_0() {
 
 #[test]
 fn real_file_soccer_action_entry_1() {
-    let Some(root) = load_json(REAL_SOCCER_ACTION) else { return };
+    let Some(root) = load_json(REAL_SOCCER_ACTION) else {
+        return;
+    };
     let actions = parse_cmd_actions(&root);
 
     // soccer_cmd_action_0.07.70 CMD_ACTION_INFO_1 (lignes 66-118)
     // var[0]=-1444322264 → 0xA9C8CB48
-    assert_eq!(actions[1].action_id, ACTION_ID_1_SOCCER, "action_id[1] = 0xA9C8CB48");
+    assert_eq!(
+        actions[1].action_id, ACTION_ID_1_SOCCER,
+        "action_id[1] = 0xA9C8CB48"
+    );
     // var[6]=665506216 → secondary_hash = 0x27A0ABA8
     assert_eq!(
         actions[1].secondary_hash(),
@@ -446,19 +468,29 @@ fn real_file_soccer_action_entry_1() {
 
 #[test]
 fn real_file_soccer_action_tous_valides() {
-    let Some(root) = load_json(REAL_SOCCER_ACTION) else { return };
+    let Some(root) = load_json(REAL_SOCCER_ACTION) else {
+        return;
+    };
     let actions = parse_cmd_actions(&root);
     // Toutes les entrées doivent avoir action_id non-nul
     let invalides = actions.iter().filter(|a| !a.is_valid()).count();
-    assert_eq!(invalides, 0, "tous les CMD_ACTION_INFO doivent être valides");
+    assert_eq!(
+        invalides, 0,
+        "tous les CMD_ACTION_INFO doivent être valides"
+    );
 }
 
 #[test]
 fn real_file_soccer_action_secondary_hash_presence() {
-    let Some(root) = load_json(REAL_SOCCER_ACTION) else { return };
+    let Some(root) = load_json(REAL_SOCCER_ACTION) else {
+        return;
+    };
     let actions = parse_cmd_actions(&root);
     // 84/88 entrées ont secondary_hash (var[6]) non-nul — validé par analyse Python
-    let avec_secondary = actions.iter().filter(|a| !a.secondary_hash().is_zero()).count();
+    let avec_secondary = actions
+        .iter()
+        .filter(|a| !a.secondary_hash().is_zero())
+        .count();
     assert!(
         avec_secondary >= 84,
         "≥ 84 entrées avec secondary_hash non-nul (réel: {avec_secondary})"
@@ -469,7 +501,9 @@ fn real_file_soccer_action_secondary_hash_presence() {
 
 #[test]
 fn real_file_soccer_event_comptes() {
-    let Some(root) = load_json(REAL_SOCCER_EVENT) else { return };
+    let Some(root) = load_json(REAL_SOCCER_EVENT) else {
+        return;
+    };
     let config = parse_cmd_events(&root);
 
     // soccer_cmd_event_0.07.70 : 99 ALL_CMD_EVENT_INFO + 50 CHARA_CMD_EVENT_FUNC
@@ -480,39 +514,42 @@ fn real_file_soccer_event_comptes() {
 
 #[test]
 fn real_file_soccer_event_all_cmd_event_0() {
-    let Some(root) = load_json(REAL_SOCCER_EVENT) else { return };
+    let Some(root) = load_json(REAL_SOCCER_EVENT) else {
+        return;
+    };
     let config = parse_cmd_events(&root);
 
     // soccer_cmd_event : ALL_CMD_EVENT_INFO_0 — var[0]=-566667975, var[1]=1356072398
     assert_eq!(
-        config.all_cmd_events[0].cmd_action_id,
-        ACTION_ID_0_SOCCER,
+        config.all_cmd_events[0].cmd_action_id, ACTION_ID_0_SOCCER,
         "cmd_action_id[0] = 0xDE395539"
     );
     assert_eq!(
-        config.all_cmd_events[0].func_hash,
-        FUNC_HASH_EVENT_0,
+        config.all_cmd_events[0].func_hash, FUNC_HASH_EVENT_0,
         "func_hash[0] = 0x50D405CE"
     );
 }
 
 #[test]
 fn real_file_soccer_event_chara_func_0() {
-    let Some(root) = load_json(REAL_SOCCER_EVENT) else { return };
+    let Some(root) = load_json(REAL_SOCCER_EVENT) else {
+        return;
+    };
     let config = parse_cmd_events(&root);
 
     // soccer_cmd_event : CHARA_CMD_EVENT_FUNC_0 — var[0]=1, var[1]=-236478904
     assert_eq!(config.chara_cmd_funcs[0].func_no, 1, "func_no[0] = 1");
     assert_eq!(
-        config.chara_cmd_funcs[0].func_hash,
-        FUNC_HASH_FUNC_0,
+        config.chara_cmd_funcs[0].func_hash, FUNC_HASH_FUNC_0,
         "func_hash[0] = 0xF1E79E48"
     );
 }
 
 #[test]
 fn real_file_soccer_event_find_event() {
-    let Some(root) = load_json(REAL_SOCCER_EVENT) else { return };
+    let Some(root) = load_json(REAL_SOCCER_EVENT) else {
+        return;
+    };
     let config = parse_cmd_events(&root);
     // find_event(0xDE395539) doit retrouver l'entrée 0
     let found = config.find_event(ACTION_ID_0_SOCCER);
@@ -524,7 +561,9 @@ fn real_file_soccer_event_find_event() {
 
 #[test]
 fn real_file_rpg_action_compte() {
-    let Some(root) = load_json(REAL_RPG_ACTION) else { return };
+    let Some(root) = load_json(REAL_RPG_ACTION) else {
+        return;
+    };
     let actions = parse_cmd_actions(&root);
     // rpg_cmd_action_1.03.53.00 : 229 CMD_ACTION_INFO
     assert_eq!(actions.len(), 229, "rpg_cmd_action : 229 CMD_ACTION_INFO");
@@ -532,12 +571,17 @@ fn real_file_rpg_action_compte() {
 
 #[test]
 fn real_file_rpg_action_entry_0() {
-    let Some(root) = load_json(REAL_RPG_ACTION) else { return };
+    let Some(root) = load_json(REAL_RPG_ACTION) else {
+        return;
+    };
     let actions = parse_cmd_actions(&root);
 
     // rpg_cmd_action_1.03.53.00 CMD_ACTION_INFO_0 (ligne 13)
     // var[0]=2142375985 → 0x7FB21031
-    assert_eq!(actions[0].action_id, ACTION_ID_0_RPG, "action_id[0] = 0x7FB21031");
+    assert_eq!(
+        actions[0].action_id, ACTION_ID_0_RPG,
+        "action_id[0] = 0x7FB21031"
+    );
     // var[6]=-1372911326 → 0xAE2B0922
     assert_eq!(
         actions[0].secondary_hash(),
@@ -548,10 +592,15 @@ fn real_file_rpg_action_entry_0() {
 
 #[test]
 fn real_file_rpg_action_secondary_hash_presence() {
-    let Some(root) = load_json(REAL_RPG_ACTION) else { return };
+    let Some(root) = load_json(REAL_RPG_ACTION) else {
+        return;
+    };
     let actions = parse_cmd_actions(&root);
     // 220/229 entrées ont secondary_hash non-nul — validé par analyse Python
-    let avec_secondary = actions.iter().filter(|a| !a.secondary_hash().is_zero()).count();
+    let avec_secondary = actions
+        .iter()
+        .filter(|a| !a.secondary_hash().is_zero())
+        .count();
     assert!(
         avec_secondary >= 220,
         "≥ 220 entrées avec secondary_hash (réel: {avec_secondary})"
@@ -562,17 +611,29 @@ fn real_file_rpg_action_secondary_hash_presence() {
 
 #[test]
 fn real_file_rpg_event_comptes() {
-    let Some(root) = load_json(REAL_RPG_EVENT) else { return };
+    let Some(root) = load_json(REAL_RPG_EVENT) else {
+        return;
+    };
     let config = parse_cmd_events(&root);
     // rpg_cmd_event_1.02.75.00 : 231 ALL_CMD_EVENT_INFO + 38 CHARA_CMD_EVENT_FUNC
     // (39 children dont 1 CMD_EVENT_DATA_LIST_BEG_0 ignoré par walk_named)
-    assert_eq!(config.all_cmd_events.len(), 231, "231 ALL_CMD_EVENT_INFO rpg");
-    assert_eq!(config.chara_cmd_funcs.len(), 38, "38 CHARA_CMD_EVENT_FUNC rpg");
+    assert_eq!(
+        config.all_cmd_events.len(),
+        231,
+        "231 ALL_CMD_EVENT_INFO rpg"
+    );
+    assert_eq!(
+        config.chara_cmd_funcs.len(),
+        38,
+        "38 CHARA_CMD_EVENT_FUNC rpg"
+    );
 }
 
 #[test]
 fn real_file_rpg_event_all_cmd_0() {
-    let Some(root) = load_json(REAL_RPG_EVENT) else { return };
+    let Some(root) = load_json(REAL_RPG_EVENT) else {
+        return;
+    };
     let config = parse_cmd_events(&root);
 
     // rpg_cmd_event : ALL_CMD_EVENT_INFO_0 — var[0]=-1963241620 → 0x8AFB4F6C
@@ -591,7 +652,9 @@ fn real_file_rpg_event_all_cmd_0() {
 
 #[test]
 fn real_file_rpg_event_chara_func_0() {
-    let Some(root) = load_json(REAL_RPG_EVENT) else { return };
+    let Some(root) = load_json(REAL_RPG_EVENT) else {
+        return;
+    };
     let config = parse_cmd_events(&root);
 
     // rpg et soccer partagent les mêmes premières entrées CHARA_CMD_EVENT_FUNC
@@ -604,15 +667,23 @@ fn real_file_rpg_event_chara_func_0() {
 
 #[test]
 fn real_file_common_compte() {
-    let Some(root) = load_json(REAL_COMMON) else { return };
+    let Some(root) = load_json(REAL_COMMON) else {
+        return;
+    };
     let ids = parse_chara_cmd_common(&root);
     // chara_cmd_event_common_0.00.00 : CHARA_ACTION_CMD_DATA_LIST_BEG_0.var[0] = 32
-    assert_eq!(ids.len(), 32, "chara_cmd_event_common : 32 CHARA_ACTION_CMD_DATA");
+    assert_eq!(
+        ids.len(),
+        32,
+        "chara_cmd_event_common : 32 CHARA_ACTION_CMD_DATA"
+    );
 }
 
 #[test]
 fn real_file_common_data_0() {
-    let Some(root) = load_json(REAL_COMMON) else { return };
+    let Some(root) = load_json(REAL_COMMON) else {
+        return;
+    };
     let ids = parse_chara_cmd_common(&root);
 
     // chara_cmd_event_common : CHARA_ACTION_CMD_DATA_0.var[0] = -1813128698 → 0x93EDDA06
@@ -621,7 +692,9 @@ fn real_file_common_data_0() {
 
 #[test]
 fn real_file_common_data_1() {
-    let Some(root) = load_json(REAL_COMMON) else { return };
+    let Some(root) = load_json(REAL_COMMON) else {
+        return;
+    };
     let ids = parse_chara_cmd_common(&root);
 
     // CHARA_ACTION_CMD_DATA_1.var[0] = -1187820884
@@ -634,9 +707,14 @@ fn real_file_common_data_1() {
 
 #[test]
 fn real_file_common_tous_non_nuls() {
-    let Some(root) = load_json(REAL_COMMON) else { return };
+    let Some(root) = load_json(REAL_COMMON) else {
+        return;
+    };
     let ids = parse_chara_cmd_common(&root);
     // Toutes les 32 entrées doivent avoir un hash non-nul
     let nuls = ids.iter().filter(|id| id.is_zero()).count();
-    assert_eq!(nuls, 0, "aucun cmd_action_id nul dans chara_cmd_event_common");
+    assert_eq!(
+        nuls, 0,
+        "aucun cmd_action_id nul dans chara_cmd_event_common"
+    );
 }

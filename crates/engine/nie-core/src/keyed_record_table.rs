@@ -123,12 +123,20 @@ mod tests {
         // clés à partie haute (u32) NON nulle (sinon early-exit param_2==0).
         let keys = [0x10_2030_4050u64, 0x1_07, 0xFF_FFFF_FFFF, 0x1_07];
         let buf = build(&keys);
-        let t = KeyedRecordTable { recs: &buf, count: 4, sorted: false };
+        let t = KeyedRecordTable {
+            recs: &buf,
+            count: 4,
+            sorted: false,
+        };
         assert_eq!(t.find(0x10_2030_4050), Some(0));
         assert_eq!(t.find(0x1_07), Some(1), "1er match en cas de doublon");
         assert_eq!(t.find(0xFF_FFFF_FFFF), Some(2));
         assert_eq!(t.find(0xDE_AD00), None);
-        assert_eq!(t.find_key(0x1020_3040, 0x50), Some(0), "clé reconstruite (hi,lo) = 0x1020304050");
+        assert_eq!(
+            t.find_key(0x1020_3040, 0x50),
+            Some(0),
+            "clé reconstruite (hi,lo) = 0x1020304050"
+        );
     }
 
     #[test]
@@ -136,7 +144,11 @@ mod tests {
         // clés triées, partie haute non nulle : key_i = (i+1)<<8 | 5.
         let keys: Vec<u64> = (0..16).map(|i| ((i as u64 + 1) << 8) | 5).collect();
         let buf = build(&keys);
-        let t = KeyedRecordTable { recs: &buf, count: 16, sorted: true };
+        let t = KeyedRecordTable {
+            recs: &buf,
+            count: 16,
+            sorted: true,
+        };
         for (i, &k) in keys.iter().enumerate() {
             assert_eq!(t.find(k), Some(i as u32), "trouve {k:#x}");
         }
@@ -147,18 +159,58 @@ mod tests {
     #[test]
     fn empty_and_single() {
         let buf = build(&[0x1_2a]);
-        assert_eq!(KeyedRecordTable { recs: &buf, count: 0, sorted: true }.find(0x1_2a), None);
-        assert_eq!(KeyedRecordTable { recs: &buf, count: 1, sorted: true }.find(0x1_2a), Some(0));
-        assert_eq!(KeyedRecordTable { recs: &buf, count: 1, sorted: false }.find(0x1_2a), Some(0));
-        assert_eq!(KeyedRecordTable { recs: &buf, count: 1, sorted: true }.find(0x1_2b), None);
+        assert_eq!(
+            KeyedRecordTable {
+                recs: &buf,
+                count: 0,
+                sorted: true
+            }
+            .find(0x1_2a),
+            None
+        );
+        assert_eq!(
+            KeyedRecordTable {
+                recs: &buf,
+                count: 1,
+                sorted: true
+            }
+            .find(0x1_2a),
+            Some(0)
+        );
+        assert_eq!(
+            KeyedRecordTable {
+                recs: &buf,
+                count: 1,
+                sorted: false
+            }
+            .find(0x1_2a),
+            Some(0)
+        );
+        assert_eq!(
+            KeyedRecordTable {
+                recs: &buf,
+                count: 1,
+                sorted: true
+            }
+            .find(0x1_2b),
+            None
+        );
     }
 
     /// Early-exit byte-exact : partie haute (`param_2`) nulle ⇒ `None`, même clé présente.
     #[test]
     fn high_part_zero_is_rejected() {
         let buf = build(&[0x42]); // clé 0x42 < 256 → partie haute 0
-        let t = KeyedRecordTable { recs: &buf, count: 1, sorted: false };
-        assert_eq!(t.find(0x42), None, "param_2==0 → le binaire renvoie 0 même si présent");
+        let t = KeyedRecordTable {
+            recs: &buf,
+            count: 1,
+            sorted: false,
+        };
+        assert_eq!(
+            t.find(0x42),
+            None,
+            "param_2==0 → le binaire renvoie 0 même si présent"
+        );
         assert_eq!(t.find_key(0, 0x42), None);
     }
 }

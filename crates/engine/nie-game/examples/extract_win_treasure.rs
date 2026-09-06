@@ -49,7 +49,11 @@ fn main() {
     let roots = rename(&cfg.entries);
     eprintln!("--- top-level entries ({}) ---", roots.len());
     for (name, e) in &roots {
-        eprintln!("  root {name}  vars={}  children={}", e.variables.len(), e.children.len());
+        eprintln!(
+            "  root {name}  vars={}  children={}",
+            e.variables.len(),
+            e.children.len()
+        );
     }
 
     // Flat ITBL_ITEMS list.
@@ -106,14 +110,24 @@ fn main() {
     }
 
     // Dump exploitable pour la fixture (Rust array literals).
-    println!("// === FLAT ITBL_ITEMS (itemId signe brut, poids) — count {} ===", flat.len());
+    println!(
+        "// === FLAT ITBL_ITEMS (itemId signe brut, poids) — count {} ===",
+        flat.len()
+    );
     println!("const ITEMS_RAW: &[(i64, i64)] = &[");
-    for (idx, ((_, _), (rawid, w))) in flat.iter().zip(flat_raw.iter().zip(flat_w.iter())).enumerate() {
+    for (idx, ((_, _), (rawid, w))) in flat
+        .iter()
+        .zip(flat_raw.iter().zip(flat_w.iter()))
+        .enumerate()
+    {
         println!("    ({rawid}, {w}), // [{idx}] -> {}", to_hex(*rawid));
         let _ = w;
     }
     println!("];");
-    println!("// === BASE pairs (coffre signe, offset, count) — count {} ===", pairs.len());
+    println!(
+        "// === BASE pairs (coffre signe, offset, count) — count {} ===",
+        pairs.len()
+    );
     println!("const BASE_RAW: &[(i64, i64, i64)] = &[");
     for (c, o, n) in &pairs {
         println!("    ({c}, {o}, {n}), // coffre {}", to_hex(*c));

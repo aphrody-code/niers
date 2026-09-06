@@ -9,9 +9,9 @@
 //! `packages/inagle/src/parsers/chara-menu-resource-config.ts` (`parseContent` l.100-160),
 //! recalculée à l'identique en Python lors de l'extraction.
 
-use nie_data::chara_menu_resource::{parse_chara_menu_resource, CharaResourcePaths};
+use nie_data::chara_menu_resource::{CharaResourcePaths, parse_chara_menu_resource};
 use nie_data::hash::HashId;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 /// Construit un noeud iecode `{name, variables, children}` depuis `(type, value)`.
 fn node(name: &str, vars: &[(&str, &str)], children: Vec<Value>) -> Value {
@@ -148,21 +148,66 @@ fn template_info0_quinze_chemins_a_placeholders() {
     let t: &CharaResourcePaths = db.template.as_ref().expect("template présent (INFO_0)");
 
     // Les 15 champs nettoyés (.g4tx retiré), placeholders <charaID>/<skillID> préservés.
-    assert_eq!(t.face_small.as_deref(), Some("200_icon/10_icon_chr/<charaID>"));
-    assert_eq!(t.face_large.as_deref(), Some("200_icon/10_icon_chr/<charaID>_l"));
-    assert_eq!(t.mini_chr.as_deref(), Some("200_icon/16_icon_minichr/<charaID>_dot"));
-    assert_eq!(t.win_icon.as_deref(), Some("200_icon/25_icon_win06_chr/icon_<charaID>"));
-    assert_eq!(t.coach_small.as_deref(), Some("200_icon/10_icon_chr/coach/<charaID>"));
-    assert_eq!(t.coach_large.as_deref(), Some("200_icon/10_icon_chr/coach/<charaID>_l"));
-    assert_eq!(t.aura_fs_small.as_deref(), Some("200_icon/10_icon_chr/aura_fs/<charaID>"));
-    assert_eq!(t.aura_fs_large.as_deref(), Some("200_icon/10_icon_chr/aura_fs/<charaID>_l"));
-    assert_eq!(t.aura_armed_small.as_deref(), Some("200_icon/10_icon_chr/aura_armed/<charaID>"));
-    assert_eq!(t.aura_armed_large.as_deref(), Some("200_icon/10_icon_chr/aura_armed/<charaID>_l"));
-    assert_eq!(t.aura_mixi_small.as_deref(), Some("200_icon/10_icon_chr/aura_mixi/<charaID>"));
-    assert_eq!(t.aura_mixi_large.as_deref(), Some("200_icon/10_icon_chr/aura_mixi/<charaID>_l"));
-    assert_eq!(t.aura_soul_small.as_deref(), Some("200_icon/10_icon_chr/aura_soul/<charaID>"));
-    assert_eq!(t.aura_soul_large.as_deref(), Some("200_icon/10_icon_chr/aura_soul/<charaID>_l"));
-    assert_eq!(t.soul_effect.as_deref(), Some("220_img/soul_effect/ef_<skillID>"));
+    assert_eq!(
+        t.face_small.as_deref(),
+        Some("200_icon/10_icon_chr/<charaID>")
+    );
+    assert_eq!(
+        t.face_large.as_deref(),
+        Some("200_icon/10_icon_chr/<charaID>_l")
+    );
+    assert_eq!(
+        t.mini_chr.as_deref(),
+        Some("200_icon/16_icon_minichr/<charaID>_dot")
+    );
+    assert_eq!(
+        t.win_icon.as_deref(),
+        Some("200_icon/25_icon_win06_chr/icon_<charaID>")
+    );
+    assert_eq!(
+        t.coach_small.as_deref(),
+        Some("200_icon/10_icon_chr/coach/<charaID>")
+    );
+    assert_eq!(
+        t.coach_large.as_deref(),
+        Some("200_icon/10_icon_chr/coach/<charaID>_l")
+    );
+    assert_eq!(
+        t.aura_fs_small.as_deref(),
+        Some("200_icon/10_icon_chr/aura_fs/<charaID>")
+    );
+    assert_eq!(
+        t.aura_fs_large.as_deref(),
+        Some("200_icon/10_icon_chr/aura_fs/<charaID>_l")
+    );
+    assert_eq!(
+        t.aura_armed_small.as_deref(),
+        Some("200_icon/10_icon_chr/aura_armed/<charaID>")
+    );
+    assert_eq!(
+        t.aura_armed_large.as_deref(),
+        Some("200_icon/10_icon_chr/aura_armed/<charaID>_l")
+    );
+    assert_eq!(
+        t.aura_mixi_small.as_deref(),
+        Some("200_icon/10_icon_chr/aura_mixi/<charaID>")
+    );
+    assert_eq!(
+        t.aura_mixi_large.as_deref(),
+        Some("200_icon/10_icon_chr/aura_mixi/<charaID>_l")
+    );
+    assert_eq!(
+        t.aura_soul_small.as_deref(),
+        Some("200_icon/10_icon_chr/aura_soul/<charaID>")
+    );
+    assert_eq!(
+        t.aura_soul_large.as_deref(),
+        Some("200_icon/10_icon_chr/aura_soul/<charaID>_l")
+    );
+    assert_eq!(
+        t.soul_effect.as_deref(),
+        Some("220_img/soul_effect/ef_<skillID>")
+    );
     assert_eq!(t.filled_count(), 15);
 }
 
@@ -177,11 +222,26 @@ fn override_info1_id_et_cinq_chemins_tasses() {
     assert!(!o.is_template, "pas de placeholder dans un override");
 
     // extractPaths tasse les 5 String (les Int 0 sont sautés) vers les 5 premiers champs.
-    assert_eq!(o.paths.face_small.as_deref(), Some("200_icon/10_icon_chr/c090101"));
-    assert_eq!(o.paths.face_large.as_deref(), Some("200_icon/10_icon_chr/c090101_l"));
-    assert_eq!(o.paths.mini_chr.as_deref(), Some("200_icon/10_icon_chr/c090101"));
-    assert_eq!(o.paths.win_icon.as_deref(), Some("200_icon/10_icon_chr/coach/coach01"));
-    assert_eq!(o.paths.coach_small.as_deref(), Some("200_icon/10_icon_chr/coach/coach01_l"));
+    assert_eq!(
+        o.paths.face_small.as_deref(),
+        Some("200_icon/10_icon_chr/c090101")
+    );
+    assert_eq!(
+        o.paths.face_large.as_deref(),
+        Some("200_icon/10_icon_chr/c090101_l")
+    );
+    assert_eq!(
+        o.paths.mini_chr.as_deref(),
+        Some("200_icon/10_icon_chr/c090101")
+    );
+    assert_eq!(
+        o.paths.win_icon.as_deref(),
+        Some("200_icon/10_icon_chr/coach/coach01")
+    );
+    assert_eq!(
+        o.paths.coach_small.as_deref(),
+        Some("200_icon/10_icon_chr/coach/coach01_l")
+    );
     assert_eq!(o.paths.coach_large, None);
     assert_eq!(o.paths.filled_count(), 5);
 }
@@ -205,9 +265,18 @@ fn override_info91_chaines_de_fin_tassees_en_tete() {
     assert_eq!(o.resource_id.to_hex(), "0x68B85907");
 
     // Quirk 1:1 inagle : les 3 chaînes (positions 14/15/16) sont TASSÉES en tête.
-    assert_eq!(o.paths.face_small.as_deref(), Some("200_icon/10_icon_chr/aura_soul/a000560"));
-    assert_eq!(o.paths.face_large.as_deref(), Some("200_icon/10_icon_chr/aura_soul/a000560_l"));
-    assert_eq!(o.paths.mini_chr.as_deref(), Some("220_img/soul_effect/ef_wso000560"));
+    assert_eq!(
+        o.paths.face_small.as_deref(),
+        Some("200_icon/10_icon_chr/aura_soul/a000560")
+    );
+    assert_eq!(
+        o.paths.face_large.as_deref(),
+        Some("200_icon/10_icon_chr/aura_soul/a000560_l")
+    );
+    assert_eq!(
+        o.paths.mini_chr.as_deref(),
+        Some("220_img/soul_effect/ef_wso000560")
+    );
     assert_eq!(o.paths.win_icon, None);
     assert_eq!(o.paths.filled_count(), 3);
 }

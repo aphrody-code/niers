@@ -42,7 +42,8 @@ impl Pattern {
                 bytes.push(0);
                 mask.push(false);
             } else {
-                let b = u8::from_str_radix(tok, 16).map_err(|_| AobError::BadByte(tok.to_owned()))?;
+                let b =
+                    u8::from_str_radix(tok, 16).map_err(|_| AobError::BadByte(tok.to_owned()))?;
                 bytes.push(b);
                 mask.push(true);
             }
@@ -129,7 +130,11 @@ pub fn disp32(buf: &[u8], at: usize) -> Option<i32> {
 #[must_use]
 pub fn rip_target(hit_va: u64, instr_len: usize, disp: i32) -> u64 {
     let next = hit_va.wrapping_add(instr_len as u64);
-    if disp >= 0 { next.wrapping_add(disp as u64) } else { next.wrapping_sub(disp.unsigned_abs() as u64) }
+    if disp >= 0 {
+        next.wrapping_add(disp as u64)
+    } else {
+        next.wrapping_sub(disp.unsigned_abs() as u64)
+    }
 }
 
 #[cfg(test)]
@@ -147,7 +152,10 @@ mod tests {
 
     #[test]
     fn parse_rejects_garbage_and_empty() {
-        assert_eq!(Pattern::parse("44 ZZ"), Err(AobError::BadByte("ZZ".to_owned())));
+        assert_eq!(
+            Pattern::parse("44 ZZ"),
+            Err(AobError::BadByte("ZZ".to_owned()))
+        );
         assert_eq!(Pattern::parse("   "), Err(AobError::Empty));
     }
 
@@ -171,7 +179,10 @@ mod tests {
     #[test]
     fn empty_and_too_long_patterns_find_nothing() {
         // motif vide (construit à la main) → aucun match, is_empty vrai.
-        let empty = Pattern { bytes: vec![], mask: vec![] };
+        let empty = Pattern {
+            bytes: vec![],
+            mask: vec![],
+        };
         assert!(empty.is_empty());
         assert_eq!(empty.find_in(b"abc"), None);
         assert!(empty.find_all(b"abc", 4).is_empty());

@@ -95,7 +95,8 @@ impl Ty {
             let v = if let Some(h) = s.strip_prefix("0x").or_else(|| s.strip_prefix("0X")) {
                 u64::from_str_radix(h, 16).map_err(|_| format!("hex invalide: {s}"))?
             } else {
-                s.parse::<u64>().map_err(|_| format!("entier invalide: {s}"))?
+                s.parse::<u64>()
+                    .map_err(|_| format!("entier invalide: {s}"))?
             };
             if max_bits < 64 && v >= (1u64 << max_bits) {
                 return Err(format!("{s} déborde {} bits", max_bits));
@@ -111,11 +112,19 @@ impl Ty {
                 let v = if let Some(h) = s.strip_prefix("0x").or_else(|| s.strip_prefix("0X")) {
                     i64::from_str_radix(h, 16).map_err(|_| format!("hex invalide: {s}"))?
                 } else {
-                    s.parse::<i64>().map_err(|_| format!("entier signé invalide: {s}"))?
+                    s.parse::<i64>()
+                        .map_err(|_| format!("entier signé invalide: {s}"))?
                 };
-                i32::try_from(v).map_err(|_| format!("{s} déborde i32"))?.to_le_bytes().to_vec()
+                i32::try_from(v)
+                    .map_err(|_| format!("{s} déborde i32"))?
+                    .to_le_bytes()
+                    .to_vec()
             }
-            Ty::F32 => s.parse::<f32>().map_err(|_| format!("flottant invalide: {s}"))?.to_le_bytes().to_vec(),
+            Ty::F32 => s
+                .parse::<f32>()
+                .map_err(|_| format!("flottant invalide: {s}"))?
+                .to_le_bytes()
+                .to_vec(),
         })
     }
 
@@ -130,7 +139,9 @@ impl Ty {
             Ty::U16 => u16::from_le_bytes([b[0], b[1]]).to_string(),
             Ty::U32 => u32::from_le_bytes([b[0], b[1], b[2], b[3]]).to_string(),
             Ty::I32 => i32::from_le_bytes([b[0], b[1], b[2], b[3]]).to_string(),
-            Ty::U64 => u64::from_le_bytes([b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]]).to_string(),
+            Ty::U64 => {
+                u64::from_le_bytes([b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]]).to_string()
+            }
             Ty::F32 => f32::from_le_bytes([b[0], b[1], b[2], b[3]]).to_string(),
         }
     }
@@ -234,159 +245,310 @@ const RANK_CHAIN: &[i64] = &[0x69C8, 0x5C];
 pub static CATALOG: &[Entry] = &[
     // ── Player ─────────────────────────────────────────────────────────────────────
     Entry {
-        id: "max-abilities", feature: "MemoryEditor::InjectMaxAbilities", category: Category::Player,
-        kind: Kind::Toggle, ty: Ty::U32, aob: Some("44 8B 6F 10 8B 47 04"), rva: Some(0xD8FF75),
-        field: Some(0x10), chain: None,
+        id: "max-abilities",
+        feature: "MemoryEditor::InjectMaxAbilities",
+        category: Category::Player,
+        kind: Kind::Toggle,
+        ty: Ty::U32,
+        aob: Some("44 8B 6F 10 8B 47 04"),
+        rva: Some(0xD8FF75),
+        field: Some(0x10),
+        chain: None,
         doc: "force les capacités au max — site mov r13d,[rdi+0x10] (hits_other=1, vérifier le hit)",
     },
     Entry {
-        id: "enhance", feature: "MemoryEditor::InjectEnhance", category: Category::Player,
-        kind: Kind::Toggle, ty: Ty::U32,
-        aob: Some("44 8B 81 ?? ?? ?? ?? 48 ?? ?? 45 ?? ?? 0F ?? ?? ?? ?? ?? 66"), rva: Some(0x1194FB6),
-        field: None, chain: None, doc: "edition de l'enhancement (renforcement d'objet)",
+        id: "enhance",
+        feature: "MemoryEditor::InjectEnhance",
+        category: Category::Player,
+        kind: Kind::Toggle,
+        ty: Ty::U32,
+        aob: Some("44 8B 81 ?? ?? ?? ?? 48 ?? ?? 45 ?? ?? 0F ?? ?? ?? ?? ?? 66"),
+        rva: Some(0x1194FB6),
+        field: None,
+        chain: None,
+        doc: "edition de l'enhancement (renforcement d'objet)",
     },
     Entry {
-        id: "player-level", feature: "PlayerLevel::EnablePlayerLevel", category: Category::Player,
-        kind: Kind::Value, ty: Ty::U32,
-        aob: Some("FF ?? 48 ?? ?? ?? 40 88 7D ?? 49 8B CF"), rva: Some(0xC72400),
-        field: None, chain: None, doc: "niveau du joueur (hook d'écriture)",
+        id: "player-level",
+        feature: "PlayerLevel::EnablePlayerLevel",
+        category: Category::Player,
+        kind: Kind::Value,
+        ty: Ty::U32,
+        aob: Some("FF ?? 48 ?? ?? ?? 40 88 7D ?? 49 8B CF"),
+        rva: Some(0xC72400),
+        field: None,
+        chain: None,
+        doc: "niveau du joueur (hook d'écriture)",
     },
     // ── Match ──────────────────────────────────────────────────────────────────────
     Entry {
-        id: "tension", feature: "MemoryEditor::InjectTensionMatch", category: Category::Match,
-        kind: Kind::StructField, ty: Ty::U32, aob: Some("8B 80 58 10 00 00 EB ?? 8B ?? 80"),
-        rva: Some(0xEB5D8D), field: Some(0x1058), chain: None,
+        id: "tension",
+        feature: "MemoryEditor::InjectTensionMatch",
+        category: Category::Match,
+        kind: Kind::StructField,
+        ty: Ty::U32,
+        aob: Some("8B 80 58 10 00 00 EB ?? 8B ?? 80"),
+        rva: Some(0xEB5D8D),
+        field: Some(0x1058),
+        chain: None,
         doc: "tension/jauge live à entity+0x1058 — mov eax,[rax+0x1058] (offset décodé)",
     },
     Entry {
-        id: "rank", feature: "MemoryEditor::InjectRankCapture", category: Category::Match,
-        kind: Kind::StructField, ty: Ty::I32,
+        id: "rank",
+        feature: "MemoryEditor::InjectRankCapture",
+        category: Category::Match,
+        kind: Kind::StructField,
+        ty: Ty::I32,
         // Les deux offsets sont masqués : ce sont eux qui bougent d'un build à l'autre, pas la
         // forme du site. Figés, l'AOB ne donnait aucun hit ; libérés, il en donne exactement un.
-        aob: Some("48 8B 81 ?? ?? 00 00 4C 8B 89 ?? ?? 00 00 8B 50 5C 33 C0"), rva: Some(0xE6AA57),
-        field: None, chain: Some(RANK_CHAIN),
+        aob: Some("48 8B 81 ?? ?? 00 00 4C 8B 89 ?? ?? 00 00 8B 50 5C 33 C0"),
+        rva: Some(0xE6AA57),
+        field: None,
+        chain: Some(RANK_CHAIN),
         doc: "rang de match : [singleton+0x69C8]+0x5C — offsets décodés au site ré-ancré",
     },
     Entry {
-        id: "match-time", feature: "MemoryEditor::InjectMatchTime", category: Category::Match,
-        kind: Kind::StructField, ty: Ty::F32,
+        id: "match-time",
+        feature: "MemoryEditor::InjectMatchTime",
+        category: Category::Match,
+        kind: Kind::StructField,
+        ty: Ty::F32,
         aob: Some("F3 0F 59 C6 F3 0F 58 ?? ?? ?? ?? ?? F3 0F 11 ?? ?? ?? ?? ?? EB"),
-        rva: Some(0x16831B9), field: Some(0x2208), chain: None,
+        rva: Some(0x16831B9),
+        field: Some(0x2208),
+        chain: None,
         doc: "chrono de match à entity+0x2208 — site `addss xmm0,[rdi+0x2208]` \
               (accumulation du delta), offset décodé depuis l'instruction",
     },
     Entry {
-        id: "special-moves-cooldown", feature: "MemoryEditor::InjectSpecialMovesCooldown",
-        category: Category::Match, kind: Kind::Toggle, ty: Ty::F32,
-        aob: Some("F3 0F 5C ?? 0F ?? ?? F3 ?? ?? ?? 77 ?? 89"), rva: Some(0x15B51DE),
-        field: None, chain: None, doc: "cooldown des techniques (f32)",
+        id: "special-moves-cooldown",
+        feature: "MemoryEditor::InjectSpecialMovesCooldown",
+        category: Category::Match,
+        kind: Kind::Toggle,
+        ty: Ty::F32,
+        aob: Some("F3 0F 5C ?? 0F ?? ?? F3 ?? ?? ?? 77 ?? 89"),
+        rva: Some(0x15B51DE),
+        field: None,
+        chain: None,
+        doc: "cooldown des techniques (f32)",
     },
     Entry {
-        id: "special-tactics-cooldown", feature: "MemoryEditor::InjectSpecialTacticsCooldown",
-        category: Category::Match, kind: Kind::Toggle, ty: Ty::F32,
-        aob: Some("76 ?? F3 0F 5C ?? 0F 2F C6 F3 0F 11 84"), rva: Some(0x16CB9EC),
-        field: None, chain: None, doc: "cooldown des tactiques (f32)",
+        id: "special-tactics-cooldown",
+        feature: "MemoryEditor::InjectSpecialTacticsCooldown",
+        category: Category::Match,
+        kind: Kind::Toggle,
+        ty: Ty::F32,
+        aob: Some("76 ?? F3 0F 5C ?? 0F 2F C6 F3 0F 11 84"),
+        rva: Some(0x16CB9EC),
+        field: None,
+        chain: None,
+        doc: "cooldown des tactiques (f32)",
     },
     Entry {
-        id: "freeze-time-ok-to-pass", feature: "MemoryEditor::InjectFreezeTimeOkToPass",
-        category: Category::Match, kind: Kind::Toggle, ty: Ty::F32,
+        id: "freeze-time-ok-to-pass",
+        feature: "MemoryEditor::InjectFreezeTimeOkToPass",
+        category: Category::Match,
+        kind: Kind::Toggle,
+        ty: Ty::F32,
         aob: Some("0F ?? ?? ?? ?? ?? F3 ?? ?? ?? B9 ?? ?? ?? ?? F3 0F 58 83 ?? ?? ?? ?? F3"),
-        rva: Some(0x14ED6DE), field: None, chain: None, doc: "gel du timer « ok to pass »",
+        rva: Some(0x14ED6DE),
+        field: None,
+        chain: None,
+        doc: "gel du timer « ok to pass »",
     },
     Entry {
-        id: "freeze-time-special-move", feature: "MemoryEditor::InjectFreezeTimeSpecialMove",
-        category: Category::Match, kind: Kind::Toggle, ty: Ty::F32,
-        aob: Some("F3 0F 10 83 ?? ?? ?? ?? F3 41 0F 58 ?? ?? F3 0F 5D ?? F3"), rva: Some(0x14EE985),
-        field: None, chain: None, doc: "gel du timer de technique",
+        id: "freeze-time-special-move",
+        feature: "MemoryEditor::InjectFreezeTimeSpecialMove",
+        category: Category::Match,
+        kind: Kind::Toggle,
+        ty: Ty::F32,
+        aob: Some("F3 0F 10 83 ?? ?? ?? ?? F3 41 0F 58 ?? ?? F3 0F 5D ?? F3"),
+        rva: Some(0x14EE985),
+        field: None,
+        chain: None,
+        doc: "gel du timer de technique",
     },
     Entry {
-        id: "freeze-time-goal-keeper", feature: "MemoryEditor::InjectFreezeTimeGoalKeeper",
-        category: Category::Match, kind: Kind::Toggle, ty: Ty::F32,
-        aob: Some("75 ?? F3 ?? ?? ?? F3 41 0F 5C ?? F3 ?? ?? ?? F3"), rva: Some(0x152322E),
-        field: None, chain: None, doc: "gel du timer gardien",
+        id: "freeze-time-goal-keeper",
+        feature: "MemoryEditor::InjectFreezeTimeGoalKeeper",
+        category: Category::Match,
+        kind: Kind::Toggle,
+        ty: Ty::F32,
+        aob: Some("75 ?? F3 ?? ?? ?? F3 41 0F 5C ?? F3 ?? ?? ?? F3"),
+        rva: Some(0x152322E),
+        field: None,
+        chain: None,
+        doc: "gel du timer gardien",
     },
     // ── Shop ───────────────────────────────────────────────────────────────────────
     Entry {
-        id: "free-buy-shop", feature: "MemoryEditor::InjectFreeBuyShop", category: Category::Shop,
-        kind: Kind::Toggle, ty: Ty::U32, aob: Some("4C 8B 7C 24 ?? 8B ?? 4C 8B 64"),
-        rva: None, field: None, chain: None,
+        id: "free-buy-shop",
+        feature: "MemoryEditor::InjectFreeBuyShop",
+        category: Category::Shop,
+        kind: Kind::Toggle,
+        ty: Ty::U32,
+        aob: Some("4C 8B 7C 24 ?? 8B ?? 4C 8B 64"),
+        rva: None,
+        field: None,
+        chain: None,
         doc: "achats gratuits boutique — AMBIGU (hits_nie=2, other=24 ; alt rva 0x163D037)",
     },
     Entry {
-        id: "free-buy-spirit-market", feature: "MemoryEditor::InjectFreeBuySpiritMarket",
-        category: Category::Shop, kind: Kind::Toggle, ty: Ty::U32, aob: Some("0F B7 C6 41 89 06 0F"),
-        rva: Some(0xE62D1D), field: None, chain: None,
+        id: "free-buy-spirit-market",
+        feature: "MemoryEditor::InjectFreeBuySpiritMarket",
+        category: Category::Shop,
+        kind: Kind::Toggle,
+        ty: Ty::U32,
+        aob: Some("0F B7 C6 41 89 06 0F"),
+        rva: Some(0xE62D1D),
+        field: None,
+        chain: None,
         doc: "achats gratuits marché aux esprits (DRIFT : resolve live a trouvé 0xE3EDCD ≠ dump 0xC38C0E — à investiguer)",
     },
     Entry {
-        id: "drop-rate", feature: "MemoryEditor::InjectDropRate", category: Category::Shop,
-        kind: Kind::StructField, ty: Ty::F32, aob: Some("F3 0F 10 B0 ?? 00 00 00 F3 0F 58 70 1C"),
-        rva: Some(0xC27CF4), field: Some(0x1C), chain: None,
+        id: "drop-rate",
+        feature: "MemoryEditor::InjectDropRate",
+        category: Category::Shop,
+        kind: Kind::StructField,
+        ty: Ty::F32,
+        aob: Some("F3 0F 10 B0 ?? 00 00 00 F3 0F 58 70 1C"),
+        rva: Some(0xC27CF4),
+        field: Some(0x1C),
+        chain: None,
         doc: "taux de drop — addss xmm6,[rax+0x1C] (offset décodé)",
     },
     // ── Spirit ─────────────────────────────────────────────────────────────────────
     Entry {
-        id: "spirit-increment", feature: "MemoryEditor::InjectSpiritIncrement",
-        category: Category::Spirit, kind: Kind::Toggle, ty: Ty::U16, aob: Some("66 89 70 10 EB 41 3C 05"),
-        rva: Some(0xDC0B25), field: Some(0x10), chain: None, doc: "incrément d'esprit — mov [rax+0x10],si",
+        id: "spirit-increment",
+        feature: "MemoryEditor::InjectSpiritIncrement",
+        category: Category::Spirit,
+        kind: Kind::Toggle,
+        ty: Ty::U16,
+        aob: Some("66 89 70 10 EB 41 3C 05"),
+        rva: Some(0xDC0B25),
+        field: Some(0x10),
+        chain: None,
+        doc: "incrément d'esprit — mov [rax+0x10],si",
     },
     Entry {
-        id: "elite-spirit-increment", feature: "MemoryEditor::InjectEliteSpiritIncrement",
-        category: Category::Spirit, kind: Kind::Toggle, ty: Ty::U16,
-        aob: Some("66 41 89 74 42 14 4C 8B 74 24 40"), rva: Some(0xDC0B66), field: Some(0x14), chain: None,
+        id: "elite-spirit-increment",
+        feature: "MemoryEditor::InjectEliteSpiritIncrement",
+        category: Category::Spirit,
+        kind: Kind::Toggle,
+        ty: Ty::U16,
+        aob: Some("66 41 89 74 42 14 4C 8B 74 24 40"),
+        rva: Some(0xDC0B66),
+        field: Some(0x14),
+        chain: None,
         doc: "incrément d'esprit élite — mov [r10+rax*2+0x14],si",
     },
     Entry {
-        id: "spirit-card", feature: "MemoryEditor::EnableSpiritCardInjection",
-        category: Category::Spirit, kind: Kind::Toggle, ty: Ty::U32,
-        aob: Some("49 8B 07 49 8B CF FF 50 30 ?? ?? ?? ?? 44 8B"), rva: Some(0xDBFB29), field: None,
-        chain: None, doc: "injection de carte esprit",
+        id: "spirit-card",
+        feature: "MemoryEditor::EnableSpiritCardInjection",
+        category: Category::Spirit,
+        kind: Kind::Toggle,
+        ty: Ty::U32,
+        aob: Some("49 8B 07 49 8B CF FF 50 30 ?? ?? ?? ?? 44 8B"),
+        rva: Some(0xDBFB29),
+        field: None,
+        chain: None,
+        doc: "injection de carte esprit",
     },
     Entry {
-        id: "add-spirit", feature: "PlayerSpirits::EnableAddSpiritHook", category: Category::Spirit,
-        kind: Kind::Toggle, ty: Ty::U32, aob: Some("4D 8B 7C ?? 08 4D ?? ?? 0F 84 ?? ?? ?? ?? 49"),
-        rva: Some(0xDBFB1B), field: None, chain: None, doc: "hook d'ajout d'esprit (hits_other=1)",
+        id: "add-spirit",
+        feature: "PlayerSpirits::EnableAddSpiritHook",
+        category: Category::Spirit,
+        kind: Kind::Toggle,
+        ty: Ty::U32,
+        aob: Some("4D 8B 7C ?? 08 4D ?? ?? 0F 84 ?? ?? ?? ?? 49"),
+        rva: Some(0xDBFB1B),
+        field: None,
+        chain: None,
+        doc: "hook d'ajout d'esprit (hits_other=1)",
     },
     Entry {
-        id: "spirit-list", feature: "PlayerSpirits::EnableGetListHook", category: Category::Spirit,
-        kind: Kind::StructField, ty: Ty::U32, aob: Some("48 69 E9 28 01 00 00 49 03 2E 74 ?? 39 ?? ?? 74"),
-        rva: Some(0xE9271A), field: Some(0x128), chain: None,
+        id: "spirit-list",
+        feature: "PlayerSpirits::EnableGetListHook",
+        category: Category::Spirit,
+        kind: Kind::StructField,
+        ty: Ty::U32,
+        aob: Some("48 69 E9 28 01 00 00 49 03 2E 74 ?? 39 ?? ?? 74"),
+        rva: Some(0xE9271A),
+        field: Some(0x128),
+        chain: None,
         doc: "liste d'esprits — imul rbp,rcx,0x128 (stride d'enregistrement décodé)",
     },
     Entry {
-        id: "spirit-id", feature: "PlayerSpirits::EnableGetSpiritIdHook", category: Category::Spirit,
-        kind: Kind::StructField, ty: Ty::U32, aob: Some("49 8B ?? 48 8B 51 18 49 8B ?? FF D2 39 30"),
-        rva: Some(0xC9DC1F), field: Some(0x18), chain: None, doc: "id d'esprit — mov rdx,[rcx+0x18]",
+        id: "spirit-id",
+        feature: "PlayerSpirits::EnableGetSpiritIdHook",
+        category: Category::Spirit,
+        kind: Kind::StructField,
+        ty: Ty::U32,
+        aob: Some("49 8B ?? 48 8B 51 18 49 8B ?? FF D2 39 30"),
+        rva: Some(0xC9DC1F),
+        field: Some(0x18),
+        chain: None,
+        doc: "id d'esprit — mov rdx,[rcx+0x18]",
     },
     Entry {
-        id: "unlimited-spirits", feature: "UnlimitedSpirits::EnableUnlimitedSpirits",
-        category: Category::Spirit, kind: Kind::Toggle, ty: Ty::U32, aob: Some("75 03 8B 58 10 49"),
-        rva: None, field: Some(0x10), chain: None,
+        id: "unlimited-spirits",
+        feature: "UnlimitedSpirits::EnableUnlimitedSpirits",
+        category: Category::Spirit,
+        kind: Kind::Toggle,
+        ty: Ty::U32,
+        aob: Some("75 03 8B 58 10 49"),
+        rva: None,
+        field: Some(0x10),
+        chain: None,
         doc: "esprits illimités — site mov ebx,[rax+0x10] (AOB non retrouvé au dump)",
     },
     // ── Passive ────────────────────────────────────────────────────────────────────
     Entry {
-        id: "passive-value", feature: "MemoryEditor::InjectPassiveValueEditing",
-        category: Category::Passive, kind: Kind::Toggle, ty: Ty::F32,
-        aob: Some("48 8B 0F 0F 57 C9 F3 ?? ?? C8 E8 ?? ?? ?? ?? EB"), rva: Some(0xC14385), field: None, chain: None,
+        id: "passive-value",
+        feature: "MemoryEditor::InjectPassiveValueEditing",
+        category: Category::Passive,
+        kind: Kind::Toggle,
+        ty: Ty::F32,
+        aob: Some("48 8B 0F 0F 57 C9 F3 ?? ?? C8 E8 ?? ?? ?? ?? EB"),
+        rva: Some(0xC14385),
+        field: None,
+        chain: None,
         doc: "edition des valeurs de passif (RVA retrouvée LIVE — absente du dump hors-match)",
     },
     Entry {
-        id: "special-move-type", feature: "MemoryEditor::InjectSpecialMoveTypeEditing",
-        category: Category::Passive, kind: Kind::Toggle, ty: Ty::U32,
-        aob: Some("E8 ?? ?? ?? ?? 48 85 C0 74 3F 8B 58 04"), rva: None, field: Some(0x04), chain: None,
+        id: "special-move-type",
+        feature: "MemoryEditor::InjectSpecialMoveTypeEditing",
+        category: Category::Passive,
+        kind: Kind::Toggle,
+        ty: Ty::U32,
+        aob: Some("E8 ?? ?? ?? ?? 48 85 C0 74 3F 8B 58 04"),
+        rva: None,
+        field: Some(0x04),
+        chain: None,
         doc: "edition du type de technique — mov ebx,[rax+0x04] (RVA retrouvée LIVE, absente du dump)",
     },
     Entry {
-        id: "custom-passives", feature: "CustomPassives::EnableHookInternal",
-        category: Category::Passive, kind: Kind::Toggle, ty: Ty::U32,
+        id: "custom-passives",
+        feature: "CustomPassives::EnableHookInternal",
+        category: Category::Passive,
+        kind: Kind::Toggle,
+        ty: Ty::U32,
         aob: Some("75 03 45 8B 3E 45 ?? ?? 74 ?? 48 ?? ?? ?? ?? ?? ?? 48 ?? ?? 74 ?? 4C"),
-        rva: Some(0x165D4DA), field: None, chain: None, doc: "passifs personnalisés (hook interne)",
+        rva: Some(0x165D4DA),
+        field: None,
+        chain: None,
+        doc: "passifs personnalisés (hook interne)",
     },
     Entry {
-        id: "custom-passives-summon", feature: "CustomPassivesSummon::EnableHookInternal",
-        category: Category::Passive, kind: Kind::Toggle, ty: Ty::U32, aob: Some("42 8B BC AB ?? ?? 00 00"),
-        rva: Some(0xE7A070), field: None, chain: None,
+        id: "custom-passives-summon",
+        feature: "CustomPassivesSummon::EnableHookInternal",
+        category: Category::Passive,
+        kind: Kind::Toggle,
+        ty: Ty::U32,
+        aob: Some("42 8B BC AB ?? ?? 00 00"),
+        rva: Some(0xE7A070),
+        field: None,
+        chain: None,
         doc: "passifs d'invocation — mov edi,[rbx+r13*4+disp32] (REX.X via 0x42)",
     },
 ];
@@ -400,7 +562,10 @@ mod tests {
         // Toutes les entrées du catalogue figé ont un AOB valide (si une entrée future met aob:None,
         // ce test le signale → mettre à jour).
         for e in CATALOG {
-            let p = e.pattern().expect("entrée sans AOB").unwrap_or_else(|err| panic!("{}: {err}", e.id));
+            let p = e
+                .pattern()
+                .expect("entrée sans AOB")
+                .unwrap_or_else(|err| panic!("{}: {err}", e.id));
             assert!(!p.is_empty(), "{}: motif vide", e.id);
         }
     }
@@ -408,8 +573,16 @@ mod tests {
     #[test]
     fn pattern_none_when_no_aob() {
         let e = Entry {
-            id: "x", feature: "x", category: Category::Player, kind: Kind::Value, ty: Ty::U8,
-            aob: None, rva: None, field: None, chain: None, doc: "",
+            id: "x",
+            feature: "x",
+            category: Category::Player,
+            kind: Kind::Value,
+            ty: Ty::U8,
+            aob: None,
+            rva: None,
+            field: None,
+            chain: None,
+            doc: "",
         };
         assert!(e.pattern().is_none());
     }
@@ -420,7 +593,8 @@ mod tests {
         for e in CATALOG {
             assert!(seen.insert(e.id), "id dupliqué: {}", e.id);
             assert!(
-                e.id.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-'),
+                e.id.chars()
+                    .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-'),
                 "id non kebab: {}",
                 e.id
             );
@@ -432,7 +606,11 @@ mod tests {
     fn rvas_within_image() {
         for e in CATALOG {
             if let Some(r) = e.rva {
-                assert!((0x1000..NIE_IMAGE_SIZE).contains(&r), "{}: rva 0x{r:x} hors image", e.id);
+                assert!(
+                    (0x1000..NIE_IMAGE_SIZE).contains(&r),
+                    "{}: rva 0x{r:x} hors image",
+                    e.id
+                );
                 assert_eq!(e.static_addr(), Some(NIE_IMAGE_BASE + r));
             }
         }
@@ -443,7 +621,11 @@ mod tests {
         // Un StructField doit fournir de quoi se résoudre : offset de champ OU chaîne.
         for e in CATALOG {
             if e.kind == Kind::StructField {
-                assert!(e.field.is_some() || e.chain.is_some(), "{}: StructField sans field ni chain", e.id);
+                assert!(
+                    e.field.is_some() || e.chain.is_some(),
+                    "{}: StructField sans field ni chain",
+                    e.id
+                );
             }
         }
     }
@@ -466,9 +648,19 @@ mod tests {
     #[test]
     fn ty_every_variant_size_name_roundtrip() {
         for ty in ALL_TY {
-            assert_eq!(ty.size(), ty.name().trim_start_matches(['u', 'i', 'f']).parse::<usize>().unwrap() / 8);
+            assert_eq!(
+                ty.size(),
+                ty.name()
+                    .trim_start_matches(['u', 'i', 'f'])
+                    .parse::<usize>()
+                    .unwrap()
+                    / 8
+            );
             assert_eq!(Ty::from_tag(ty.name()), Some(ty));
-            assert_eq!(Ty::from_tag(&format!(":{}", ty.name().to_uppercase())), Some(ty));
+            assert_eq!(
+                Ty::from_tag(&format!(":{}", ty.name().to_uppercase())),
+                Some(ty)
+            );
             // décodage d'un tampon trop court.
             assert_eq!(ty.decode(&[]), "<court>");
             // encode d'une valeur nominale ("1" parse pour chaque type) puis vérifie la taille.
@@ -482,9 +674,18 @@ mod tests {
         assert_eq!(Ty::U8.encode("255").unwrap(), vec![0xFF]);
         assert_eq!(Ty::U8.decode(&[0xFF]), "255");
         assert_eq!(Ty::U16.encode("0xBEEF").unwrap(), 0xBEEFu16.to_le_bytes());
-        assert_eq!(Ty::U64.encode("0x0102030405060708").unwrap(), 0x0102_0304_0506_0708u64.to_le_bytes());
-        assert_eq!(Ty::U64.decode(&0x1122_3344_5566_7788u64.to_le_bytes()), "1234605616436508552");
-        assert_eq!(Ty::I32.encode("0x7FFFFFFF").unwrap(), 0x7FFF_FFFFi32.to_le_bytes());
+        assert_eq!(
+            Ty::U64.encode("0x0102030405060708").unwrap(),
+            0x0102_0304_0506_0708u64.to_le_bytes()
+        );
+        assert_eq!(
+            Ty::U64.decode(&0x1122_3344_5566_7788u64.to_le_bytes()),
+            "1234605616436508552"
+        );
+        assert_eq!(
+            Ty::I32.encode("0x7FFFFFFF").unwrap(),
+            0x7FFF_FFFFi32.to_le_bytes()
+        );
         assert_eq!(Ty::F32.encode("2.5").unwrap(), 2.5f32.to_le_bytes());
         assert_eq!(Ty::U16.decode(&0x1234u16.to_le_bytes()), "4660");
     }
@@ -504,7 +705,13 @@ mod tests {
 
     #[test]
     fn category_labels_all() {
-        for cat in [Category::Player, Category::Match, Category::Shop, Category::Spirit, Category::Passive] {
+        for cat in [
+            Category::Player,
+            Category::Match,
+            Category::Shop,
+            Category::Spirit,
+            Category::Passive,
+        ] {
             assert!(!cat.label().is_empty());
             // chaque catégorie a au moins une entrée.
             assert!(CATALOG.iter().any(|e| e.category == cat));
@@ -517,7 +724,10 @@ mod tests {
         // Comparé à la rva du catalogue, pas à une constante : un ré-ancrage sur un
         // nouveau build déplace les rva sans invalider la relation testée ici.
         let with_rva = find("tension").unwrap();
-        assert_eq!(with_rva.static_addr(), Some(NIE_IMAGE_BASE + with_rva.rva.unwrap()));
+        assert_eq!(
+            with_rva.static_addr(),
+            Some(NIE_IMAGE_BASE + with_rva.rva.unwrap())
+        );
         assert!(with_rva.pattern().unwrap().is_ok());
         // `rank` porte désormais une rva ré-ancrée *et* une chaîne de pointeurs.
         assert!(find("rank").unwrap().chain.is_some());

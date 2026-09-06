@@ -144,7 +144,10 @@ pub fn upsert_source(
 pub fn index_map(conn: &Connection, source_id: i64) -> Result<IndexStats> {
     let mut st = IndexStats::default();
 
-    conn.execute("DELETE FROM cam_ctrl_class WHERE source_id = ?1", params![source_id])?;
+    conn.execute(
+        "DELETE FROM cam_ctrl_class WHERE source_id = ?1",
+        params![source_id],
+    )?;
     // Deux passes : les classes d'abord sans parent (la colonne `base` se référence
     // elle-même), puis on renseigne le parent une fois toutes les lignes présentes.
     for k in CtrlKind::ALL {
@@ -163,7 +166,13 @@ pub fn index_map(conn: &Connection, source_id: i64) -> Result<IndexStats> {
              ON CONFLICT(cpp_name) DO UPDATE SET
                  source_id = excluded.source_id, short_name = excluded.short_name,
                  depth = excluded.depth, ported = excluded.ported",
-            params![source_id, k.cpp_name(), short, depth, i64::from(k.is_ported())],
+            params![
+                source_id,
+                k.cpp_name(),
+                short,
+                depth,
+                i64::from(k.is_ported())
+            ],
         )?;
         st.ctrl_classes += 1;
     }
@@ -174,7 +183,10 @@ pub fn index_map(conn: &Connection, source_id: i64) -> Result<IndexStats> {
         )?;
     }
 
-    conn.execute("DELETE FROM cam_dispatcher WHERE source_id = ?1", params![source_id])?;
+    conn.execute(
+        "DELETE FROM cam_dispatcher WHERE source_id = ?1",
+        params![source_id],
+    )?;
     for d in map::DISPATCHERS {
         conn.execute(
             "INSERT INTO cam_dispatcher(source_id, name, table_va, cmd_count, is_camera)
@@ -190,7 +202,10 @@ pub fn index_map(conn: &Connection, source_id: i64) -> Result<IndexStats> {
         st.dispatchers += 1;
     }
 
-    conn.execute("DELETE FROM cam_re_symbol WHERE source_id = ?1", params![source_id])?;
+    conn.execute(
+        "DELETE FROM cam_re_symbol WHERE source_id = ?1",
+        params![source_id],
+    )?;
     let symbols: [(&str, u64, &str, &str); 7] = [
         (
             "funcLuaCameraCommand.string",
@@ -240,12 +255,22 @@ pub fn index_map(conn: &Connection, source_id: i64) -> Result<IndexStats> {
         conn.execute(
             "INSERT INTO cam_re_symbol(source_id, name, va, file_offset, kind, note)
              VALUES(?1, ?2, ?3, ?4, ?5, ?6)",
-            params![source_id, name, va as i64, off.map(|o| o as i64), kind, note],
+            params![
+                source_id,
+                name,
+                va as i64,
+                off.map(|o| o as i64),
+                kind,
+                note
+            ],
         )?;
         st.re_symbols += 1;
     }
 
-    conn.execute("DELETE FROM cam_symbol_list WHERE source_id = ?1", params![source_id])?;
+    conn.execute(
+        "DELETE FROM cam_symbol_list WHERE source_id = ?1",
+        params![source_id],
+    )?;
     for c in map::INPUT_COMMANDS {
         conn.execute(
             "INSERT INTO cam_symbol_list(source_id, kind, name) VALUES(?1, 'input_command', ?2)",
@@ -317,7 +342,10 @@ pub fn classify_param(name: &str) -> &'static str {
 /// # Errors
 /// [`DbError::Sqlite`] en cas d'échec SQL.
 pub fn index_binary_params(conn: &Connection, source_id: i64, exe: &[u8]) -> Result<IndexStats> {
-    conn.execute("DELETE FROM cam_param WHERE source_id = ?1", params![source_id])?;
+    conn.execute(
+        "DELETE FROM cam_param WHERE source_id = ?1",
+        params![source_id],
+    )?;
     let mut st = IndexStats::default();
     let mut stmt = conn.prepare(
         "INSERT INTO cam_param(source_id, name, va, section, domain) VALUES(?1, ?2, ?3, ?4, ?5)
@@ -335,7 +363,9 @@ pub fn index_binary_params(conn: &Connection, source_id: i64, exe: &[u8]) -> Res
                 if i - s < 4 || i - s > 96 {
                     continue;
                 }
-                let Ok(text) = core::str::from_utf8(&exe[s..i]) else { continue };
+                let Ok(text) = core::str::from_utf8(&exe[s..i]) else {
+                    continue;
+                };
                 if !text.contains("amera") || text.contains(' ') || text.contains('/') {
                     continue;
                 }
@@ -466,7 +496,10 @@ pub fn index_soccer_config(
         "cam_cinematic_data",
         "cam_cinematic_situation",
     ] {
-        conn.execute(&format!("DELETE FROM {t} WHERE asset_id = ?1"), params![asset_id])?;
+        conn.execute(
+            &format!("DELETE FROM {t} WHERE asset_id = ?1"),
+            params![asset_id],
+        )?;
     }
 
     for (i, d) in cfg.camera_data.iter().enumerate() {
@@ -482,19 +515,34 @@ pub fn index_soccer_config(
              VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,
                     ?19,?20,?21,?22,?23,?24,?25,?26,?27,?28)",
             params![
-                asset_id, i as i64, i64::from(d.no),
-                f64::from(d.length), f64::from(d.length_min), f64::from(d.length_max),
-                f64::from(d.rot_x), f64::from(d.rot_x_min), f64::from(d.rot_x_max),
-                f64::from(d.rot_y), f64::from(d.rot_y_min), f64::from(d.rot_y_max),
-                f64::from(d.offence_offset_rot_y), f64::from(d.defence_offset_rot_y),
+                asset_id,
+                i as i64,
+                i64::from(d.no),
+                f64::from(d.length),
+                f64::from(d.length_min),
+                f64::from(d.length_max),
+                f64::from(d.rot_x),
+                f64::from(d.rot_x_min),
+                f64::from(d.rot_x_max),
+                f64::from(d.rot_y),
+                f64::from(d.rot_y_min),
+                f64::from(d.rot_y_max),
+                f64::from(d.offence_offset_rot_y),
+                f64::from(d.defence_offset_rot_y),
                 f64::from(d.fov),
-                f64::from(d.ref_offset[0]), f64::from(d.ref_offset[1]), f64::from(d.ref_offset[2]),
-                f64::from(d.offence_ref_offset[0]), f64::from(d.offence_ref_offset[1]),
+                f64::from(d.ref_offset[0]),
+                f64::from(d.ref_offset[1]),
+                f64::from(d.ref_offset[2]),
+                f64::from(d.offence_ref_offset[0]),
+                f64::from(d.offence_ref_offset[1]),
                 f64::from(d.offence_ref_offset[2]),
-                f64::from(d.defence_ref_offset[0]), f64::from(d.defence_ref_offset[1]),
+                f64::from(d.defence_ref_offset[0]),
+                f64::from(d.defence_ref_offset[1]),
                 f64::from(d.defence_ref_offset[2]),
-                f64::from(d.ref_offset_length), f64::from(d.move_interp_rate),
-                f64::from(d.rot_interp_rate), f64::from(d.zoom_interp_rate)
+                f64::from(d.ref_offset_length),
+                f64::from(d.move_interp_rate),
+                f64::from(d.rot_interp_rate),
+                f64::from(d.zoom_interp_rate)
             ],
         )?;
         st.config_rows += 1;
@@ -510,8 +558,14 @@ pub fn index_soccer_config(
                 "INSERT INTO cam_soccer_ref(asset_id, list_name, row_idx, cam_id,
                                             slice_offset, slice_count)
                  VALUES(?1,?2,?3,?4,?5,?6)",
-                params![asset_id, list, i as i64, i64::from(r.id), i64::from(r.slice[0]),
-                        i64::from(r.slice[1])],
+                params![
+                    asset_id,
+                    list,
+                    i as i64,
+                    i64::from(r.id),
+                    i64::from(r.slice[0]),
+                    i64::from(r.slice[1])
+                ],
             )?;
             st.config_rows += 1;
         }
@@ -525,12 +579,21 @@ pub fn index_soccer_config(
                  init_ref_goal_line)
              VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16)",
             params![
-                asset_id, i as i64, i64::from(g.id),
-                f64::from(g.cam_pos[0]), f64::from(g.cam_pos[1]), f64::from(g.cam_pos[2]),
-                f64::from(g.ref_offset[0]), f64::from(g.ref_offset[1]), f64::from(g.ref_offset[2]),
-                f64::from(g.fov), f64::from(g.chase_max_speed),
+                asset_id,
+                i as i64,
+                i64::from(g.id),
+                f64::from(g.cam_pos[0]),
+                f64::from(g.cam_pos[1]),
+                f64::from(g.cam_pos[2]),
+                f64::from(g.ref_offset[0]),
+                f64::from(g.ref_offset[1]),
+                f64::from(g.ref_offset[2]),
+                f64::from(g.fov),
+                f64::from(g.chase_max_speed),
                 i64::from(g.not_follow_after_bouncing),
-                i64::from(g.fixed_ref[0]), i64::from(g.fixed_ref[1]), i64::from(g.fixed_ref[2]),
+                i64::from(g.fixed_ref[0]),
+                i64::from(g.fixed_ref[1]),
+                i64::from(g.fixed_ref[2]),
                 i64::from(g.init_ref_goal_line)
             ],
         )?;
@@ -543,10 +606,17 @@ pub fn index_soccer_config(
                  rot_x_start, rot_x_end, rot_y_start, rot_y_end)
              VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11)",
             params![
-                asset_id, i as i64, i64::from(a.id), f64::from(a.cam_length),
-                f64::from(a.cam_pos[0]), f64::from(a.cam_pos[1]), f64::from(a.cam_pos[2]),
-                f64::from(a.rot_x.0), f64::from(a.rot_x.1),
-                f64::from(a.rot_y.0), f64::from(a.rot_y.1)
+                asset_id,
+                i as i64,
+                i64::from(a.id),
+                f64::from(a.cam_length),
+                f64::from(a.cam_pos[0]),
+                f64::from(a.cam_pos[1]),
+                f64::from(a.cam_pos[2]),
+                f64::from(a.rot_x.0),
+                f64::from(a.rot_x.1),
+                f64::from(a.rot_y.0),
+                f64::from(a.rot_y.1)
             ],
         )?;
         st.config_rows += 1;
@@ -557,8 +627,13 @@ pub fn index_soccer_config(
             "INSERT INTO cam_aerial_map(asset_id, row_idx, map_id, aerial_cam_info_id,
                                         light_overwrite_id)
              VALUES(?1,?2,?3,?4,?5)",
-            params![asset_id, i as i64, i64::from(m.id), i64::from(m.aerial_cam_info_id),
-                    i64::from(m.light_overwrite_id)],
+            params![
+                asset_id,
+                i as i64,
+                i64::from(m.id),
+                i64::from(m.aerial_cam_info_id),
+                i64::from(m.light_overwrite_id)
+            ],
         )?;
         st.config_rows += 1;
     }
@@ -567,8 +642,13 @@ pub fn index_soccer_config(
         conn.execute(
             "INSERT INTO cam_dir(asset_id, row_idx, dir_cam_id, hor_cam_id, vert_cam_id)
              VALUES(?1,?2,?3,?4,?5)",
-            params![asset_id, i as i64, i64::from(d.dir_cam_id), i64::from(d.hor_cam_id),
-                    i64::from(d.vert_cam_id)],
+            params![
+                asset_id,
+                i as i64,
+                i64::from(d.dir_cam_id),
+                i64::from(d.hor_cam_id),
+                i64::from(d.vert_cam_id)
+            ],
         )?;
         st.config_rows += 1;
     }
@@ -583,16 +663,27 @@ pub fn index_soccer_config(
                  enable_interp, move_ref_pos_only, move_type, curvature)
              VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21)",
             params![
-                asset_id, i as i64, i64::from(f.id),
-                f64::from(f.ref_offset[0]), f64::from(f.ref_offset[1]), f64::from(f.ref_offset[2]),
-                f64::from(f.cam_pos_offset[0]), f64::from(f.cam_pos_offset[1]),
+                asset_id,
+                i as i64,
+                i64::from(f.id),
+                f64::from(f.ref_offset[0]),
+                f64::from(f.ref_offset[1]),
+                f64::from(f.ref_offset[2]),
+                f64::from(f.cam_pos_offset[0]),
+                f64::from(f.cam_pos_offset[1]),
                 f64::from(f.cam_pos_offset[2]),
-                f64::from(f.move_vec_offset[0]), f64::from(f.move_vec_offset[1]),
+                f64::from(f.move_vec_offset[0]),
+                f64::from(f.move_vec_offset[1]),
                 f64::from(f.move_vec_offset[2]),
-                f64::from(f.cam_roll), f64::from(f.fov), f64::from(f.offset_length),
-                f64::from(f.offset_time), f64::from(f.condition_area_radius),
-                i64::from(f.enable_interp), i64::from(f.move_ref_pos_only),
-                i64::from(f.move_type), f64::from(f.curvature)
+                f64::from(f.cam_roll),
+                f64::from(f.fov),
+                f64::from(f.offset_length),
+                f64::from(f.offset_time),
+                f64::from(f.condition_area_radius),
+                i64::from(f.enable_interp),
+                i64::from(f.move_ref_pos_only),
+                i64::from(f.move_type),
+                f64::from(f.curvature)
             ],
         )?;
         st.config_rows += 1;
@@ -603,8 +694,14 @@ pub fn index_soccer_config(
             "INSERT INTO cam_cinematic_data(asset_id, row_idx, weight, change_recast,
                  chase_camera_id, fix_camera_id)
              VALUES(?1,?2,?3,?4,?5,?6)",
-            params![asset_id, i as i64, i64::from(c.weight), f64::from(c.change_recast),
-                    i64::from(c.chase_camera_id), i64::from(c.fix_camera_id)],
+            params![
+                asset_id,
+                i as i64,
+                i64::from(c.weight),
+                f64::from(c.change_recast),
+                i64::from(c.chase_camera_id),
+                i64::from(c.fix_camera_id)
+            ],
         )?;
         st.config_rows += 1;
     }
@@ -614,8 +711,13 @@ pub fn index_soccer_config(
             "INSERT INTO cam_cinematic_situation(asset_id, row_idx, situation_type,
                  slice_offset, slice_count)
              VALUES(?1,?2,?3,?4,?5)",
-            params![asset_id, i as i64, i64::from(s.situation_type), i64::from(s.slice[0]),
-                    i64::from(s.slice[1])],
+            params![
+                asset_id,
+                i as i64,
+                i64::from(s.situation_type),
+                i64::from(s.slice[0]),
+                i64::from(s.slice[1])
+            ],
         )?;
         st.config_rows += 1;
     }
@@ -624,8 +726,14 @@ pub fn index_soccer_config(
 }
 
 /// Colonnes typées d'un paramètre de preset : `(ty, v_int, v_f0, v_f1, v_f2, v_text)`.
-type ParamColumns<'a> =
-    (&'static str, Option<i64>, Option<f64>, Option<f64>, Option<f64>, Option<&'a str>);
+type ParamColumns<'a> = (
+    &'static str,
+    Option<i64>,
+    Option<f64>,
+    Option<f64>,
+    Option<f64>,
+    Option<&'a str>,
+);
 
 fn bind_param(
     conn: &Connection,
@@ -635,20 +743,19 @@ fn bind_param(
     inherited: bool,
     from: Option<&str>,
 ) -> Result<()> {
-    let (ty, vi, f0, f1, f2, text): ParamColumns<'_> =
-        match v {
-            ParamValue::Int(i) => ("int", Some(i64::from(*i)), None, None, None, None),
-            ParamValue::Float(f) => ("float", None, Some(f64::from(*f)), None, None, None),
-            ParamValue::Vec3(v) => (
-                "vec3",
-                None,
-                Some(f64::from(v[0])),
-                Some(f64::from(v[1])),
-                Some(f64::from(v[2])),
-                None,
-            ),
-            ParamValue::Text(t) => ("text", None, None, None, None, Some(t.as_str())),
-        };
+    let (ty, vi, f0, f1, f2, text): ParamColumns<'_> = match v {
+        ParamValue::Int(i) => ("int", Some(i64::from(*i)), None, None, None, None),
+        ParamValue::Float(f) => ("float", None, Some(f64::from(*f)), None, None, None),
+        ParamValue::Vec3(v) => (
+            "vec3",
+            None,
+            Some(f64::from(v[0])),
+            Some(f64::from(v[1])),
+            Some(f64::from(v[2])),
+            None,
+        ),
+        ParamValue::Text(t) => ("text", None, None, None, None, Some(t.as_str())),
+    };
     conn.execute(
         "INSERT INTO cam_preset_param(preset_id, name, ty, v_int, v_f0, v_f1, v_f2, v_text,
                                       inherited, from_preset)
@@ -657,7 +764,18 @@ fn bind_param(
              ty = excluded.ty, v_int = excluded.v_int, v_f0 = excluded.v_f0,
              v_f1 = excluded.v_f1, v_f2 = excluded.v_f2, v_text = excluded.v_text,
              from_preset = excluded.from_preset",
-        params![preset_id, name, ty, vi, f0, f1, f2, text, i64::from(inherited), from],
+        params![
+            preset_id,
+            name,
+            ty,
+            vi,
+            f0,
+            f1,
+            f2,
+            text,
+            i64::from(inherited),
+            from
+        ],
     )?;
     Ok(())
 }
@@ -678,7 +796,10 @@ pub fn index_property(
              (SELECT id FROM cam_preset WHERE asset_id = ?1)",
         params![asset_id],
     )?;
-    conn.execute("DELETE FROM cam_preset WHERE asset_id = ?1", params![asset_id])?;
+    conn.execute(
+        "DELETE FROM cam_preset WHERE asset_id = ?1",
+        params![asset_id],
+    )?;
 
     for (name, preset) in &set.presets {
         conn.execute(
@@ -741,8 +862,10 @@ pub fn index_anim(
 ) -> Result<IndexStats> {
     // `g4cm::decode` vit désormais dans `nie-formats` et rend une `FormatError` ; `CameraError`
     // l'absorbe (variante `Format`), ce que `DbError::Decode` continue d'attendre.
-    let anim = g4cm::decode(bytes)
-        .map_err(|e| DbError::Decode { path: path.to_string(), source: crate::CameraError::Format(e) })?;
+    let anim = g4cm::decode(bytes).map_err(|e| DbError::Decode {
+        path: path.to_string(),
+        source: crate::CameraError::Format(e),
+    })?;
     let roundtrip_ok = g4cm::encode(&anim).is_ok_and(|re| re == bytes);
     let mut st = IndexStats::default();
 
@@ -884,7 +1007,8 @@ mod tests {
 
     fn mem() -> Connection {
         let conn = Connection::open_in_memory().expect("base mémoire");
-        conn.execute_batch(nie_index::CAMERA_SCHEMA).expect("migration");
+        conn.execute_batch(nie_index::CAMERA_SCHEMA)
+            .expect("migration");
         conn
     }
 
@@ -900,7 +1024,11 @@ mod tests {
             .expect("compte");
         assert_eq!(n, 22, "22 tables cam_*");
         let v: i64 = conn
-            .query_row("SELECT COUNT(*) FROM sqlite_master WHERE type='view'", [], |r| r.get(0))
+            .query_row(
+                "SELECT COUNT(*) FROM sqlite_master WHERE type='view'",
+                [],
+                |r| r.get(0),
+            )
             .expect("compte");
         assert_eq!(v, 5, "5 vues");
     }
@@ -925,7 +1053,9 @@ mod tests {
 
         // La vue récursive doit couvrir toutes les classes.
         let n: i64 = conn
-            .query_row("SELECT COUNT(*) FROM v_cam_ctrl_hierarchy", [], |r| r.get(0))
+            .query_row("SELECT COUNT(*) FROM v_cam_ctrl_hierarchy", [], |r| {
+                r.get(0)
+            })
             .expect("vue");
         assert_eq!(n, 23);
 
@@ -961,14 +1091,33 @@ mod tests {
     fn config_soccer_et_vue_resolue() {
         let conn = mem();
         let src = upsert_source(&conn, "vfs", "test", None, None).expect("source");
-        let asset = upsert_asset(&conn, src, "common/x/soccer_camera_config.cfg.bin", None, None)
-            .expect("asset");
+        let asset = upsert_asset(
+            &conn,
+            src,
+            "common/x/soccer_camera_config.cfg.bin",
+            None,
+            None,
+        )
+        .expect("asset");
         let cfg = SoccerCameraConfig {
             camera_data: vec![
-                SoccerCameraInfoData { no: 0, length: 8.0, fov: 45.0, ..Default::default() },
-                SoccerCameraInfoData { no: 1, length: 12.0, fov: 50.0, ..Default::default() },
+                SoccerCameraInfoData {
+                    no: 0,
+                    length: 8.0,
+                    fov: 45.0,
+                    ..Default::default()
+                },
+                SoccerCameraInfoData {
+                    no: 1,
+                    length: 12.0,
+                    fov: 50.0,
+                    ..Default::default()
+                },
             ],
-            cameras: vec![IndexedRef { id: 0xDEAD_BEEF, slice: [1, 1] }],
+            cameras: vec![IndexedRef {
+                id: 0xDEAD_BEEF,
+                slice: [1, 1],
+            }],
             goalnet: vec![GoalnetCameraInfo {
                 id: 0x596C_1326,
                 cam_pos: [14.0, 2.5, 50.0],
@@ -989,7 +1138,10 @@ mod tests {
             )
             .expect("vue");
         assert_eq!(cam_id, 0xDEAD_BEEF);
-        assert!((length - 12.0).abs() < 1e-6, "la tranche pointe la 2ᵉ ligne");
+        assert!(
+            (length - 12.0).abs() < 1e-6,
+            "la tranche pointe la 2ᵉ ligne"
+        );
     }
 
     #[test]
@@ -1008,8 +1160,8 @@ mod tests {
     fn asset_calcule_sha256_et_format() {
         let conn = mem();
         let src = upsert_source(&conn, "vfs", "test", None, None).expect("source");
-        let id = upsert_asset(&conn, src, "a/b.g4cm", Some("test"), Some(b"G4CM____"))
-            .expect("asset");
+        let id =
+            upsert_asset(&conn, src, "a/b.g4cm", Some("test"), Some(b"G4CM____")).expect("asset");
         let (present, fmt, sha): (i64, String, String) = conn
             .query_row(
                 "SELECT present, format, sha256 FROM cam_asset WHERE id = ?1",

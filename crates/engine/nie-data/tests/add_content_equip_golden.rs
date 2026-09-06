@@ -9,8 +9,7 @@ use nie_data::add_content_equip::parse_add_content_equip_config;
 use nie_data::hash::HashId;
 use serde_json::json;
 
-const REAL: &str =
-    "system/add_content_equip_config.cfg.bin.json";
+const REAL: &str = "system/add_content_equip_config.cfg.bin.json";
 
 fn load(path: &str) -> Option<serde_json::Value> {
     std::path::Path::new(path)
@@ -41,5 +40,8 @@ fn golden_dump_reel() {
     let es = parse_add_content_equip_config(&root);
     assert_eq!(es.len(), 22, "22 équipements AOC");
     assert_eq!(es[0].equip_id, HashId::parse("0xC5A27A3C").unwrap());
-    assert!(es.iter().all(|e| !e.equip_id.is_zero() && !e.aoc_condition.is_empty()));
+    assert!(
+        es.iter()
+            .all(|e| !e.equip_id.is_zero() && !e.aoc_condition.is_empty())
+    );
 }

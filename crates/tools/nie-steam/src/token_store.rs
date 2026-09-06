@@ -72,7 +72,10 @@ impl TokenStore {
             .and_then(|text| {
                 serde_json::from_str::<HashMap<String, AccountTokens>>(&text)
                     .map_err(|e| {
-                        warn!("token-store {}: JSON invalide ({e}), réinitialisation", p.display());
+                        warn!(
+                            "token-store {}: JSON invalide ({e}), réinitialisation",
+                            p.display()
+                        );
                         e
                     })
                     .ok()
@@ -80,8 +83,10 @@ impl TokenStore {
             .unwrap_or_default();
 
         // Normalise les clés en minuscules.
-        let normalized: HashMap<String, AccountTokens> =
-            map.into_iter().map(|(k, v)| (k.to_ascii_lowercase(), v)).collect();
+        let normalized: HashMap<String, AccountTokens> = map
+            .into_iter()
+            .map(|(k, v)| (k.to_ascii_lowercase(), v))
+            .collect();
 
         Self {
             path: Some(p.to_owned()),
@@ -114,10 +119,18 @@ impl TokenStore {
         let mut guard = self.inner.lock().expect("token-store lock poisoned");
         let entry = guard.entry(key).or_default();
         if let Some(t) = refresh_token {
-            entry.refresh_token = if t.is_empty() { None } else { Some(t.to_owned()) };
+            entry.refresh_token = if t.is_empty() {
+                None
+            } else {
+                Some(t.to_owned())
+            };
         }
         if let Some(g) = guard_data {
-            entry.guard_data = if g.is_empty() { None } else { Some(g.to_owned()) };
+            entry.guard_data = if g.is_empty() {
+                None
+            } else {
+                Some(g.to_owned())
+            };
         }
         self.save_locked(&guard);
     }
@@ -133,8 +146,7 @@ impl TokenStore {
             if let Some(parent) = path.parent() {
                 std::fs::create_dir_all(parent)?;
             }
-            let json = serde_json::to_string_pretty(serializable)
-                .map_err(std::io::Error::other)?;
+            let json = serde_json::to_string_pretty(serializable).map_err(std::io::Error::other)?;
             std::fs::write(path, json)?;
             Ok::<(), std::io::Error>(())
         })();

@@ -44,43 +44,34 @@ extern crate alloc;
 #[cfg(feature = "std")]
 pub mod assemble;
 pub mod cfgbin;
-pub mod rdbn_patch;
-pub mod t2b_patch;
 #[cfg(feature = "std")]
-pub mod font;
-#[cfg(feature = "std")]
-pub mod objbin;
+pub mod col;
 pub mod cpk;
 /// Encodeur CPK/@UTF (contrepartie écriture de [`cpk`]) — même gating (aucun, `alloc`-only).
 pub mod cpk_encode;
-pub mod crilayla;
-/// Primitives 2D RGBA8 pures (crop/scale nearest) — source unique, no_std (le blend reste landmine #5).
-pub mod raster2d;
-/// Comparaison d'images de rendu : identité, ΔE2000, SSIM par région, carte par bloc, masques ROI.
-#[cfg(feature = "std")]
-pub mod imgmetric;
-/// Utilitaires de noms de chemins d'assets (file-stem byte-exact `FUN_140452820`), no_std.
-pub mod pathname;
-/// `strcmp` byte-exact (`FUN_14168b570`, MSVC SIMD) — comparaison C non signée, no_std.
-pub mod strcmp;
-/// `strncmp` byte-exact (`FUN_14168b330`, MSVC) — comparaison C bornée non signée, no_std.
-pub mod strncmp;
-/// `strlen` byte-exact (`FUN_14168b5f0`, MSVC SWAR) — longueur de chaîne C, no_std.
-pub mod strlen;
 /// Parseurs/décodeurs audio Criware (feature `std` : ADX décode via `f64::cos`/`sqrt`).
 #[cfg(feature = "std")]
 pub mod cri_audio;
-/// Muxeur MP4/AVC pur Rust (H.264 Annex-B → `ftyp`/`moov`/`mdat`) — remplace l'appel `ffmpeg`.
-pub mod mp4;
-/// Muxeur WebM/Matroska pur Rust (VP9) — contrepartie de [`mp4`] pour les deux plus longs films.
-pub mod webm;
-/// Démultiplexeur USM/Sofdec2 complet : métadonnées `@UTF`, images, pistes sonores.
+pub mod crilayla;
+/// Dispatch « octets → JSON », partagé par la FFI, la CLI et le décodage en lot.
+#[cfg(all(feature = "std", feature = "serde"))]
+pub mod decode;
 #[cfg(feature = "std")]
-pub mod usm;
+pub mod dxbc;
+#[cfg(feature = "std")]
+pub mod font;
+#[cfg(feature = "std")]
+pub mod g4cm;
+#[cfg(feature = "std")]
+pub mod g4la;
+#[cfg(feature = "std")]
+pub mod g4ma;
 #[cfg(feature = "std")]
 pub mod g4md;
 #[cfg(feature = "std")]
 pub mod g4mg;
+#[cfg(feature = "std")]
+pub mod g4mt;
 #[cfg(feature = "std")]
 pub mod g4pk;
 #[cfg(feature = "std")]
@@ -90,28 +81,6 @@ pub mod g4pkm_motion;
 #[cfg(feature = "std")]
 pub mod g4sk;
 #[cfg(feature = "std")]
-pub mod menu;
-#[cfg(feature = "std")]
-pub mod mevbin;
-#[cfg(feature = "std")]
-pub mod level5;
-#[cfg(feature = "std")]
-pub mod navm;
-#[cfg(feature = "std")]
-pub mod g4cm;
-#[cfg(feature = "std")]
-pub mod g4mt;
-#[cfg(feature = "std")]
-pub mod g4ma;
-#[cfg(feature = "std")]
-pub mod g4vs;
-#[cfg(feature = "std")]
-pub mod g4la;
-#[cfg(feature = "std")]
-pub mod col;
-#[cfg(feature = "std")]
-pub mod dxbc;
-#[cfg(feature = "std")]
 pub mod g4tx;
 /// Décodeur G4TX/DDS → RGBA8/PNG (source unique du workspace, feature `textures`).
 #[cfg(feature = "textures")]
@@ -120,26 +89,57 @@ pub mod g4tx_decode;
 /// écriture de [`g4tx_decode`], même gating (ses tests round-trip en dépendent).
 #[cfg(feature = "textures")]
 pub mod g4tx_encode;
+#[cfg(feature = "std")]
+pub mod g4vs;
 /// Encodage d'une image RGBA8 vers les formats d'échange (WebP sans perte, GIF, JPEG, BMP, TGA,
 /// TIFF, QOI) — feature `images`. Le PNG y garde son chemin `png` historique, byte-exact.
 #[cfg(feature = "images")]
 pub mod image_out;
-/// Atlas d'icônes `.g4tx` → feuille de sprites CSS / SVG / JSON, pour le web et l'explorateur.
+/// Comparaison d'images de rendu : identité, ΔE2000, SSIM par région, carte par bloc, masques ROI.
 #[cfg(feature = "std")]
-pub mod sprite_sheet;
-/// Analyse mesurée des planches de personnage (`chr/_face/20_EDIT`) : zones, rôle, convention de
-/// composition. Source unique des seuils employés par [`image_out`].
-pub mod planche;
+pub mod imgmetric;
+#[cfg(feature = "std")]
+pub mod level5;
 #[cfg(feature = "std")]
 pub mod lip;
 #[cfg(feature = "std")]
+pub mod menu;
+#[cfg(feature = "std")]
+pub mod mevbin;
+/// Muxeur MP4/AVC pur Rust (H.264 Annex-B → `ftyp`/`moov`/`mdat`) — remplace l'appel `ffmpeg`.
+pub mod mp4;
+#[cfg(feature = "std")]
+pub mod navm;
+#[cfg(feature = "std")]
 pub mod nxtch;
+#[cfg(feature = "std")]
+pub mod objbin;
+/// Utilitaires de noms de chemins d'assets (file-stem byte-exact `FUN_140452820`), no_std.
+pub mod pathname;
+/// Analyse mesurée des planches de personnage (`chr/_face/20_EDIT`) : zones, rôle, convention de
+/// composition. Source unique des seuils employés par [`image_out`].
+pub mod planche;
+/// Primitives 2D RGBA8 pures (crop/scale nearest) — source unique, no_std (le blend reste landmine #5).
+pub mod raster2d;
+pub mod rdbn_patch;
+/// Atlas d'icônes `.g4tx` → feuille de sprites CSS / SVG / JSON, pour le web et l'explorateur.
+#[cfg(feature = "std")]
+pub mod sprite_sheet;
+/// `strcmp` byte-exact (`FUN_14168b570`, MSVC SIMD) — comparaison C non signée, no_std.
+pub mod strcmp;
+/// `strlen` byte-exact (`FUN_14168b5f0`, MSVC SWAR) — longueur de chaîne C, no_std.
+pub mod strlen;
+/// `strncmp` byte-exact (`FUN_14168b330`, MSVC) — comparaison C bornée non signée, no_std.
+pub mod strncmp;
+pub mod t2b_patch;
+/// Démultiplexeur USM/Sofdec2 complet : métadonnées `@UTF`, images, pistes sonores.
+#[cfg(feature = "std")]
+pub mod usm;
 /// VFS multi-CPK (feature `std` : lit `cpk_list.cfg.bin` + CPK via `std::fs`).
 #[cfg(feature = "std")]
 pub mod vfs;
-/// Dispatch « octets → JSON », partagé par la FFI, la CLI et le décodage en lot.
-#[cfg(all(feature = "std", feature = "serde"))]
-pub mod decode;
+/// Muxeur WebM/Matroska pur Rust (VP9) — contrepartie de [`mp4`] pour les deux plus longs films.
+pub mod webm;
 
 #[derive(Debug)]
 pub enum FormatError {
@@ -322,7 +322,9 @@ mod tests {
     /// et vérifie que detect() retourne FileFormat::G4nv (magic NAVM).
     #[test]
     fn g4nv_detect_golden_via_vfs() {
-        let dir = crate::vfs::resolve_game_dir().to_string_lossy().into_owned();
+        let dir = crate::vfs::resolve_game_dir()
+            .to_string_lossy()
+            .into_owned();
         let data = std::path::Path::new(&dir).join("data");
         if !crate::vfs::donnees_disponibles(&data) {
             eprintln!("skip g4nv_detect_golden_via_vfs : NIE_GAME_DIR absent");
@@ -347,7 +349,9 @@ mod tests {
             }
         };
 
-        let bytes = vfs.read(&path).unwrap_or_else(|e| panic!("vfs.read({path}): {e}"));
+        let bytes = vfs
+            .read(&path)
+            .unwrap_or_else(|e| panic!("vfs.read({path}): {e}"));
         assert!(
             bytes.len() >= 4,
             "fichier .g4nv trop court ({} octets) : {path}",
@@ -371,6 +375,9 @@ mod tests {
             &bytes[..4]
         );
 
-        eprintln!("OK: detect({path}) == G4nv (magic NAVM, {} octets)", bytes.len());
+        eprintln!(
+            "OK: detect({path}) == G4nv (magic NAVM, {} octets)",
+            bytes.len()
+        );
     }
 }

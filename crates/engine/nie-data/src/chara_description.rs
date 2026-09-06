@@ -17,7 +17,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use serde_json::Value;
 
-use crate::cfgbin::{walk_named, Node};
+use crate::cfgbin::{Node, walk_named};
 use crate::hash::HashId;
 use crate::text::sanitize_text;
 
@@ -52,7 +52,10 @@ pub fn parse_description_node(node: &Node<'_>) -> Option<ParsedDescription> {
     if description.is_empty() {
         return None;
     }
-    Some(ParsedDescription { hash_id: hash_var.as_hash(), description })
+    Some(ParsedDescription {
+        hash_id: hash_var.as_hash(),
+        description,
+    })
 }
 
 /// Parse toutes les descriptions d'un `chara_description_text.cfg.bin.json` désérialisé

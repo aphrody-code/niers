@@ -34,7 +34,7 @@
 mod common;
 
 use nie_data::chara_bank::{
-    parse_soccer_club_room_config, CharaRestrictionInfo, SoccerClubRoomConfig,
+    CharaRestrictionInfo, SoccerClubRoomConfig, parse_soccer_club_room_config,
 };
 use nie_data::hash::HashId;
 use serde_json::json;
@@ -142,8 +142,7 @@ fn fixture_liste_manquante_renvoie_vide() {
 
 // ─── Test sur le vrai fichier (skip si absent du VPS) ────────────────────────
 
-const REAL_PATH: &str =
-    "chara_bank/soccer_club_room_config.cfg.bin.json";
+const REAL_PATH: &str = "chara_bank/soccer_club_room_config.cfg.bin.json";
 
 fn load_real() -> Option<SoccerClubRoomConfig> {
     let chemin_abs = common::chemin(REAL_PATH)?;
@@ -177,7 +176,10 @@ fn real_file_entree0_valeurs() {
     let e = &cfg.restrictions[0];
     assert_eq!(e.character_id, HashId(0x686B_E87E), "character_id[0]");
     assert!(e.is_remove_club_disabled, "is_remove_club_disabled[0]");
-    assert!(e.is_chara_bank_move_disabled, "is_chara_bank_move_disabled[0]");
+    assert!(
+        e.is_chara_bank_move_disabled,
+        "is_chara_bank_move_disabled[0]"
+    );
     assert!(
         e.is_team_dock_change_disabled,
         "is_team_dock_change_disabled[0]"
@@ -192,7 +194,10 @@ fn real_file_entree1_valeurs() {
     let e = &cfg.restrictions[1];
     assert_eq!(e.character_id, HashId(0x4346_BBBD), "character_id[1]");
     assert!(e.is_remove_club_disabled, "is_remove_club_disabled[1]");
-    assert!(e.is_chara_bank_move_disabled, "is_chara_bank_move_disabled[1]");
+    assert!(
+        e.is_chara_bank_move_disabled,
+        "is_chara_bank_move_disabled[1]"
+    );
     assert!(
         !e.is_team_dock_change_disabled,
         "is_team_dock_change_disabled[1] = false"
@@ -206,7 +211,10 @@ fn real_file_entree9_bank_move_dernier_true() {
     // m_soccerClubRoomCharaRestrictionInfoList[9] — dernière des 10 entrées bank_move = true
     let e = &cfg.restrictions[9];
     assert_eq!(e.character_id, HashId(0x77BB_1BD4), "character_id[9]");
-    assert!(e.is_chara_bank_move_disabled, "is_chara_bank_move_disabled[9]");
+    assert!(
+        e.is_chara_bank_move_disabled,
+        "is_chara_bank_move_disabled[9]"
+    );
     assert!(
         !e.is_team_dock_change_disabled,
         "is_team_dock_change_disabled[9] = false"
@@ -280,7 +288,11 @@ fn real_file_dock_change_une_seule_entree() {
         .iter()
         .filter(|e| e.is_team_dock_change_disabled)
         .collect();
-    assert_eq!(avec_dock.len(), 1, "une seule entrée avec dock_change = true");
+    assert_eq!(
+        avec_dock.len(),
+        1,
+        "une seule entrée avec dock_change = true"
+    );
     assert_eq!(avec_dock[0].character_id, HashId(0x686B_E87E));
 }
 
@@ -290,6 +302,9 @@ fn real_file_find_by_character() {
 
     // character_id "0x77BB1BD4" → entrée [9]
     let found = cfg.find_by_character(HashId(0x77BB_1BD4));
-    assert!(found.is_some(), "find_by_character(0x77BB1BD4) doit trouver l'entrée");
+    assert!(
+        found.is_some(),
+        "find_by_character(0x77BB1BD4) doit trouver l'entrée"
+    );
     assert!(found.unwrap().is_chara_bank_move_disabled);
 }

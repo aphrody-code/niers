@@ -8,7 +8,7 @@
 //! « Barre protéinée »). Ce fichier fige la logique de jointure sur fixtures contrôlées.
 
 use nie_data::hash::HashId;
-use nie_data::item::{resolve_description, resolve_name, ItemCategory, ItemInfo};
+use nie_data::item::{ItemCategory, ItemInfo, resolve_description, resolve_name};
 
 fn item(name_id: u32, desc_id: u32) -> ItemInfo {
     ItemInfo {
@@ -26,7 +26,10 @@ fn item(name_id: u32, desc_id: u32) -> ItemInfo {
 fn item_text() -> Vec<(HashId, String)> {
     vec![
         (HashId(0x6E73_5D7C), String::from("Guts Gear")),
-        (HashId(0x1111_2222), String::from("Boisson en gelée au goût rafraîchissant.")),
+        (
+            HashId(0x1111_2222),
+            String::from("Boisson en gelée au goût rafraîchissant."),
+        ),
         // last-wins sur hash dupliqué.
         (HashId(0x0000_0001), String::from("vieux nom")),
         (HashId(0x0000_0001), String::from("nom courant")),
@@ -38,7 +41,10 @@ fn resolves_name_and_description() {
     let t = item_text();
     let it = item(0x6E73_5D7C, 0x1111_2222);
     assert_eq!(resolve_name(&it, &t), Some("Guts Gear"));
-    assert_eq!(resolve_description(&it, &t), Some("Boisson en gelée au goût rafraîchissant."));
+    assert_eq!(
+        resolve_description(&it, &t),
+        Some("Boisson en gelée au goût rafraîchissant.")
+    );
 }
 
 #[test]

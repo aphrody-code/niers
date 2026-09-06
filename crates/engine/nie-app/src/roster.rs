@@ -18,9 +18,16 @@ use nie_data::chara_param::parse_all_chara_params;
 /// Construit une équipe de `n` joueurs réels au niveau `level` depuis un `chara_param_*.cfg.bin.json`.
 ///
 /// Renvoie une erreur si le fichier est illisible ou ne contient aucun personnage.
-pub fn team_from_chara_param_json(name: &str, json_path: &Path, n: usize, level: u8) -> Result<TeamSetup> {
-    let txt = std::fs::read_to_string(json_path).with_context(|| format!("lecture {json_path:?}"))?;
-    let root: serde_json::Value = serde_json::from_str(&txt).context("JSON chara_param invalide")?;
+pub fn team_from_chara_param_json(
+    name: &str,
+    json_path: &Path,
+    n: usize,
+    level: u8,
+) -> Result<TeamSetup> {
+    let txt =
+        std::fs::read_to_string(json_path).with_context(|| format!("lecture {json_path:?}"))?;
+    let root: serde_json::Value =
+        serde_json::from_str(&txt).context("JSON chara_param invalide")?;
     let all = parse_all_chara_params(&root);
     anyhow::ensure!(!all.is_empty(), "aucun CharaParam dans {json_path:?}");
     let take = n.min(all.len()).max(1);

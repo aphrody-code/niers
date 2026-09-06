@@ -2,8 +2,8 @@
 //! Golden `event_map_tag` — tags de map d'événements, sur le vrai dump.
 mod common;
 
-use nie_data::hash::HashId;
 use nie_data::event_map_tag::parse_event_map_tag_config;
+use nie_data::hash::HashId;
 const PATH: &str = "event/event_map_tag_config_0.00.00.cfg.bin.json";
 fn load() -> Option<serde_json::Value> {
     let chemin_abs = common::chemin(PATH)?;
@@ -31,7 +31,14 @@ fn comptes_et_resolution() {
 fn dispatch_typed() {
     use nie_data::typed::{decode_by_key, family_key};
     let Some(root) = load() else { return };
-    assert_eq!(family_key("event_map_tag_config_0.00.00.cfg.bin.json".strip_suffix(".json").unwrap()), "event_map_tag_config");
+    assert_eq!(
+        family_key(
+            "event_map_tag_config_0.00.00.cfg.bin.json"
+                .strip_suffix(".json")
+                .unwrap()
+        ),
+        "event_map_tag_config"
+    );
     let (label, _j) = decode_by_key("event_map_tag_config", &root).expect("câblé");
     assert_eq!(label, "event_map_tag");
 }

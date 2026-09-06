@@ -7,8 +7,8 @@
 //! (28 entrées). Les valeurs hex ci-dessous ont été vérifiées byte-exact contre ce fichier.
 
 use nie_data::hash::HashId;
-use nie_data::team::{parse_enjoy_mode_team_config, EnjoyModeTeam};
-use serde_json::{json, Value};
+use nie_data::team::{EnjoyModeTeam, parse_enjoy_mode_team_config};
+use serde_json::{Value, json};
 
 /// Une variable CfgBin entière (les CRC/Int du dump).
 fn vi(n: i64) -> Value {
@@ -46,43 +46,113 @@ fn child(idx: usize, vars: [Value; 12]) -> Value {
 fn real_children() -> Vec<Value> {
     vec![
         // ev_bb_s10g001_01
-        child(0, [
-            vi(901280304), vi(810929954), vi(-1306387704), vi(1), vi(585721253),
-            vs("ev_chronicle_img/ev_bb_s10g001_01.g4tx"), vs("ev_bb_s10g001_01"),
-            vi(0), vi(1813933277), vi(0), vi(0), vi(-1),
-        ]),
+        child(
+            0,
+            [
+                vi(901280304),
+                vi(810929954),
+                vi(-1306387704),
+                vi(1),
+                vi(585721253),
+                vs("ev_chronicle_img/ev_bb_s10g001_01.g4tx"),
+                vs("ev_bb_s10g001_01"),
+                vi(0),
+                vi(1813933277),
+                vi(0),
+                vi(0),
+                vi(-1),
+            ],
+        ),
         // ev_bb_s11g001_01
-        child(1, [
-            vi(1424638790), vi(-1641831799), vi(-987419746), vi(3), vi(529091605),
-            vs("ev_chronicle_img/ev_bb_s11g001_01.g4tx"), vs("ev_bb_s11g001_01"),
-            vi(0), vi(1550757894), vi(0), vi(0), vi(-1),
-        ]),
+        child(
+            1,
+            [
+                vi(1424638790),
+                vi(-1641831799),
+                vi(-987419746),
+                vi(3),
+                vi(529091605),
+                vs("ev_chronicle_img/ev_bb_s11g001_01.g4tx"),
+                vs("ev_bb_s11g001_01"),
+                vi(0),
+                vi(1550757894),
+                vi(0),
+                vi(0),
+                vi(-1),
+            ],
+        ),
         // ev_bb_s33g001_01
-        child(2, [
-            vi(301450369), vi(721961018), vi(724257458), vi(2), vi(679591550),
-            vs("ev_chronicle_img/ev_bb_s33g001_01.g4tx"), vs("ev_bb_s33g001_01"),
-            vi(0), vi(141732313), vi(0), vi(0), vi(-1),
-        ]),
+        child(
+            2,
+            [
+                vi(301450369),
+                vi(721961018),
+                vi(724257458),
+                vi(2),
+                vi(679591550),
+                vs("ev_chronicle_img/ev_bb_s33g001_01.g4tx"),
+                vs("ev_bb_s33g001_01"),
+                vi(0),
+                vi(141732313),
+                vi(0),
+                vi(0),
+                vi(-1),
+            ],
+        ),
         // ev_bb_s52g001_01 (teamId négatif)
-        child(5, [
-            vi(-1814806523), vi(-1069206060), vi(-1253056751), vi(5), vi(-1011321645),
-            vs("ev_chronicle_img/ev_bb_s52g001_01.g4tx"), vs("ev_bb_s52g001_01"),
-            vi(0), vi(2000937925), vi(0), vi(0), vi(-1),
-        ]),
+        child(
+            5,
+            [
+                vi(-1814806523),
+                vi(-1069206060),
+                vi(-1253056751),
+                vi(5),
+                vi(-1011321645),
+                vs("ev_chronicle_img/ev_bb_s52g001_01.g4tx"),
+                vs("ev_bb_s52g001_01"),
+                vi(0),
+                vi(2000937925),
+                vi(0),
+                vi(0),
+                vi(-1),
+            ],
+        ),
         // ev_bb_b10g004_01 (var7 = blob base64, var11 = 30000)
-        child(13, [
-            vi(1668478357), vi(-1046485492), vi(1161251685), vi(14), vi(-1825962416),
-            vs("ev_chronicle_img/ev_bb_b10g004_01.g4tx"), vs("ev_bb_b10g004_01"),
-            vs("AAAAABgFNSo9RUMACgEoAAYCNCy4aiUyAAAAAXg="), vi(1748276314),
-            vi(-782511925), vi(-1390186696), vi(30000),
-        ]),
+        child(
+            13,
+            [
+                vi(1668478357),
+                vi(-1046485492),
+                vi(1161251685),
+                vi(14),
+                vi(-1825962416),
+                vs("ev_chronicle_img/ev_bb_b10g004_01.g4tx"),
+                vs("ev_bb_b10g004_01"),
+                vs("AAAAABgFNSo9RUMACgEoAAYCNCy4aiUyAAAAAXg="),
+                vi(1748276314),
+                vi(-782511925),
+                vi(-1390186696),
+                vi(30000),
+            ],
+        ),
         // ev_ch_s06g001_0121 (var7 = blob base64, type 28)
-        child(27, [
-            vi(-22010423), vi(-872989225), vi(1769462975), vi(28), vi(1727349664),
-            vs("ev_chronicle_img/ev_ch_s06g001_0121.g4tx"), vs("ev_ch_s06g001_0121"),
-            vs("AAAAACEFNcl4Pb8AEwIoAAYCNJAYVCcoAAYCMgAAAAIyAAAAAXg="),
-            vi(1121693102), vi(730233931), vi(1425458077), vi(-1),
-        ]),
+        child(
+            27,
+            [
+                vi(-22010423),
+                vi(-872989225),
+                vi(1769462975),
+                vi(28),
+                vi(1727349664),
+                vs("ev_chronicle_img/ev_ch_s06g001_0121.g4tx"),
+                vs("ev_ch_s06g001_0121"),
+                vs("AAAAACEFNcl4Pb8AEwIoAAYCNJAYVCcoAAYCMgAAAAIyAAAAAXg="),
+                vi(1121693102),
+                vi(730233931),
+                vi(1425458077),
+                vi(-1),
+            ],
+        ),
     ]
 }
 

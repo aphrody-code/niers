@@ -9,9 +9,9 @@
 
 use nie_data::cfgbin::Node;
 use nie_data::hash::HashId;
-use nie_data::trophy::{decode_unlock, resolve_description, resolve_name, TrophyInfo};
+use nie_data::trophy::{TrophyInfo, decode_unlock, resolve_description, resolve_name};
 use nie_data::unlock_condition::UnlockType;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 fn ivar(v: i64) -> Value {
     json!({ "type": "Int", "value": v.to_string() })
@@ -35,7 +35,10 @@ fn trophy(name_id: u32, desc_id: u32, open_cond: &str) -> TrophyInfo {
 
 fn trophy_text() -> Vec<(HashId, String)> {
     vec![
-        (HashId(0x8840_F978), String::from("Vieil homme qui a perdu sa clé")),
+        (
+            HashId(0x8840_F978),
+            String::from("Vieil homme qui a perdu sa clé"),
+        ),
         (HashId(0xC275_B972), String::from("Offrir son aide.")),
     ]
 }
@@ -44,7 +47,10 @@ fn trophy_text() -> Vec<(HashId, String)> {
 fn resolves_real_name_and_description() {
     let t = trophy(0x8840_F978, 0xC275_B972, "0");
     let txt = trophy_text();
-    assert_eq!(resolve_name(&t, &txt), Some("Vieil homme qui a perdu sa clé"));
+    assert_eq!(
+        resolve_name(&t, &txt),
+        Some("Vieil homme qui a perdu sa clé")
+    );
     assert_eq!(resolve_description(&t, &txt), Some("Offrir son aide."));
 }
 

@@ -47,7 +47,12 @@ fn main() {
         dump.mapped_bytes() as f64 / 1e9
     );
     if let Some(m) = &nie {
-        println!("nie.exe: base=0x{:X} taille={} ({:.1} Mo)", m.base, m.size, f64::from(m.size) / 1e6);
+        println!(
+            "nie.exe: base=0x{:X} taille={} ({:.1} Mo)",
+            m.base,
+            m.size,
+            f64::from(m.size) / 1e6
+        );
     } else {
         println!("(attention : module nie.exe absent du dump)");
     }
@@ -96,22 +101,34 @@ fn main() {
     );
     println!("{}", "-".repeat(78));
     for (name, hits) in names.iter().zip(&results) {
-        let in_nie: Vec<_> = hits.iter().filter(|h| h.module.as_deref() == Some("nie.exe")).collect();
+        let in_nie: Vec<_> = hits
+            .iter()
+            .filter(|h| h.module.as_deref() == Some("nie.exe"))
+            .collect();
         let other = hits.len() - in_nie.len();
         let (rva_s, stat_s) = match in_nie.first() {
             Some(h) => (
-                h.rva.map_or_else(|| "-".to_string(), |r| format!("nie+0x{r:X}")),
-                h.nie_static().map_or_else(|| "-".to_string(), |s| format!("0x{s:X}")),
+                h.rva
+                    .map_or_else(|| "-".to_string(), |r| format!("nie+0x{r:X}")),
+                h.nie_static()
+                    .map_or_else(|| "-".to_string(), |s| format!("0x{s:X}")),
             ),
             None => ("(aucun)".to_string(), "-".to_string()),
         };
-        println!("{name:<34} {:>5} {other:>5}  {rva_s:<14} {stat_s:<14}", in_nie.len());
+        println!(
+            "{name:<34} {:>5} {other:>5}  {rva_s:<14} {stat_s:<14}",
+            in_nie.len()
+        );
         let mut entry = String::new();
         let _ = write!(entry, "hits_nie={} other={}", in_nie.len(), other);
         if let Some(h) = in_nie.first()
             && let Some(r) = h.rva
         {
-            let _ = write!(entry, " rva=0x{r:X} static=0x{:X}", h.nie_static().unwrap_or(0));
+            let _ = write!(
+                entry,
+                " rva=0x{r:X} static=0x{:X}",
+                h.nie_static().unwrap_or(0)
+            );
         }
         json.insert(name.clone(), entry);
     }

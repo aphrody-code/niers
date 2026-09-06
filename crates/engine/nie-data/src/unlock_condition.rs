@@ -312,7 +312,11 @@ pub fn crc32_str(s: &str) -> u32 {
     for &byte in s.as_bytes() {
         crc ^= u32::from(byte);
         for _ in 0..8 {
-            crc = if crc & 1 != 0 { (crc >> 1) ^ POLY } else { crc >> 1 };
+            crc = if crc & 1 != 0 {
+                (crc >> 1) ^ POLY
+            } else {
+                crc >> 1
+            };
         }
     }
     !crc

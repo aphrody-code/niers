@@ -5,7 +5,7 @@
 //! Usage : `cargo run -p nie-game --example extract_video_waza`
 use nie_formats::cfgbin::{self, RdbnValue};
 use nie_formats::vfs::Vfs;
-use serde_json::{json, Map, Value};
+use serde_json::{Map, Value, json};
 use std::path::Path;
 
 fn rdbn_value_to_json(v: &RdbnValue) -> Value {
@@ -50,9 +50,12 @@ fn rdbn_to_iecode(data: &[u8]) -> Option<Value> {
 }
 
 fn main() {
-    let dir = nie_formats::vfs::resolve_game_dir().to_string_lossy().into_owned();
+    let dir = nie_formats::vfs::resolve_game_dir()
+        .to_string_lossy()
+        .into_owned();
     let mut vfs = Vfs::new();
-    vfs.init(Path::new(&dir).join("data").as_path()).expect("vfs init");
+    vfs.init(Path::new(&dir).join("data").as_path())
+        .expect("vfs init");
     let path = vfs
         .iter()
         .map(|(p, _)| p.to_string())
@@ -80,9 +83,13 @@ fn main() {
     let with_staffroll = db
         .videos
         .iter()
-        .filter(|v| !v.movie.staffroll_data_name.is_empty() && v.movie.staffroll_data_name != "0xFFFFFFFF")
+        .filter(|v| {
+            !v.movie.staffroll_data_name.is_empty() && v.movie.staffroll_data_name != "0xFFFFFFFF"
+        })
         .count();
-    eprintln!("movies avec légende liée = {with_caption} ; avec staffroll nommé = {with_staffroll}");
+    eprintln!(
+        "movies avec légende liée = {with_caption} ; avec staffroll nommé = {with_staffroll}"
+    );
 
     for v in db.videos.iter().take(3) {
         eprintln!(
@@ -101,6 +108,9 @@ fn main() {
     assert_eq!(m0.movie_path, "common/movie/yw-y1_evop_0010.usm");
     assert_eq!(m0.bgm_name.to_hex(), "0xC1EEF2A7");
     assert_eq!(m0.fede_in_time, 1.0);
-    assert!(db.videos[0].caption.is_none(), "captionId 0 → pas de légende");
+    assert!(
+        db.videos[0].caption.is_none(),
+        "captionId 0 → pas de légende"
+    );
     eprintln!("✓ END-TO-END OK : nie_data::video_waza décode le vrai event_movie_config");
 }

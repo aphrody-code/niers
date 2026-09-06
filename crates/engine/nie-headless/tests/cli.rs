@@ -31,15 +31,9 @@ fn cmd() -> Command {
 
 fn build_utf_fixture() -> Vec<u8> {
     let string_pool: &[u8] = b"TestTable\0ColA\0ColB\0hello\0world\0";
-    let schema: &[u8] = &[
-        0x24, 0x00, 0x00, 0x00, 0x0A,
-        0x2A, 0x00, 0x00, 0x00, 0x0F,
-    ];
+    let schema: &[u8] = &[0x24, 0x00, 0x00, 0x00, 0x0A, 0x2A, 0x00, 0x00, 0x00, 0x0F];
     let row_data: &[u8] = &[
-        0x00, 0x00, 0x00, 42,
-        0x00, 0x00, 0x00, 20,
-        0x00, 0x00, 0x00, 99,
-        0x00, 0x00, 0x00, 26,
+        0x00, 0x00, 0x00, 42, 0x00, 0x00, 0x00, 20, 0x00, 0x00, 0x00, 99, 0x00, 0x00, 0x00, 26,
     ];
 
     let rows_offset_rel: u32 = 0x22;
@@ -77,7 +71,13 @@ fn build_crilayla_payload(payload: &[u8]) -> Vec<u8> {
         used: u32,
     }
     impl Bw {
-        fn new() -> Self { Self { bytes: Vec::new(), cur: 0, used: 0 } }
+        fn new() -> Self {
+            Self {
+                bytes: Vec::new(),
+                cur: 0,
+                used: 0,
+            }
+        }
         fn push_bit(&mut self, bit: u8) {
             self.cur = (self.cur << 1) | (bit & 1);
             self.used += 1;
@@ -88,7 +88,9 @@ fn build_crilayla_payload(payload: &[u8]) -> Vec<u8> {
             }
         }
         fn push_bits(&mut self, val: u32, n: u32) {
-            for i in (0..n).rev() { self.push_bit(((val >> i) & 1) as u8); }
+            for i in (0..n).rev() {
+                self.push_bit(((val >> i) & 1) as u8);
+            }
         }
         fn finish(mut self) -> Vec<u8> {
             if self.used > 0 {
@@ -317,9 +319,18 @@ fn match_sortie_terse_valide() {
     let s = String::from_utf8(sortie).expect("UTF-8");
     let s = s.trim();
     // Format attendu : "home=... away=... résultat=H-A horloge=CLOCK"
-    assert!(s.starts_with("home="), "sortie doit commencer par 'home=': {s}");
-    assert!(s.contains("résultat="), "sortie doit contenir 'résultat=': {s}");
-    assert!(s.contains("horloge="), "sortie doit contenir 'horloge=': {s}");
+    assert!(
+        s.starts_with("home="),
+        "sortie doit commencer par 'home=': {s}"
+    );
+    assert!(
+        s.contains("résultat="),
+        "sortie doit contenir 'résultat=': {s}"
+    );
+    assert!(
+        s.contains("horloge="),
+        "sortie doit contenir 'horloge=': {s}"
+    );
 }
 
 /// L'horloge finale est toujours 900_000 pour 90 minutes (CONFIRMÉ).
@@ -336,7 +347,10 @@ fn match_horloge_900000() {
         .stdout
         .clone();
     let s = String::from_utf8(sortie).expect("UTF-8");
-    assert!(s.contains("horloge=900000"), "horloge finale doit être 900000 : {s}");
+    assert!(
+        s.contains("horloge=900000"),
+        "horloge finale doit être 900000 : {s}"
+    );
 }
 
 /// Deux exécutions avec la même graine produisent la même sortie (déterminisme).
@@ -424,7 +438,7 @@ fn match_stats_personnalisees_valides() {
 fn match_stats_malformees_erreur() {
     cmd()
         .arg("match")
-        .arg("--home-stats=200:190")   // seulement 2 valeurs au lieu de 7
+        .arg("--home-stats=200:190") // seulement 2 valeurs au lieu de 7
         .assert()
         .failure();
 }

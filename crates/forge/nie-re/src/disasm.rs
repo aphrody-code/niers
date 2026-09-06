@@ -36,7 +36,7 @@ use anyhow::{Context, Result};
 use goblin::pe::PE;
 use hashbrown::HashSet;
 use iced_x86::{Decoder, DecoderOptions, FlowControl, Instruction, Mnemonic, OpKind};
-use nie_index::{rusqlite, Db};
+use nie_index::{Db, rusqlite};
 use tracing::info;
 
 /// Longueur maximale décodée par fonction (garde-fou si l'écart jusqu'au
@@ -160,7 +160,10 @@ fn scan_text(
             continue;
         }
         // Fin = début de fonction suivant (ou fin de .text), bornée.
-        let next = starts.get(i + 1).map_or(text_end_va, |&s| s as u64).min(text_end_va);
+        let next = starts
+            .get(i + 1)
+            .map_or(text_end_va, |&s| s as u64)
+            .min(text_end_va);
         let end = next.min(fv + MAX_FUNC_LEN);
         if end <= fv {
             continue;
@@ -270,7 +273,8 @@ pub fn recover_call_edges(
     exe_path: &std::path::Path,
     skip_lea: bool,
 ) -> Result<DisasmStats> {
-    let bytes = std::fs::read(exe_path).with_context(|| format!("lecture {}", exe_path.display()))?;
+    let bytes =
+        std::fs::read(exe_path).with_context(|| format!("lecture {}", exe_path.display()))?;
     let pe = PE::parse(&bytes).context("goblin: parse PE")?;
     let image_base = pe.image_base;
 
@@ -435,9 +439,18 @@ mod tests {
 
         let res = scan_text(&buf, text_va, text_end_va, &starts, &starts_set);
 
-        assert!(res.edges.contains(&(0x1000, 0x2000)), "call A→B doit être trouvé");
-        assert!(res.edges.contains(&(0x1000, 0x3000)), "tail-call A→C doit être trouvé");
-        assert!(!res.edges.contains(&(0x1000, 0x1000)), "auto-arête doit être filtrée");
+        assert!(
+            res.edges.contains(&(0x1000, 0x2000)),
+            "call A→B doit être trouvé"
+        );
+        assert!(
+            res.edges.contains(&(0x1000, 0x3000)),
+            "tail-call A→C doit être trouvé"
+        );
+        assert!(
+            !res.edges.contains(&(0x1000, 0x1000)),
+            "auto-arête doit être filtrée"
+        );
         assert!(
             !res.edges.iter().any(|&(_, to)| to == 0x1234),
             "cible inconnue (non-début de fonction) doit être filtrée"
@@ -461,9 +474,15 @@ mod tests {
         let starts_set: HashSet<i64> = [0x1000i64].into_iter().collect();
         let text_end_va = text_va + buf.len() as u64;
         let res = scan_text(&buf, text_va, text_end_va, &starts, &starts_set);
-        assert!(res.edges.is_empty(), "0x1030 n'est pas un début de fonction → aucune arête");
+        assert!(
+            res.edges.is_empty(),
+            "0x1030 n'est pas un début de fonction → aucune arête"
+        );
         assert!(res.call_near >= 1, "le call direct a bien été compté");
-        assert_eq!(res.near_target_miss, 1, "la cible non-fonction est comptée comme ratée");
+        assert_eq!(
+            res.near_target_miss, 1,
+            "la cible non-fonction est comptée comme ratée"
+        );
     }
 
     /// `call thunk` puis `thunk: jmp real_func` (édition de liens incrémentale
@@ -567,7 +586,10 @@ mod tests {
 
         let res = scan_text(&buf, text_va, text_end_va, &starts, &starts_set);
 
-        assert!(res.lea_edges.is_empty(), "cible non-fonction → aucune arête lea");
+        assert!(
+            res.lea_edges.is_empty(),
+            "cible non-fonction → aucune arête lea"
+        );
         assert!(res.lea_insns >= 1, "la lea rip-rel a bien été comptée");
     }
 
@@ -623,7 +645,10 @@ mod tests {
             "image_base={:#x} .text va={:#x} raw_off={:#x} vsize={:#x} rawsize={:#x}",
             image_base, text_va, text_raw_off, text.virtual_size, text.size_of_raw_data
         );
-        let window: usize = std::env::var("NIE_LEN").ok().and_then(|s| s.parse().ok()).unwrap_or(768);
+        let window: usize = std::env::var("NIE_LEN")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(768);
         let off = (func - text_va) as usize + text_raw_off;
         let slice = &bytes[off..(off + window).min(bytes.len())];
         let mut dec = Decoder::with_ip(64, slice, func, DecoderOptions::NONE);
@@ -647,8 +672,7 @@ mod tests {
                     FlowControl::Call
                         | FlowControl::UnconditionalBranch
                         | FlowControl::ConditionalBranch
-                )
-            {
+                ) {
                 format!(" -> {:#x}", insn.near_branch64())
             } else {
                 String::new()
@@ -684,7 +708,10 @@ mod tests {
 
         let res = scan_text(&buf, text_va, text_end_va, &starts, &starts_set);
 
-        assert!(res.edges.is_empty(), "un thunk IAT indirect ne produit pas d'arête interne");
+        assert!(
+            res.edges.is_empty(),
+            "un thunk IAT indirect ne produit pas d'arête interne"
+        );
         assert_eq!(res.thunk_resolved, 0);
         assert_eq!(res.near_target_miss, 1);
     }

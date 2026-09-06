@@ -38,10 +38,49 @@ mod tests {
     /// Source : `data/common/gamedata/character/chara_param_1.03.66.00.cfg.bin.json`,
     /// confirmées dans `nie_data::tests::chara_param_golden`.
     const RAW: &[i64] = &[
-        -357_386_801, 1_128_709_053, 4, 2, 4, 1, 11, 1, 0, 3, 0, 604_761_586, 1, 598_373_713,
-        13, 1_591_574_804, 20, 724_843_777, 30, 1_988_803_013, 38, -1_508_771_477, 43,
-        724_843_777, 30, -1_325_922_806, 38, 1_210_030_151, 43, 2, 0, -1, 2, 1, -2, -2, 1, 0, 0,
-        0, 743_008_281, 0, 200_626_314,
+        -357_386_801,
+        1_128_709_053,
+        4,
+        2,
+        4,
+        1,
+        11,
+        1,
+        0,
+        3,
+        0,
+        604_761_586,
+        1,
+        598_373_713,
+        13,
+        1_591_574_804,
+        20,
+        724_843_777,
+        30,
+        1_988_803_013,
+        38,
+        -1_508_771_477,
+        43,
+        724_843_777,
+        30,
+        -1_325_922_806,
+        38,
+        1_210_030_151,
+        43,
+        2,
+        0,
+        -1,
+        2,
+        1,
+        -2,
+        -2,
+        1,
+        0,
+        0,
+        0,
+        743_008_281,
+        0,
+        200_626_314,
     ];
 
     /// Construit un `serde_json::Value` mimant un noeud `CHARA_PARAM_INFO_1`
@@ -64,12 +103,25 @@ mod tests {
     fn chara_param_info_1() -> nie_data::chara_param::CharaParam {
         let root = fixture_node();
         let mut params = parse_all_chara_params(&root);
-        assert_eq!(params.len(), 1, "fixture doit produire exactement un CharaParam");
+        assert_eq!(
+            params.len(),
+            1,
+            "fixture doit produire exactement un CharaParam"
+        );
         let cp = params.remove(0);
         // Vérifications de cohérence du fixture (garde anti-régression).
-        assert_eq!(cp.main_position, 2, "CHARA_PARAM_INFO_1 : main_position = 2 (FW)");
-        assert_eq!(cp.sub_position, 4, "CHARA_PARAM_INFO_1 : sub_position = 4 (DF)");
-        assert_eq!(cp.growth_pattern, 0, "CHARA_PARAM_INFO_1 : growth_pattern = 0");
+        assert_eq!(
+            cp.main_position, 2,
+            "CHARA_PARAM_INFO_1 : main_position = 2 (FW)"
+        );
+        assert_eq!(
+            cp.sub_position, 4,
+            "CHARA_PARAM_INFO_1 : sub_position = 4 (DF)"
+        );
+        assert_eq!(
+            cp.growth_pattern, 0,
+            "CHARA_PARAM_INFO_1 : growth_pattern = 0"
+        );
         cp
     }
 
@@ -201,7 +253,9 @@ mod tests {
     /// embarquées dans ce test — validation byte-à-byte du pipeline complet.
     #[test]
     fn vrai_fichier_chara_param_info_1_concorde_avec_fixture() {
-        let Some(params) = load_real_chara_params() else { return };
+        let Some(params) = load_real_chara_params() else {
+            return;
+        };
 
         // CHARA_PARAM_INFO_1 a chara_param_id = 0xEAB2B5CF (= u32 de -357386801).
         let target_id = nie_data::hash::HashId::from_signed(-357_386_801);
@@ -210,7 +264,10 @@ mod tests {
         };
 
         // Vérification des champs extraits du dump réel.
-        assert_eq!(cp_reel.main_position, 2, "dump réel : main_position = 2 (FW)");
+        assert_eq!(
+            cp_reel.main_position, 2,
+            "dump réel : main_position = 2 (FW)"
+        );
         assert_eq!(cp_reel.sub_position, 4, "dump réel : sub_position = 4 (DF)");
         assert_eq!(cp_reel.growth_pattern, 0, "dump réel : growth_pattern = 0");
 

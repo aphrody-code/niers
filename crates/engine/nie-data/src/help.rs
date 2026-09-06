@@ -187,7 +187,11 @@ impl HelpInfo {
             match info.var(i) {
                 // Position 12 peut être une chaîne base64 : on la met de côté et on
                 // pousse 0 dans `raw` (la chaîne n'est pas un hash).
-                Some(Var { ty: "String", value, .. }) => {
+                Some(Var {
+                    ty: "String",
+                    value,
+                    ..
+                }) => {
                     blob = Some(String::from(value));
                     raw.push(HashId::ZERO);
                 }

@@ -68,9 +68,9 @@ pub(crate) mod serde_byte_array {
 }
 
 pub mod action;
-pub mod aura;
 pub mod affine;
 pub mod aspect_viewport;
+pub mod aura;
 pub mod ball;
 pub mod byte_keyed_table;
 pub mod category_lookup;
@@ -94,13 +94,13 @@ pub mod match_state;
 pub mod menu_setting;
 pub mod play_cmd_manager;
 pub mod quat;
-pub mod typed_list_iter;
-pub mod typed_value_reader;
 pub mod scene;
 pub mod skill;
 pub mod soccer_ctrl;
 pub mod stats;
 pub mod tactics;
+pub mod typed_list_iter;
+pub mod typed_value_reader;
 
 /// Identifiant invalide pour joueur/cible (0xFFFF0000 en binaire IEVR).
 ///

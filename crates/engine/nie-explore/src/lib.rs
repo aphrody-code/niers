@@ -18,7 +18,10 @@ pub mod export;
 pub mod folder_roles;
 pub mod listing;
 
-use nie_formats::{cfgbin, col, cri_audio, dxbc, g4cm, g4la, g4ma, g4md, g4mt, g4pk, g4sk, g4tx, g4vs, level5, navm, nxtch, objbin};
+use nie_formats::{
+    cfgbin, col, cri_audio, dxbc, g4cm, g4la, g4ma, g4md, g4mt, g4pk, g4sk, g4tx, g4vs, level5,
+    navm, nxtch, objbin,
+};
 
 /// Essaie les parseurs spécialisés `nie-data` dont la source est un T2B « entries »
 /// (`chara_base`, `chara_text`) sur le JSON ponté depuis `t2b`. Chaque parseur est tolérant
@@ -30,9 +33,15 @@ fn append_nie_data_t2b(out: &mut Vec<String>, t2b: &cfgbin::CfgBinFile) {
 
     let charas = nie_data::chara_base::parse_all_chara_base(&json);
     if !charas.is_empty() {
-        out.push(format!("nie-data     chara_base : {} personnage(s)", charas.len()));
+        out.push(format!(
+            "nie-data     chara_base : {} personnage(s)",
+            charas.len()
+        ));
         for c in charas.iter().take(8) {
-            out.push(format!("  {:<12} id={} nom_hash={}", c.internal_code, c.chara_id, c.name_hash));
+            out.push(format!(
+                "  {:<12} id={} nom_hash={}",
+                c.internal_code, c.chara_id, c.name_hash
+            ));
         }
         if charas.len() > 8 {
             out.push(format!("  … {} de plus", charas.len() - 8));
@@ -41,7 +50,10 @@ fn append_nie_data_t2b(out: &mut Vec<String>, t2b: &cfgbin::CfgBinFile) {
 
     let nouns = nie_data::chara_text::parse_all_nouns(&json);
     if !nouns.is_empty() {
-        out.push(format!("nie-data     chara_text (NOUN_INFO) : {} nom(s) localisé(s)", nouns.len()));
+        out.push(format!(
+            "nie-data     chara_text (NOUN_INFO) : {} nom(s) localisé(s)",
+            nouns.len()
+        ));
         for n in nouns.iter().take(8) {
             out.push(format!("  {} — {}", n.hash_id, n.name));
         }
@@ -58,7 +70,10 @@ fn append_nie_data_t2b(out: &mut Vec<String>, t2b: &cfgbin::CfgBinFile) {
     if nouns.is_empty() {
         let skill_texts = nie_data::skill::parse_skill_text(&json);
         if !skill_texts.names.is_empty() {
-            out.push(format!("nie-data     skill_text (NOUN_INFO) : {} nom(s) localisé(s)", skill_texts.names.len()));
+            out.push(format!(
+                "nie-data     skill_text (NOUN_INFO) : {} nom(s) localisé(s)",
+                skill_texts.names.len()
+            ));
             for (hash, name) in skill_texts.names.iter().take(8) {
                 out.push(format!("  {hash} — {name}"));
             }
@@ -67,7 +82,10 @@ fn append_nie_data_t2b(out: &mut Vec<String>, t2b: &cfgbin::CfgBinFile) {
             }
         }
         if !skill_texts.descriptions.is_empty() {
-            out.push(format!("nie-data     skill_text (TEXT_INFO) : {} description(s)", skill_texts.descriptions.len()));
+            out.push(format!(
+                "nie-data     skill_text (TEXT_INFO) : {} description(s)",
+                skill_texts.descriptions.len()
+            ));
         }
     }
 }
@@ -80,7 +98,10 @@ fn append_nie_data_rdbn(out: &mut Vec<String>, lists: &[cfgbin::RdbnList]) {
 
     let skills = nie_data::skill::parse_skill_config(&json);
     if !skills.is_empty() {
-        out.push(format!("nie-data     skill (m_skillInfoList) : {} technique(s)", skills.len()));
+        out.push(format!(
+            "nie-data     skill (m_skillInfoList) : {} technique(s)",
+            skills.len()
+        ));
         for s in skills.iter().take(8) {
             out.push(format!("  {:<10} id={}", s.skill_id_str, s.skill_id));
         }
@@ -91,25 +112,43 @@ fn append_nie_data_rdbn(out: &mut Vec<String>, lists: &[cfgbin::RdbnList]) {
 
     let technics = nie_data::skill_technic::parse_skill_technic_config(&json);
     if !technics.is_empty() {
-        out.push(format!("nie-data     skill_technic (m_SkillTechnicInfoList) : {} entrée(s)", technics.len()));
+        out.push(format!(
+            "nie-data     skill_technic (m_SkillTechnicInfoList) : {} entrée(s)",
+            technics.len()
+        ));
     }
 }
 
 /// Les `n` premiers octets de `data`, formatés en hex majuscule espacé (`"47 34 4D 44"`).
 #[must_use]
 pub fn hex_prefix(data: &[u8], n: usize) -> String {
-    data.iter().take(n).map(|b| format!("{b:02X}")).collect::<Vec<_>>().join(" ")
+    data.iter()
+        .take(n)
+        .map(|b| format!("{b:02X}"))
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 /// Résumé lisible d'un conteneur Level-5 générique (en-tête commun 16 octets, cf.
 /// [`nie_formats::level5`]) : G4CM/G4MA/G4VS/G4LA/NAVM/PXCL — le corps n'est pas toujours décodé
 /// (sémantique non confirmée pour certains), mais l'en-tête + l'invariant de taille le sont.
 #[must_use]
-pub fn describe_l5_container(label: &str, header: level5::Level5Header, file_size: usize, consistent: bool) -> Vec<String> {
+pub fn describe_l5_container(
+    label: &str,
+    header: level5::Level5Header,
+    file_size: usize,
+    consistent: bool,
+) -> Vec<String> {
     vec![
         format!("format      {label}"),
-        format!("header_size 0x{:X}  type_id 0x{:02X}", header.header_size, header.type_id),
-        format!("data_size   {} octets (fichier {file_size} octets)", header.data_size),
+        format!(
+            "header_size 0x{:X}  type_id 0x{:02X}",
+            header.header_size, header.type_id
+        ),
+        format!(
+            "data_size   {} octets (fichier {file_size} octets)",
+            header.data_size
+        ),
         format!("cohérent    {consistent}"),
     ]
 }
@@ -127,7 +166,10 @@ pub fn describe_content(path: &str, data: &[u8]) -> Option<Vec<String>> {
         let name = path.rsplit('/').next().unwrap_or(path);
         match nie_lua::discover_host_calls(data, name) {
             Ok(calls) => {
-                out.push(format!("appels hôte {} (VM stubbée — pas d'exécution de la vraie logique)", calls.len()));
+                out.push(format!(
+                    "appels hôte {} (VM stubbée — pas d'exécution de la vraie logique)",
+                    calls.len()
+                ));
                 for c in calls.iter().take(40) {
                     out.push(format!("  {c}"));
                 }
@@ -173,10 +215,17 @@ pub fn describe_content(path: &str, data: &[u8]) -> Option<Vec<String>> {
             out.push(format!(
                 "os          {} ({})",
                 bones.bones.len(),
-                if bones.heuristic { "heuristique" } else { "table réelle" }
+                if bones.heuristic {
+                    "heuristique"
+                } else {
+                    "table réelle"
+                }
             ));
             for b in bones.bones.iter().take(20) {
-                out.push(format!("  #{:<3} parent={:<4} {}", b.index, b.parent_index, b.name));
+                out.push(format!(
+                    "  #{:<3} parent={:<4} {}",
+                    b.index, b.parent_index, b.name
+                ));
             }
             if bones.bones.len() > 20 {
                 out.push(format!("  … {} os de plus", bones.bones.len() - 20));
@@ -218,7 +267,10 @@ pub fn describe_content(path: &str, data: &[u8]) -> Option<Vec<String>> {
                     if t.is_dds { "DDS" } else { "NXTCH" }
                 ));
                 for s in &t.sub_textures {
-                    out.push(format!("      région {:<20} {}x{} @({},{})", s.name, s.width, s.height, s.x, s.y));
+                    out.push(format!(
+                        "      région {:<20} {}x{} @({},{})",
+                        s.name, s.width, s.height, s.x, s.y
+                    ));
                 }
             }
             out.push("  (décodage PNG disponible via nie_formats::g4tx_decode)".to_string());
@@ -229,15 +281,28 @@ pub fn describe_content(path: &str, data: &[u8]) -> Option<Vec<String>> {
     if col::is_pxcl(data)
         && let Ok(p) = col::parse(data)
     {
-        return Some(describe_l5_container("PXCL (collision PhysX cooked, non décodée)", p.header, p.file_size, p.is_size_consistent()));
+        return Some(describe_l5_container(
+            "PXCL (collision PhysX cooked, non décodée)",
+            p.header,
+            p.file_size,
+            p.is_size_consistent(),
+        ));
     }
 
     if dxbc::is_dxbc(data) {
         let mut out = vec!["format      DXBC (shader compilé, format Microsoft)".to_string()];
         if let Ok(d) = dxbc::parse(data) {
-            out.push(format!("chunks      {}  cohérent={}", d.chunks.len(), d.is_size_consistent()));
+            out.push(format!(
+                "chunks      {}  cohérent={}",
+                d.chunks.len(),
+                d.is_size_consistent()
+            ));
             for c in &d.chunks {
-                out.push(format!("  {}  {} octets", String::from_utf8_lossy(&c.fourcc), c.size));
+                out.push(format!(
+                    "  {}  {} octets",
+                    String::from_utf8_lossy(&c.fourcc),
+                    c.size
+                ));
             }
         }
         return Some(out);
@@ -246,7 +311,11 @@ pub fn describe_content(path: &str, data: &[u8]) -> Option<Vec<String>> {
     if g4pk::is_g4pk(data) || g4pk::is_g4ra(data) {
         let mut out = vec!["format      G4PK/G4RA (archive)".to_string()];
         if let Ok(g) = g4pk::parse(data) {
-            out.push(format!("sous-fichiers {}  variante={:?}", g.files.len(), g.header.kind));
+            out.push(format!(
+                "sous-fichiers {}  variante={:?}",
+                g.files.len(),
+                g.header.kind
+            ));
             for f in g.files.iter().take(20) {
                 out.push(format!("  {:<32} {} octets", f.name, f.size));
             }
@@ -260,7 +329,12 @@ pub fn describe_content(path: &str, data: &[u8]) -> Option<Vec<String>> {
     if navm::is_navm(data)
         && let Ok(n) = navm::parse(data)
     {
-        let mut out = describe_l5_container("NAVM (navmesh)", n.header, n.file_size, n.is_size_consistent());
+        let mut out = describe_l5_container(
+            "NAVM (navmesh)",
+            n.header,
+            n.file_size,
+            n.is_size_consistent(),
+        );
         out.push(format!("sections    {:?}", n.section_counts));
         return Some(out);
     }
@@ -295,19 +369,34 @@ pub fn describe_content(path: &str, data: &[u8]) -> Option<Vec<String>> {
     if g4ma::is_g4ma(data)
         && let Ok(m) = g4ma::parse(data)
     {
-        return Some(describe_l5_container("G4MA (animation de matériau, non décodée)", m.header, m.file_size, m.is_size_consistent()));
+        return Some(describe_l5_container(
+            "G4MA (animation de matériau, non décodée)",
+            m.header,
+            m.file_size,
+            m.is_size_consistent(),
+        ));
     }
 
     if g4vs::is_g4vs(data)
         && let Ok(v) = g4vs::parse(data)
     {
-        return Some(describe_l5_container("G4VS (effet d'événement, non décodé)", v.header, v.file_size, v.is_size_consistent()));
+        return Some(describe_l5_container(
+            "G4VS (effet d'événement, non décodé)",
+            v.header,
+            v.file_size,
+            v.is_size_consistent(),
+        ));
     }
 
     if g4la::is_g4la(data)
         && let Ok(l) = g4la::parse(data)
     {
-        return Some(describe_l5_container("G4LA (animation de lumière, non décodée)", l.header, l.file_size, l.is_size_consistent()));
+        return Some(describe_l5_container(
+            "G4LA (animation de lumière, non décodée)",
+            l.header,
+            l.file_size,
+            l.is_size_consistent(),
+        ));
     }
 
     if nxtch::is_nxtch(data)
@@ -315,8 +404,16 @@ pub fn describe_content(path: &str, data: &[u8]) -> Option<Vec<String>> {
     {
         return Some(vec![
             "format      NXTCH (chunk texture Switch)".to_string(),
-            format!("dimensions  {}x{}  format={:?}", h.width, h.height, h.texture_format()),
-            format!("mipmaps     {}  taille_donnees={}", h.mipmap_count, h.texture_data_size),
+            format!(
+                "dimensions  {}x{}  format={:?}",
+                h.width,
+                h.height,
+                h.texture_format()
+            ),
+            format!(
+                "mipmaps     {}  taille_donnees={}",
+                h.mipmap_count, h.texture_data_size
+            ),
         ]);
     }
 
@@ -326,7 +423,10 @@ pub fn describe_content(path: &str, data: &[u8]) -> Option<Vec<String>> {
     if path.to_ascii_lowercase().ends_with(".objbin") && objbin::is_objb(data) {
         let mut out = vec!["format      OBJBIN (objet de menu)".to_string()];
         if let Ok(o) = objbin::parse(data) {
-            out.push(format!("nom         {}  type_moteur={}", o.name, o.engine_type));
+            out.push(format!(
+                "nom         {}  type_moteur={}",
+                o.name, o.engine_type
+            ));
             out.push(format!("composants  {}", o.components.len()));
         }
         return Some(out);
@@ -339,12 +439,18 @@ pub fn describe_content(path: &str, data: &[u8]) -> Option<Vec<String>> {
         ]);
     }
     if cri_audio::is_hca(data) {
-        return Some(vec!["format      HCA (audio Criware chiffré, clé par fichier)".to_string()]);
+        return Some(vec![
+            "format      HCA (audio Criware chiffré, clé par fichier)".to_string(),
+        ]);
     }
     if data.starts_with(b"AFS2") {
         let mut out = vec!["format      AWB/AFS2 (banque audio Criware)".to_string()];
         if let Ok(awb) = cri_audio::Awb::parse(data) {
-            out.push(format!("entrées     {}  subkey=0x{:04X}", awb.entries.len(), awb.subkey));
+            out.push(format!(
+                "entrées     {}  subkey=0x{:04X}",
+                awb.entries.len(),
+                awb.subkey
+            ));
         }
         return Some(out);
     }
@@ -374,9 +480,17 @@ pub fn describe_content(path: &str, data: &[u8]) -> Option<Vec<String>> {
         if cfgbin::is_rdbn(data) {
             if let Ok(rdbn) = cfgbin::parse(data) {
                 let lists = cfgbin::read_values(&rdbn, data);
-                let mut out = vec![format!("format      RDBN (cfg.bin à listes), version {}", rdbn.header.version)];
+                let mut out = vec![format!(
+                    "format      RDBN (cfg.bin à listes), version {}",
+                    rdbn.header.version
+                )];
                 for l in lists.iter().take(20) {
-                    out.push(format!("  liste {:<28} type={:<24} {} ligne(s)", l.name, l.type_name, l.rows.len()));
+                    out.push(format!(
+                        "  liste {:<28} type={:<24} {} ligne(s)",
+                        l.name,
+                        l.type_name,
+                        l.rows.len()
+                    ));
                 }
                 if lists.len() > 20 {
                     out.push(format!("  … {} liste(s) de plus", lists.len() - 20));
@@ -385,15 +499,27 @@ pub fn describe_content(path: &str, data: &[u8]) -> Option<Vec<String>> {
                     && let Some(row) = first.rows.first()
                 {
                     let fields: Vec<&str> = row.fields.iter().map(|(n, _)| n.as_str()).collect();
-                    out.push(format!("  champs de « {} » : {}", first.name, fields.join(", ")));
+                    out.push(format!(
+                        "  champs de « {} » : {}",
+                        first.name,
+                        fields.join(", ")
+                    ));
                 }
                 append_nie_data_rdbn(&mut out, &lists);
                 return Some(out);
             }
         } else if let Ok(t2b) = cfgbin::cfgbin_parse(data) {
-            let mut out = vec![format!("format      T2B (cfg.bin arborescent), {} entrée(s) racine", t2b.entries.len())];
+            let mut out = vec![format!(
+                "format      T2B (cfg.bin arborescent), {} entrée(s) racine",
+                t2b.entries.len()
+            )];
             for e in t2b.entries.iter().take(20) {
-                out.push(format!("  {:<28} {} variable(s), {} enfant(s)", e.name, e.variables.len(), e.children.len()));
+                out.push(format!(
+                    "  {:<28} {} variable(s), {} enfant(s)",
+                    e.name,
+                    e.variables.len(),
+                    e.children.len()
+                ));
             }
             if t2b.entries.len() > 20 {
                 out.push(format!("  … {} entrée(s) de plus", t2b.entries.len() - 20));

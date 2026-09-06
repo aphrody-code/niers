@@ -39,7 +39,9 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use serde_json::Value;
 
-use crate::cfgbin::{field_bool, field_hash, field_i64, field_str, list_values, owned, walk_named, Node};
+use crate::cfgbin::{
+    Node, field_bool, field_hash, field_i64, field_str, list_values, owned, walk_named,
+};
 use crate::hash::HashId;
 
 // ─── SearchWordInfo ────────────────────────────────────────────────────────────
@@ -181,9 +183,7 @@ impl BookmarkFolderItem {
             word_text_id: field_hash(v, "wordTextId"),
             desc_text_id: field_hash(v, "descTextId"),
             thumbnail_tex_name: field_hash(v, "thumbnailTexName"),
-            thumbnail_tex_file_name: owned(
-                field_str(v, "thumbnailTexFileName").unwrap_or(""),
-            ),
+            thumbnail_tex_file_name: owned(field_str(v, "thumbnailTexFileName").unwrap_or("")),
             is_necessary_story: field_bool(v, "isNecessaryStory").unwrap_or(false),
             enable_cond: owned(field_str(v, "enableCond").unwrap_or("")),
         })
@@ -231,17 +231,13 @@ impl InfoBookmarkData {
         if bookmark_id.is_zero() {
             return None;
         }
-        let bfil = v
-            .get("bookmarkFolderItemList")
-            .and_then(Value::as_array);
+        let bfil = v.get("bookmarkFolderItemList").and_then(Value::as_array);
         Some(Self {
             bookmark_id,
             base_no: field_i64(v, "baseNo").unwrap_or(0),
             folder_name_id: field_hash(v, "folderNameId"),
             thumbnail_tex_name: field_hash(v, "thumbnailTexName"),
-            thumbnail_tex_file_name: owned(
-                field_str(v, "thumbnailTexFileName").unwrap_or(""),
-            ),
+            thumbnail_tex_file_name: owned(field_str(v, "thumbnailTexFileName").unwrap_or("")),
             folder_item_offset: bfil
                 .and_then(|a| a.first())
                 .and_then(Value::as_i64)
@@ -327,11 +323,7 @@ pub fn parse_info_bookmark_config(root: &Value) -> InfoBookmarkConfig {
             "m_BookmarkFolderItemList",
             BookmarkFolderItem::from_value,
         ),
-        bookmarks: extract_list(
-            root,
-            "m_InfoBookmarkDataList",
-            InfoBookmarkData::from_value,
-        ),
+        bookmarks: extract_list(root, "m_InfoBookmarkDataList", InfoBookmarkData::from_value),
     }
 }
 

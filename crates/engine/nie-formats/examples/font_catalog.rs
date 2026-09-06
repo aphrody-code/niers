@@ -30,9 +30,13 @@ fn main() {
     let game_dir = nie_formats::vfs::resolve_game_dir();
     let data_dir = game_dir.join("data");
     let mut vfs = Vfs::new();
-    vfs.init(&data_dir).expect("init VFS depuis cpk_list.cfg.bin");
+    vfs.init(&data_dir)
+        .expect("init VFS depuis cpk_list.cfg.bin");
 
-    println!("{:<20} {:>8} {:>6} {:>6} {:>10} {:>10}", "fonte", "glyphes", "pages", "petite", "atlas_w", "atlas_h");
+    println!(
+        "{:<20} {:>8} {:>6} {:>6} {:>10} {:>10}",
+        "fonte", "glyphes", "pages", "petite", "atlas_w", "atlas_h"
+    );
 
     for name in FONTS {
         let cfg_path = format!("data/common/font/font/{name}/font.cfg.bin");
@@ -83,7 +87,11 @@ fn main() {
             continue;
         }
         let dds = &g4tx_bytes[t.data_offset..];
-        let px_off = if dds.len() >= 88 && &dds[84..88] == b"DX10" { 148 } else { 128 };
+        let px_off = if dds.len() >= 88 && &dds[84..88] == b"DX10" {
+            148
+        } else {
+            128
+        };
         let Some(atlas) = dds.get(px_off..) else {
             println!("  payload atlas hors limites");
             continue;
@@ -101,10 +109,22 @@ fn main() {
             .collect();
         let mut trouve = false;
         for &cp in &candidats {
-            let Some(m) = metrics.glyphs.get(&cp) else { continue };
+            let Some(m) = metrics.glyphs.get(&cp) else {
+                continue;
+            };
             let (cw, ch) = (u32::from(m.width).max(1) + 8, u32::from(cell_h) + 8);
             let mut canvas = vec![0u8; (cw * ch * 4) as usize];
-            font::glyph_blitter(atlas, t.width as u32, m, cell_h, &mut canvas, cw * 4, 4, 4, [255, 255, 255, 255]);
+            font::glyph_blitter(
+                atlas,
+                t.width as u32,
+                m,
+                cell_h,
+                &mut canvas,
+                cw * 4,
+                4,
+                4,
+                [255, 255, 255, 255],
+            );
             let lit: usize = canvas.chunks_exact(4).filter(|p| p[3] > 8).count();
             if lit == 0 {
                 continue;
@@ -121,13 +141,19 @@ fn main() {
             let ch = font::decode_packed_codepoint(cp);
             println!(
                 "  sonde raw={cp:#X} ({ch:?}) x={} y={} w={} page={} → {lit} px allumés/{}, {out_path}",
-                m.x, m.y, m.width, m.page, canvas.len() / 4
+                m.x,
+                m.y,
+                m.width,
+                m.page,
+                canvas.len() / 4
             );
             trouve = true;
             break;
         }
         if !trouve {
-            println!("  AUCUN candidat n'a rendu de pixel (metrics-based blit peut-être cassé pour cette fonte)");
+            println!(
+                "  AUCUN candidat n'a rendu de pixel (metrics-based blit peut-être cassé pour cette fonte)"
+            );
         }
     }
 }

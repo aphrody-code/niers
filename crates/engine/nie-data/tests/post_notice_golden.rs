@@ -8,10 +8,9 @@
 mod common;
 
 use nie_data::hash::HashId;
-use nie_data::post::{parse_post_notice_config, PostNoticeConfig};
+use nie_data::post::{PostNoticeConfig, parse_post_notice_config};
 
-const REAL_PATH: &str =
-    "post/post_notice_config_1.03.93.00.cfg.bin.json";
+const REAL_PATH: &str = "post/post_notice_config_1.03.93.00.cfg.bin.json";
 
 fn load_real() -> Option<PostNoticeConfig> {
     let chemin_abs = common::chemin(REAL_PATH)?;
@@ -31,7 +30,11 @@ fn comptes_listes() {
     let Some(cfg) = load_real() else { return };
     assert_eq!(cfg.banner_imgs.len(), 44, "m_PostNoticeBannerImgInfoList");
     assert_eq!(cfg.banner_bgs.len(), 16, "m_PostNoticeBannerBgInfoList");
-    assert_eq!(cfg.banner_badges.len(), 3, "m_PostNoticeBannerBadgeInfoList");
+    assert_eq!(
+        cfg.banner_badges.len(),
+        3,
+        "m_PostNoticeBannerBadgeInfoList"
+    );
     assert_eq!(cfg.banner_icons.len(), 9, "m_PostNoticeBannerIconInfoList");
     assert_eq!(
         cfg.banner_graphics_texts.len(),
@@ -107,10 +110,7 @@ fn graphics_text_marqueur_final() {
     // dernier [7] : chemin marqueur opaque (caractère de remplacement U+FFFD)
     let g7 = &cfg.banner_graphics_texts[7];
     assert_eq!(g7.id_crc, HashId(0xFAB5_9E86));
-    assert_eq!(
-        g7.banner_graphics_text_texture_name_crc,
-        HashId::ZERO
-    );
+    assert_eq!(g7.banner_graphics_text_texture_name_crc, HashId::ZERO);
     assert_eq!(
         g7.banner_graphics_text_texture_path,
         "\u{FFFD}POST_NOTICE_INFO"

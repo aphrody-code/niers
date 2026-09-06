@@ -34,7 +34,10 @@ impl Gisement {
     /// les routes concernées répondront `503`, le reste du service tourne.
     #[must_use]
     pub fn nouveau(chemin: impl Into<PathBuf>) -> Self {
-        Self { chemin: chemin.into(), etat: Mutex::new(None) }
+        Self {
+            chemin: chemin.into(),
+            etat: Mutex::new(None),
+        }
     }
 
     /// Chemin déclaré du miroir.
@@ -114,7 +117,9 @@ impl Gisement {
             if existe == 0 {
                 return Ok(None);
             }
-            let n: i64 = c.query_row(&format!("SELECT count(*) FROM \"{table}\""), [], |r| r.get(0))?;
+            let n: i64 = c.query_row(&format!("SELECT count(*) FROM \"{table}\""), [], |r| {
+                r.get(0)
+            })?;
             Ok(Some(n))
         })
     }
@@ -175,7 +180,11 @@ mod tests {
 
         std::fs::remove_file(&lien).unwrap();
         std::os::unix::fs::symlink(&b, &lien).unwrap();
-        assert_eq!(g.compte_table("t").unwrap(), Some(7), "le lien a bascule, la lecture suit");
+        assert_eq!(
+            g.compte_table("t").unwrap(),
+            Some(7),
+            "le lien a bascule, la lecture suit"
+        );
         assert_eq!(g.compte_table("table_absente").unwrap(), None);
     }
 }

@@ -55,7 +55,9 @@ impl AiTypeConfig {
     pub fn hobies_of(&self, info: &AiInfo) -> &[AiHoby] {
         let n = self.hobies.len();
         let start = (info.hoby_slice[0].max(0) as usize).min(n);
-        let end = start.saturating_add(info.hoby_slice[1].max(0) as usize).min(n);
+        let end = start
+            .saturating_add(info.hoby_slice[1].max(0) as usize)
+            .min(n);
         self.hobies.get(start..end).unwrap_or(&[])
     }
 }
@@ -78,7 +80,9 @@ fn group_children<'a>(root: &'a Value, prefix: &str) -> Vec<Node<'a>> {
 pub fn parse_ai_type_config(root: &Value) -> AiTypeConfig {
     let hobies = group_children(root, "AI_HOBY_LIST_BEG")
         .iter()
-        .map(|c| AiHoby { params: [c.int(0), c.int(1), c.int(2)] })
+        .map(|c| AiHoby {
+            params: [c.int(0), c.int(1), c.int(2)],
+        })
         .collect();
 
     // AI_AI_INFO_<i> est suivi de son nœud frère AI_AI_INFO_REF_HOBY_<i> (tranche de hobbies).
@@ -130,7 +134,11 @@ mod tests {
         let cfg = parse_ai_type_config(&fixture());
         assert_eq!(cfg.hobies.len(), 2);
         assert_eq!(cfg.hobies[0].params, [1, 20, 0]);
-        assert_eq!(cfg.ai_infos.len(), 1, "1 info (le REF n'est pas une entrée)");
+        assert_eq!(
+            cfg.ai_infos.len(),
+            1,
+            "1 info (le REF n'est pas une entrée)"
+        );
         let info = &cfg.ai_infos[0];
         assert_eq!(info.ai_id, HashId(0xC9E1_1EB8)); // -907993416 → u32
         assert_eq!(info.params, [1, 1]);

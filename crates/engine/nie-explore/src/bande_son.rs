@@ -148,7 +148,9 @@ pub fn piste_de_film(
 
     let mut choisi = None;
     for nom in &candidats {
-        let Some(c) = cues.iter().find(|c| c.name == *nom && c.awb_id.is_some()) else { continue };
+        let Some(c) = cues.iter().find(|c| c.name == *nom && c.awb_id.is_some()) else {
+            continue;
+        };
         let onde_ms = duree_onde_ms(c);
         if u64::from(onde_ms) > plafond_ms {
             continue;
@@ -207,12 +209,16 @@ pub fn wav_de_la_cue(vfs: &Vfs, cache_dir: &Path, awb_id: u16) -> Result<Vec<u8>
     let taille = f.metadata().map_err(|e| format!("taille AWB : {e}"))?.len();
 
     let mut entete = vec![0u8; ENTETE_AWB.min(taille as usize)];
-    f.read_exact(&mut entete).map_err(|e| format!("lecture de l'en-tête AWB : {e}"))?;
+    f.read_exact(&mut entete)
+        .map_err(|e| format!("lecture de l'en-tête AWB : {e}"))?;
     let banque = cri_audio::Awb::parse_entete(&entete, taille)
         .map_err(|e| format!("table des matières AWB illisible : {e}"))?;
 
     let rang = banque.index_of_id(awb_id).ok_or_else(|| {
-        format!("cue-id {awb_id} absent de la banque ({} entrées)", banque.entries.len())
+        format!(
+            "cue-id {awb_id} absent de la banque ({} entrées)",
+            banque.entries.len()
+        )
     })?;
     let entree = &banque.entries[rang];
     if entree.size == 0 {
@@ -222,7 +228,8 @@ pub fn wav_de_la_cue(vfs: &Vfs, cache_dir: &Path, awb_id: u16) -> Result<Vec<u8>
     f.seek(SeekFrom::Start(u64::from(entree.offset)))
         .map_err(|e| format!("positionnement dans l'AWB : {e}"))?;
     let mut octets = vec![0u8; entree.size as usize];
-    f.read_exact(&mut octets).map_err(|e| format!("lecture de l'entrée AWB : {e}"))?;
+    f.read_exact(&mut octets)
+        .map_err(|e| format!("lecture de l'entrée AWB : {e}"))?;
 
     // Les entrées des AWB IEVR sont précédées de quelques octets nuls avant le magic HCA/ADX —
     // même saut que `Awb::entry_bytes`, qui travaille lui sur le fichier entier.
@@ -235,7 +242,11 @@ pub fn wav_de_la_cue(vfs: &Vfs, cache_dir: &Path, awb_id: u16) -> Result<Vec<u8>
     }
     if cri_audio::is_adx(charge) {
         let pcm = cri_audio::adx_decode(charge).map_err(|e| format!("ADX : {e}"))?;
-        return Ok(cri_audio::encode_pcm16_wav(&pcm.samples, pcm.channels, pcm.sample_rate));
+        return Ok(cri_audio::encode_pcm16_wav(
+            &pcm.samples,
+            pcm.channels,
+            pcm.sample_rate,
+        ));
     }
     Err("l'entrée n'est ni du HCA ni de l'ADX".to_string())
 }
@@ -281,7 +292,9 @@ mod tests {
             let duree = vfs
                 .read(chemin)
                 .ok()
-                .and_then(|o| nie_formats::usm::inspecter(&o, nie_formats::usm::nom_fichier_de(chemin)).ok())
+                .and_then(|o| {
+                    nie_formats::usm::inspecter(&o, nie_formats::usm::nom_fichier_de(chemin)).ok()
+                })
                 .and_then(|a| a.duree());
             let nomme = cues.iter().any(|c| c.name.starts_with(radical.as_str()));
             if piste_de_film(&vfs, radical, duree, None).is_some() {
@@ -317,7 +330,10 @@ mod tests {
         // avoir. Seuil volontairement bas : il protège contre une résolution CASSÉE, pas contre une
         // évolution du jeu. Le chiffre du jour (30 résolues, 12 bobines écartées) est imprimé
         // ci-dessus ; le figer à l’unité près casserait au premier correctif de contenu.
-        assert!(sonores >= 25, "seulement {sonores} films sonorisés — la résolution est cassée");
+        assert!(
+            sonores >= 25,
+            "seulement {sonores} films sonorisés — la résolution est cassée"
+        );
     }
 
     /// Le lien film → cue est un CRC32 du nom du film, pas un identifiant arbitraire.
@@ -353,10 +369,21 @@ mod tests {
         // La cue au nom NU existe mais ne porte aucune forme d'onde : c'est le stem `_bgm` qui
         // en a une. La résolution doit donc désigner un nom DÉRIVÉ du film, pas exactement le
         // sien — et surtout pas celui d'un autre film.
-        assert!(piste.cue.starts_with("ev01_00050"), "cue inattendue : {}", piste.cue);
-        assert!(piste.confirme_par_hash, "le bgmName du gamedata doit confirmer le film");
+        assert!(
+            piste.cue.starts_with("ev01_00050"),
+            "cue inattendue : {}",
+            piste.cue
+        );
+        assert!(
+            piste.confirme_par_hash,
+            "le bgmName du gamedata doit confirmer le film"
+        );
         assert_eq!(piste.codec, "hca");
-        assert!(piste.frequence >= 8000, "fréquence douteuse : {}", piste.frequence);
+        assert!(
+            piste.frequence >= 8000,
+            "fréquence douteuse : {}",
+            piste.frequence
+        );
 
         // Un film qui n'existe pas ne doit se voir attribuer AUCUNE piste.
         assert!(piste_de_film(&vfs, "film_qui_n_existe_pas", None, None).is_none());
@@ -367,6 +394,10 @@ mod tests {
         assert_eq!(&wav[8..12], b"WAVE");
         // Une bande-son de 93 s en 16 bits stéréo pèse des mégaoctets : un WAV d'en-tête seul
         // (44 octets) passerait un test de magic mais pas celui-ci.
-        assert!(wav.len() > 1_000_000, "WAV trop court : {} octets", wav.len());
+        assert!(
+            wav.len() > 1_000_000,
+            "WAV trop court : {} octets",
+            wav.len()
+        );
     }
 }

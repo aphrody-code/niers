@@ -143,7 +143,11 @@ pub struct Reglages {
 
 impl Default for Reglages {
     fn default() -> Self {
-        Self { masque: Masque::Alpha(8), boite: None, k: 5 }
+        Self {
+            masque: Masque::Alpha(8),
+            boite: None,
+            k: 5,
+        }
     }
 }
 
@@ -171,7 +175,11 @@ impl Image {
                 rgba.len()
             )));
         }
-        Ok(Self { largeur, hauteur, rgba })
+        Ok(Self {
+            largeur,
+            hauteur,
+            rgba,
+        })
     }
 
     /// Décode une image en mémoire (PNG, JPEG, WebP) et la ramène en RGBA8.
@@ -187,7 +195,11 @@ impl Image {
             .map_err(|e| Error::Invalid(format!("image illisible : {e}")))?
             .to_rgba8();
         let (largeur, hauteur) = img.dimensions();
-        Ok(Self { largeur, hauteur, rgba: img.into_raw() })
+        Ok(Self {
+            largeur,
+            hauteur,
+            rgba: img.into_raw(),
+        })
     }
 
     /// Charge un fichier image (PNG, JPEG, WebP) et le ramène en RGBA8.
@@ -202,14 +214,23 @@ impl Image {
             .map_err(|e| Error::Invalid(format!("{} : {e}", chemin.display())))?
             .to_rgba8();
         let (largeur, hauteur) = img.dimensions();
-        Ok(Self { largeur, hauteur, rgba: img.into_raw() })
+        Ok(Self {
+            largeur,
+            hauteur,
+            rgba: img.into_raw(),
+        })
     }
 
     /// Le pixel en `(x, y)`, sans vérification de bornes par l'appelant.
     #[must_use]
     fn pixel(&self, x: u32, y: u32) -> [u8; 4] {
         let i = ((y as usize) * (self.largeur as usize) + (x as usize)) * 4;
-        [self.rgba[i], self.rgba[i + 1], self.rgba[i + 2], self.rgba[i + 3]]
+        [
+            self.rgba[i],
+            self.rgba[i + 1],
+            self.rgba[i + 2],
+            self.rgba[i + 3],
+        ]
     }
 }
 
@@ -234,8 +255,11 @@ fn oklch(rgb: [u8; 3]) -> [f64; 3] {
 
 /// Convertit un sRGB 8 bits en HSL (h°, s, l).
 fn hsl(rgb: [u8; 3]) -> [f64; 3] {
-    let (r, g, b) =
-        (f64::from(rgb[0]) / 255.0, f64::from(rgb[1]) / 255.0, f64::from(rgb[2]) / 255.0);
+    let (r, g, b) = (
+        f64::from(rgb[0]) / 255.0,
+        f64::from(rgb[1]) / 255.0,
+        f64::from(rgb[2]) / 255.0,
+    );
     let (max, min) = (r.max(g).max(b), r.min(g).min(b));
     let l = f64::midpoint(max, min);
     let d = max - min;
@@ -290,7 +314,10 @@ fn kmeans(echantillons: &[[u8; 3]], k: usize) -> Vec<(usize, [u8; 3])> {
     while centres.len() < k {
         let (mut meilleur, mut dmax) = (0usize, -1.0f64);
         for (i, l) in labs.iter().enumerate() {
-            let d = centres.iter().map(|c| distance2(*l, *c)).fold(f64::MAX, f64::min);
+            let d = centres
+                .iter()
+                .map(|c| distance2(*l, *c))
+                .fold(f64::MAX, f64::min);
             if d > dmax {
                 dmax = d;
                 meilleur = i;
@@ -368,7 +395,10 @@ fn kmeans(echantillons: &[[u8; 3]], k: usize) -> Vec<(usize, [u8; 3])> {
 }
 
 fn distance2(a: [f64; 3], b: [f64; 3]) -> f64 {
-    (a[0] - b[0]).mul_add(a[0] - b[0], (a[1] - b[1]).mul_add(a[1] - b[1], (a[2] - b[2]).powi(2)))
+    (a[0] - b[0]).mul_add(
+        a[0] - b[0],
+        (a[1] - b[1]).mul_add(a[1] - b[1], (a[2] - b[2]).powi(2)),
+    )
 }
 
 /// Épaisseur médiane des segments pleins, ligne à ligne — la mesure du trait.
@@ -444,7 +474,10 @@ pub fn mesurer(img: &Image, reglages: Reglages) -> Result<Mesure, Error> {
 
     let boite = Boite { x0, y0, x1, y1 };
     let (bw, bh) = (f64::from(boite.largeur()), f64::from(boite.hauteur()));
-    #[expect(clippy::cast_precision_loss, reason = "compte de pixels, bien sous 2^53")]
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "compte de pixels, bien sous 2^53"
+    )]
     let pleins = echantillons.len() as f64;
 
     let palette = kmeans(&echantillons, reglages.k)
@@ -556,7 +589,11 @@ fn ajuster(bord: &[Option<u32>], y0: u32) -> (f64, f64) {
         res += (x - a.mul_add(*y, b)).powi(2);
         tot += (x - mx).powi(2);
     }
-    let r2 = if tot.abs() < f64::EPSILON { 1.0 } else { (1.0 - res / tot).max(0.0) };
+    let r2 = if tot.abs() < f64::EPSILON {
+        1.0
+    } else {
+        (1.0 - res / tot).max(0.0)
+    };
     (a, r2)
 }
 
@@ -594,11 +631,18 @@ pub fn comparer(a: &Image, b: &Image, tolerance: u8) -> Result<Comparaison, Erro
             dedans += 1;
         }
     }
-    #[expect(clippy::cast_precision_loss, reason = "compte de pixels, bien sous 2^53")]
+    #[expect(
+        clippy::cast_precision_loss,
+        reason = "compte de pixels, bien sous 2^53"
+    )]
     let pct = (dedans as f64) * 100.0 / ((a.rgba.len() / 4) as f64);
 
     let vers_rgb = |img: &Image| {
-        let plat: Vec<u8> = img.rgba.chunks_exact(4).flat_map(|p| [p[0], p[1], p[2]]).collect();
+        let plat: Vec<u8> = img
+            .rgba
+            .chunks_exact(4)
+            .flat_map(|p| [p[0], p[1], p[2]])
+            .collect();
         image::RgbImage::from_raw(img.largeur, img.hauteur, plat)
             .ok_or_else(|| Error::Invalid("tampon RGB incohérent".into()))
     };
@@ -630,14 +674,21 @@ pub fn rasteriser_svg(svg: &str, largeur: u32) -> Result<Image, Error> {
     }
     let echelle = f32::from(u16::try_from(largeur.min(u32::from(u16::MAX))).unwrap_or(u16::MAX))
         / taille.width();
-    #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss, reason = "hauteur > 0")]
+    #[expect(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "hauteur > 0"
+    )]
     let hauteur = (taille.height() * echelle).ceil().max(1.0) as u32;
     let mut pixmap = tiny_skia::Pixmap::new(largeur, hauteur)
         .ok_or_else(|| Error::Invalid(format!("pixmap {largeur}x{hauteur} impossible")))?;
-    resvg::render(&arbre, tiny_skia::Transform::from_scale(echelle, echelle), &mut pixmap.as_mut());
+    resvg::render(
+        &arbre,
+        tiny_skia::Transform::from_scale(echelle, echelle),
+        &mut pixmap.as_mut(),
+    );
     Image::nouvelle(largeur, hauteur, pixmap.take())
 }
-
 
 // ---------------------------------------------------------------------------------------------
 // Vectorisation
@@ -659,7 +710,12 @@ pub struct ReglagesVecteur {
 
 impl Default for ReglagesVecteur {
     fn default() -> Self {
-        Self { k: 4, tolerance: 0.75, aire_min: 12, masque: Masque::Alpha(8) }
+        Self {
+            k: 4,
+            tolerance: 0.75,
+            aire_min: 12,
+            masque: Masque::Alpha(8),
+        }
     }
 }
 
@@ -670,7 +726,11 @@ impl Default for ReglagesVecteur {
 /// inverse, ce qui les creuse tout seuls sous la règle `nonzero` — inutile de les détecter.
 fn contours(masque: &[bool], w: usize, h: usize) -> Vec<Vec<(f64, f64)>> {
     let plein = |x: isize, y: isize| -> bool {
-        x >= 0 && y >= 0 && (x as usize) < w && (y as usize) < h && masque[(y as usize) * w + (x as usize)]
+        x >= 0
+            && y >= 0
+            && (x as usize) < w
+            && (y as usize) < h
+            && masque[(y as usize) * w + (x as usize)]
     };
     let mut aretes: std::collections::HashMap<(i64, i64), Vec<(i64, i64)>> =
         std::collections::HashMap::new();
@@ -726,10 +786,17 @@ fn simplifier(points: &[(f64, f64)], tolerance: f64) -> Vec<(f64, f64)> {
         return points.to_vec();
     }
     fn recurse(pts: &[(f64, f64)], tol: f64, out: &mut Vec<(f64, f64)>) {
-        let (Some(a), Some(b)) = (pts.first(), pts.last()) else { return };
+        let (Some(a), Some(b)) = (pts.first(), pts.last()) else {
+            return;
+        };
         let mut dmax = 0.0f64;
         let mut idx = 0usize;
-        for (i, p) in pts.iter().enumerate().take(pts.len().saturating_sub(1)).skip(1) {
+        for (i, p) in pts
+            .iter()
+            .enumerate()
+            .take(pts.len().saturating_sub(1))
+            .skip(1)
+        {
             let (dx, dy) = (b.0 - a.0, b.1 - a.1);
             let norme = dx.hypot(dy);
             let d = if norme < f64::EPSILON {
@@ -854,7 +921,6 @@ pub fn vectoriser(img: &Image, reglages: ReglagesVecteur) -> Result<String, Erro
     ))
 }
 
-
 // ---------------------------------------------------------------------------------------------
 // Planche de sprites et jetons CSS — le pont vers `nie_formats::sprite_sheet`
 // ---------------------------------------------------------------------------------------------
@@ -889,7 +955,11 @@ pub fn planche(
     }
     // Grille par défaut : la plus carrée possible, ce qui donne la planche la plus compacte à
     // décoder pour le GPU comme pour le navigateur.
-    #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss, reason = "≥ 1, borné")]
+    #[expect(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "≥ 1, borné"
+    )]
     let cols = colonnes
         .unwrap_or_else(|| (images.len() as f64).sqrt().ceil().max(1.0) as usize)
         .max(1);
@@ -903,7 +973,10 @@ pub fn planche(
     let mut sprites = Vec::with_capacity(images.len());
 
     for (i, (nom_sprite, img)) in images.iter().enumerate() {
-        #[expect(clippy::cast_possible_truncation, reason = "cols et lignes tiennent en u32")]
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "cols et lignes tiennent en u32"
+        )]
         let (col, ligne) = ((i % cols) as u32, (i / cols) as u32);
         let (ox, oy) = (col * cw, ligne * ch);
         for y in 0..img.hauteur {
@@ -933,7 +1006,12 @@ pub fn planche(
     let (Ok(pl), Ok(phh)) = (i32::try_from(largeur), i32::try_from(hauteur)) else {
         return Err(Error::Invalid("planche trop grande pour i32".into()));
     };
-    let feuille = SpriteSheet { nom: nom.to_owned(), largeur: pl, hauteur: phh, sprites };
+    let feuille = SpriteSheet {
+        nom: nom.to_owned(),
+        largeur: pl,
+        hauteur: phh,
+        sprites,
+    };
     Ok((Image::nouvelle(largeur, hauteur, rgba)?, feuille))
 }
 
@@ -989,7 +1067,11 @@ mod tests {
     #[test]
     fn un_disque_mesure_bien_comme_un_disque() {
         let m = mesurer(&disque(128), Reglages::default()).expect("mesure");
-        assert!((m.ratio - 1.0).abs() < 0.02, "ratio {} attendu ≈ 1", m.ratio);
+        assert!(
+            (m.ratio - 1.0).abs() < 0.02,
+            "ratio {} attendu ≈ 1",
+            m.ratio
+        );
         // π/4 = 78,54 % ; on tolère le crénelage du bord.
         assert!(
             (m.remplissage_pct - 78.54).abs() < 2.0,
@@ -1030,7 +1112,10 @@ mod tests {
         let svg = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 50"><rect width="100" height="50" fill="#F3A13A"/></svg>"##;
         let img = rasteriser_svg(svg, 200).expect("rendu");
         assert_eq!(img.largeur, 200);
-        assert_eq!(img.hauteur, 100, "la hauteur suit le viewBox, elle ne se devine pas");
+        assert_eq!(
+            img.hauteur, 100,
+            "la hauteur suit le viewBox, elle ne se devine pas"
+        );
         assert_eq!(&img.rgba[0..3], &[0xF3, 0xA1, 0x3A]);
     }
 
@@ -1044,24 +1129,46 @@ mod tests {
             }
         }
         let img = Image::nouvelle(16, 16, rgba).expect("tampon");
-        let svg = vectoriser(&img, ReglagesVecteur { k: 1, ..ReglagesVecteur::default() })
-            .expect("vectorisation");
-        assert!(svg.contains("#204080"), "la couleur de couche vient de l'image : {svg}");
+        let svg = vectoriser(
+            &img,
+            ReglagesVecteur {
+                k: 1,
+                ..ReglagesVecteur::default()
+            },
+        )
+        .expect("vectorisation");
+        assert!(
+            svg.contains("#204080"),
+            "la couleur de couche vient de l'image : {svg}"
+        );
         // Un carré parfait : 4 sommets, pas 32 marches d'escalier.
         let sommets = svg.matches('L').count() + svg.matches('M').count();
-        assert_eq!(sommets, 4, "un carré doit rendre 4 points, pas {sommets} : {svg}");
+        assert_eq!(
+            sommets, 4,
+            "un carré doit rendre 4 points, pas {sommets} : {svg}"
+        );
     }
 
     #[test]
     fn le_svg_vectorise_se_rasterise_et_retombe_sur_la_source() {
         let d = disque(64);
-        let svg = vectoriser(&d, ReglagesVecteur { k: 1, ..ReglagesVecteur::default() })
-            .expect("vectorisation");
+        let svg = vectoriser(
+            &d,
+            ReglagesVecteur {
+                k: 1,
+                ..ReglagesVecteur::default()
+            },
+        )
+        .expect("vectorisation");
         let rendu = rasteriser_svg(&svg, 64).expect("rendu");
         let c = comparer(&d, &rendu, 24).expect("comparaison");
         // Le contrôle qui compte : le vecteur doit RESSEMBLER à sa source, chiffres à l'appui.
         assert!(c.ssim > 0.90, "ssim {} trop bas", c.ssim);
-        assert!(c.pixels_dans_tolerance_pct > 95.0, "{} % dans la tolérance", c.pixels_dans_tolerance_pct);
+        assert!(
+            c.pixels_dans_tolerance_pct > 95.0,
+            "{} % dans la tolérance",
+            c.pixels_dans_tolerance_pct
+        );
     }
 
     #[test]
@@ -1076,11 +1183,18 @@ mod tests {
         assert_eq!((planche_img.largeur, planche_img.hauteur), (64, 64));
         assert_eq!(feuille.sprites.len(), 3);
         // La case garde la taille RÉELLE de son image, pas celle de la case.
-        assert_eq!((feuille.sprites[1].largeur, feuille.sprites[1].hauteur), (24, 24));
+        assert_eq!(
+            (feuille.sprites[1].largeur, feuille.sprites[1].hauteur),
+            (24, 24)
+        );
         assert_eq!((feuille.sprites[2].x, feuille.sprites[2].y), (0, 32));
         // Le nom est assaini pour servir de classe, l'original est conservé.
         assert_eq!(feuille.sprites[1].nom, "pose/court");
-        assert!(!feuille.sprites[1].classe.contains('/'), "{}", feuille.sprites[1].classe);
+        assert!(
+            !feuille.sprites[1].classe.contains('/'),
+            "{}",
+            feuille.sprites[1].classe
+        );
     }
 
     #[test]
@@ -1091,8 +1205,15 @@ mod tests {
         assert!(css.contains("background-size: 32px 16px;"), "{css}");
         // La forme exacte vient de `nie_formats::sprite_sheet`, elle n'est PAS réécrite ici :
         // c'est tout l'intérêt du branchement, et ce test le verrouille.
-        assert!(css.contains(".nie-b { width: 16px; height: 16px; background-position: -16px 0px; }"), "{css}");
-        assert!(feuille.vers_svg("data:image/png;base64,AA").contains("<symbol"));
+        assert!(
+            css.contains(".nie-b { width: 16px; height: 16px; background-position: -16px 0px; }"),
+            "{css}"
+        );
+        assert!(
+            feuille
+                .vers_svg("data:image/png;base64,AA")
+                .contains("<symbol")
+        );
         assert!(feuille.vers_json().contains("\"nom\": \"poses\""));
     }
 
@@ -1101,7 +1222,10 @@ mod tests {
         let m = mesurer(&disque(64), Reglages::default()).expect("mesure");
         let css = tokens_css(&m, "menu");
         assert!(css.contains("--menu-0: oklch("), "{css}");
-        assert!(css.contains("#F3A13A"), "le HEX mesuré doit rester lisible : {css}");
+        assert!(
+            css.contains("#F3A13A"),
+            "le HEX mesuré doit rester lisible : {css}"
+        );
     }
 
     #[test]

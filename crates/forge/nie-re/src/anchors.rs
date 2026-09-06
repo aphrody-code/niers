@@ -33,166 +33,610 @@ pub struct Rule {
 /// généraux.
 pub static RULES: &[Rule] = &[
     // --- Audio (CriWare / HCA) ---
-    Rule { pattern: "criatom",          subsystem: "audio" },
-    Rule { pattern: "criware",          subsystem: "audio" },
-    Rule { pattern: "criadx",           subsystem: "audio" },
-    Rule { pattern: "crilayla",         subsystem: "audio" },
-    Rule { pattern: "crimana",          subsystem: "audio" },
-    Rule { pattern: "crimv",            subsystem: "audio" },
-    Rule { pattern: "crincv",           subsystem: "audio" },
-    Rule { pattern: "hca",              subsystem: "audio" },
-    Rule { pattern: "adxf",             subsystem: "audio" },
-    Rule { pattern: "acb",              subsystem: "audio" },
-    Rule { pattern: "cri_atom",         subsystem: "audio" },
-    Rule { pattern: "gdssound",         subsystem: "audio" },
-    Rule { pattern: "soundqueue",       subsystem: "audio" },
-    Rule { pattern: "soundobj",         subsystem: "audio" },
-    Rule { pattern: "soundconfig",      subsystem: "audio" },
+    Rule {
+        pattern: "criatom",
+        subsystem: "audio",
+    },
+    Rule {
+        pattern: "criware",
+        subsystem: "audio",
+    },
+    Rule {
+        pattern: "criadx",
+        subsystem: "audio",
+    },
+    Rule {
+        pattern: "crilayla",
+        subsystem: "audio",
+    },
+    Rule {
+        pattern: "crimana",
+        subsystem: "audio",
+    },
+    Rule {
+        pattern: "crimv",
+        subsystem: "audio",
+    },
+    Rule {
+        pattern: "crincv",
+        subsystem: "audio",
+    },
+    Rule {
+        pattern: "hca",
+        subsystem: "audio",
+    },
+    Rule {
+        pattern: "adxf",
+        subsystem: "audio",
+    },
+    Rule {
+        pattern: "acb",
+        subsystem: "audio",
+    },
+    Rule {
+        pattern: "cri_atom",
+        subsystem: "audio",
+    },
+    Rule {
+        pattern: "gdssound",
+        subsystem: "audio",
+    },
+    Rule {
+        pattern: "soundqueue",
+        subsystem: "audio",
+    },
+    Rule {
+        pattern: "soundobj",
+        subsystem: "audio",
+    },
+    Rule {
+        pattern: "soundconfig",
+        subsystem: "audio",
+    },
     // --- Render / DirectX ---
-    Rule { pattern: "d3d11",            subsystem: "render" },
-    Rule { pattern: "d3d12",            subsystem: "render" },
-    Rule { pattern: "dxgi",             subsystem: "render" },
-    Rule { pattern: "dxbc",             subsystem: "render" },
-    Rule { pattern: "hlsl",             subsystem: "render" },
-    Rule { pattern: "g4tx",             subsystem: "render" },
-    Rule { pattern: "shader",           subsystem: "render" },
-    Rule { pattern: "rendertexture",    subsystem: "render" },
-    Rule { pattern: "renderstate",      subsystem: "render" },
-    Rule { pattern: "renderdata",       subsystem: "render" },
-    Rule { pattern: "renderprop",       subsystem: "render" },
-    Rule { pattern: "renderproper",     subsystem: "render" },
-    Rule { pattern: "bustuprender",     subsystem: "render" },
-    Rule { pattern: "omnidirectionalshadow", subsystem: "render" },
-    Rule { pattern: "decalparam",       subsystem: "render" },
-    Rule { pattern: "decalsetup",       subsystem: "render" },
-    Rule { pattern: "decalanim",        subsystem: "render" },
+    Rule {
+        pattern: "d3d11",
+        subsystem: "render",
+    },
+    Rule {
+        pattern: "d3d12",
+        subsystem: "render",
+    },
+    Rule {
+        pattern: "dxgi",
+        subsystem: "render",
+    },
+    Rule {
+        pattern: "dxbc",
+        subsystem: "render",
+    },
+    Rule {
+        pattern: "hlsl",
+        subsystem: "render",
+    },
+    Rule {
+        pattern: "g4tx",
+        subsystem: "render",
+    },
+    Rule {
+        pattern: "shader",
+        subsystem: "render",
+    },
+    Rule {
+        pattern: "rendertexture",
+        subsystem: "render",
+    },
+    Rule {
+        pattern: "renderstate",
+        subsystem: "render",
+    },
+    Rule {
+        pattern: "renderdata",
+        subsystem: "render",
+    },
+    Rule {
+        pattern: "renderprop",
+        subsystem: "render",
+    },
+    Rule {
+        pattern: "renderproper",
+        subsystem: "render",
+    },
+    Rule {
+        pattern: "bustuprender",
+        subsystem: "render",
+    },
+    Rule {
+        pattern: "omnidirectionalshadow",
+        subsystem: "render",
+    },
+    Rule {
+        pattern: "decalparam",
+        subsystem: "render",
+    },
+    Rule {
+        pattern: "decalsetup",
+        subsystem: "render",
+    },
+    Rule {
+        pattern: "decalanim",
+        subsystem: "render",
+    },
     // --- Scripting (Lua) ---
-    Rule { pattern: "lua_",             subsystem: "script" },
-    Rule { pattern: "lua state",        subsystem: "script" },
-    Rule { pattern: "luastate",         subsystem: "script" },
-    Rule { pattern: "luaerror",         subsystem: "script" },
-    Rule { pattern: ".lua",             subsystem: "script" },
-    Rule { pattern: "scnobjscript",     subsystem: "script" },
-    Rule { pattern: "clua",             subsystem: "script" },
+    Rule {
+        pattern: "lua_",
+        subsystem: "script",
+    },
+    Rule {
+        pattern: "lua state",
+        subsystem: "script",
+    },
+    Rule {
+        pattern: "luastate",
+        subsystem: "script",
+    },
+    Rule {
+        pattern: "luaerror",
+        subsystem: "script",
+    },
+    Rule {
+        pattern: ".lua",
+        subsystem: "script",
+    },
+    Rule {
+        pattern: "scnobjscript",
+        subsystem: "script",
+    },
+    Rule {
+        pattern: "clua",
+        subsystem: "script",
+    },
     // --- Fichiers virtuels / CPK ---
-    Rule { pattern: "cpk",              subsystem: "vfs" },
-    Rule { pattern: ".g4pk",            subsystem: "vfs" },
-    Rule { pattern: ".g4md",            subsystem: "vfs" },
-    Rule { pattern: "g4pk",             subsystem: "vfs" },
-    Rule { pattern: "pakfile",          subsystem: "vfs" },
+    Rule {
+        pattern: "cpk",
+        subsystem: "vfs",
+    },
+    Rule {
+        pattern: ".g4pk",
+        subsystem: "vfs",
+    },
+    Rule {
+        pattern: ".g4md",
+        subsystem: "vfs",
+    },
+    Rule {
+        pattern: "g4pk",
+        subsystem: "vfs",
+    },
+    Rule {
+        pattern: "pakfile",
+        subsystem: "vfs",
+    },
     // --- Gameplay / football ---
-    Rule { pattern: "soccer",           subsystem: "gameplay" },
-    Rule { pattern: "ballmove",         subsystem: "gameplay" },
-    Rule { pattern: "ballcomponent",    subsystem: "gameplay" },
-    Rule { pattern: "formation",        subsystem: "gameplay" },
-    Rule { pattern: "shoot",            subsystem: "gameplay" },
-    Rule { pattern: "dribble",          subsystem: "gameplay" },
-    Rule { pattern: "goal",             subsystem: "gameplay" },
-    Rule { pattern: "rpgbattle",        subsystem: "gameplay" },
-    Rule { pattern: "craftobj",         subsystem: "gameplay" },
-    Rule { pattern: "cgdd",             subsystem: "gameplay" },
-    Rule { pattern: "gdsevent",         subsystem: "gameplay" },
-    Rule { pattern: "gdsquest",         subsystem: "gameplay" },
-    Rule { pattern: "gdsmission",       subsystem: "gameplay" },
-    Rule { pattern: "flockn",           subsystem: "gameplay" },
-    Rule { pattern: "happeneven",       subsystem: "gameplay" },
-    Rule { pattern: "questaggregate",   subsystem: "gameplay" },
-    Rule { pattern: "kizunatown",       subsystem: "gameplay" },
+    Rule {
+        pattern: "soccer",
+        subsystem: "gameplay",
+    },
+    Rule {
+        pattern: "ballmove",
+        subsystem: "gameplay",
+    },
+    Rule {
+        pattern: "ballcomponent",
+        subsystem: "gameplay",
+    },
+    Rule {
+        pattern: "formation",
+        subsystem: "gameplay",
+    },
+    Rule {
+        pattern: "shoot",
+        subsystem: "gameplay",
+    },
+    Rule {
+        pattern: "dribble",
+        subsystem: "gameplay",
+    },
+    Rule {
+        pattern: "goal",
+        subsystem: "gameplay",
+    },
+    Rule {
+        pattern: "rpgbattle",
+        subsystem: "gameplay",
+    },
+    Rule {
+        pattern: "craftobj",
+        subsystem: "gameplay",
+    },
+    Rule {
+        pattern: "cgdd",
+        subsystem: "gameplay",
+    },
+    Rule {
+        pattern: "gdsevent",
+        subsystem: "gameplay",
+    },
+    Rule {
+        pattern: "gdsquest",
+        subsystem: "gameplay",
+    },
+    Rule {
+        pattern: "gdsmission",
+        subsystem: "gameplay",
+    },
+    Rule {
+        pattern: "flockn",
+        subsystem: "gameplay",
+    },
+    Rule {
+        pattern: "happeneven",
+        subsystem: "gameplay",
+    },
+    Rule {
+        pattern: "questaggregate",
+        subsystem: "gameplay",
+    },
+    Rule {
+        pattern: "kizunatown",
+        subsystem: "gameplay",
+    },
     // --- Menu / UI ---
-    Rule { pattern: "cmenu",            subsystem: "menu" },
-    Rule { pattern: "menulist",         subsystem: "menu" },
-    Rule { pattern: "menuview",         subsystem: "menu" },
-    Rule { pattern: "gdsmenu",          subsystem: "menu" },
-    Rule { pattern: "abilitymenu",      subsystem: "menu" },
-    Rule { pattern: "abilitylist",      subsystem: "menu" },
-    Rule { pattern: "tradmenu",         subsystem: "menu" },
-    Rule { pattern: "menu",             subsystem: "menu" },
+    Rule {
+        pattern: "cmenu",
+        subsystem: "menu",
+    },
+    Rule {
+        pattern: "menulist",
+        subsystem: "menu",
+    },
+    Rule {
+        pattern: "menuview",
+        subsystem: "menu",
+    },
+    Rule {
+        pattern: "gdsmenu",
+        subsystem: "menu",
+    },
+    Rule {
+        pattern: "abilitymenu",
+        subsystem: "menu",
+    },
+    Rule {
+        pattern: "abilitylist",
+        subsystem: "menu",
+    },
+    Rule {
+        pattern: "tradmenu",
+        subsystem: "menu",
+    },
+    Rule {
+        pattern: "menu",
+        subsystem: "menu",
+    },
     // --- Personnages / données IEVR ---
-    Rule { pattern: "chara_param",      subsystem: "chara" },
-    Rule { pattern: "chara",            subsystem: "chara" },
-    Rule { pattern: "gdschara",         subsystem: "chara" },
+    Rule {
+        pattern: "chara_param",
+        subsystem: "chara",
+    },
+    Rule {
+        pattern: "chara",
+        subsystem: "chara",
+    },
+    Rule {
+        pattern: "gdschara",
+        subsystem: "chara",
+    },
     // --- Physique (PhysX) ---
-    Rule { pattern: "physx",            subsystem: "physics" },
-    Rule { pattern: "physics",          subsystem: "physics" },
-    Rule { pattern: "pxshared",         subsystem: "physics" },
-    Rule { pattern: "npc",              subsystem: "physics" },
+    Rule {
+        pattern: "physx",
+        subsystem: "physics",
+    },
+    Rule {
+        pattern: "physics",
+        subsystem: "physics",
+    },
+    Rule {
+        pattern: "pxshared",
+        subsystem: "physics",
+    },
+    Rule {
+        pattern: "npc",
+        subsystem: "physics",
+    },
     // Prefixes PhysX (Px*, Scb::, Np*) — distingués des faux-positifs "px" trop courts
-    Rule { pattern: "pxbase",           subsystem: "physics" },
-    Rule { pattern: "pxjoint",          subsystem: "physics" },
-    Rule { pattern: "pxactor",          subsystem: "physics" },
-    Rule { pattern: "pxrigid",          subsystem: "physics" },
-    Rule { pattern: "pxparticle",       subsystem: "physics" },
-    Rule { pattern: "pxmaterial",       subsystem: "physics" },
-    Rule { pattern: "pxarticulation",   subsystem: "physics" },
-    Rule { pattern: "pxshape",          subsystem: "physics" },
-    Rule { pattern: "pxconvexmesh",     subsystem: "physics" },
-    Rule { pattern: "pxtrianglemesh",   subsystem: "physics" },
-    Rule { pattern: "pxheightfield",    subsystem: "physics" },
-    Rule { pattern: "pxconstraint",     subsystem: "physics" },
-    Rule { pattern: "pxcloth",          subsystem: "physics" },
-    Rule { pattern: "pxpruning",        subsystem: "physics" },
-    Rule { pattern: "pxu32",            subsystem: "physics" },
-    Rule { pattern: "pxu16",            subsystem: "physics" },
-    Rule { pattern: "pxvec3",           subsystem: "physics" },
-    Rule { pattern: "pxtype",           subsystem: "physics" },
-    Rule { pattern: "scb::particlesys", subsystem: "physics" },
-    Rule { pattern: "scb::articulat",   subsystem: "physics" },
-    Rule { pattern: "scb::aggregate",   subsystem: "physics" },
-    Rule { pattern: "npactor",          subsystem: "physics" },
-    Rule { pattern: "npshapemanager",   subsystem: "physics" },
-    Rule { pattern: "npparticle",       subsystem: "physics" },
-    Rule { pattern: "npmaterial",       subsystem: "physics" },
-    Rule { pattern: "nparticulation",   subsystem: "physics" },
-    Rule { pattern: "npaggregate",      subsystem: "physics" },
-    Rule { pattern: "sq::pruning",      subsystem: "physics" },
-    Rule { pattern: "pbdswing",         subsystem: "physics" },
-    Rule { pattern: "pbdobstacle",      subsystem: "physics" },
+    Rule {
+        pattern: "pxbase",
+        subsystem: "physics",
+    },
+    Rule {
+        pattern: "pxjoint",
+        subsystem: "physics",
+    },
+    Rule {
+        pattern: "pxactor",
+        subsystem: "physics",
+    },
+    Rule {
+        pattern: "pxrigid",
+        subsystem: "physics",
+    },
+    Rule {
+        pattern: "pxparticle",
+        subsystem: "physics",
+    },
+    Rule {
+        pattern: "pxmaterial",
+        subsystem: "physics",
+    },
+    Rule {
+        pattern: "pxarticulation",
+        subsystem: "physics",
+    },
+    Rule {
+        pattern: "pxshape",
+        subsystem: "physics",
+    },
+    Rule {
+        pattern: "pxconvexmesh",
+        subsystem: "physics",
+    },
+    Rule {
+        pattern: "pxtrianglemesh",
+        subsystem: "physics",
+    },
+    Rule {
+        pattern: "pxheightfield",
+        subsystem: "physics",
+    },
+    Rule {
+        pattern: "pxconstraint",
+        subsystem: "physics",
+    },
+    Rule {
+        pattern: "pxcloth",
+        subsystem: "physics",
+    },
+    Rule {
+        pattern: "pxpruning",
+        subsystem: "physics",
+    },
+    Rule {
+        pattern: "pxu32",
+        subsystem: "physics",
+    },
+    Rule {
+        pattern: "pxu16",
+        subsystem: "physics",
+    },
+    Rule {
+        pattern: "pxvec3",
+        subsystem: "physics",
+    },
+    Rule {
+        pattern: "pxtype",
+        subsystem: "physics",
+    },
+    Rule {
+        pattern: "scb::particlesys",
+        subsystem: "physics",
+    },
+    Rule {
+        pattern: "scb::articulat",
+        subsystem: "physics",
+    },
+    Rule {
+        pattern: "scb::aggregate",
+        subsystem: "physics",
+    },
+    Rule {
+        pattern: "npactor",
+        subsystem: "physics",
+    },
+    Rule {
+        pattern: "npshapemanager",
+        subsystem: "physics",
+    },
+    Rule {
+        pattern: "npparticle",
+        subsystem: "physics",
+    },
+    Rule {
+        pattern: "npmaterial",
+        subsystem: "physics",
+    },
+    Rule {
+        pattern: "nparticulation",
+        subsystem: "physics",
+    },
+    Rule {
+        pattern: "npaggregate",
+        subsystem: "physics",
+    },
+    Rule {
+        pattern: "sq::pruning",
+        subsystem: "physics",
+    },
+    Rule {
+        pattern: "pbdswing",
+        subsystem: "physics",
+    },
+    Rule {
+        pattern: "pbdobstacle",
+        subsystem: "physics",
+    },
     // --- Réseau / plateformes ---
-    Rule { pattern: "eos",              subsystem: "network" },
-    Rule { pattern: "steam",            subsystem: "network" },
-    Rule { pattern: "lobby",            subsystem: "network" },
-    Rule { pattern: "matchmak",         subsystem: "network" },
-    Rule { pattern: "session",          subsystem: "network" },
-    Rule { pattern: "netstate",         subsystem: "network" },
-    Rule { pattern: "netcontroller",    subsystem: "network" },
-    Rule { pattern: "networkmatch",     subsystem: "network" },
-    Rule { pattern: "litserver",        subsystem: "network" },
+    Rule {
+        pattern: "eos",
+        subsystem: "network",
+    },
+    Rule {
+        pattern: "steam",
+        subsystem: "network",
+    },
+    Rule {
+        pattern: "lobby",
+        subsystem: "network",
+    },
+    Rule {
+        pattern: "matchmak",
+        subsystem: "network",
+    },
+    Rule {
+        pattern: "session",
+        subsystem: "network",
+    },
+    Rule {
+        pattern: "netstate",
+        subsystem: "network",
+    },
+    Rule {
+        pattern: "netcontroller",
+        subsystem: "network",
+    },
+    Rule {
+        pattern: "networkmatch",
+        subsystem: "network",
+    },
+    Rule {
+        pattern: "litserver",
+        subsystem: "network",
+    },
     // --- Animation ---
-    Rule { pattern: "animation",        subsystem: "animation" },
-    Rule { pattern: "motion",           subsystem: "animation" },
-    Rule { pattern: "bone",             subsystem: "animation" },
-    Rule { pattern: "attach",           subsystem: "animation" },
-    Rule { pattern: "gdseffect",        subsystem: "animation" },
-    Rule { pattern: "particleroot",     subsystem: "animation" },
-    Rule { pattern: "particlesetup",    subsystem: "animation" },
-    Rule { pattern: "particleindic",    subsystem: "animation" },
+    Rule {
+        pattern: "animation",
+        subsystem: "animation",
+    },
+    Rule {
+        pattern: "motion",
+        subsystem: "animation",
+    },
+    Rule {
+        pattern: "bone",
+        subsystem: "animation",
+    },
+    Rule {
+        pattern: "attach",
+        subsystem: "animation",
+    },
+    Rule {
+        pattern: "gdseffect",
+        subsystem: "animation",
+    },
+    Rule {
+        pattern: "particleroot",
+        subsystem: "animation",
+    },
+    Rule {
+        pattern: "particlesetup",
+        subsystem: "animation",
+    },
+    Rule {
+        pattern: "particleindic",
+        subsystem: "animation",
+    },
     // --- Level / scène (nouveau sous-système) ---
-    Rule { pattern: "cmap",             subsystem: "level" },
-    Rule { pattern: "gdsmap",           subsystem: "level" },
-    Rule { pattern: "mapblock",         subsystem: "level" },
-    Rule { pattern: "maplightdata",     subsystem: "level" },
-    Rule { pattern: "mapdoor",          subsystem: "level" },
-    Rule { pattern: "mapannotate",      subsystem: "level" },
-    Rule { pattern: "mapsound",         subsystem: "level" },
-    Rule { pattern: "mapenveff",        subsystem: "level" },
-    Rule { pattern: "tagobjmesh",       subsystem: "level" },
-    Rule { pattern: "tagobjeffect",     subsystem: "level" },
-    Rule { pattern: "tagobjpxcol",      subsystem: "level" },
-    Rule { pattern: "tagobjpointlight", subsystem: "level" },
-    Rule { pattern: "tagobjregis",      subsystem: "level" },
-    Rule { pattern: "tagbuildobj",      subsystem: "level" },
-    Rule { pattern: "ctilebase",        subsystem: "level" },
-    Rule { pattern: "cskypar",          subsystem: "level" },
-    Rule { pattern: "refmaplightdata",  subsystem: "level" },
+    Rule {
+        pattern: "cmap",
+        subsystem: "level",
+    },
+    Rule {
+        pattern: "gdsmap",
+        subsystem: "level",
+    },
+    Rule {
+        pattern: "mapblock",
+        subsystem: "level",
+    },
+    Rule {
+        pattern: "maplightdata",
+        subsystem: "level",
+    },
+    Rule {
+        pattern: "mapdoor",
+        subsystem: "level",
+    },
+    Rule {
+        pattern: "mapannotate",
+        subsystem: "level",
+    },
+    Rule {
+        pattern: "mapsound",
+        subsystem: "level",
+    },
+    Rule {
+        pattern: "mapenveff",
+        subsystem: "level",
+    },
+    Rule {
+        pattern: "tagobjmesh",
+        subsystem: "level",
+    },
+    Rule {
+        pattern: "tagobjeffect",
+        subsystem: "level",
+    },
+    Rule {
+        pattern: "tagobjpxcol",
+        subsystem: "level",
+    },
+    Rule {
+        pattern: "tagobjpointlight",
+        subsystem: "level",
+    },
+    Rule {
+        pattern: "tagobjregis",
+        subsystem: "level",
+    },
+    Rule {
+        pattern: "tagbuildobj",
+        subsystem: "level",
+    },
+    Rule {
+        pattern: "ctilebase",
+        subsystem: "level",
+    },
+    Rule {
+        pattern: "cskypar",
+        subsystem: "level",
+    },
+    Rule {
+        pattern: "refmaplightdata",
+        subsystem: "level",
+    },
     // --- Input ---
-    Rule { pattern: "win mouse",        subsystem: "input" },
-    Rule { pattern: "win keyboard",     subsystem: "input" },
-    Rule { pattern: "virtual pad",      subsystem: "input" },
-    Rule { pattern: "pad array",        subsystem: "input" },
-    Rule { pattern: "mouse array",      subsystem: "input" },
-    Rule { pattern: "mouse virtual",    subsystem: "input" },
-    Rule { pattern: "onactivevirtualpad", subsystem: "input" },
-    Rule { pattern: "onfocusvirtualpad",  subsystem: "input" },
+    Rule {
+        pattern: "win mouse",
+        subsystem: "input",
+    },
+    Rule {
+        pattern: "win keyboard",
+        subsystem: "input",
+    },
+    Rule {
+        pattern: "virtual pad",
+        subsystem: "input",
+    },
+    Rule {
+        pattern: "pad array",
+        subsystem: "input",
+    },
+    Rule {
+        pattern: "mouse array",
+        subsystem: "input",
+    },
+    Rule {
+        pattern: "mouse virtual",
+        subsystem: "input",
+    },
+    Rule {
+        pattern: "onactivevirtualpad",
+        subsystem: "input",
+    },
+    Rule {
+        pattern: "onfocusvirtualpad",
+        subsystem: "input",
+    },
 ];
 
 /// Applique toutes les règles à une valeur de chaîne et renvoie le
@@ -250,7 +694,11 @@ pub fn anchor_by_strings(conn: &Connection, binary_id: i64) -> Result<usize> {
     // des UPDATE.
     let rows: Vec<(i64, i64, String)> = stmt
         .query_map([binary_id], |r| {
-            Ok((r.get::<_, i64>(0)?, r.get::<_, i64>(1)?, r.get::<_, String>(2)?))
+            Ok((
+                r.get::<_, i64>(0)?,
+                r.get::<_, i64>(1)?,
+                r.get::<_, String>(2)?,
+            ))
         })?
         .collect::<std::result::Result<_, _>>()?;
 
@@ -290,13 +738,20 @@ pub fn anchor_by_strings(conn: &Connection, binary_id: i64) -> Result<usize> {
 pub fn classify_rtti(namespace: &str, class_name: &str) -> Option<&'static str> {
     let ns = namespace.trim();
     // Namespaces canoniques connus (on ignore les namespaces mal démanglés comme `game::::$0BA::::`).
-    let clean_ns = if ns.contains("::") || ns.contains('$') || ns.contains('V') || ns.contains('U') {
+    let clean_ns = if ns.contains("::") || ns.contains('$') || ns.contains('V') || ns.contains('U')
+    {
         // namespace mal démanglé, on tente un prefix match sur les namespaces simples
-        if ns.starts_with("game") { "game" }
-        else if ns.starts_with("lives") { "lives" }
-        else if ns.starts_with("physx") { "physx" }
-        else if ns.starts_with("CryptoPP") { "CryptoPP" }
-        else { return None; }
+        if ns.starts_with("game") {
+            "game"
+        } else if ns.starts_with("lives") {
+            "lives"
+        } else if ns.starts_with("physx") {
+            "physx"
+        } else if ns.starts_with("CryptoPP") {
+            "CryptoPP"
+        } else {
+            return None;
+        }
     } else {
         ns
     };
@@ -308,7 +763,7 @@ pub fn classify_rtti(namespace: &str, class_name: &str) -> Option<&'static str> 
         "lives" => classify_lives_class(&n),
         "physx" => Some("physics"),
         "CryptoPP" | "cryptopp" => Some("network"), // chiffrement → réseau / sécurité
-        "std" => None, // stdlib → trop générique
+        "std" => None,                              // stdlib → trop générique
         _ => None,
     }
 }
@@ -398,7 +853,8 @@ fn classify_game_class(lower_name: &str) -> Option<&'static str> {
         || lower_name.starts_with("cref")
         || lower_name.starts_with("areacollect")
         || lower_name.starts_with("game_map") // census live : GAME_MAP_AREA_INFO
-        || lower_name.starts_with("tbox") // census live : TBoxInfo (coffre)
+        || lower_name.starts_with("tbox")
+    // census live : TBoxInfo (coffre)
     {
         return Some("level");
     }
@@ -411,8 +867,10 @@ fn classify_game_class(lower_name: &str) -> Option<&'static str> {
         return Some("audio");
     }
     // Animation / effets
-    if lower_name.starts_with("gdseffect") || lower_name.starts_with("lineeffect")
-        || lower_name.starts_with("motmng") // census live : MotMngBase (gestionnaire de motion)
+    if lower_name.starts_with("gdseffect")
+        || lower_name.starts_with("lineeffect")
+        || lower_name.starts_with("motmng")
+    // census live : MotMngBase (gestionnaire de motion)
     {
         return Some("animation");
     }
@@ -425,31 +883,53 @@ fn classify_lives_class(lower_name: &str) -> Option<&'static str> {
     // cf. docs/game-data/dump-exploitation.md) : seuls les noms à sémantique claire
     // sont ancrés ; les bases génériques (CObject, CListData*, CInternalFile,
     // CRefelencLinkObj) restent non classifiées (anti-faux).
-    if lower_name.starts_with("cmenu") || lower_name.starts_with("crefmodelmenu") { return Some("menu"); }
-    if lower_name.starts_with("ccri") || lower_name.starts_with("ccrimana") { return Some("audio"); }
-    if lower_name.starts_with("clua") { return Some("script"); }
-    if lower_name.starts_with("ccamera") || lower_name.starts_with("cfont")
+    if lower_name.starts_with("cmenu") || lower_name.starts_with("crefmodelmenu") {
+        return Some("menu");
+    }
+    if lower_name.starts_with("ccri") || lower_name.starts_with("ccrimana") {
+        return Some("audio");
+    }
+    if lower_name.starts_with("clua") {
+        return Some("script");
+    }
+    if lower_name.starts_with("ccamera")
+        || lower_name.starts_with("cfont")
         || lower_name.starts_with("csystemfont")
-        || lower_name.starts_with("cdraw") || lower_name.starts_with("clight")
-        || lower_name.starts_with("ccompute") || lower_name.starts_with("cindex")
-        || lower_name.starts_with("cuniform") || lower_name.starts_with("cvertex")
-        || lower_name.starts_with("crender") || lower_name.starts_with("crestexture")
-        || lower_name.starts_with("cresmesh") || lower_name.starts_with("gmdcobjmodel")
-        || lower_name.starts_with("ccustomrenderstate") || lower_name.starts_with("ccustomshader")
+        || lower_name.starts_with("cdraw")
+        || lower_name.starts_with("clight")
+        || lower_name.starts_with("ccompute")
+        || lower_name.starts_with("cindex")
+        || lower_name.starts_with("cuniform")
+        || lower_name.starts_with("cvertex")
+        || lower_name.starts_with("crender")
+        || lower_name.starts_with("crestexture")
+        || lower_name.starts_with("cresmesh")
+        || lower_name.starts_with("gmdcobjmodel")
+        || lower_name.starts_with("ccustomrenderstate")
+        || lower_name.starts_with("ccustomshader")
     {
         return Some("render");
     }
-    if lower_name.starts_with("ceffect") || lower_name.starts_with("cdynamic")
-        || lower_name.starts_with("cresanime") || lower_name.starts_with("cresrefanime")
-        || lower_name.starts_with("cresmotevent") || lower_name.starts_with("cresblendshape")
-        || lower_name.starts_with("cresparticle") || lower_name.starts_with("creseffect")
-        || lower_name.starts_with("cresskeleton") || lower_name.starts_with("gmdcanim")
+    if lower_name.starts_with("ceffect")
+        || lower_name.starts_with("cdynamic")
+        || lower_name.starts_with("cresanime")
+        || lower_name.starts_with("cresrefanime")
+        || lower_name.starts_with("cresmotevent")
+        || lower_name.starts_with("cresblendshape")
+        || lower_name.starts_with("cresparticle")
+        || lower_name.starts_with("creseffect")
+        || lower_name.starts_with("cresskeleton")
+        || lower_name.starts_with("gmdcanim")
         || lower_name.starts_with("gmdcshareobjanim")
     {
         return Some("animation");
     }
-    if lower_name.starts_with("clives") && lower_name.contains("px") { return Some("physics"); }
-    if lower_name.starts_with("cjob") { return Some("physics"); } // job manager = threading physx
+    if lower_name.starts_with("clives") && lower_name.contains("px") {
+        return Some("physics");
+    }
+    if lower_name.starts_with("cjob") {
+        return Some("physics");
+    } // job manager = threading physx
     None
 }
 
@@ -477,9 +957,7 @@ pub fn anchor_by_rtti(conn: &Connection, binary_id: i64) -> Result<usize> {
     // Pré-calcule le mapping nom_classe → sous-système (ignore les None).
     let class_to_sub: hashbrown::HashMap<String, &'static str> = rtti
         .iter()
-        .filter_map(|(name, ns)| {
-            classify_rtti(ns, name).map(|sub| (name.clone(), sub))
-        })
+        .filter_map(|(name, ns)| classify_rtti(ns, name).map(|sub| (name.clone(), sub)))
         .collect();
 
     if class_to_sub.is_empty() {
@@ -615,7 +1093,10 @@ mod tests {
     fn classify_str_gameplay() {
         assert_eq!(classify_str("BallMoveNormal"), Some("gameplay"));
         assert_eq!(classify_str("SoccerManager"), Some("gameplay"));
-        assert_eq!(classify_str("RpgBattleWeaponVisibleComponent"), Some("gameplay"));
+        assert_eq!(
+            classify_str("RpgBattleWeaponVisibleComponent"),
+            Some("gameplay")
+        );
     }
 
     #[test]
@@ -669,13 +1150,19 @@ mod tests {
     #[test]
     fn classify_rtti_game_gameplay() {
         assert_eq!(classify_rtti("game", "BallMoveBezier"), Some("gameplay"));
-        assert_eq!(classify_rtti("game", "RpgBattleCameraInfo"), Some("gameplay"));
+        assert_eq!(
+            classify_rtti("game", "RpgBattleCameraInfo"),
+            Some("gameplay")
+        );
         assert_eq!(classify_rtti("game", "CGDDCharaStatus"), Some("chara"));
     }
 
     #[test]
     fn classify_rtti_game_render() {
-        assert_eq!(classify_rtti("game", "CRenderTextureProperty"), Some("render"));
+        assert_eq!(
+            classify_rtti("game", "CRenderTextureProperty"),
+            Some("render")
+        );
         assert_eq!(classify_rtti("game", "CGameCameraCtrl"), Some("render"));
     }
 
@@ -730,9 +1217,18 @@ mod tests {
         // Système de commandes / état de match (frontière C3) + carte/coffre.
         assert_eq!(classify_rtti("game", "PLAY_DYNAMIC_INFO"), Some("gameplay"));
         assert_eq!(classify_rtti("game", "PLAY_STATIC_INFO"), Some("gameplay"));
-        assert_eq!(classify_rtti("game", "CCallbackPlayCommand"), Some("gameplay"));
-        assert_eq!(classify_rtti("game", "CCallbackJudgeCommand"), Some("gameplay"));
-        assert_eq!(classify_rtti("game", "ExecPassiveSkillEffectInfo"), Some("gameplay"));
+        assert_eq!(
+            classify_rtti("game", "CCallbackPlayCommand"),
+            Some("gameplay")
+        );
+        assert_eq!(
+            classify_rtti("game", "CCallbackJudgeCommand"),
+            Some("gameplay")
+        );
+        assert_eq!(
+            classify_rtti("game", "ExecPassiveSkillEffectInfo"),
+            Some("gameplay")
+        );
         assert_eq!(classify_rtti("game", "GAME_MAP_AREA_INFO"), Some("level"));
         assert_eq!(classify_rtti("game", "TBoxInfo"), Some("level"));
     }

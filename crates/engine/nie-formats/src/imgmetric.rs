@@ -154,14 +154,22 @@ pub fn downscale_lineaire_2x(w: u32, h: u32, rgba: &[u8]) -> (u32, u32, Vec<u8>)
 #[must_use]
 fn lineaire_vers_srgb(c: f64) -> u8 {
     let c = c.clamp(0.0, 1.0);
-    let s = if c <= 0.003_130_8 { c * 12.92 } else { 1.055 * c.powf(1.0 / 2.4) - 0.055 };
+    let s = if c <= 0.003_130_8 {
+        c * 12.92
+    } else {
+        1.055 * c.powf(1.0 / 2.4) - 0.055
+    };
     (s * 255.0).round().clamp(0.0, 255.0) as u8
 }
 
 /// sRGB → CIE Lab (illuminant D65, observateur 2°).
 #[must_use]
 fn srgb_vers_lab(r: u8, g: u8, b: u8) -> (f64, f64, f64) {
-    let (rl, gl, bl) = (srgb_vers_lineaire(r), srgb_vers_lineaire(g), srgb_vers_lineaire(b));
+    let (rl, gl, bl) = (
+        srgb_vers_lineaire(r),
+        srgb_vers_lineaire(g),
+        srgb_vers_lineaire(b),
+    );
     // Matrice sRGB → XYZ D65.
     let x = 0.412_456_4 * rl + 0.357_576_1 * gl + 0.180_437_5 * bl;
     let y = 0.212_672_9 * rl + 0.715_152_2 * gl + 0.072_175_0 * bl;
@@ -243,7 +251,9 @@ pub fn delta_e2000(a: (u8, u8, u8), b: (u8, u8, u8)) -> f64 {
     let sh = 1.0 + 0.015 * cp_moy * t;
     let rt = -(2.0 * d_theta.to_radians()).sin() * rc;
 
-    ((dlp / sl).powi(2) + (dcp / sc).powi(2) + (dhp_grand / sh).powi(2)
+    ((dlp / sl).powi(2)
+        + (dcp / sc).powi(2)
+        + (dhp_grand / sh).powi(2)
         + rt * (dcp / sc) * (dhp_grand / sh))
         .sqrt()
 }
@@ -297,10 +307,7 @@ fn ssim_fenetre(
     let va = (saa - sa * ma) / (n - 1.0);
     let vb = (sbb - sb * mb) / (n - 1.0);
     let cov = (sab - sa * mb) / (n - 1.0);
-    Some(
-        ((2.0 * ma * mb + C1) * (2.0 * cov + C2))
-            / ((ma * ma + mb * mb + C1) * (va + vb + C2)),
-    )
+    Some(((2.0 * ma * mb + C1) * (2.0 * cov + C2)) / ((ma * ma + mb * mb + C1) * (va + vb + C2)))
 }
 
 /// Compare deux images RGBA8 de mêmes dimensions.
@@ -328,7 +335,17 @@ pub fn comparer(w: u32, h: u32, rendu: &[u8], reference: &[u8], rois: &[Roi]) ->
         }
     }
 
-    let global = scores(w, h, rendu, reference, &m, &lin_a, &lin_b, "global", (0, 0, w, h));
+    let global = scores(
+        w,
+        h,
+        rendu,
+        reference,
+        &m,
+        &lin_a,
+        &lin_b,
+        "global",
+        (0, 0, w, h),
+    );
     let regions = rois
         .iter()
         .filter(|r| r.kind == RoiKind::Nommee)
@@ -353,7 +370,11 @@ pub fn comparer(w: u32, h: u32, rendu: &[u8], reference: &[u8], rois: &[Roi]) ->
 
 /// Part en pourcentage, `0.0` si le dénominateur est nul.
 fn pourcent(part: usize, total: usize) -> f64 {
-    if total == 0 { 0.0 } else { (part as f64) * 100.0 / (total as f64) }
+    if total == 0 {
+        0.0
+    } else {
+        (part as f64) * 100.0 / (total as f64)
+    }
 }
 
 /// Calcule tous les scores d'un rectangle.
@@ -405,7 +426,11 @@ fn scores(
     }
 
     des.sort_by(|p, q| p.partial_cmp(q).unwrap_or(core::cmp::Ordering::Equal));
-    let de_moyen = if des.is_empty() { 0.0 } else { des.iter().sum::<f64>() / des.len() as f64 };
+    let de_moyen = if des.is_empty() {
+        0.0
+    } else {
+        des.iter().sum::<f64>() / des.len() as f64
+    };
     let de_p99 = centile(&des, 0.99);
     let de_max = des.last().copied().unwrap_or(0.0);
 
@@ -428,7 +453,11 @@ fn scores(
             }
             y += PAS;
         }
-        let s = if compte == 0 { f64::NAN } else { somme / f64::from(compte) };
+        let s = if compte == 0 {
+            f64::NAN
+        } else {
+            somme / f64::from(compte)
+        };
         if s < pire {
             pire = s;
         }
@@ -469,7 +498,10 @@ fn carte_blocs(
     let mut carte = vec![f64::NAN; (bw as usize) * (bh as usize)];
     let canaux: Vec<(Vec<f64>, Vec<f64>)> = (0..3)
         .map(|c| {
-            (lin_a.iter().map(|p| p[c]).collect(), lin_b.iter().map(|p| p[c]).collect())
+            (
+                lin_a.iter().map(|p| p[c]).collect(),
+                lin_b.iter().map(|p| p[c]).collect(),
+            )
         })
         .collect();
     for by in 0..bh {
@@ -507,7 +539,12 @@ pub fn heatmap_rgba(r: &Rapport) -> (u32, u32, Vec<u8>) {
                 [128, 128, 128, 255]
             } else {
                 let t = (1.0 - s.clamp(0.0, 1.0)).clamp(0.0, 1.0);
-                [(255.0 * t) as u8, (64.0 * (1.0 - t)) as u8, (255.0 * (1.0 - t)) as u8, 255]
+                [
+                    (255.0 * t) as u8,
+                    (64.0 * (1.0 - t)) as u8,
+                    (255.0 * (1.0 - t)) as u8,
+                    255,
+                ]
             };
             for y in by * FENETRE..(by + 1) * FENETRE {
                 for x in bx * FENETRE..(bx + 1) * FENETRE {
@@ -579,8 +616,16 @@ mod tests {
         let a = uni(32, 32, [255, 60, 60, 255]);
         let b = uni(32, 32, [0, 130, 130, 255]);
         let r = comparer(32, 32, &a, &b, &[]);
-        assert!(r.global.ssim < 0.9, "ssim {} — la teinte doit compter", r.global.ssim);
-        assert!(r.global.de_moyen > 10.0, "ΔE {} — écart perceptuel massif", r.global.de_moyen);
+        assert!(
+            r.global.ssim < 0.9,
+            "ssim {} — la teinte doit compter",
+            r.global.ssim
+        );
+        assert!(
+            r.global.de_moyen > 10.0,
+            "ΔE {} — écart perceptuel massif",
+            r.global.de_moyen
+        );
         assert_eq!(r.global.exact_pct, 0.0);
     }
 
@@ -595,7 +640,11 @@ mod tests {
         let b = a.clone();
         let r = comparer(16, 16, &a, &b, &[]);
         assert!((r.global.exact_pct - 100.0).abs() < 1e-9);
-        assert!(r.couverture_opaque_pct < 100.0, "couverture {}", r.couverture_opaque_pct);
+        assert!(
+            r.couverture_opaque_pct < 100.0,
+            "couverture {}",
+            r.couverture_opaque_pct
+        );
         assert!((r.couverture_opaque_pct - 75.0).abs() < 1e-6);
     }
 
@@ -604,15 +653,24 @@ mod tests {
     #[test]
     fn downscale_moyenne_en_lumiere_lineaire() {
         let mut src = vec![0u8; 2 * 2 * 4];
-        for (i, p) in [[0, 0, 0, 255], [255, 255, 255, 255], [255, 255, 255, 255], [0, 0, 0, 255]]
-            .iter()
-            .enumerate()
+        for (i, p) in [
+            [0, 0, 0, 255],
+            [255, 255, 255, 255],
+            [255, 255, 255, 255],
+            [0, 0, 0, 255],
+        ]
+        .iter()
+        .enumerate()
         {
             src[i * 4..i * 4 + 4].copy_from_slice(p);
         }
         let (w, h, out) = downscale_lineaire_2x(2, 2, &src);
         assert_eq!((w, h), (1, 1));
-        assert!(out[0] > 180 && out[0] < 195, "moyenne linéaire attendue ≈188, obtenu {}", out[0]);
+        assert!(
+            out[0] > 180 && out[0] < 195,
+            "moyenne linéaire attendue ≈188, obtenu {}",
+            out[0]
+        );
     }
 
     /// Biais nº4 : la carte par bloc est conservée, et une zone fausse se localise.
@@ -650,7 +708,10 @@ mod tests {
             kind: RoiKind::Dynamique,
         };
         let r = comparer(32, 32, &a, &b, core::slice::from_ref(&roi));
-        assert!((r.global.exact_pct - 100.0).abs() < 1e-9, "la moitié fausse est exclue");
+        assert!(
+            (r.global.exact_pct - 100.0).abs() < 1e-9,
+            "la moitié fausse est exclue"
+        );
         assert!((r.surface_exclue_pct - 50.0).abs() < 1e-6);
         assert_eq!(r.global.px, 512);
     }
@@ -676,7 +737,10 @@ mod tests {
         assert_eq!(r.regions.len(), 1);
         assert_eq!(r.regions[0].nom, "bas");
         assert_eq!(r.regions[0].exact_pct, 0.0, "la région entière diffère");
-        assert!((r.global.exact_pct - 50.0).abs() < 1e-6, "moitié exacte au global");
+        assert!(
+            (r.global.exact_pct - 50.0).abs() < 1e-6,
+            "moitié exacte au global"
+        );
     }
 
     /// ΔE2000 : un niveau d'écart est imperceptible, deux primaires opposées ne le sont pas.
@@ -706,6 +770,10 @@ mod tests {
             }
         }
         let r = comparer(32, 32, &a, &b, &[]);
-        assert!(r.global.ssim < 0.95, "un décalage d'1 px doit faire chuter le SSIM, eu {}", r.global.ssim);
+        assert!(
+            r.global.ssim < 0.95,
+            "un décalage d'1 px doit faire chuter le SSIM, eu {}",
+            r.global.ssim
+        );
     }
 }

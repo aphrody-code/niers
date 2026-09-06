@@ -19,8 +19,12 @@ fn load() -> Option<serde_json::Value> {
         eprintln!("skip : {} absent du corpus", chemin_abs.display());
         return None;
     }
-    let content = std::fs::read_to_string(&chemin_abs).unwrap_or_else(|e| panic!("lecture {}: {e}", chemin_abs.display()));
-    Some(serde_json::from_str(&content).unwrap_or_else(|e| panic!("JSON {}: {e}", chemin_abs.display())))
+    let content = std::fs::read_to_string(&chemin_abs)
+        .unwrap_or_else(|e| panic!("lecture {}: {e}", chemin_abs.display()));
+    Some(
+        serde_json::from_str(&content)
+            .unwrap_or_else(|e| panic!("JSON {}: {e}", chemin_abs.display())),
+    )
 }
 
 #[test]
@@ -48,7 +52,10 @@ fn dispatch_typed_atteint_azalee() {
     use nie_data::typed::{decode_by_key, family_key};
     let Some(root) = load() else { return };
     // family_key garde le `.cfg` du nom de fichier inhabituel `talk_select_config.cfg_<ver>.cfg.bin`.
-    assert_eq!(family_key("talk_select_config.cfg_1.01.41.00.cfg.bin"), "talk_select_config.cfg");
+    assert_eq!(
+        family_key("talk_select_config.cfg_1.01.41.00.cfg.bin"),
+        "talk_select_config.cfg"
+    );
     let (label, json) =
         decode_by_key("talk_select_config.cfg", &root).expect("famille typée câblée");
     assert_eq!(label, "talk_select");

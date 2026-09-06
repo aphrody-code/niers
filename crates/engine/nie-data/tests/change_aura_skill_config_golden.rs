@@ -11,7 +11,7 @@
 //! valider parsing, sentinelle générique `0x00000000` et résolution du slice `[offset, count]`.
 
 use nie_data::change_aura_skill_config::{
-    parse_change_aura_skill_config, ChangeAuraSkillDatabase, GENERIC_CHARA_PARAM,
+    ChangeAuraSkillDatabase, GENERIC_CHARA_PARAM, parse_change_aura_skill_config,
 };
 use nie_data::hash::HashId;
 use serde_json::json;
@@ -60,8 +60,16 @@ fn parsed() -> ChangeAuraSkillDatabase {
 #[test]
 fn comptes_des_deux_listes() {
     let db = parsed();
-    assert_eq!(db.data.len(), 8, "8 lignes CHANGE_AURA_SKILL_DATA dans la fixture");
-    assert_eq!(db.info.len(), 8, "8 lignes CHANGE_AURA_SKILL_INFO dans la fixture");
+    assert_eq!(
+        db.data.len(),
+        8,
+        "8 lignes CHANGE_AURA_SKILL_DATA dans la fixture"
+    );
+    assert_eq!(
+        db.info.len(),
+        8,
+        "8 lignes CHANGE_AURA_SKILL_INFO dans la fixture"
+    );
 }
 
 #[test]
@@ -102,7 +110,10 @@ fn get_chara_for_skill_last_write_wins() {
         "last-write-wins comme bySkillId.set d'inagle"
     );
     // id unique non générique.
-    assert_eq!(db.get_chara_for_skill(HashId(0xAA0F_8E22)), Some(HashId(0xCEE7_150E)));
+    assert_eq!(
+        db.get_chara_for_skill(HashId(0xAA0F_8E22)),
+        Some(HashId(0xCEE7_150E))
+    );
     // id générique → None (charaParamId == 0x00000000).
     assert_eq!(db.get_chara_for_skill(HashId(0xC413_8FF5)), None);
     // id absent → None.
@@ -140,7 +151,11 @@ fn partition_contigue_des_infos() {
     let db = parsed();
     let mut attendu = 0usize;
     for info in &db.info {
-        assert_eq!(info.data_offset(), attendu, "partition contiguë (offset suit le cumul)");
+        assert_eq!(
+            info.data_offset(),
+            attendu,
+            "partition contiguë (offset suit le cumul)"
+        );
         attendu = info.data_offset() + info.data_count();
     }
     // Après les 8 premières infos, le cumul des counts = 19 (0xDD08BEB4×4 + … cf. dump).

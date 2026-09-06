@@ -10,9 +10,15 @@ use crate::{Font, GameState, H, MENU, MODES, W};
 
 /// Quelques répliques du mode histoire (placeholder localisé — les vrais dialogues SQLite suivront).
 const STORY: &[(&str, &str)] = &[
-    ("Endou Mamoru", "Can anyone bring down Raimon's unshakable fortress?!"),
+    (
+        "Endou Mamoru",
+        "Can anyone bring down Raimon's unshakable fortress?!",
+    ),
     ("Gouenji Shuuya", "Let's settle this on the pitch."),
-    ("Kidou Yuuto", "A perfect strategy demands a perfect execution."),
+    (
+        "Kidou Yuuto",
+        "A perfect strategy demands a perfect execution.",
+    ),
 ];
 
 /// Écran courant du JEU (machine à états interactive). Les 9 onglets = [`MENU`], les 5 modes = [`MODES`].
@@ -32,7 +38,11 @@ pub enum Screen {
     /// `repliques` vides = la scène de démonstration intégrée ([`STORY`]) ; sinon les répliques
     /// réelles du jeu, fournies par le front (`titre` = l'identifiant d'événement). Comme pour
     /// [`Screen::Liste`], le chargement demande le VFS que le web n'a pas.
-    Story { idx: usize, titre: String, repliques: Vec<String> },
+    Story {
+        idx: usize,
+        titre: String,
+        repliques: Vec<String>,
+    },
     /// Onglet/mode pas encore jouable (titre = libellé réel) — données réelles à venir.
     Info { title: String },
     /// Liste de données réelles du jeu (effectif…) : `titre` + lignes déjà résolues.
@@ -40,7 +50,11 @@ pub enum Screen {
     /// Les lignes arrivent **du front**, pas de la FSM : les charger demande le VFS, que le web
     /// n'a pas (il reçoit ses octets autrement). La FSM reste ainsi portable, et un front qui ne
     /// sait pas charger l'effectif garde simplement l'écran d'information.
-    Liste { titre: String, lignes: Vec<String>, sel: usize },
+    Liste {
+        titre: String,
+        lignes: Vec<String>,
+        sel: usize,
+    },
 }
 
 impl Screen {
@@ -61,7 +75,8 @@ impl Screen {
         };
         let enter = matches!(cmd, "CMD_ENTER" | "CMD_SUB_ENTER");
         let back = matches!(cmd, "CMD_BACK" | "CMD_CANCEL");
-        let wrap = |sel: usize, n: usize| -> usize { ((sel as i32 + nav).rem_euclid(n as i32)) as usize };
+        let wrap =
+            |sel: usize, n: usize| -> usize { ((sel as i32 + nav).rem_euclid(n as i32)) as usize };
 
         match self {
             Screen::Title => {
@@ -78,7 +93,9 @@ impl Screen {
                     if cur == 5 {
                         *self = Screen::ModeSelect { sel: 0 };
                     } else {
-                        *self = Screen::Info { title: MENU[cur].into() };
+                        *self = Screen::Info {
+                            title: MENU[cur].into(),
+                        };
                     }
                 } else if back {
                     *self = Screen::Title;
@@ -90,9 +107,15 @@ impl Screen {
                 } else if enter {
                     // 0 = Mode Histoire → dialogues ; 1-4 → vrai match (moteur nie-runtime).
                     if *sel == 0 {
-                        *self = Screen::Story { idx: 0, titre: String::new(), repliques: Vec::new() };
+                        *self = Screen::Story {
+                            idx: 0,
+                            titre: String::new(),
+                            repliques: Vec::new(),
+                        };
                     } else {
-                        *self = Screen::Match { world: nie_runtime::World::kickoff() };
+                        *self = Screen::Match {
+                            world: nie_runtime::World::kickoff(),
+                        };
                     }
                 } else if back {
                     *self = Screen::Menu { sel: 5 };
@@ -104,7 +127,11 @@ impl Screen {
                 }
             }
             Screen::Story { idx, repliques, .. } => {
-                let total = if repliques.is_empty() { STORY.len() } else { repliques.len() };
+                let total = if repliques.is_empty() {
+                    STORY.len()
+                } else {
+                    repliques.len()
+                };
                 if enter {
                     *idx += 1;
                     if *idx >= total {
@@ -143,7 +170,10 @@ impl Screen {
     /// effet, ce qui évite au front de savoir sur quel écran il se trouve.
     pub fn set_game_input(&mut self, dx: f32, dy: f32, shoot: bool) {
         if let Screen::Match { world } = self {
-            world.input = nie_runtime::Input { dir: nie_geom::Vec2::new(dx, dy), shoot };
+            world.input = nie_runtime::Input {
+                dir: nie_geom::Vec2::new(dx, dy),
+                shoot,
+            };
         }
     }
 
@@ -157,7 +187,11 @@ impl Screen {
         if let Screen::Info { title } = self
             && !lignes.is_empty()
         {
-            *self = Screen::Liste { titre: title.clone(), lignes, sel: 0 };
+            *self = Screen::Liste {
+                titre: title.clone(),
+                lignes,
+                sel: 0,
+            };
         }
     }
 
@@ -167,7 +201,11 @@ impl Screen {
     /// effet hors du mode Histoire ou si la scène est vide — la démonstration reste alors
     /// affichée, ce qui vaut mieux qu'un écran muet.
     pub fn fournir_dialogue(&mut self, id: String, lignes: Vec<String>) {
-        if let Screen::Story { idx, titre, repliques } = self
+        if let Screen::Story {
+            idx,
+            titre,
+            repliques,
+        } = self
             && !lignes.is_empty()
         {
             *idx = 0;
@@ -234,11 +272,18 @@ impl Screen {
             Screen::Title => render_state(&GameState::Title, font, None).buf,
             Screen::Menu { sel } => render_list("MENU PRINCIPAL", &MENU, *sel, font).buf,
             Screen::ModeSelect { sel } => render_list("MODE DE JEU", &MODES, *sel, font).buf,
-            Screen::Story { idx, titre, repliques } => {
+            Screen::Story {
+                idx,
+                titre,
+                repliques,
+            } => {
                 let st = if repliques.is_empty() {
                     // Scène de démonstration : le front n'a pas su charger de dialogue réel.
                     let (sp, ln) = STORY[(*idx).min(STORY.len() - 1)];
-                    GameState::Story { speaker: sp.into(), line: ln.into() }
+                    GameState::Story {
+                        speaker: sp.into(),
+                        line: ln.into(),
+                    }
                 } else {
                     // Le locuteur n'est pas résolu : le fichier de texte porte les répliques, pas
                     // qui les prononce (c'est le script d'événement qui l'attribue). Afficher un
@@ -263,7 +308,9 @@ impl Screen {
                 // Fenêtre glissante autour de la sélection : un effectif compte des milliers de
                 // joueurs, l'écran une dizaine de lignes.
                 const VISIBLES: usize = 9;
-                let debut = sel.saturating_sub(VISIBLES / 2).min(vues.len().saturating_sub(VISIBLES));
+                let debut = sel
+                    .saturating_sub(VISIBLES / 2)
+                    .min(vues.len().saturating_sub(VISIBLES));
                 let fin = (debut + VISIBLES).min(vues.len());
                 render_list(titre, &vues[debut..fin], sel - debut, font).buf
             }

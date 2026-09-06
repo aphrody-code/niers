@@ -49,9 +49,12 @@ fn count_raw(e: &CfgEntry, n: &mut usize) {
 }
 
 fn main() {
-    let dir = nie_formats::vfs::resolve_game_dir().to_string_lossy().into_owned();
+    let dir = nie_formats::vfs::resolve_game_dir()
+        .to_string_lossy()
+        .into_owned();
     let mut vfs = Vfs::new();
-    vfs.init(Path::new(&dir).join("data").as_path()).expect("vfs init");
+    vfs.init(Path::new(&dir).join("data").as_path())
+        .expect("vfs init");
     let path = vfs
         .iter()
         .map(|(p, _)| p.to_string())
@@ -85,7 +88,9 @@ fn main() {
         with_series += usize::from(b.series_id.is_some());
         with_desc += usize::from(b.description_hash.is_some());
     }
-    eprintln!("genders = {genders:?} ; with_team={with_team} with_series={with_series} with_desc={with_desc}");
+    eprintln!(
+        "genders = {genders:?} ; with_team={with_team} with_series={with_series} with_desc={with_desc}"
+    );
     eprintln!("// 3 premiers entrées RICHES (team+series+description+lastname) :");
     for b in bases
         .iter()
@@ -109,5 +114,8 @@ fn main() {
             b.description_hash.map(|h| h.to_hex()),
         );
     }
-    eprintln!("✓ END-TO-END OK : nie_data::chara_base == extraction brute sur {} noeuds", bases.len());
+    eprintln!(
+        "✓ END-TO-END OK : nie_data::chara_base == extraction brute sur {} noeuds",
+        bases.len()
+    );
 }

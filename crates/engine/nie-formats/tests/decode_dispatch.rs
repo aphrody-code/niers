@@ -51,7 +51,10 @@ fn decode_route_les_familles_level5_annexes() {
 
     // Extensions dont un parseur AUTONOME existe dans le crate. `.g4mg` en est volontairement
     // absent : sa géométrie n'a de sens qu'avec le `.g4md` frère, il n'y a rien à décoder seul.
-    let familles = ["g4mt", "g4cm", "g4la", "g4ma", "g4vs", "col", "g4nv", "g4sk", "vfxo", "pfxo", "gfxo", "cfxo"];
+    let familles = [
+        "g4mt", "g4cm", "g4la", "g4ma", "g4vs", "col", "g4nv", "g4sk", "vfxo", "pfxo", "gfxo",
+        "cfxo",
+    ];
 
     // (décodés, essayés, nom du parseur) : afficher le dénominateur évite de lire « 4 décodés »
     // comme un échec partiel quand la famille ne compte que 4 fichiers dans tout le jeu.
@@ -66,7 +69,9 @@ fn decode_route_les_familles_level5_annexes() {
         let mut ok = 0usize;
         let mut nom = String::new();
         for chemin in &chemins {
-            let Ok(octets) = vfs.read(chemin) else { continue };
+            let Ok(octets) = vfs.read(chemin) else {
+                continue;
+            };
             if let Some(d) = nie_formats::decode::decode(&octets) {
                 ok += 1;
                 nom = d.format.to_string();
@@ -86,7 +91,11 @@ fn decode_route_les_familles_level5_annexes() {
     if !absents.is_empty() {
         eprintln!("  extensions absentes de ce corpus : {absents:?}");
     }
-    assert!(vus.len() >= 4, "corpus trop pauvre pour conclure : {} familles vues", vus.len());
+    assert!(
+        vus.len() >= 4,
+        "corpus trop pauvre pour conclure : {} familles vues",
+        vus.len()
+    );
 }
 
 /// Un `.g4mg` n'est PAS décodable seul, et le dépôt ne doit pas prétendre le contraire.
@@ -104,7 +113,9 @@ fn un_g4mg_ne_pretend_pas_se_decoder_seul() {
     }
     let mut testes = 0usize;
     for chemin in &chemins {
-        let Ok(octets) = vfs.read(chemin) else { continue };
+        let Ok(octets) = vfs.read(chemin) else {
+            continue;
+        };
         testes += 1;
         assert!(
             nie_formats::decode::decode(&octets).is_none(),

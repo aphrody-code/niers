@@ -14,8 +14,8 @@
 //!   par sa cible absolue.
 
 use crate::{
-    Alu, BitOp, Cond, CvtOp, Insn, Mem, NoOp, Reg, RepOp, Rm, Seg, ShiftOp, Size, SseMaskOp,
-    SseOp, SseShiftOp, UnOp, VexOp, Xmm, XmmRm,
+    Alu, BitOp, Cond, CvtOp, Insn, Mem, NoOp, Reg, RepOp, Rm, Seg, ShiftOp, Size, SseMaskOp, SseOp,
+    SseShiftOp, UnOp, VexOp, Xmm, XmmRm,
 };
 use alloc::format;
 use alloc::string::{String, ToString};
@@ -305,8 +305,6 @@ fn split_sized_mem(s: &str) -> Option<(Size, Mem)> {
     None
 }
 
-
-
 /// Table des mnemoniques SSE supportes.
 const SSES: [(&str, SseOp); 105] = [
     ("movaps", SseOp::Movaps),
@@ -438,7 +436,10 @@ const VEXES: [(&str, VexOp); 17] = [
 ];
 
 fn vex_name(o: VexOp) -> &'static str {
-    VEXES.iter().find(|(_, x)| *x == o).map_or("vmovaps", |(n, _)| *n)
+    VEXES
+        .iter()
+        .find(|(_, x)| *x == o)
+        .map_or("vmovaps", |(n, _)| *n)
 }
 
 /// Vrai si la forme n'a que deux opérandes visibles (pas de registre `vvvv`).
@@ -513,7 +514,10 @@ const SSE_SHIFTS: [(&str, SseShiftOp); 10] = [
 ];
 
 fn sse_shift_name(o: SseShiftOp) -> &'static str {
-    SSE_SHIFTS.iter().find(|(_, x)| *x == o).map_or("psrldq", |(n, _)| *n)
+    SSE_SHIFTS
+        .iter()
+        .find(|(_, x)| *x == o)
+        .map_or("psrldq", |(n, _)| *n)
 }
 
 /// Table des extractions de masque de signes.
@@ -524,7 +528,10 @@ const SSE_MASKS: [(&str, SseMaskOp); 3] = [
 ];
 
 fn sse_mask_name(o: SseMaskOp) -> &'static str {
-    SSE_MASKS.iter().find(|(_, x)| *x == o).map_or("movmskps", |(n, _)| *n)
+    SSE_MASKS
+        .iter()
+        .find(|(_, x)| *x == o)
+        .map_or("movmskps", |(n, _)| *n)
 }
 
 /// Mnémonique d'une opération de décalage/rotation.
@@ -539,7 +546,9 @@ fn shiftop_name(o: ShiftOp) -> &'static str {
 }
 
 fn sse_name(o: SseOp) -> &'static str {
-    SSES.iter().find(|(_, x)| *x == o).map_or("movaps", |(n, _)| *n)
+    SSES.iter()
+        .find(|(_, x)| *x == o)
+        .map_or("movaps", |(n, _)| *n)
 }
 
 fn xmm_text(x: Xmm) -> String {
@@ -565,7 +574,6 @@ fn parse_xmmrm(s: &str) -> Option<XmmRm> {
     Some(XmmRm::X(xmm_of(s)?))
 }
 
-
 const CVTS: [(&str, CvtOp); 6] = [
     ("cvtsi2ss", CvtOp::Cvtsi2ss),
     ("cvtsi2sd", CvtOp::Cvtsi2sd),
@@ -576,9 +584,10 @@ const CVTS: [(&str, CvtOp); 6] = [
 ];
 
 fn cvt_name(o: CvtOp) -> &'static str {
-    CVTS.iter().find(|(_, x)| *x == o).map_or("cvtsi2ss", |(n, _)| *n)
+    CVTS.iter()
+        .find(|(_, x)| *x == o)
+        .map_or("cvtsi2ss", |(n, _)| *n)
 }
-
 
 const NOOPS: [(&str, NoOp); 5] = [
     ("cwde", NoOp::Cwde),
@@ -596,11 +605,17 @@ const BITOPS: [(&str, BitOp); 4] = [
 ];
 
 fn noop_name(o: NoOp) -> &'static str {
-    NOOPS.iter().find(|(_, x)| *x == o).map_or("cdq", |(n, _)| *n)
+    NOOPS
+        .iter()
+        .find(|(_, x)| *x == o)
+        .map_or("cdq", |(n, _)| *n)
 }
 
 fn bitop_name(o: BitOp) -> &'static str {
-    BITOPS.iter().find(|(_, x)| *x == o).map_or("bt", |(n, _)| *n)
+    BITOPS
+        .iter()
+        .find(|(_, x)| *x == o)
+        .map_or("bt", |(n, _)| *n)
 }
 
 const UNOPS: [(&str, UnOp); 11] = [
@@ -618,7 +633,10 @@ const UNOPS: [(&str, UnOp); 11] = [
 ];
 
 fn unop_name(o: UnOp) -> &'static str {
-    UNOPS.iter().find(|(_, x)| *x == o).map_or("inc", |(n, _)| *n)
+    UNOPS
+        .iter()
+        .find(|(_, x)| *x == o)
+        .map_or("inc", |(n, _)| *n)
 }
 
 /// Rend un operande `r/m` : registre nu, ou memoire prefixee de sa taille.
@@ -651,16 +669,10 @@ impl Insn {
             Self::RetImm(n) => format!("ret {n:#x}"),
             Self::Int3 => "int3".to_string(),
             Self::Nop(n) => format!("nop {n}"),
-            Self::Push(r, x) => format!(
-                "push{} {}",
-                if x { ".r" } else { "" },
-                reg_name(r, Size::Q)
-            ),
-            Self::Pop(r, x) => format!(
-                "pop{} {}",
-                if x { ".r" } else { "" },
-                reg_name(r, Size::Q)
-            ),
+            Self::Push(r, x) => {
+                format!("push{} {}", if x { ".r" } else { "" }, reg_name(r, Size::Q))
+            }
+            Self::Pop(r, x) => format!("pop{} {}", if x { ".r" } else { "" }, reg_name(r, Size::Q)),
             Self::MovRegImm8(r, i) => format!("mov {}, {i:#x}", reg_name(r, Size::B)),
             Self::MovRegImm32(r, i) => format!("mov {}, {i:#x}", reg_name(r, Size::D)),
             Self::MovRegImm64(r, i) => format!("movabs {}, {i:#x}", reg_name(r, Size::Q)),
@@ -727,11 +739,9 @@ impl Insn {
             }
             Self::Call(t) => format!("call {t:#x}"),
             Self::Jmp(t, short) => format!("jmp{} {t:#x}", if short { ".s" } else { "" }),
-            Self::Jcc(c, t, short) => format!(
-                "j{}{} {t:#x}",
-                cond_name(c),
-                if short { ".s" } else { "" }
-            ),
+            Self::Jcc(c, t, short) => {
+                format!("j{}{} {t:#x}", cond_name(c), if short { ".s" } else { "" })
+            }
             Self::AluI(op, s, rm, i, w) => format!(
                 "{}{} {}, {:#x}",
                 ALUS[op.digit() as usize].0,
@@ -759,14 +769,24 @@ impl Insn {
                 n.to_string()
             }
             Self::LockCmpxchg(s, m, r) => {
-                format!("lock cmpxchg {} {}, {}", size_name(s), mem_text(m), reg_name(r, s))
+                format!(
+                    "lock cmpxchg {} {}, {}",
+                    size_name(s),
+                    mem_text(m),
+                    reg_name(r, s)
+                )
             }
             Self::BitScan(bsr, s, r, rm) => {
                 let n = if bsr { "bsr" } else { "bsf" };
                 format!("{n} {}, {}", reg_name(r, s), rm_text(rm, s))
             }
             Self::LockXadd(s, m, r) => {
-                format!("lock xadd {} {}, {}", size_name(s), mem_text(m), reg_name(r, s))
+                format!(
+                    "lock xadd {} {}, {}",
+                    size_name(s),
+                    mem_text(m),
+                    reg_name(r, s)
+                )
             }
             Self::Vex(op, dst, src1, src2, imm) => {
                 let n = vex_name(op);
@@ -816,7 +836,12 @@ impl Insn {
                 format!("{} {}, {i:#x}", sse_shift_name(op), xmm_text(x))
             }
             Self::SseMovmsk(op, r, x) => {
-                format!("{} {}, {}", sse_mask_name(op), reg_name(r, Size::D), xmm_text(x))
+                format!(
+                    "{} {}, {}",
+                    sse_mask_name(op),
+                    reg_name(r, Size::D),
+                    xmm_text(x)
+                )
             }
             Self::Un(op, s, rm) => format!("{} {}", unop_name(op), rm_text(rm, s)),
             Self::LockUn(op, s, rm) => {
@@ -848,7 +873,12 @@ impl Insn {
                 format!("{} {}, {}", sse_name(op), mem_text(m), xmm_text(s))
             }
             Self::Cmov(c, s, r, rm) => {
-                format!("cmov{} {}, {}", cond_name(c), reg_name(r, s), rm_text(rm, s))
+                format!(
+                    "cmov{} {}, {}",
+                    cond_name(c),
+                    reg_name(r, s),
+                    rm_text(rm, s)
+                )
             }
             Self::SseI(op, d, s, i) => format!(
                 "{} {}, {}, {i:#x}",
@@ -877,16 +907,12 @@ impl Insn {
             Self::MovsxdRm(d, s) => {
                 format!("movsxd {}, {}", reg_name(d, Size::Q), rm_text(s, Size::D))
             }
-            Self::MovzxRm(src, dst, r, rm) => format!(
-                "movzx {}, {}",
-                reg_name(r, dst),
-                rm_text(rm, src)
-            ),
-            Self::MovsxRm(src, dst, r, rm) => format!(
-                "movsx {}, {}",
-                reg_name(r, dst),
-                rm_text(rm, src)
-            ),
+            Self::MovzxRm(src, dst, r, rm) => {
+                format!("movzx {}, {}", reg_name(r, dst), rm_text(rm, src))
+            }
+            Self::MovsxRm(src, dst, r, rm) => {
+                format!("movsx {}, {}", reg_name(r, dst), rm_text(rm, src))
+            }
             Self::NoOperand(o) => noop_name(o).to_string(),
             Self::SetccRm(c, rm) => format!("set{} {}", cond_name(c), rm_text(rm, Size::B)),
             Self::Shift1(op, s, rm) => {
@@ -927,9 +953,9 @@ pub fn parse_insn(line: &str) -> Result<Insn, ParseError> {
             return Ok(Insn::LockCmpxchg(sz, m, r));
         }
         if let Some(x) = rest.strip_prefix("xadd ") {
-            let (d, sx) = x.split_once(',').ok_or_else(|| {
-                ParseError(format!("`lock xadd` mal formé : `{line}`"))
-            })?;
+            let (d, sx) = x
+                .split_once(',')
+                .ok_or_else(|| ParseError(format!("`lock xadd` mal formé : `{line}`")))?;
             let bad = || ParseError(format!("`lock xadd` mal formé : `{line}`"));
             let (sz, m) = split_sized_mem(d).ok_or_else(bad)?;
             let (r, rsz) = reg_of(sx).ok_or_else(bad)?;
@@ -1136,7 +1162,13 @@ pub fn parse_insn(line: &str) -> Result<Insn, ParseError> {
                 return Ok(Insn::AluMR(*op, sz, m, r));
             }
             let v = parse_int(&s).ok_or_else(err)?;
-            return Ok(Insn::AluI(*op, sz, Rm::M(m), as_imm32(v).ok_or_else(err)?, wide));
+            return Ok(Insn::AluI(
+                *op,
+                sz,
+                Rm::M(m),
+                as_imm32(v).ok_or_else(err)?,
+                wide,
+            ));
         }
         if d.starts_with('[') {
             let m = parse_mem(&d).ok_or_else(err)?;
@@ -1214,7 +1246,9 @@ pub fn parse_insn(line: &str) -> Result<Insn, ParseError> {
             let (d, sx) = two()?;
             let (r, sz) = reg_of(&d).ok_or_else(err)?;
             let (rm, rsz) = parse_rm(&sx).ok_or_else(err)?;
-            (rsz.is_none() || rsz == Some(sz)).then_some(()).ok_or_else(err)?;
+            (rsz.is_none() || rsz == Some(sz))
+                .then_some(())
+                .ok_or_else(err)?;
             Ok(Insn::BitScan(mnem == "bsr", sz, r, rm))
         }
         "xchg" => {
@@ -1292,7 +1326,13 @@ pub fn parse_insn(line: &str) -> Result<Insn, ParseError> {
             let (d, s) = two()?;
             // Forme accumulateur à adresse absolue (`A0`..`A3`).
             let abs_of = |x: &str| -> Option<u64> {
-                parse_u64(x.trim().strip_prefix('[')?.strip_suffix(']')?.trim().strip_prefix("abs")?)
+                parse_u64(
+                    x.trim()
+                        .strip_prefix('[')?
+                        .strip_suffix(']')?
+                        .trim()
+                        .strip_prefix("abs")?,
+                )
             };
             if let Some(a) = abs_of(&d) {
                 let (_, sz) = reg_of(&s).ok_or_else(err)?;
@@ -1370,7 +1410,10 @@ mod tests {
             vec![Insn::Ret],
             vec![Insn::RetImm(0)],
             vec![Insn::MovRegImm8(Reg::Rax, 1), Insn::Ret],
-            vec![Insn::AluRR(Alu::Xor, Size::D, Reg::Rax, Reg::Rax), Insn::Ret],
+            vec![
+                Insn::AluRR(Alu::Xor, Size::D, Reg::Rax, Reg::Rax),
+                Insn::Ret,
+            ],
             vec![Insn::MovRR(Size::Q, Reg::Rax, Reg::Rcx), Insn::Ret],
             vec![
                 Insn::Store(Size::Q, Mem::base(Reg::Rcx), Reg::Rdx),
@@ -1380,7 +1423,11 @@ mod tests {
             ],
             vec![Insn::Lea(Reg::Rax, Mem::base_disp(Reg::Rcx, 8)), Insn::Ret],
             vec![Insn::MovRegImm32(Reg::Rax, 0xefec_8a0d), Insn::Ret],
-            vec![Insn::Load(Size::Q, Reg::Rax, Mem::base_disp(Reg::Rsp, 0x28))],
+            vec![Insn::Load(
+                Size::Q,
+                Reg::Rax,
+                Mem::base_disp(Reg::Rsp, 0x28),
+            )],
             vec![Insn::IncMem32(Mem::base(Reg::Rcx))],
             vec![Insn::JmpReg(Reg::Rax, false)],
             vec![Insn::Nop(10)],
@@ -1479,7 +1526,11 @@ mod tests {
             "vmovaps xmm1, xmm2",
         ] {
             let i = parse_insn(l).unwrap_or_else(|e| panic!("{l} : {e:?}"));
-            assert_eq!(parse_insn(&i.to_text()).unwrap(), i, "aller-retour de `{l}`");
+            assert_eq!(
+                parse_insn(&i.to_text()).unwrap(),
+                i,
+                "aller-retour de `{l}`"
+            );
         }
     }
 }
@@ -1565,7 +1616,11 @@ mod tests_segment {
     /// fréquent du binaire (2 443 unités bloquées avant son support).
     #[test]
     fn gs_absolu_encode_le_prefixe_et_le_sib() {
-        let m = Mem { seg: Some(Seg::Gs), disp: 0x58, ..Mem::default() };
+        let m = Mem {
+            seg: Some(Seg::Gs),
+            disp: 0x58,
+            ..Mem::default()
+        };
         let i = Insn::Load(Size::Q, Reg::Rax, m);
         assert_eq!(
             crate::encode(&[i]),
@@ -1575,7 +1630,11 @@ mod tests_segment {
 
     #[test]
     fn le_segment_fait_l_aller_retour_textuel() {
-        let m = Mem { seg: Some(Seg::Gs), disp: 0x58, ..Mem::default() };
+        let m = Mem {
+            seg: Some(Seg::Gs),
+            disp: 0x58,
+            ..Mem::default()
+        };
         let i = Insn::Load(Size::Q, Reg::Rax, m);
         let t = i.to_text();
         assert!(t.contains("gs:["), "rendu : {t}");
@@ -1627,13 +1686,7 @@ mod tests_vex {
     /// `vfmadd231ps xmm4, xmm0, xmm3` — table `0F38`, `vvvv` = xmm0.
     #[test]
     fn vfmadd231ps_porte_le_registre_non_destructif() {
-        let i = Insn::Vex(
-            VexOp::Vfmadd231ps,
-            Xmm(4),
-            Xmm(0),
-            XmmRm::X(Xmm(3)),
-            None,
-        );
+        let i = Insn::Vex(VexOp::Vfmadd231ps, Xmm(4), Xmm(0), XmmRm::X(Xmm(3)), None);
         assert_eq!(crate::encode(&[i]), vec![0xC4, 0xE2, 0x79, 0xB8, 0xE3]);
     }
 }
@@ -1656,7 +1709,12 @@ mod tests_octet_haut {
 
     #[test]
     fn les_octets_hauts_font_l_aller_retour() {
-        for (name, r) in [("ah", Reg::Ah), ("ch", Reg::Ch), ("dh", Reg::Dh), ("bh", Reg::Bh)] {
+        for (name, r) in [
+            ("ah", Reg::Ah),
+            ("ch", Reg::Ch),
+            ("dh", Reg::Dh),
+            ("bh", Reg::Bh),
+        ] {
             assert_eq!(reg_of(name), Some((r, Size::B)), "lecture de `{name}`");
             assert_eq!(reg_name(r, Size::B), name, "rendu de `{name}`");
             assert!(r.is_high_byte());

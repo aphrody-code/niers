@@ -89,14 +89,29 @@ pub fn routeur(etat: EtatSite) -> Router {
         .route("/healthz", get(crate::routes::health::healthz))
         .route("/robots.txt", get(crate::routes::well_known::robots))
         .route("/llms.txt", get(crate::routes::well_known::llms))
-        .route("/llms-full.txt", get(crate::routes::well_known::llms_complet))
+        .route(
+            "/llms-full.txt",
+            get(crate::routes::well_known::llms_complet),
+        )
         // Une route par langue, declarees une par une. Un parametre `/{langue}/manifest…`
         // capturerait n'importe quel segment et servirait le manifeste francais sous autant
         // d'URL qu'on peut en inventer.
-        .route("/manifest.webmanifest", get(crate::routes::well_known::manifeste))
-        .route("/en/manifest.webmanifest", get(crate::routes::well_known::manifeste))
-        .route("/ja/manifest.webmanifest", get(crate::routes::well_known::manifeste))
-        .route("/.well-known/security.txt", get(crate::routes::well_known::security))
+        .route(
+            "/manifest.webmanifest",
+            get(crate::routes::well_known::manifeste),
+        )
+        .route(
+            "/en/manifest.webmanifest",
+            get(crate::routes::well_known::manifeste),
+        )
+        .route(
+            "/ja/manifest.webmanifest",
+            get(crate::routes::well_known::manifeste),
+        )
+        .route(
+            "/.well-known/security.txt",
+            get(crate::routes::well_known::security),
+        )
         .route("/sitemap.xml", get(crate::routes::well_known::sitemap))
         .route("/feed.atom", get(crate::routes::feed::atom))
         .route("/api/v1/health", get(crate::routes::api_v1::health))
@@ -120,9 +135,15 @@ pub fn routeur(etat: EtatSite) -> Router {
         // - le délai maximal et la trace restent les plus externes, faute de quoi ils ne
         //   verraient ni les réponses des couches ci-dessus ni leur latence.
         .layer(axum::middleware::from_fn(crate::etag::conditionnel))
-        .layer(axum::middleware::from_fn_with_state(etat.clone(), crate::debit::limiter))
+        .layer(axum::middleware::from_fn_with_state(
+            etat.clone(),
+            crate::debit::limiter,
+        ))
         .layer(axum::middleware::from_fn(entetes_securite))
-        .layer(TimeoutLayer::with_status_code(StatusCode::GATEWAY_TIMEOUT, DELAI_REQUETE))
+        .layer(TimeoutLayer::with_status_code(
+            StatusCode::GATEWAY_TIMEOUT,
+            DELAI_REQUETE,
+        ))
         .layer(TraceLayer::new_for_http())
         .with_state(etat)
 }
@@ -158,10 +179,19 @@ mod tests {
             "form-action 'none'",
             "frame-ancestors 'none'",
         ] {
-            assert!(directives.contains(&attendue), "directive absente: {attendue}");
+            assert!(
+                directives.contains(&attendue),
+                "directive absente: {attendue}"
+            );
         }
-        assert!(!CSP.contains(" 'unsafe-eval'"), "pas d'eval JavaScript (wasm excepte)");
-        assert!(!CSP.contains("script-src 'self' 'unsafe-inline'"), "pas de script inline");
+        assert!(
+            !CSP.contains(" 'unsafe-eval'"),
+            "pas d'eval JavaScript (wasm excepte)"
+        );
+        assert!(
+            !CSP.contains("script-src 'self' 'unsafe-inline'"),
+            "pas de script inline"
+        );
         assert_eq!(entetes_securite_liste().len(), NB_ENTETES_SECURITE);
     }
 

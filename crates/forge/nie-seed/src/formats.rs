@@ -12,7 +12,7 @@
 //! - `IECODE.Core/Audio/HcaDecoder.cs` — HCA.
 
 use anyhow::{Context, Result};
-use nie_index::{ingest, Db};
+use nie_index::{Db, ingest};
 use tracing::debug;
 
 /// Un format documenté par iecode.
@@ -241,14 +241,14 @@ mod tests {
         assert_eq!(count, FORMATS.len());
 
         // Vérifier quelques formats emblématiques.
-        for name in &["G4TX", "G4MD", "G4PK", "CPK", "@UTF", "ACB", "AWB", "HCA", "DXBC", "RDBN"] {
+        for name in &[
+            "G4TX", "G4MD", "G4PK", "CPK", "@UTF", "ACB", "AWB", "HCA", "DXBC", "RDBN",
+        ] {
             let found: i64 = db
                 .conn()
-                .query_row(
-                    "SELECT COUNT(*) FROM format WHERE name = ?1",
-                    [name],
-                    |r| r.get(0),
-                )
+                .query_row("SELECT COUNT(*) FROM format WHERE name = ?1", [name], |r| {
+                    r.get(0)
+                })
                 .unwrap();
             assert_eq!(found, 1, "format {name} introuvable");
         }

@@ -53,7 +53,10 @@ pub fn parse_header(
     format: &'static str,
 ) -> Result<Level5Header, FormatError> {
     if data.len() < COMMON_HEADER_LEN {
-        return Err(FormatError::TooShort { got: data.len(), need: COMMON_HEADER_LEN });
+        return Err(FormatError::TooShort {
+            got: data.len(),
+            need: COMMON_HEADER_LEN,
+        });
     }
     let magic = read_u32_le(data, 0)?;
     if magic != magic_le {
@@ -76,7 +79,10 @@ pub fn parse_header(
 pub fn read_u16_le(data: &[u8], off: usize) -> Result<u16, FormatError> {
     data.get(off..off + 2)
         .map(|b| u16::from_le_bytes([b[0], b[1]]))
-        .ok_or(FormatError::TooShort { got: data.len(), need: off + 2 })
+        .ok_or(FormatError::TooShort {
+            got: data.len(),
+            need: off + 2,
+        })
 }
 
 /// Lit un u32 little-endian borné.
@@ -86,7 +92,10 @@ pub fn read_u16_le(data: &[u8], off: usize) -> Result<u16, FormatError> {
 pub fn read_u32_le(data: &[u8], off: usize) -> Result<u32, FormatError> {
     data.get(off..off + 4)
         .map(|b| u32::from_le_bytes([b[0], b[1], b[2], b[3]]))
-        .ok_or(FormatError::TooShort { got: data.len(), need: off + 4 })
+        .ok_or(FormatError::TooShort {
+            got: data.len(),
+            need: off + 4,
+        })
 }
 
 #[cfg(test)]
@@ -103,7 +112,13 @@ mod tests {
         assert_eq!(h.header_size, 0x40);
         assert!(h.is_size_consistent(0x60)); // 0x40 + 0x20
         assert!(!h.is_size_consistent(0x40));
-        assert!(matches!(parse_header(&buf, 0x4D56_414E, "NAVM"), Err(FormatError::BadMagic { .. })));
-        assert!(matches!(parse_header(b"G4", 0, "X"), Err(FormatError::TooShort { .. })));
+        assert!(matches!(
+            parse_header(&buf, 0x4D56_414E, "NAVM"),
+            Err(FormatError::BadMagic { .. })
+        ));
+        assert!(matches!(
+            parse_header(b"G4", 0, "X"),
+            Err(FormatError::TooShort { .. })
+        ));
     }
 }

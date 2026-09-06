@@ -41,7 +41,12 @@ fn appliquer_recette_fichier(
     let rapport = recette::appliquer(pid, module, &r, a_blanc);
     for res in &rapport.resultats {
         let quoi = match &res.regle {
-            recette::Regle::RemplacerU32 { de, vers, max, garde } => {
+            recette::Regle::RemplacerU32 {
+                de,
+                vers,
+                max,
+                garde,
+            } => {
                 let borne = max.map_or_else(String::new, |m| format!(" max {m}"));
                 let cond = garde.map_or_else(String::new, |(o, v)| {
                     let signe = if o < 0 { "-" } else { "+" };
@@ -64,7 +69,9 @@ fn appliquer_recette_fichier(
             res.trouvees,
             res.ecrites,
             apercu.join(", "),
-            res.erreur.as_ref().map_or_else(String::new, |e| format!("  ⚠ {e}"))
+            res.erreur
+                .as_ref()
+                .map_or_else(String::new, |e| format!("  ⚠ {e}"))
         );
     }
     println!(
@@ -141,9 +148,20 @@ fn run(args: &[String]) -> Result<(), String> {
             let mut total = 0u64;
             for m in &regions {
                 total += m.size();
-                println!("  0x{:012x}-0x{:012x}  {}  {:>12}  {}", m.start, m.end, m.perms, m.size(), m.path);
+                println!(
+                    "  0x{:012x}-0x{:012x}  {}  {:>12}  {}",
+                    m.start,
+                    m.end,
+                    m.perms,
+                    m.size(),
+                    m.path
+                );
             }
-            let suffix = if all { String::new() } else { format!(" (module « {module} »)") };
+            let suffix = if all {
+                String::new()
+            } else {
+                format!(" (module « {module} »)")
+            };
             println!("\n  {} plage(s), {total} octets{suffix}", regions.len());
             Ok(())
         }
@@ -183,7 +201,9 @@ fn run(args: &[String]) -> Result<(), String> {
             let octets: Vec<u8> = match flags.get("in").and_then(Clone::clone) {
                 Some(path) => std::fs::read(&path).map_err(|e| e.to_string())?,
                 None => {
-                    let motif = positionals.get(1).ok_or("octets manquants (hex, ou --in <fichier>)")?;
+                    let motif = positionals
+                        .get(1)
+                        .ok_or("octets manquants (hex, ou --in <fichier>)")?;
                     parse_pattern(motif)?.0
                 }
             };
@@ -214,20 +234,21 @@ fn run(args: &[String]) -> Result<(), String> {
         // C'est le mode « je relance et tout se réapplique » : les adresses changent à chaque
         // lancement, la recette s'exprime en valeurs, donc elle survit au redémarrage.
         "live" => {
-            let racine = flags
-                .get("repo")
-                .and_then(Clone::clone)
-                .map_or_else(|| std::env::current_dir().unwrap_or_default(), PathBuf::from);
-            let editeur = flags
-                .get("save-editor")
-                .and_then(Clone::clone)
-                .map_or_else(|| racine.join("InazumaElevenVRSaveEditor.exe"), PathBuf::from);
+            let racine = flags.get("repo").and_then(Clone::clone).map_or_else(
+                || std::env::current_dir().unwrap_or_default(),
+                PathBuf::from,
+            );
+            let editeur = flags.get("save-editor").and_then(Clone::clone).map_or_else(
+                || racine.join("InazumaElevenVRSaveEditor.exe"),
+                PathBuf::from,
+            );
             let jeu = flags
                 .get("game")
                 .and_then(Clone::clone)
                 .map(PathBuf::from)
                 .ok_or("--game <chemin de nie.exe> est requis")?;
-            let attente = std::time::Duration::from_secs(flag_num(&flags, "wait").unwrap_or(120) as u64);
+            let attente =
+                std::time::Duration::from_secs(flag_num(&flags, "wait").unwrap_or(120) as u64);
             let sans_editeur = flags.contains_key("no-save-editor");
 
             let l = lancer_chaine(
@@ -242,7 +263,10 @@ fn run(args: &[String]) -> Result<(), String> {
                 println!("  ABSENT   {}", a.display());
             }
             for e in &l.echecs {
-                println!("  ÉCHEC    {} (démarrage refusé, même via le shell)", e.display());
+                println!(
+                    "  ÉCHEC    {} (démarrage refusé, même via le shell)",
+                    e.display()
+                );
             }
             let Some(pid) = l.pid else {
                 return Err(format!(
@@ -258,22 +282,39 @@ fn run(args: &[String]) -> Result<(), String> {
                 println!("\n  aucune recette donnée — chaîne lancée, rien appliqué");
                 return Ok(());
             };
-            appliquer_recette_fichier(pid, &module_of(&flags), chemin, !flags.contains_key("force"))
+            appliquer_recette_fichier(
+                pid,
+                &module_of(&flags),
+                chemin,
+                !flags.contains_key("force"),
+            )
         }
         // Applique une recette au jeu déjà lancé.
         "apply" => {
             let pid = resolve_pid(&flags)?;
             let chemin = positionals.first().ok_or("recette manquante")?;
-            appliquer_recette_fichier(pid, &module_of(&flags), chemin, !flags.contains_key("force"))
+            appliquer_recette_fichier(
+                pid,
+                &module_of(&flags),
+                chemin,
+                !flags.contains_key("force"),
+            )
         }
         "dump" => {
             let pid = resolve_pid(&flags)?;
             let module = module_of(&flags);
             let all = flags.contains_key("all");
-            let out = flags.get("out").and_then(Clone::clone).unwrap_or_else(|| "./memdump".to_owned());
+            let out = flags
+                .get("out")
+                .and_then(Clone::clone)
+                .unwrap_or_else(|| "./memdump".to_owned());
             let regions = module_regions(pid, &module, all);
-            let stats = dump_regions(pid, &regions, &PathBuf::from(&out)).map_err(|e| e.to_string())?;
-            println!("  {} plage(s) dumpée(s), {} octets → {out}", stats.regions, stats.bytes);
+            let stats =
+                dump_regions(pid, &regions, &PathBuf::from(&out)).map_err(|e| e.to_string())?;
+            println!(
+                "  {} plage(s) dumpée(s), {} octets → {out}",
+                stats.regions, stats.bytes
+            );
             Ok(())
         }
         "scan" => {
@@ -287,17 +328,25 @@ fn run(args: &[String]) -> Result<(), String> {
             let base = find_module_base(pid, &module);
             let hits = scan_regions(pid, &regions, base, &needle, limit);
             for h in &hits {
-                let rva = h.rva.map(|r| format!(" ({module}+0x{r:x})")).unwrap_or_default();
+                let rva = h
+                    .rva
+                    .map(|r| format!(" ({module}+0x{r:x})"))
+                    .unwrap_or_default();
                 println!("  0x{:012x}{rva}  [{}]", h.addr, h.perms);
             }
-            let capped = if hits.len() >= limit { format!(" (limité à {limit})") } else { String::new() };
+            let capped = if hits.len() >= limit {
+                format!(" (limité à {limit})")
+            } else {
+                String::new()
+            };
             println!("\n  {} hit(s) pour {label}{capped}", hits.len());
             Ok(())
         }
         "patch-eac" => {
             let src = positionals.first().ok_or("src manquant")?;
             let dst = positionals.get(1).ok_or("dst manquant")?;
-            let r = patch_eac(&PathBuf::from(src), &PathBuf::from(dst)).map_err(|e| e.to_string())?;
+            let r =
+                patch_eac(&PathBuf::from(src), &PathBuf::from(dst)).map_err(|e| e.to_string())?;
             println!(
                 "  OK  offset 0x{:X}: {} -> {}  ({} octets)  {dst}",
                 r.offset,
@@ -318,7 +367,11 @@ fn parse(args: &[String]) -> (Vec<String>, HashMap<String, Option<String>>) {
     let mut i = 0;
     while i < args.len() {
         let a = &args[i];
-        if let Some(key) = a.strip_prefix("--").or_else(|| a.strip_prefix('-')).filter(|_| a.starts_with('-')) {
+        if let Some(key) = a
+            .strip_prefix("--")
+            .or_else(|| a.strip_prefix('-'))
+            .filter(|_| a.starts_with('-'))
+        {
             // booléens connus sans valeur
             if key == "all" {
                 flags.insert("all".to_owned(), None);
@@ -353,15 +406,22 @@ fn resolve_pid(flags: &HashMap<String, Option<String>>) -> Result<i32, String> {
     if pid > 0 {
         return Ok(pid);
     }
-    find_pid_by_name("nie.exe").ok_or_else(|| "nie.exe introuvable — lance le jeu, ou précise --pid".to_owned())
+    find_pid_by_name("nie.exe")
+        .ok_or_else(|| "nie.exe introuvable — lance le jeu, ou précise --pid".to_owned())
 }
 
 fn module_of(flags: &HashMap<String, Option<String>>) -> String {
-    flags.get("module").and_then(Clone::clone).unwrap_or_else(|| "nie.exe".to_owned())
+    flags
+        .get("module")
+        .and_then(Clone::clone)
+        .unwrap_or_else(|| "nie.exe".to_owned())
 }
 
 fn flag_num<T: std::str::FromStr>(flags: &HashMap<String, Option<String>>, key: &str) -> Option<T> {
-    flags.get(key).and_then(Clone::clone).and_then(|v| v.parse::<T>().ok())
+    flags
+        .get(key)
+        .and_then(Clone::clone)
+        .and_then(|v| v.parse::<T>().ok())
 }
 
 /// `0x…` (absolu) ou `module+0xRVA`.
@@ -370,7 +430,8 @@ fn resolve_addr(addr: &str, pid: i32) -> Result<u64, String> {
     if let Some(plus) = s.find('+') {
         let module = &s[..plus];
         let rva = parse_hex(&s[plus + 1..])?;
-        let base = find_module_base(pid, module).ok_or_else(|| format!("module « {module} » introuvable"))?;
+        let base = find_module_base(pid, module)
+            .ok_or_else(|| format!("module « {module} » introuvable"))?;
         return Ok(base + rva);
     }
     parse_hex(s)
@@ -378,7 +439,10 @@ fn resolve_addr(addr: &str, pid: i32) -> Result<u64, String> {
 
 fn parse_hex(s: &str) -> Result<u64, String> {
     let s = s.trim();
-    let s = s.strip_prefix("0x").or_else(|| s.strip_prefix("0X")).unwrap_or(s);
+    let s = s
+        .strip_prefix("0x")
+        .or_else(|| s.strip_prefix("0X"))
+        .unwrap_or(s);
     u64::from_str_radix(s, 16).map_err(|_| format!("adresse hex invalide: {s}"))
 }
 
@@ -397,13 +461,19 @@ fn parse_pattern(pattern: &str) -> Result<(Vec<u8>, String), String> {
         }
         return Ok((t.as_bytes().to_vec(), format!("\"{t}\"")));
     }
-    let hex: String = pattern.chars().filter(|c| !c.is_whitespace() && *c != '-').collect();
+    let hex: String = pattern
+        .chars()
+        .filter(|c| !c.is_whitespace() && *c != '-')
+        .collect();
     if hex.is_empty() || !hex.len().is_multiple_of(2) {
         return Err("motif hex de longueur impaire/vide".to_owned());
     }
     let mut bytes = Vec::with_capacity(hex.len() / 2);
     for i in (0..hex.len()).step_by(2) {
-        bytes.push(u8::from_str_radix(&hex[i..i + 2], 16).map_err(|_| format!("octet hex invalide à {i}"))?);
+        bytes.push(
+            u8::from_str_radix(&hex[i..i + 2], 16)
+                .map_err(|_| format!("octet hex invalide à {i}"))?,
+        );
     }
     let label = format!("hex {}", hexs_join(&bytes));
     Ok((bytes, label))
@@ -420,7 +490,16 @@ fn hexdump(data: &[u8], base: u64) {
                 hex.push_str("   ");
             }
         }
-        let ascii: String = line.iter().map(|&b| if (0x20..0x7f).contains(&b) { b as char } else { '.' }).collect();
+        let ascii: String = line
+            .iter()
+            .map(|&b| {
+                if (0x20..0x7f).contains(&b) {
+                    b as char
+                } else {
+                    '.'
+                }
+            })
+            .collect();
         println!("  0x{off:012x}  {hex} {ascii}");
     }
 }
@@ -430,7 +509,10 @@ fn hexs(b: &[u8; 5]) -> String {
 }
 
 fn hexs_join(b: &[u8]) -> String {
-    b.iter().map(|x| format!("{x:02X}")).collect::<Vec<_>>().join("-")
+    b.iter()
+        .map(|x| format!("{x:02X}"))
+        .collect::<Vec<_>>()
+        .join("-")
 }
 
 #[cfg(test)]
@@ -441,8 +523,10 @@ mod tests {
     /// mappée du process (chemin = binaire de test → contient le `comm`). `#[used]` + une lecture
     /// runtime (`black_box`) garantissent sa rétention par l'éditeur de liens.
     #[used]
-    static MARKER: [u8; 16] =
-        [0x4E, 0x49, 0x45, 0x4D, 0x45, 0x4D, 0x5A, 0x5A, 0xC0, 0xFF, 0xEE, 0xBA, 0xDD, 0xF0, 0x0D, 0x55];
+    static MARKER: [u8; 16] = [
+        0x4E, 0x49, 0x45, 0x4D, 0x45, 0x4D, 0x5A, 0x5A, 0xC0, 0xFF, 0xEE, 0xBA, 0xDD, 0xF0, 0x0D,
+        0x55,
+    ];
 
     /// Construit un `Vec<String>` à partir de `&str` et appelle `run`.
     fn r(args: &[&str]) -> Result<(), String> {
@@ -464,8 +548,13 @@ mod tests {
 
     #[test]
     fn parse_positionals_flags_and_booleans() {
-        let raw: Vec<String> =
-            ["pos1", "--all", "--pid", "42", "-m", "modx", "--solo", "--a", "--b"].iter().copied().map(String::from).collect();
+        let raw: Vec<String> = [
+            "pos1", "--all", "--pid", "42", "-m", "modx", "--solo", "--a", "--b",
+        ]
+        .iter()
+        .copied()
+        .map(String::from)
+        .collect();
         let (pos, flags) = parse(&raw);
         assert_eq!(pos, vec!["pos1".to_owned()]);
         assert!(flags.contains_key("all") && flags["all"].is_none()); // booléen connu
@@ -512,8 +601,8 @@ mod tests {
     fn hexdump_and_hexs_helpers() {
         // 20 octets → 2e ligne partielle (couvre le padding) ; octets imprimables et non imprimables.
         let sample: [u8; 20] = [
-            0x00, 0x41, 0x7e, 0x7f, 0x20, 0x1f, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4a,
-            0x4b, 0x4c, 0x4d, 0x4e, 0x4f,
+            0x00, 0x41, 0x7e, 0x7f, 0x20, 0x1f, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49,
+            0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f,
         ];
         hexdump(&sample, 0x1_4000_0000);
         assert_eq!(hexs(&nie_trace::EAC_PATCH_NOP), "9090909090");
@@ -559,7 +648,14 @@ mod tests {
         let small = dir.join("small.exe");
         std::fs::write(&small, b"tiny").unwrap();
         let small_dst = dir.join("small_out.exe");
-        assert!(r(&["patch-eac", small.to_str().unwrap(), small_dst.to_str().unwrap()]).is_err());
+        assert!(
+            r(&[
+                "patch-eac",
+                small.to_str().unwrap(),
+                small_dst.to_str().unwrap()
+            ])
+            .is_err()
+        );
 
         let _ = std::fs::remove_dir_all(&dir);
     }
@@ -579,7 +675,10 @@ mod tests {
 
     #[cfg(target_os = "linux")]
     fn comm_name() -> String {
-        std::fs::read_to_string("/proc/self/comm").unwrap().trim().to_owned()
+        std::fs::read_to_string("/proc/self/comm")
+            .unwrap()
+            .trim()
+            .to_owned()
     }
 
     #[cfg(target_os = "linux")]
@@ -606,7 +705,9 @@ mod tests {
     fn run_read_self() {
         let pid = me_pid();
         let comm = comm_name();
-        let buf: Vec<u8> = (0..32u8).map(|i| if i % 3 == 0 { 0 } else { 0x40 + i }).collect();
+        let buf: Vec<u8> = (0..32u8)
+            .map(|i| if i % 3 == 0 { 0 } else { 0x40 + i })
+            .collect();
         let addr = format!("0x{:x}", buf.as_ptr() as u64);
 
         r(&["read", &addr, "--pid", &pid, "--len", "24"]).unwrap(); // hexdump (out None)
@@ -643,10 +744,17 @@ mod tests {
         let pid = me_pid();
         let comm = comm_name();
         std::hint::black_box(&MARKER);
-        let pat: String = MARKER.iter().map(|b| format!("{b:02x}")).collect::<Vec<_>>().join(" ");
+        let pat: String = MARKER
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect::<Vec<_>>()
+            .join(" ");
 
         // --module : base connue → rva Some ; limite 1 → branche « limité ».
-        r(&["scan", &pat, "--pid", &pid, "--module", &comm, "--limit", "1"]).unwrap();
+        r(&[
+            "scan", &pat, "--pid", &pid, "--module", &comm, "--limit", "1",
+        ])
+        .unwrap();
         // --all : base "nie.exe" introuvable → rva None (au moins MARKER est trouvé).
         r(&["scan", &pat, "--pid", &pid, "--all", "--limit", "1"]).unwrap();
         // wstr / str : module défaut "nie.exe" → plages vides → 0 hit (branche non « limité »).
@@ -686,7 +794,17 @@ mod tests {
         // std::fs::write échoue (dossier inexistant) sur read --out.
         let buf = [0u8; 8];
         let addr = format!("0x{:x}", buf.as_ptr() as u64);
-        assert!(r(&["read", &addr, "--pid", &pid, "--out", "/no_such_dir_xyz/out.bin"]).is_err());
+        assert!(
+            r(&[
+                "read",
+                &addr,
+                "--pid",
+                &pid,
+                "--out",
+                "/no_such_dir_xyz/out.bin"
+            ])
+            .is_err()
+        );
         assert_eq!(buf.len(), 8);
 
         // dump_regions échoue : --out pointe sur un FICHIER (create_dir_all impossible).

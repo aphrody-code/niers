@@ -45,7 +45,7 @@
 mod common;
 
 use nie_data::hash::HashId;
-use nie_data::scene_archive::{parse_scene_archive_config, SceneArchiveConfig, SceneArchiveData};
+use nie_data::scene_archive::{SceneArchiveConfig, SceneArchiveData, parse_scene_archive_config};
 use serde_json::json;
 
 // ─── Fixture ──────────────────────────────────────────────────────────────────
@@ -225,13 +225,11 @@ fn fixture_scene0_champs_complets() {
         "thumbnail_texture_name[0]"
     );
     assert_eq!(
-        s.thumbnail_texture_path,
-        "#/menu/220_img/theater_img/theater_img01_02.g4tx",
+        s.thumbnail_texture_path, "#/menu/220_img/theater_img/theater_img01_02.g4tx",
         "thumbnail_texture_path[0]"
     );
     assert_eq!(
-        s.condition,
-        "AAAAABgFNSo9RUMACgEoAAYCNNG3Zz4yAAAAAXg=",
+        s.condition, "AAAAABgFNSo9RUMACgEoAAYCNNG3Zz4yAAAAAXg=",
         "condition[0]"
     );
     assert_eq!(s.active_flags, vec![0_i64, 0], "activeFlags[0]");
@@ -327,8 +325,7 @@ fn fixture_listes_absentes_renvoient_vide() {
 
 // ─── Tests sur le vrai fichier (skip silencieux si absent du VPS) ─────────────
 
-const REAL_PATH: &str =
-    "scene_archive/scene_archive_config_4.00.18.00.cfg.bin.json";
+const REAL_PATH: &str = "scene_archive/scene_archive_config_4.00.18.00.cfg.bin.json";
 
 fn load_real() -> Option<SceneArchiveConfig> {
     let chemin_abs = common::chemin(REAL_PATH)?;
@@ -347,14 +344,22 @@ fn load_real() -> Option<SceneArchiveConfig> {
 fn real_file_compte_flags() {
     let Some(cfg) = load_real() else { return };
     // scene_archive_config_4.00.18.00 : 6 flags dans m_sceneArchiveFlags
-    assert_eq!(cfg.flags.len(), 6, "6 SCENE_ARCHIVE_FLAGS dans le dump réel");
+    assert_eq!(
+        cfg.flags.len(),
+        6,
+        "6 SCENE_ARCHIVE_FLAGS dans le dump réel"
+    );
 }
 
 #[test]
 fn real_file_compte_scenes() {
     let Some(cfg) = load_real() else { return };
     // scene_archive_config_4.00.18.00 : 112 scènes dans m_sceneArchiveDataList
-    assert_eq!(cfg.scenes.len(), 112, "112 SCENE_ARCHIVE_LIST_DATA dans le dump réel");
+    assert_eq!(
+        cfg.scenes.len(),
+        112,
+        "112 SCENE_ARCHIVE_LIST_DATA dans le dump réel"
+    );
 }
 
 #[test]
@@ -398,15 +403,17 @@ fn real_file_scene0_valeurs() {
     assert_eq!(s.flag_num, 1, "flag_num[0]");
     assert_eq!(s.text_id_title, HashId(0x35B80566), "text_id_title[0]");
     assert_eq!(s.event_id_text, "ev01_00050", "event_id_text[0]");
-    assert_eq!(s.thumbnail_texture_name, HashId(0x412B0428), "thumbnail_texture_name[0]");
     assert_eq!(
-        s.thumbnail_texture_path,
-        "#/menu/220_img/theater_img/theater_img01_02.g4tx",
+        s.thumbnail_texture_name,
+        HashId(0x412B0428),
+        "thumbnail_texture_name[0]"
+    );
+    assert_eq!(
+        s.thumbnail_texture_path, "#/menu/220_img/theater_img/theater_img01_02.g4tx",
         "thumbnail_texture_path[0]"
     );
     assert_eq!(
-        s.condition,
-        "AAAAABgFNSo9RUMACgEoAAYCNNG3Zz4yAAAAAXg=",
+        s.condition, "AAAAABgFNSo9RUMACgEoAAYCNNG3Zz4yAAAAAXg=",
         "condition[0]"
     );
     assert_eq!(s.active_flags, vec![0_i64, 0], "activeFlags[0]");
@@ -446,7 +453,11 @@ fn real_file_scene111_side_story() {
     assert_eq!(s.id, HashId(0xEE2B0CA6), "id[111]");
     assert_eq!(s.category, 2, "category[111]");
     assert_eq!(s.event_id_text, "ev20_00090", "event_id_text[111]");
-    assert_eq!(s.thumbnail_texture_name, HashId(0x02416996), "thumbnail_texture_name[111]");
+    assert_eq!(
+        s.thumbnail_texture_name,
+        HashId(0x02416996),
+        "thumbnail_texture_name[111]"
+    );
 }
 
 #[test]
@@ -454,7 +465,10 @@ fn real_file_flag_num_toujours_1() {
     let Some(cfg) = load_real() else { return };
     // Dans tout le dump, flag_num = 1 pour toutes les entrées.
     let tous_un = cfg.scenes.iter().all(|s| s.flag_num == 1);
-    assert!(tous_un, "flag_num = 1 pour toutes les 112 scènes du dump réel");
+    assert!(
+        tous_un,
+        "flag_num = 1 pour toutes les 112 scènes du dump réel"
+    );
 }
 
 #[test]
@@ -487,6 +501,9 @@ fn real_file_find_by_id() {
 
     // m_sceneArchiveDataList[0].id = "0xF86C637D"
     let found = cfg.find_by_id(HashId(0xF86C637D));
-    assert!(found.is_some(), "find_by_id(0xF86C637D) doit trouver l'entrée 0");
+    assert!(
+        found.is_some(),
+        "find_by_id(0xF86C637D) doit trouver l'entrée 0"
+    );
     assert_eq!(found.unwrap().event_id_text, "ev01_00050");
 }

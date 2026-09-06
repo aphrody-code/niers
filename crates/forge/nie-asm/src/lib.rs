@@ -375,7 +375,10 @@ impl UnOp {
     /// Vrai si l'opération appartient au groupe `F7` (sinon `FF`).
     #[must_use]
     pub fn is_f7(self) -> bool {
-        matches!(self, Self::Not | Self::Neg | Self::Mul | Self::Imul1 | Self::Div | Self::Idiv)
+        matches!(
+            self,
+            Self::Not | Self::Neg | Self::Mul | Self::Imul1 | Self::Div | Self::Idiv
+        )
     }
 }
 
@@ -1199,8 +1202,7 @@ fn modrm_mem(out: &mut Vec<u8>, reg: u8, m: Mem, at: u64, base: usize, imm_len: 
     // Sans base ni index (adresse absolue, `gs:[58h]`), `rm` vaut 100 — ce qui
     // *exige* un octet SIB (base=101, index=100) suivi du disp32. Omettre ce
     // SIB décalait tout l'opérande d'un octet.
-    let need_sib =
-        m.index.is_some() || base.is_none() || base.is_some_and(|b| b.lo() == 4);
+    let need_sib = m.index.is_some() || base.is_none() || base.is_some_and(|b| b.lo() == 4);
     // rbp/r13 en mod=00 signifierait « rip-relatif » : forcer un disp8 nul.
     // `disp_explicite` demande le même octet, mais parce que l'original le
     // porte et non parce que l'encodage l'exige.
@@ -1371,16 +1373,44 @@ fn encode_one(i: Insn, at: u64, out: &mut Vec<u8>) {
             out.extend_from_slice(&imm.to_le_bytes());
         }
         Insn::MovRR(size, dst, src) => {
-            reg_form(out, size, if size == Size::B { 0x8A } else { 0x8B }, dst, src);
+            reg_form(
+                out,
+                size,
+                if size == Size::B { 0x8A } else { 0x8B },
+                dst,
+                src,
+            );
         }
         Insn::MovRRm(size, dst, src) => {
-            reg_form(out, size, if size == Size::B { 0x88 } else { 0x89 }, src, dst);
+            reg_form(
+                out,
+                size,
+                if size == Size::B { 0x88 } else { 0x89 },
+                src,
+                dst,
+            );
         }
         Insn::Load(size, r, m) => {
-            mem_form(out, size, if size == Size::B { 0x8A } else { 0x8B }, r, m, at, 0);
+            mem_form(
+                out,
+                size,
+                if size == Size::B { 0x8A } else { 0x8B },
+                r,
+                m,
+                at,
+                0,
+            );
         }
         Insn::Store(size, m, r) => {
-            mem_form(out, size, if size == Size::B { 0x88 } else { 0x89 }, r, m, at, 0);
+            mem_form(
+                out,
+                size,
+                if size == Size::B { 0x88 } else { 0x89 },
+                r,
+                m,
+                at,
+                0,
+            );
         }
         Insn::StoreImm32(size, m, imm) => {
             let base = out.len();
@@ -1600,7 +1630,16 @@ fn encode_one(i: Insn, at: u64, out: &mut Vec<u8>) {
             sse_form_full(out, prefix, opcode, dst, src, at, None, op.three_byte());
         }
         Insn::Cmov(c, size, r, rm) => {
-            rm_form(out, size, &[0x0F, 0x40 + c.code()], r.lo(), r.hi(), rm, at, &[]);
+            rm_form(
+                out,
+                size,
+                &[0x0F, 0x40 + c.code()],
+                r.lo(),
+                r.hi(),
+                rm,
+                at,
+                &[],
+            );
         }
         Insn::Bswap(size, r) => {
             rex(out, size.rex_w(), 0, 0, r.hi());
@@ -1628,7 +1667,16 @@ fn encode_one(i: Insn, at: u64, out: &mut Vec<u8>) {
             modrm_mem(out, r.lo(), m, at, base, 0);
         }
         Insn::BitScan(bsr, size, r, rm) => {
-            rm_form(out, size, &[0x0F, if bsr { 0xBD } else { 0xBC }], r.lo(), r.hi(), rm, at, &[]);
+            rm_form(
+                out,
+                size,
+                &[0x0F, if bsr { 0xBD } else { 0xBC }],
+                r.lo(),
+                r.hi(),
+                rm,
+                at,
+                &[],
+            );
         }
         Insn::LockXadd(size, m, r) => {
             out.push(0xF0);
@@ -1687,7 +1735,15 @@ fn encode_one(i: Insn, at: u64, out: &mut Vec<u8>) {
             out.push(op.opcode(size));
         }
         Insn::XchgMem(size, m, r) => {
-            mem_form(out, size, if size == Size::B { 0x86 } else { 0x87 }, r, m, at, 0);
+            mem_form(
+                out,
+                size,
+                if size == Size::B { 0x86 } else { 0x87 },
+                r,
+                m,
+                at,
+                0,
+            );
         }
         Insn::XchgAcc(size, r) => {
             opsize(out, size);
@@ -1715,7 +1771,16 @@ fn encode_one(i: Insn, at: u64, out: &mut Vec<u8>) {
         }
         Insn::SseI(op, dst, src, imm) => {
             let (prefix, opcode, _) = op.encoding();
-            sse_form_full(out, prefix, opcode, dst, src, at, Some(imm), op.three_byte());
+            sse_form_full(
+                out,
+                prefix,
+                opcode,
+                dst,
+                src,
+                at,
+                Some(imm),
+                op.three_byte(),
+            );
         }
         Insn::CvtToXmm(op, dst, src, size) => {
             let (prefix, opcode) = op.encoding();
@@ -1742,7 +1807,9 @@ fn encode_one(i: Insn, at: u64, out: &mut Vec<u8>) {
             // `movq xmm, m64` a sa forme dediee `F3 0F 7E /r`, plus courte que
             // `66 REX.W 0F 6E /r` (qui charge depuis un registre *general*).
             // MSVC emploie la premiere : ce sont ses octets qu'il faut rendre.
-            if size == Size::Q && let Rm::M(m) = src {
+            if size == Size::Q
+                && let Rm::M(m) = src
+            {
                 out.push(0xF3);
                 let (x, b) = mem_rex(m);
                 rex(out, false, dst.hi(), x, b);
@@ -1771,7 +1838,9 @@ fn encode_one(i: Insn, at: u64, out: &mut Vec<u8>) {
         Insn::MovdToRm(dst, src, size) => {
             let base = out.len();
             // Symetrique : `movq m64, xmm` s'encode `66 0F D6 /r`.
-            if size == Size::Q && let Rm::M(m) = dst {
+            if size == Size::Q
+                && let Rm::M(m) = dst
+            {
                 out.push(0x66);
                 let (x, b) = mem_rex(m);
                 rex(out, false, src.hi(), x, b);
@@ -1970,10 +2039,18 @@ fn nop(out: &mut Vec<u8>, n: u8) {
         &[0x0F, 0x1F, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00],
         &[0x66, 0x0F, 0x1F, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00],
         &[0x66, 0x66, 0x0F, 0x1F, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00],
-        &[0x66, 0x66, 0x66, 0x0F, 0x1F, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00],
-        &[0x66, 0x66, 0x66, 0x66, 0x0F, 0x1F, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00],
-        &[0x66, 0x66, 0x66, 0x66, 0x66, 0x0F, 0x1F, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00],
-        &[0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x0F, 0x1F, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00],
+        &[
+            0x66, 0x66, 0x66, 0x0F, 0x1F, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00,
+        ],
+        &[
+            0x66, 0x66, 0x66, 0x66, 0x0F, 0x1F, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00,
+        ],
+        &[
+            0x66, 0x66, 0x66, 0x66, 0x66, 0x0F, 0x1F, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00,
+        ],
+        &[
+            0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x0F, 0x1F, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00,
+        ],
         &[
             0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x0F, 0x1F, 0x84, 0x00, 0x00, 0x00, 0x00,
             0x00,
@@ -2003,12 +2080,18 @@ mod tests {
         );
         // `xor eax, eax ; ret` — 163 unités (dialecte MSVC : 33, pas 31)
         assert_eq!(
-            encode(&[Insn::AluRR(Alu::Xor, Size::D, Reg::Rax, Reg::Rax), Insn::Ret]),
+            encode(&[
+                Insn::AluRR(Alu::Xor, Size::D, Reg::Rax, Reg::Rax),
+                Insn::Ret
+            ]),
             vec![0x33, 0xC0, 0xC3]
         );
         // `xor al, al ; ret` — 163 unités
         assert_eq!(
-            encode(&[Insn::AluRR(Alu::Xor, Size::B, Reg::Rax, Reg::Rax), Insn::Ret]),
+            encode(&[
+                Insn::AluRR(Alu::Xor, Size::B, Reg::Rax, Reg::Rax),
+                Insn::Ret
+            ]),
             vec![0x32, 0xC0, 0xC3]
         );
         // `mov rax, rcx ; ret` — 178 unités (MSVC : 8B, pas 89)
@@ -2041,7 +2124,9 @@ mod tests {
                 Insn::Store(Size::Q, Mem::base_disp(Reg::Rcx, 8), Reg::R8),
                 Insn::Ret
             ]),
-            vec![0x48, 0x89, 0x11, 0x48, 0x8B, 0xC1, 0x4C, 0x89, 0x41, 0x08, 0xC3]
+            vec![
+                0x48, 0x89, 0x11, 0x48, 0x8B, 0xC1, 0x4C, 0x89, 0x41, 0x08, 0xC3
+            ]
         );
         // `lea rax, [rcx+8] ; ret` — 265 unités
         assert_eq!(
@@ -2065,10 +2150,17 @@ mod tests {
         );
         // Forme SIB imposée par rsp.
         assert_eq!(
-            encode(&[Insn::Load(Size::Q, Reg::Rax, Mem::base_disp(Reg::Rsp, 0x28))]),
+            encode(&[Insn::Load(
+                Size::Q,
+                Reg::Rax,
+                Mem::base_disp(Reg::Rsp, 0x28)
+            )]),
             vec![0x48, 0x8B, 0x44, 0x24, 0x28]
         );
-        assert_eq!(encode(&[Insn::IncMem32(Mem::base(Reg::Rcx))]), vec![0xFF, 0x01]);
+        assert_eq!(
+            encode(&[Insn::IncMem32(Mem::base(Reg::Rcx))]),
+            vec![0xFF, 0x01]
+        );
         // `and rax, -1 ; shl rdx, 0x20 ; or rax, rdx ; ret`
         assert_eq!(
             encode(&[
@@ -2077,14 +2169,25 @@ mod tests {
                 Insn::AluRR(Alu::Or, Size::Q, Reg::Rax, Reg::Rdx),
                 Insn::Ret
             ]),
-            vec![0x48, 0x83, 0xE0, 0xFF, 0x48, 0xC1, 0xE2, 0x20, 0x48, 0x0B, 0xC2, 0xC3]
+            vec![
+                0x48, 0x83, 0xE0, 0xFF, 0x48, 0xC1, 0xE2, 0x20, 0x48, 0x0B, 0xC2, 0xC3
+            ]
         );
         assert_eq!(encode(&[Insn::JmpReg(Reg::Rax, false)]), vec![0xFF, 0xE0]);
         // MSVC emet un REX.W superflu sur `jmp rax` : la forge exige l'octet.
-        assert_eq!(encode(&[Insn::JmpReg(Reg::Rax, true)]), vec![0x48, 0xFF, 0xE0]);
+        assert_eq!(
+            encode(&[Insn::JmpReg(Reg::Rax, true)]),
+            vec![0x48, 0xFF, 0xE0]
+        );
         // Registre haut : REX.B seul, puis REX.W|B.
-        assert_eq!(encode(&[Insn::JmpReg(Reg::R8, false)]), vec![0x41, 0xFF, 0xE0]);
-        assert_eq!(encode(&[Insn::JmpReg(Reg::R8, true)]), vec![0x49, 0xFF, 0xE0]);
+        assert_eq!(
+            encode(&[Insn::JmpReg(Reg::R8, false)]),
+            vec![0x41, 0xFF, 0xE0]
+        );
+        assert_eq!(
+            encode(&[Insn::JmpReg(Reg::R8, true)]),
+            vec![0x49, 0xFF, 0xE0]
+        );
         assert_eq!(
             encode(&[Insn::Nop(10)]),
             vec![0x66, 0x66, 0x0F, 0x1F, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00]
@@ -2145,12 +2248,18 @@ mod tests {
         );
         // `lea rax, [rip → 0x140002000]` depuis 0x140001000
         assert_eq!(
-            encode_at(&[Insn::Lea(Reg::Rax, Mem::rip(0x1_4000_2000))], 0x1_4000_1000),
+            encode_at(
+                &[Insn::Lea(Reg::Rax, Mem::rip(0x1_4000_2000))],
+                0x1_4000_1000
+            ),
             vec![0x48, 0x8D, 0x05, 0xF9, 0x0F, 0x00, 0x00]
         );
         // `mov rax, [rip → cible]` : le déplacement part de la fin de l'instruction
         assert_eq!(
-            encode_at(&[Insn::Load(Size::Q, Reg::Rax, Mem::rip(0x1_4000_2000))], 0x1_4000_1000),
+            encode_at(
+                &[Insn::Load(Size::Q, Reg::Rax, Mem::rip(0x1_4000_2000))],
+                0x1_4000_1000
+            ),
             vec![0x48, 0x8B, 0x05, 0xF9, 0x0F, 0x00, 0x00]
         );
         // Immédiat après un opérande rip : le rel32 doit en tenir compte.
@@ -2215,7 +2324,11 @@ mod tests {
     #[test]
     fn deplacement_32_bits_quand_disp8_ne_suffit_pas() {
         assert_eq!(
-            encode(&[Insn::Load(Size::Q, Reg::Rax, Mem::base_disp(Reg::Rcx, 0x1234))]),
+            encode(&[Insn::Load(
+                Size::Q,
+                Reg::Rax,
+                Mem::base_disp(Reg::Rcx, 0x1234)
+            )]),
             vec![0x48, 0x8B, 0x81, 0x34, 0x12, 0x00, 0x00]
         );
     }

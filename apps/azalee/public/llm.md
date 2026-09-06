@@ -5,7 +5,7 @@
 Wiki : https://azalee.rosegriffon.fr
 Association : Rose Griffon — https://rosegriffon.fr
 Développeur & fondateur : yoyo — https://x.com/yoyo__goat
-Généré le : 2026-09-05
+Généré le : 2026-09-06
 
 ## Sections principales
 

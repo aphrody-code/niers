@@ -72,7 +72,8 @@ fn main() {
 
     let dir = nie_formats::vfs::resolve_game_dir();
     let mut vfs = nie_formats::vfs::Vfs::new();
-    vfs.init(Path::new(&dir).join("data").as_path()).expect("vfs init");
+    vfs.init(Path::new(&dir).join("data").as_path())
+        .expect("vfs init");
 
     // Les scripts de menu et leurs includes : c'est là que vivent les constantes d'écran.
     let scripts: Vec<String> = vfs
@@ -107,7 +108,11 @@ fn main() {
     }
 
     println!("{parsed} scripts parsés, {failed} illisibles\n");
-    println!("=== {} / {} hash(es) retrouvé(s) ===", found.len(), targets.len());
+    println!(
+        "=== {} / {} hash(es) retrouvé(s) ===",
+        found.len(),
+        targets.len()
+    );
     for (h, paths) in &found {
         println!("  0x{h:08X} ({h}) — {} script(s)", paths.len());
         for p in paths.iter().take(4) {
@@ -128,7 +133,9 @@ fn main() {
     let mut scanned_strings = 0_usize;
     for path in &scripts {
         let Ok(bytes) = vfs.read(path) else { continue };
-        let Ok(chunk) = nie_lua::bytecode::parse(&bytes) else { continue };
+        let Ok(chunk) = nie_lua::bytecode::parse(&bytes) else {
+            continue;
+        };
         let mut strs = Vec::new();
         collect_strings(&chunk.main, &mut strs);
         scanned_strings += strs.len();
@@ -146,7 +153,9 @@ fn main() {
     }
     println!("{scanned_strings} constantes chaînes examinées");
     if resolved.is_empty() {
-        println!("  aucune : le crc32 d'une constante chaîne du bytecode ne donne aucun hash cible");
+        println!(
+            "  aucune : le crc32 d'une constante chaîne du bytecode ne donne aucun hash cible"
+        );
     } else {
         for (h, name) in &resolved {
             println!("  0x{h:08X} ({h}) <- crc32(\"{name}\")");

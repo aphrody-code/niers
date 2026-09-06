@@ -134,7 +134,10 @@ pub fn is_nxtch(data: &[u8]) -> bool {
 /// - [`FormatError::BadMagic`] si le magic 40 bits n'est pas NXTCH.
 pub fn parse_header(data: &[u8]) -> Result<NxtchHeader, FormatError> {
     if data.len() < NXTCH_HEADER_SIZE {
-        return Err(FormatError::TooShort { got: data.len(), need: NXTCH_HEADER_SIZE });
+        return Err(FormatError::TooShort {
+            got: data.len(),
+            need: NXTCH_HEADER_SIZE,
+        });
     }
     if !is_nxtch(data) {
         return Err(FormatError::BadMagic { format: "NXTCH" });
@@ -171,7 +174,12 @@ pub fn parse_header(data: &[u8]) -> Result<NxtchHeader, FormatError> {
 ///
 /// BC6 n'est pas listé dans le `switch` C# → 0, comportement conservé tel quel.
 #[must_use]
-pub fn calculate_texture_data_size(format: NxtchFormat, width: i32, height: i32, mipmap_count: i32) -> usize {
+pub fn calculate_texture_data_size(
+    format: NxtchFormat,
+    width: i32,
+    height: i32,
+    mipmap_count: i32,
+) -> usize {
     let mips = mipmap_count.max(1);
     let mut total = 0usize;
     for mip in 0..mips {
@@ -200,13 +208,27 @@ pub fn calculate_texture_data_size(format: NxtchFormat, width: i32, height: i32,
 /// Renvoie un buffer linéaire `w_blocks * h_blocks * block_size`. Les zones source absentes
 /// (buffer tronqué) sont laissées à zéro — on ne fabrique rien.
 #[must_use]
-pub fn unswizzle(data: &[u8], width: i32, height: i32, block_size: usize, block_height_log2: u32) -> Vec<u8> {
+pub fn unswizzle(
+    data: &[u8],
+    width: i32,
+    height: i32,
+    block_size: usize,
+    block_height_log2: u32,
+) -> Vec<u8> {
     let block_width = ((width as i64 + 3) / 4).max(0) as usize;
     let block_height = ((height as i64 + 3) / 4).max(0) as usize;
 
     let compressed = block_size >= 8;
-    let w = if compressed { block_width } else { width.max(0) as usize };
-    let h = if compressed { block_height } else { height.max(0) as usize };
+    let w = if compressed {
+        block_width
+    } else {
+        width.max(0) as usize
+    };
+    let h = if compressed {
+        block_height
+    } else {
+        height.max(0) as usize
+    };
 
     let mut output = alloc::vec![0u8; w.saturating_mul(h).saturating_mul(block_size)];
 
@@ -215,7 +237,8 @@ pub fn unswizzle(data: &[u8], width: i32, height: i32, block_size: usize, block_
             let swizzled = swizzled_offset(x, y, w, block_size, block_height_log2);
             let linear = (y * w + x) * block_size;
             if swizzled + block_size <= data.len() && linear + block_size <= output.len() {
-                output[linear..linear + block_size].copy_from_slice(&data[swizzled..swizzled + block_size]);
+                output[linear..linear + block_size]
+                    .copy_from_slice(&data[swizzled..swizzled + block_size]);
             }
         }
     }
@@ -224,7 +247,13 @@ pub fn unswizzle(data: &[u8], width: i32, height: i32, block_size: usize, block_
 }
 
 /// Addressage Block-Linear Tegra X1 (port de `GetSwizzledOffset`, TextureSwizzler.cs L67).
-fn swizzled_offset(x: usize, y: usize, width: usize, bytes_per_unit: usize, block_height_log2: u32) -> usize {
+fn swizzled_offset(
+    x: usize,
+    y: usize,
+    width: usize,
+    bytes_per_unit: usize,
+    block_height_log2: u32,
+) -> usize {
     let image_width_in_gobs = (width * bytes_per_unit).div_ceil(64);
 
     let gob_x = (x * bytes_per_unit) / 64;
@@ -235,7 +264,8 @@ fn swizzled_offset(x: usize, y: usize, width: usize, bytes_per_unit: usize, bloc
     let block_height_in_gobs = 1usize << block_height_log2;
     let gob_y_in_block = gob_y % block_height_in_gobs;
 
-    let mut base = (gob_y / block_height_in_gobs) * image_width_in_gobs * block_height_in_gobs * GOB_SIZE;
+    let mut base =
+        (gob_y / block_height_in_gobs) * image_width_in_gobs * block_height_in_gobs * GOB_SIZE;
     base += gob_x * block_height_in_gobs * GOB_SIZE;
     base += gob_y_in_block * GOB_SIZE;
 
@@ -271,11 +301,20 @@ mod tests {
     #[test]
     fn size_calc_matches_csharp_formulas() {
         // BC1 256×256, 1 mip = ceil(256/4)*ceil(256/4)*8 = 64*64*8 = 32768.
-        assert_eq!(calculate_texture_data_size(NxtchFormat::Bc1, 256, 256, 1), 32_768);
+        assert_eq!(
+            calculate_texture_data_size(NxtchFormat::Bc1, 256, 256, 1),
+            32_768
+        );
         // BC3 256×256, 1 mip = 64*64*16 = 65536.
-        assert_eq!(calculate_texture_data_size(NxtchFormat::Bc3, 256, 256, 1), 65_536);
+        assert_eq!(
+            calculate_texture_data_size(NxtchFormat::Bc3, 256, 256, 1),
+            65_536
+        );
         // RGBA8 16×16, 1 mip = 16*16*4 = 1024.
-        assert_eq!(calculate_texture_data_size(NxtchFormat::Rgba8, 16, 16, 1), 1024);
+        assert_eq!(
+            calculate_texture_data_size(NxtchFormat::Rgba8, 16, 16, 1),
+            1024
+        );
         // BC1 8×8 avec 2 mips : 8×8 (2*2*8=32) + 4×4 (1*1*8=8) = 40.
         assert_eq!(calculate_texture_data_size(NxtchFormat::Bc1, 8, 8, 2), 40);
         // Dimension non multiple de 4 : BC1 5×5 → ceil(5/4)=2 → 2*2*8 = 32.
@@ -313,7 +352,10 @@ mod tests {
 
     #[test]
     fn header_trop_court_rejete() {
-        assert!(matches!(parse_header(&[0u8; 10]), Err(FormatError::TooShort { .. })));
+        assert!(matches!(
+            parse_header(&[0u8; 10]),
+            Err(FormatError::TooShort { .. })
+        ));
     }
 
     #[test]

@@ -20,7 +20,11 @@ fn apercu(v: &UtfValue) -> String {
         // BE : type + index) : l'imprimer en hexa est le seul moyen d'établir la chaîne
         // cue → synth → waveform sur des données réelles.
         UtfValue::Bytes(b) if b.len() <= 8 => {
-            format!("<{}: {}>", b.len(), b.iter().map(|x| format!("{x:02x}")).collect::<String>())
+            format!(
+                "<{}: {}>",
+                b.len(),
+                b.iter().map(|x| format!("{x:02x}")).collect::<String>()
+            )
         }
         UtfValue::Bytes(b) => format!("<{} octets>", b.len()),
         autre => format!("{autre:?}"),
@@ -52,7 +56,9 @@ fn main() {
     // Colonnes de la racine : on n'imprime que celles qui portent quelque chose, sinon le bruit
     // des ~96 colonnes vides noie le signal.
     for col in &table.columns {
-        let Some(v) = table.get(0, &col.name) else { continue };
+        let Some(v) = table.get(0, &col.name) else {
+            continue;
+        };
         let est_vide = matches!(v, UtfValue::Bytes(b) if b.is_empty());
         if est_vide {
             continue;
@@ -67,7 +73,9 @@ fn main() {
         {
             continue;
         }
-        let Some(UtfValue::Bytes(b)) = table.get(0, &col.name) else { continue };
+        let Some(UtfValue::Bytes(b)) = table.get(0, &col.name) else {
+            continue;
+        };
         if !b.starts_with(b"@UTF") {
             continue;
         }
@@ -93,10 +101,7 @@ fn main() {
             let ligne: Vec<String> = sub
                 .columns
                 .iter()
-                .map(|c| {
-                    sub.get(r, &c.name)
-                        .map_or_else(|| "-".to_string(), apercu)
-                })
+                .map(|c| sub.get(r, &c.name).map_or_else(|| "-".to_string(), apercu))
                 .collect();
             println!("   [{r}] {}", ligne.join(" | "));
         }

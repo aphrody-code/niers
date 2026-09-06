@@ -19,20 +19,19 @@
 
 #![allow(clippy::pedantic)]
 
-use nie_core::match_sim::{simulate_match, FieldPos, TeamSetup};
+use nie_core::match_sim::{FieldPos, TeamSetup, simulate_match};
 use nie_core::stats::StatBlock;
-use nie_data::formation::{parse_formation_config, FormationConfig};
+use nie_data::formation::{FormationConfig, parse_formation_config};
 
-const REAL_PATH: &str =
-    "data/common/gamedata/formation/formation_config_0.02.16.cfg.bin.json";
+const REAL_PATH: &str = "data/common/gamedata/formation/formation_config_0.02.16.cfg.bin.json";
 
 /// Charge le vrai fichier de formation ; retourne `None` si absent (skip silencieux).
 fn load_real() -> Option<FormationConfig> {
     if !std::path::Path::new(REAL_PATH).exists() {
         return None;
     }
-    let content = std::fs::read_to_string(REAL_PATH)
-        .unwrap_or_else(|e| panic!("lecture {REAL_PATH}: {e}"));
+    let content =
+        std::fs::read_to_string(REAL_PATH).unwrap_or_else(|e| panic!("lecture {REAL_PATH}: {e}"));
     let root: serde_json::Value =
         serde_json::from_str(&content).unwrap_or_else(|e| panic!("JSON invalide: {e}"));
     Some(parse_formation_config(&root))
@@ -53,8 +52,14 @@ fn sans_formation_placements_absents() {
     let home = TeamSetup::new("Raimon", stats);
     let away = TeamSetup::new("Teikoku", stats);
     let res = simulate_match(home, away, 42);
-    assert!(res.home_placements.is_none(), "home_placements = None sans formation fournie");
-    assert!(res.away_placements.is_none(), "away_placements = None sans formation fournie");
+    assert!(
+        res.home_placements.is_none(),
+        "home_placements = None sans formation fournie"
+    );
+    assert!(
+        res.away_placements.is_none(),
+        "away_placements = None sans formation fournie"
+    );
 }
 
 // ─── Tests sur le vrai fichier (skip si absent) ───────────────────────────────
@@ -75,7 +80,10 @@ fn placement_initial_depuis_vraies_positions() {
     let formation = &cfg.formations[0]; // formId=0x2CD9760B, offset=0, count=11
     let equipe = TeamSetup::new("Raimon", stats).with_formation(&cfg, formation);
 
-    let placements = equipe.placements.as_ref().expect("placements initialisés par with_formation");
+    let placements = equipe
+        .placements
+        .as_ref()
+        .expect("placements initialisés par with_formation");
     assert_eq!(placements.len(), 11, "formation standard = 11 joueurs");
 
     // Slot 0 = GK (positionId=1, positionNo=0)
@@ -86,7 +94,10 @@ fn placement_initial_depuis_vraies_positions() {
 
     // startPos = "000000008FC2753F" → (0.0, f32::from_bits(0x3F75C28F))
     // Confirmé byte-à-byte dans nie_data/tests/formation_golden.rs::real_file_gk_slot0_positions
-    assert_eq!(gk.start_pos.x, 0.0_f32, "GK start_pos.x = 0.0 (centre horizontal)");
+    assert_eq!(
+        gk.start_pos.x, 0.0_f32,
+        "GK start_pos.x = 0.0 (centre horizontal)"
+    );
     assert_eq!(
         gk.start_pos.y,
         f32::from_bits(0x3F75_C28F),
@@ -100,7 +111,10 @@ fn placement_initial_depuis_vraies_positions() {
     // defensePos = "000000008FC2753F" (identique à startPos pour le GK)
     assert_eq!(
         gk.defense_pos,
-        FieldPos { x: 0.0_f32, y: f32::from_bits(0x3F75_C28F) },
+        FieldPos {
+            x: 0.0_f32,
+            y: f32::from_bits(0x3F75_C28F)
+        },
         "GK defense_pos byte-exact"
     );
 
@@ -124,7 +138,10 @@ fn kickoff_player_unique_dans_formation() {
 
     let placements = equipe.placements.as_ref().unwrap();
     let kickoff_count = placements.iter().filter(|p| p.b_kickoff).count();
-    assert_eq!(kickoff_count, 1, "exactement 1 joueur tire le coup d'envoi (formation 0)");
+    assert_eq!(
+        kickoff_count, 1,
+        "exactement 1 joueur tire le coup d'envoi (formation 0)"
+    );
 }
 
 /// Les placements propagés dans `MatchResult` correspondent exactement aux données du dump.
@@ -138,8 +155,14 @@ fn match_result_home_placements_coherents() {
     let away = TeamSetup::new("Teikoku", stats).with_formation(&cfg, formation);
     let res = simulate_match(home, away, 7);
 
-    let home_pl = res.home_placements.as_ref().expect("home_placements dans MatchResult");
-    let away_pl = res.away_placements.as_ref().expect("away_placements dans MatchResult");
+    let home_pl = res
+        .home_placements
+        .as_ref()
+        .expect("home_placements dans MatchResult");
+    let away_pl = res
+        .away_placements
+        .as_ref()
+        .expect("away_placements dans MatchResult");
 
     assert_eq!(home_pl.len(), 11, "home : 11 placements");
     assert_eq!(away_pl.len(), 11, "away : 11 placements");
@@ -151,7 +174,11 @@ fn match_result_home_placements_coherents() {
     );
 
     // Vérification byte-exacte du GK dans le MatchResult.
-    assert_eq!(home_pl[0].start_pos.y, f32::from_bits(0x3F75_C28F), "GK start_pos.y byte-exact dans MatchResult");
+    assert_eq!(
+        home_pl[0].start_pos.y,
+        f32::from_bits(0x3F75_C28F),
+        "GK start_pos.y byte-exact dans MatchResult"
+    );
 }
 
 /// Le déterminisme tient avec des équipes portant des formations réelles.
@@ -172,11 +199,23 @@ fn determinisme_avec_formations_reelles() {
     let r1 = simulate_match(h1, a1, 0xCAFE_BABE_1234_5678);
     let r2 = simulate_match(h2, a2, 0xCAFE_BABE_1234_5678);
 
-    assert_eq!(r1.home_score, r2.home_score, "score domicile reproductible avec formations");
-    assert_eq!(r1.away_score, r2.away_score, "score visiteur reproductible avec formations");
+    assert_eq!(
+        r1.home_score, r2.home_score,
+        "score domicile reproductible avec formations"
+    );
+    assert_eq!(
+        r1.away_score, r2.away_score,
+        "score visiteur reproductible avec formations"
+    );
     assert_eq!(r1.final_clock, r2.final_clock, "final_clock reproductible");
-    assert_eq!(r1.home_placements, r2.home_placements, "home_placements identiques");
-    assert_eq!(r1.away_placements, r2.away_placements, "away_placements identiques");
+    assert_eq!(
+        r1.home_placements, r2.home_placements,
+        "home_placements identiques"
+    );
+    assert_eq!(
+        r1.away_placements, r2.away_placements,
+        "away_placements identiques"
+    );
 }
 
 /// Les 11 placements de la formation 0 ont tous `position_no` distinct (0..=10).
@@ -192,5 +231,8 @@ fn placements_position_no_uniques_0_a_10() {
     let mut nos: Vec<i64> = placements.iter().map(|p| p.position_no).collect();
     nos.sort_unstable();
     let attendu: Vec<i64> = (0..11).collect();
-    assert_eq!(nos, attendu, "position_no 0..=10 tous présents et distincts");
+    assert_eq!(
+        nos, attendu,
+        "position_no 0..=10 tous présents et distincts"
+    );
 }

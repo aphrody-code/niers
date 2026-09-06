@@ -5,7 +5,7 @@
 //! Usage : `cargo run -p nie-game --example extract_chara_details`
 use nie_formats::cfgbin::{self, RdbnValue};
 use nie_formats::vfs::Vfs;
-use serde_json::{json, Map, Value};
+use serde_json::{Map, Value, json};
 use std::path::Path;
 
 fn rdbn_value_to_json(v: &RdbnValue) -> Value {
@@ -50,9 +50,12 @@ fn rdbn_to_iecode(data: &[u8]) -> Option<Value> {
 }
 
 fn main() {
-    let dir = nie_formats::vfs::resolve_game_dir().to_string_lossy().into_owned();
+    let dir = nie_formats::vfs::resolve_game_dir()
+        .to_string_lossy()
+        .into_owned();
     let mut vfs = Vfs::new();
-    vfs.init(Path::new(&dir).join("data").as_path()).expect("vfs init");
+    vfs.init(Path::new(&dir).join("data").as_path())
+        .expect("vfs init");
     let path = vfs
         .iter()
         .map(|(p, _)| p.to_string())
@@ -69,7 +72,11 @@ fn main() {
 
     let parsed = nie_data::chara_details::parse_chara_details(&root);
     eprintln!("[module] parse_chara_details = {} entrées", parsed.len());
-    assert_eq!(parsed.len(), 550, "550 lignes m_charaDetailsList (probe live)");
+    assert_eq!(
+        parsed.len(),
+        550,
+        "550 lignes m_charaDetailsList (probe live)"
+    );
 
     for d in parsed.iter().take(3) {
         eprintln!(

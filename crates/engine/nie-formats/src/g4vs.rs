@@ -6,8 +6,8 @@
 //! `type_id`=0x68, `align`=16). Le corps (paramètres d'effet) n'est pas décodé faute de vérité
 //! terrain (pas de parseur iecode) — en-tête byte-exact seulement, comme [`crate::g4mt`]/[`crate::g4ma`].
 
-use crate::level5::{self, Level5Header};
 use crate::FormatError;
+use crate::level5::{self, Level5Header};
 
 /// Magic « G4VS » en little-endian.
 const MAGIC: u32 = 0x5356_3447;
@@ -42,10 +42,16 @@ pub fn is_g4vs(data: &[u8]) -> bool {
 /// [`FormatError::TooShort`] si < 0x40 octets, [`FormatError::BadMagic`] si le magic ≠ « G4VS ».
 pub fn parse(data: &[u8]) -> Result<G4vs, FormatError> {
     if data.len() < HEADER_LEN {
-        return Err(FormatError::TooShort { got: data.len(), need: HEADER_LEN });
+        return Err(FormatError::TooShort {
+            got: data.len(),
+            need: HEADER_LEN,
+        });
     }
     let header = level5::parse_header(data, MAGIC, "G4VS")?;
-    Ok(G4vs { header, file_size: data.len() })
+    Ok(G4vs {
+        header,
+        file_size: data.len(),
+    })
 }
 
 #[cfg(test)]
@@ -69,7 +75,10 @@ mod tests {
 
     #[test]
     fn rejette_magic_et_court() {
-        assert!(matches!(parse(&[0u8; HEADER_LEN]), Err(FormatError::BadMagic { .. })));
+        assert!(matches!(
+            parse(&[0u8; HEADER_LEN]),
+            Err(FormatError::BadMagic { .. })
+        ));
         assert!(matches!(parse(b"G4VS"), Err(FormatError::TooShort { .. })));
         assert!(is_g4vs(b"G4VS____"));
         assert!(!is_g4vs(b"G4LA"));
@@ -80,8 +89,16 @@ mod tests {
     #[test]
     fn golden_g4vs_reels() {
         for (bytes, size, data_size) in [
-            (include_bytes!("../tests/fixtures/g4vs/point_eff.g4vs").as_slice(), 320usize, 0x100u32),
-            (include_bytes!("../tests/fixtures/g4vs/stream.g4vs").as_slice(), 2176usize, 0x840u32),
+            (
+                include_bytes!("../tests/fixtures/g4vs/point_eff.g4vs").as_slice(),
+                320usize,
+                0x100u32,
+            ),
+            (
+                include_bytes!("../tests/fixtures/g4vs/stream.g4vs").as_slice(),
+                2176usize,
+                0x840u32,
+            ),
         ] {
             let g = parse(bytes).expect("g4vs réel");
             assert_eq!(&g.header.magic.to_le_bytes(), b"G4VS");

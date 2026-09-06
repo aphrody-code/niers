@@ -88,7 +88,9 @@ pub struct PropertySet {
 }
 
 fn to_param(vars: &[Value]) -> Option<(String, ParamValue)> {
-    let Some(Value::String(name)) = vars.first() else { return None };
+    let Some(Value::String(name)) = vars.first() else {
+        return None;
+    };
     let rest = &vars[1..];
     let value = match rest {
         [Value::Int(i)] => ParamValue::Int(*i),
@@ -127,7 +129,14 @@ fn collect_presets(entries: &[CfgEntry], out: &mut BTreeMap<String, Preset>) {
             };
             let mut params = BTreeMap::new();
             collect_params(entry, &mut params);
-            out.insert(name.clone(), Preset { name: name.clone(), parent, params });
+            out.insert(
+                name.clone(),
+                Preset {
+                    name: name.clone(),
+                    parent,
+                    params,
+                },
+            );
         }
         if !entry.children.is_empty() {
             collect_presets(&entry.children, out);
@@ -269,7 +278,11 @@ mod tests {
     fn param(name: &str, vals: Vec<Value>) -> CfgEntry {
         let mut variables = vec![Value::String(name.to_string())];
         variables.extend(vals);
-        CfgEntry { name: "PROP_PARAM".to_string(), variables, children: Vec::new() }
+        CfgEntry {
+            name: "PROP_PARAM".to_string(),
+            variables,
+            children: Vec::new(),
+        }
     }
 
     fn fixture() -> Vec<CfgEntry> {
@@ -303,15 +316,28 @@ mod tests {
     #[test]
     fn heritage_resolu() {
         let set = PropertySet::from_entries(&fixture()).expect("parse");
-        assert_eq!(set.names().collect::<Vec<_>>(), ["CCameraCtrlChase", "CCameraCtrlChase_Soccer"]);
+        assert_eq!(
+            set.names().collect::<Vec<_>>(),
+            ["CCameraCtrlChase", "CCameraCtrlChase_Soccer"]
+        );
 
         // Local prioritaire sur l'hérité.
-        assert_eq!(set.f32_of("CCameraCtrlChase_Soccer", "m_fCamLength"), Some(16.0));
-        assert_eq!(set.f32_of("CCameraCtrlChase_Soccer", "m_fInterpRate"), Some(0.2));
-        // Hérité du parent.
-        assert_eq!(set.f32_of("CCameraCtrlChase_Soccer", "m_priority"), Some(10.0));
         assert_eq!(
-            set.resolve("CCameraCtrlChase_Soccer").get("m_vCameraRefOffset"),
+            set.f32_of("CCameraCtrlChase_Soccer", "m_fCamLength"),
+            Some(16.0)
+        );
+        assert_eq!(
+            set.f32_of("CCameraCtrlChase_Soccer", "m_fInterpRate"),
+            Some(0.2)
+        );
+        // Hérité du parent.
+        assert_eq!(
+            set.f32_of("CCameraCtrlChase_Soccer", "m_priority"),
+            Some(10.0)
+        );
+        assert_eq!(
+            set.resolve("CCameraCtrlChase_Soccer")
+                .get("m_vCameraRefOffset"),
             Some(&ParamValue::Vec3([0.0, 1.0, 0.0]))
         );
         // Inconnu.
@@ -323,17 +349,27 @@ mod tests {
     fn cycle_heritage_ne_boucle_pas() {
         let a = CfgEntry {
             name: "PROP_INFO_BGN".to_string(),
-            variables: vec![Value::String("A".to_string()), Value::String("B".to_string())],
+            variables: vec![
+                Value::String("A".to_string()),
+                Value::String("B".to_string()),
+            ],
             children: vec![param("x", vec![Value::Float(1.0)])],
         };
         let b = CfgEntry {
             name: "PROP_INFO_BGN".to_string(),
-            variables: vec![Value::String("B".to_string()), Value::String("A".to_string())],
+            variables: vec![
+                Value::String("B".to_string()),
+                Value::String("A".to_string()),
+            ],
             children: vec![param("y", vec![Value::Float(2.0)])],
         };
         let set = PropertySet::from_entries(&[a, b]).expect("parse");
         let r = set.resolve("A");
-        assert_eq!(r.len(), 2, "les deux presets du cycle sont fusionnés une seule fois");
+        assert_eq!(
+            r.len(),
+            2,
+            "les deux presets du cycle sont fusionnés une seule fois"
+        );
     }
 
     #[test]
@@ -343,7 +379,10 @@ mod tests {
             variables: vec![Value::Int(1)],
             children: Vec::new(),
         }];
-        assert!(matches!(PropertySet::from_entries(&vide), Err(CameraError::Malformed(_))));
+        assert!(matches!(
+            PropertySet::from_entries(&vide),
+            Err(CameraError::Malformed(_))
+        ));
     }
 
     #[test]

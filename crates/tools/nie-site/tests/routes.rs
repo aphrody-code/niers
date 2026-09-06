@@ -65,7 +65,10 @@ async fn reponse_avec(
     requete: axum::http::request::Builder,
 ) -> (StatusCode, axum::http::HeaderMap, Vec<u8>) {
     let app = nie_site::routeur(etat.clone());
-    let r = app.oneshot(requete.body(Body::empty()).unwrap()).await.unwrap();
+    let r = app
+        .oneshot(requete.body(Body::empty()).unwrap())
+        .await
+        .unwrap();
     let statut = r.status();
     let entetes = r.headers().clone();
     let corps = r.into_body().collect().await.unwrap().to_bytes().to_vec();
@@ -108,7 +111,11 @@ async fn les_dix_neuf_routes_repondent() {
         ("/", &[200]),
     ];
     assert_eq!(ROUTES.len(), 19);
-    assert_eq!(instances.len(), ROUTES.len(), "une instance par route declaree");
+    assert_eq!(
+        instances.len(),
+        ROUTES.len(),
+        "une instance par route declaree"
+    );
     let mut vus = 0;
     for (uri, attendus) in instances {
         let (statut, _, _) = reponse(&etat, uri).await;
@@ -143,7 +150,11 @@ async fn les_cinq_entetes_de_securite_sont_sur_toutes_les_reponses() {
     for uri in ["/healthz", "/", "/api/v1/inconnue", "/robots.txt"] {
         let (_, entetes, _) = reponse(&etat, uri).await;
         for (nom, valeur) in entetes_securite_liste() {
-            assert_eq!(entetes.get(&nom).map(|v| v.to_str().unwrap()), Some(valeur), "{uri}: {nom}");
+            assert_eq!(
+                entetes.get(&nom).map(|v| v.to_str().unwrap()),
+                Some(valeur),
+                "{uri}: {nom}"
+            );
         }
         assert_eq!(entetes_securite_liste().len(), NB_ENTETES_SECURITE);
     }
@@ -164,7 +175,10 @@ async fn documents_well_known() {
     assert!(texte.contains("Sitemap: https://exemple.test/sitemap.xml"));
     // 9 : 5 pour le regime general, 4 repetes pour celui des agents.
     assert_eq!(texte.matches("Disallow:").count(), 9);
-    assert!(texte.contains("User-agent: GPTBot"), "les agents ont leur bloc");
+    assert!(
+        texte.contains("User-agent: GPTBot"),
+        "les agents ont leur bloc"
+    );
     assert!(texte.contains("Allow: /api/v1/"), "l'API leur est ouverte");
 
     // Les deux documents destines aux agents repondent, en texte brut, et se citent l'origine
@@ -172,9 +186,16 @@ async fn documents_well_known() {
     for (uri, debut) in [("/llms.txt", "# Aphrody"), ("/llms-full.txt", "# Aphrody")] {
         let (statut, entetes, corps) = reponse(&etat, uri).await;
         assert_eq!(statut, StatusCode::OK, "{uri}");
-        assert_eq!(entetes[header::CONTENT_TYPE], "text/plain; charset=utf-8", "{uri}");
+        assert_eq!(
+            entetes[header::CONTENT_TYPE],
+            "text/plain; charset=utf-8",
+            "{uri}"
+        );
         let doc = String::from_utf8(corps).unwrap();
-        assert!(doc.starts_with(debut), "{uri} ne commence pas par son titre");
+        assert!(
+            doc.starts_with(debut),
+            "{uri} ne commence pas par son titre"
+        );
         assert!(doc.contains("https://exemple.test"), "{uri} : origine");
         assert!(!doc.contains("aphrody.com"), "{uri} : origine codee en dur");
     }
@@ -188,13 +209,20 @@ async fn documents_well_known() {
 
     let (statut, entetes, corps) = reponse(&etat, "/sitemap.xml").await;
     assert_eq!(statut, StatusCode::OK);
-    assert_eq!(entetes[header::CONTENT_TYPE], "application/xml; charset=utf-8");
+    assert_eq!(
+        entetes[header::CONTENT_TYPE],
+        "application/xml; charset=utf-8"
+    );
     let texte = String::from_utf8(corps).unwrap();
     assert!(texte.starts_with("<?xml"));
     // 5 routes x 3 langues, et chaque entree porte le groupe complet de ses traductions.
     assert_eq!(texte.matches("<url>").count(), 15);
     assert_eq!(texte.matches("<loc>").count(), 15);
-    assert_eq!(texte.matches("xhtml:link").count(), 60, "4 alternates par entree");
+    assert_eq!(
+        texte.matches("xhtml:link").count(),
+        60,
+        "4 alternates par entree"
+    );
     assert_eq!(texte.matches(r#"hreflang="x-default""#).count(), 15);
     // Sans la declaration de l'espace de noms, les `xhtml:link` ne sont que du bruit.
     assert!(texte.contains(r#"xmlns:xhtml="http://www.w3.org/1999/xhtml""#));
@@ -220,7 +248,10 @@ async fn les_quatre_filtres_enregistres_comptent_leurs_chemins() {
         assert_eq!(v["elements"].as_array().unwrap().len(), total, "{nom}");
         // Chaque élément porte son chemin VFS verbatim : c'est son URL sous /f/.
         let premier = &v["elements"][0]["chemin"].as_str().unwrap().to_owned();
-        assert!(CHEMINS.iter().any(|(c, _)| c == premier), "{premier} n'est pas un chemin du VFS");
+        assert!(
+            CHEMINS.iter().any(|(c, _)| c == premier),
+            "{premier} n'est pas un chemin du VFS"
+        );
     }
 
     let (statut, _, corps) = reponse(&etat, "/api/v1/inexistante").await;
@@ -239,7 +270,11 @@ async fn la_pagination_est_bornee() {
 
     let (_, _, corps) = reponse(&etat, "/api/v1/textures?page=2&per_page=3").await;
     let v = json(&corps);
-    assert_eq!(v["elements"].as_array().unwrap().len(), 1, "4 textures, 3 par page");
+    assert_eq!(
+        v["elements"].as_array().unwrap().len(),
+        1,
+        "4 textures, 3 par page"
+    );
     assert_eq!(v["pages"], 2);
 
     let (_, _, corps) = reponse(&etat, "/api/v1/textures?page=99&per_page=3").await;
@@ -252,7 +287,11 @@ async fn parcours_du_vfs() {
     let (statut, _, corps) = reponse(&etat, "/b").await;
     assert_eq!(statut, StatusCode::OK);
     let v = json(&corps);
-    assert_eq!(v["dossiers"].as_array().unwrap().len(), 1, "un seul dossier racine: data");
+    assert_eq!(
+        v["dossiers"].as_array().unwrap().len(),
+        1,
+        "un seul dossier racine: data"
+    );
     assert_eq!(v["dossiers"][0], "data");
     assert_eq!(v["total_fichiers"], 0);
 
@@ -270,7 +309,11 @@ async fn parcours_du_vfs() {
     assert_eq!(v["fichiers"][0]["chemin"], "data/dx11/menu/title/a.g4tx");
 
     let (statut, _, _) = reponse(&etat, "/b/data/inexistant").await;
-    assert_eq!(statut, StatusCode::OK, "un dossier vide est vide, pas absent");
+    assert_eq!(
+        statut,
+        StatusCode::OK,
+        "un dossier vide est vide, pas absent"
+    );
 }
 
 #[tokio::test]
@@ -306,8 +349,10 @@ async fn f_sert_les_octets_et_gere_le_304() {
 
     let mut vfs = nie_formats::vfs::Vfs::new();
     vfs.init_loose(&data).expect("montage dump");
-    let entrees: Vec<(String, u32)> =
-        vfs.iter().map(|(c, e)| (c.to_owned(), e.file_size)).collect();
+    let entrees: Vec<(String, u32)> = vfs
+        .iter()
+        .map(|(c, e)| (c.to_owned(), e.file_size))
+        .collect();
     assert_eq!(entrees.len(), 2, "deux fichiers montes");
     let index = IndexVfs::depuis(entrees);
     // Un dump sert les chemins LOGIQUES du jeu : `data/<relatif>`, comme un montage par packs.
@@ -316,19 +361,30 @@ async fn f_sert_les_octets_et_gere_le_304() {
     assert_eq!(index.compte_vue(nie_site::vfs_index::Vue::Textures), 1);
 
     let etat = EtatSite::nouveau(config_nue());
-    etat.poser_vfs(Some(std::sync::Arc::new(vfs)), std::sync::Arc::new(index), true);
+    etat.poser_vfs(
+        Some(std::sync::Arc::new(vfs)),
+        std::sync::Arc::new(index),
+        true,
+    );
     let (statut, entetes, corps) = reponse(&etat, &format!("/f/{note}")).await;
     assert_eq!(statut, StatusCode::OK, "chemin servi: {note}");
     assert_eq!(corps, contenu);
     assert_eq!(corps.len(), 13);
     assert_eq!(entetes[header::CONTENT_TYPE], "text/plain; charset=utf-8");
-    assert!(entetes[header::CONTENT_DISPOSITION].to_str().unwrap().contains("note.txt"));
+    assert!(
+        entetes[header::CONTENT_DISPOSITION]
+            .to_str()
+            .unwrap()
+            .contains("note.txt")
+    );
     let etag = entetes[header::ETAG].to_str().unwrap().to_owned();
     assert_eq!(etag.len(), 66, "blake3 hexa entre guillemets");
 
     let (statut, _, corps) = reponse_avec(
         &etat,
-        Request::builder().uri(format!("/f/{note}")).header(header::IF_NONE_MATCH, &etag),
+        Request::builder()
+            .uri(format!("/f/{note}"))
+            .header(header::IF_NONE_MATCH, &etag),
     )
     .await;
     assert_eq!(statut, StatusCode::NOT_MODIFIED);
@@ -366,7 +422,10 @@ async fn chara_lit_le_miroir_et_pagine() {
     assert_eq!(v["elements"].as_array().unwrap().len(), 3);
     assert_eq!(v["elements"][0]["internal_code"], "c01000000");
     assert_eq!(v["elements"][0]["base_slug"], "unknown");
-    assert!(v["elements"][0].get("colonne_ignoree").is_none(), "jamais SELECT *");
+    assert!(
+        v["elements"][0].get("colonne_ignoree").is_none(),
+        "jamais SELECT *"
+    );
 
     let (_, _, corps) = reponse(&etat, "/api/v1/chara?page=3&per_page=3").await;
     let v = json(&corps);
@@ -402,7 +461,10 @@ async fn bundle_statique_precompresse_et_empreinte() {
     assert_eq!(corps, brut);
     assert_eq!(corps.len(), 43);
     assert!(entetes.get(header::CONTENT_ENCODING).is_none());
-    assert_eq!(entetes[header::CACHE_CONTROL], "public, max-age=31536000, immutable");
+    assert_eq!(
+        entetes[header::CACHE_CONTROL],
+        "public, max-age=31536000, immutable"
+    );
     assert_eq!(entetes[header::VARY], "Accept-Encoding");
 
     // Brotli annoncé et présent : la variante est servie telle quelle.
@@ -416,7 +478,10 @@ async fn bundle_statique_precompresse_et_empreinte() {
     assert_eq!(statut, StatusCode::OK);
     assert_eq!(corps, b"BROTLI");
     assert_eq!(entetes[header::CONTENT_ENCODING], "br");
-    assert_eq!(entetes[header::CONTENT_TYPE], "text/javascript; charset=utf-8");
+    assert_eq!(
+        entetes[header::CONTENT_TYPE],
+        "text/javascript; charset=utf-8"
+    );
 
     // zstd seul.
     let (_, entetes, corps) = reponse_avec(
@@ -450,7 +515,8 @@ async fn le_manifeste_repond_dans_les_trois_langues() {
         let (statut, entetes, corps) = reponse(&etat, chemin).await;
         assert_eq!(statut, StatusCode::OK, "{chemin}");
         assert_eq!(
-            entetes[header::CONTENT_TYPE], "application/manifest+json; charset=utf-8",
+            entetes[header::CONTENT_TYPE],
+            "application/manifest+json; charset=utf-8",
             "{chemin} : un manifeste qui arrive en text/html est ignore en silence"
         );
         let v: serde_json::Value = serde_json::from_slice(&corps)
@@ -471,14 +537,26 @@ async fn la_coquille_porte_les_balises_og_de_la_route() {
     // 12 : type, site_name, locale, 2 locale:alternate, title, description, url, puis la
     // vignette et ses trois attributs. La vignette est servie PAR DEFAUT — elle ne l'etait
     // jamais avant, et aucun test ne le voyait parce qu'ils l'injectaient a la main.
-    assert_eq!(html.matches("<meta property=\"og:").count(), 12, "og: avec vignette");
+    assert_eq!(
+        html.matches("<meta property=\"og:").count(),
+        12,
+        "og: avec vignette"
+    );
     assert!(html.contains(r#"content="https://aphrody.com/static/og.png""#));
-    assert_eq!(html.matches("og:locale:alternate").count(), 2, "les deux autres langues");
+    assert_eq!(
+        html.matches("og:locale:alternate").count(),
+        2,
+        "les deux autres langues"
+    );
     assert!(html.contains("data-route=\"/\""));
     assert!(html.contains("data-langue=\"fr\""));
 
     let (statut, _, corps) = reponse(&etat, "/textures").await;
-    assert_eq!(statut, StatusCode::OK, "route du bundle : la coquille repond");
+    assert_eq!(
+        statut,
+        StatusCode::OK,
+        "route du bundle : la coquille repond"
+    );
     let html = String::from_utf8(corps).unwrap();
     assert!(html.contains("<title>Textures — Aphrody</title>"));
     assert!(html.contains("og:url\" content=\"https://aphrody.com/textures\""));
@@ -488,15 +566,27 @@ async fn la_coquille_porte_les_balises_og_de_la_route() {
     // MEME groupe hreflang des trois cotes — c'est la reciprocite qui rend le groupe valide.
     for (chemin, titre, lang) in [
         ("/en/textures", "Textures — Aphrody", "en"),
-        ("/ja/textures", "\u{30c6}\u{30af}\u{30b9}\u{30c1}\u{30e3} — Aphrody", "ja"),
+        (
+            "/ja/textures",
+            "\u{30c6}\u{30af}\u{30b9}\u{30c1}\u{30e3} — Aphrody",
+            "ja",
+        ),
     ] {
         let (statut, _, corps) = reponse(&etat, chemin).await;
         assert_eq!(statut, StatusCode::OK, "{chemin}");
         let html = String::from_utf8(corps).unwrap();
-        assert!(html.contains(&format!("<html lang=\"{lang}\">")), "{chemin} : lang");
-        assert!(html.contains(&format!("<title>{titre}</title>")), "{chemin} : titre");
         assert!(
-            html.contains(&format!("rel=\"canonical\" href=\"https://aphrody.com{chemin}\"")),
+            html.contains(&format!("<html lang=\"{lang}\">")),
+            "{chemin} : lang"
+        );
+        assert!(
+            html.contains(&format!("<title>{titre}</title>")),
+            "{chemin} : titre"
+        );
+        assert!(
+            html.contains(&format!(
+                "rel=\"canonical\" href=\"https://aphrody.com{chemin}\""
+            )),
             "{chemin} : canonical"
         );
         // `rel="alternate" hreflang=` et non `rel="alternate"` seul : le `<head>` porte aussi
@@ -506,9 +596,14 @@ async fn la_coquille_porte_les_balises_og_de_la_route() {
             4,
             "{chemin} : hreflang"
         );
-        assert!(html.contains("hreflang=\"x-default\""), "{chemin} : x-default");
         assert!(
-            html.contains(r#"type="application/atom+xml" title="Aphrody — épisodes" href="/feed.atom""#),
+            html.contains("hreflang=\"x-default\""),
+            "{chemin} : x-default"
+        );
+        assert!(
+            html.contains(
+                r#"type="application/atom+xml" title="Aphrody — épisodes" href="/feed.atom""#
+            ),
             "{chemin} : le flux doit etre decouvrable depuis le <head>"
         );
     }
@@ -517,7 +612,11 @@ async fn la_coquille_porte_les_balises_og_de_la_route() {
     let (statut, entetes, _) = reponse(&etat, "/fr/textures").await;
     // 308 et non 301 : la redirection preserve la methode, et un 301 se grave dans le cache
     // du navigateur de facon quasi irreversible (meme choix qu'`apps/azalee/next.config.ts`).
-    assert_eq!(statut, StatusCode::PERMANENT_REDIRECT, "/fr/ n'est pas canonique");
+    assert_eq!(
+        statut,
+        StatusCode::PERMANENT_REDIRECT,
+        "/fr/ n'est pas canonique"
+    );
     assert_eq!(entetes[header::LOCATION], "/textures");
 }
 
@@ -554,9 +653,15 @@ async fn routes_inconnues_repondent_selon_leur_espace() {
         assert_eq!(statut.as_u16(), code, "{uri}");
         let type_contenu = entetes[header::CONTENT_TYPE].to_str().unwrap();
         if en_json {
-            assert!(type_contenu.starts_with("application/json"), "{uri}: {type_contenu}");
+            assert!(
+                type_contenu.starts_with("application/json"),
+                "{uri}: {type_contenu}"
+            );
         } else {
-            assert!(type_contenu.starts_with("text/html"), "{uri}: {type_contenu}");
+            assert!(
+                type_contenu.starts_with("text/html"),
+                "{uri}: {type_contenu}"
+            );
         }
     }
 }
@@ -565,17 +670,33 @@ async fn routes_inconnues_repondent_selon_leur_espace() {
 async fn methodes_non_get_refusees() {
     let app = nie_site::routeur(etat());
     let r = app
-        .oneshot(Request::builder().method("POST").uri("/healthz").body(Body::empty()).unwrap())
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/healthz")
+                .body(Body::empty())
+                .unwrap(),
+        )
         .await
         .unwrap();
-    assert_eq!(r.status(), StatusCode::METHOD_NOT_ALLOWED, "le serveur est en lecture seule");
+    assert_eq!(
+        r.status(),
+        StatusCode::METHOD_NOT_ALLOWED,
+        "le serveur est en lecture seule"
+    );
 }
 
 #[tokio::test]
 async fn head_repond_comme_get_sans_corps() {
     let app = nie_site::routeur(etat());
     let r = app
-        .oneshot(Request::builder().method("HEAD").uri("/healthz").body(Body::empty()).unwrap())
+        .oneshot(
+            Request::builder()
+                .method("HEAD")
+                .uri("/healthz")
+                .body(Body::empty())
+                .unwrap(),
+        )
         .await
         .unwrap();
     assert_eq!(r.status(), StatusCode::OK);
@@ -598,8 +719,16 @@ async fn coquille_charge_le_bundle() {
         std::fs::create_dir(dist.path().join(dossier)).unwrap();
         // Le nom est celui que Vite produit REELLEMENT pour `apps/nie-web` (base64url, casses
         // melangees) : un test ecrit sur la forme *attendue* laisse passer le vrai bundle.
-        std::fs::write(dist.path().join(dossier).join("index-RXLrxaJS.js"), "export {}").unwrap();
-        std::fs::write(dist.path().join(dossier).join("index-RXLrxaJS.css"), ":root{}").unwrap();
+        std::fs::write(
+            dist.path().join(dossier).join("index-RXLrxaJS.js"),
+            "export {}",
+        )
+        .unwrap();
+        std::fs::write(
+            dist.path().join(dossier).join("index-RXLrxaJS.css"),
+            ":root{}",
+        )
+        .unwrap();
 
         let etat = etat_avec(|c| c.statique = dist.path().to_path_buf());
         let (statut, _, corps) = reponse(&etat, "/").await;
@@ -608,10 +737,17 @@ async fn coquille_charge_le_bundle() {
 
         let script = format!(r#"<script type="module" src="/{dossier}/index-RXLrxaJS.js">"#);
         let feuille = format!(r#"<link rel="stylesheet" href="/{dossier}/index-RXLrxaJS.css">"#);
-        assert!(html.contains(&script), "bundle dans {dossier}/ non charge : {html}");
+        assert!(
+            html.contains(&script),
+            "bundle dans {dossier}/ non charge : {html}"
+        );
         assert!(html.contains(&feuille), "feuille de {dossier}/ non chargee");
         // Deux `<script>` : les donnees structurees, puis le point d'entree du bundle.
-        assert_eq!(html.matches("<script").count(), 2, "json-ld + un seul point d'entree");
+        assert_eq!(
+            html.matches("<script").count(),
+            2,
+            "json-ld + un seul point d'entree"
+        );
         assert_eq!(html.matches("<script type=\"module\"").count(), 1);
 
         // Et les fichiers annoncés doivent réellement être servis, empreintés donc immuables.
@@ -636,7 +772,10 @@ async fn coquille_charge_le_bundle() {
     assert!(html.contains("<main>"));
     assert!(html.contains("<h1>"));
     for segment in ["textures", "modeles", "sons", "videos"] {
-        assert!(html.contains(&format!("href=\"/{segment}\"")), "lien /{segment} absent");
+        assert!(
+            html.contains(&format!("href=\"/{segment}\"")),
+            "lien /{segment} absent"
+        );
     }
 }
 
@@ -662,9 +801,36 @@ fn catalogue_episodes(chemin: &std::path::Path, wal: bool) {
     // caractères que XML réserve, une date nue à compléter, une date déjà en RFC 3339, une
     // ligne sans titre ni URL exploitable.
     let lignes = [
-        Ligne { id: 1, saison: 1, episode: 1, titre: "Fussball & <Freunde> \"Kapitel\"", url: "https://exemple.test/v/1", publie: "2008-10-05", langue: "de", cree: 1_700_000_000_000 },
-        Ligne { id: 2, saison: 1, episode: 2, titre: "Deuxième", url: "https://exemple.test/v/2", publie: "2026-04-23T16:00:06Z", langue: "vf", cree: 1_700_000_001_000 },
-        Ligne { id: 3, saison: 2, episode: 7, titre: "", url: "pas-une-url", publie: "hier", langue: "vo", cree: 1_700_000_002_000 },
+        Ligne {
+            id: 1,
+            saison: 1,
+            episode: 1,
+            titre: "Fussball & <Freunde> \"Kapitel\"",
+            url: "https://exemple.test/v/1",
+            publie: "2008-10-05",
+            langue: "de",
+            cree: 1_700_000_000_000,
+        },
+        Ligne {
+            id: 2,
+            saison: 1,
+            episode: 2,
+            titre: "Deuxième",
+            url: "https://exemple.test/v/2",
+            publie: "2026-04-23T16:00:06Z",
+            langue: "vf",
+            cree: 1_700_000_001_000,
+        },
+        Ligne {
+            id: 3,
+            saison: 2,
+            episode: 7,
+            titre: "",
+            url: "pas-une-url",
+            publie: "hier",
+            langue: "vo",
+            cree: 1_700_000_002_000,
+        },
     ];
     for l in lignes {
         c.execute(
@@ -708,8 +874,14 @@ async fn le_flux_atom_publie_les_episodes_moissonnes() {
     assert_eq!(xml.matches("<entry>").count(), 3);
     assert_eq!(xml.matches("</entry>").count(), 3);
     // Le flux est ordonné du plus récemment moissonné au plus ancien, donc l'id 3 d'abord.
-    let rang = |id: i64| xml.find(&format!("/api/v1/episodes#{id}</id>")).expect("id present");
-    assert!(rang(3) < rang(2) && rang(2) < rang(1), "du plus recent au plus ancien");
+    let rang = |id: i64| {
+        xml.find(&format!("/api/v1/episodes#{id}</id>"))
+            .expect("id present")
+    };
+    assert!(
+        rang(3) < rang(2) && rang(2) < rang(1),
+        "du plus recent au plus ancien"
+    );
 
     // Le `<updated>` du flux est celui de son entrée la plus récente — 1 700 000 002 s.
     assert!(
@@ -724,16 +896,33 @@ async fn le_flux_atom_publie_les_episodes_moissonnes() {
     // Deux `<published>` seulement : la troisième date (`hier`) n'est pas du RFC 3339 et
     // l'omettre vaut mieux que rendre une entrée qu'un lecteur strict jettera.
     assert_eq!(xml.matches("<published>").count(), 2);
-    assert!(xml.contains("<published>2008-10-05T00:00:00Z</published>"), "date nue completee");
-    assert!(xml.contains("<published>2026-04-23T16:00:06Z</published>"), "date deja complete");
+    assert!(
+        xml.contains("<published>2008-10-05T00:00:00Z</published>"),
+        "date nue completee"
+    );
+    assert!(
+        xml.contains("<published>2026-04-23T16:00:06Z</published>"),
+        "date deja complete"
+    );
 
     // Deux liens d'entrée seulement : `pas-une-url` n'en devient pas un.
-    assert_eq!(xml.matches(r#"<link rel="alternate" type="text/html""#).count(), 3, "2 entrees + le flux");
-    assert!(!xml.contains("pas-une-url"), "une url relative n'entre pas dans un flux");
+    assert_eq!(
+        xml.matches(r#"<link rel="alternate" type="text/html""#)
+            .count(),
+        3,
+        "2 entrees + le flux"
+    );
+    assert!(
+        !xml.contains("pas-une-url"),
+        "une url relative n'entre pas dans un flux"
+    );
 
     // Titre de repli pour la ligne sans titre, et numérotation sur celles qui en ont une.
     assert!(xml.contains("<title>S01E01 — Fussball"), "numero + titre");
-    assert!(xml.contains("<title>S02E07</title>"), "sans titre : le numero seul");
+    assert!(
+        xml.contains("<title>S02E07</title>"),
+        "sans titre : le numero seul"
+    );
     assert!(!xml.contains("<title></title>"), "jamais de titre vide");
 
     // Sans catalogue, le flux le DIT — un flux vide se lirait « rien de neuf ».
@@ -758,7 +947,9 @@ async fn un_catalogue_wal_reste_lisible_dans_un_repertoire_non_inscriptible() {
     catalogue_episodes(&db, true);
     {
         let c = rusqlite::Connection::open(&db).unwrap();
-        let mode: String = c.query_row("PRAGMA journal_mode", [], |l| l.get(0)).unwrap();
+        let mode: String = c
+            .query_row("PRAGMA journal_mode", [], |l| l.get(0))
+            .unwrap();
         assert_eq!(mode, "wal", "la reproduction n'a de sens que sur un WAL");
     }
     // Les fichiers auxiliaires sont fermés ; on ferme le répertoire en écriture.
@@ -771,14 +962,24 @@ async fn un_catalogue_wal_reste_lisible_dans_un_repertoire_non_inscriptible() {
     // Le test ne peut rien prouver si le processus contourne les droits (root en conteneur) :
     // il le dit alors, plutôt que de s'annoncer vert sans avoir rien éprouvé.
     let contourne = std::fs::write(dir.path().join("temoin"), b"x").is_ok();
-    assert!(!contourne, "ce processus ecrit dans un repertoire 0555 : reproduction impossible");
-    assert_eq!(statut, StatusCode::OK, "un WAL en repertoire ferme doit rester lisible");
+    assert!(
+        !contourne,
+        "ce processus ecrit dans un repertoire 0555 : reproduction impossible"
+    );
+    assert_eq!(
+        statut,
+        StatusCode::OK,
+        "un WAL en repertoire ferme doit rester lisible"
+    );
     assert_eq!(json(&corps)["total"], 3);
 
     // Le flux lit la même base par le même chemin : il doit tenir la même promesse.
     let (statut, _, corps) = reponse(&etat, "/feed.atom").await;
     assert_eq!(statut, StatusCode::OK);
-    assert_eq!(String::from_utf8(corps).unwrap().matches("<entry>").count(), 3);
+    assert_eq!(
+        String::from_utf8(corps).unwrap().matches("<entry>").count(),
+        3
+    );
 
     // `tempfile` doit pouvoir nettoyer : on rend le répertoire inscriptible.
     let mut droits = std::fs::metadata(dir.path()).unwrap().permissions();
@@ -818,12 +1019,18 @@ async fn les_reponses_generees_portent_un_etag_et_rendent_304() {
 
         let (statut, entetes, corps304) = reponse_avec(
             &etat,
-            Request::builder().uri(uri).header(header::IF_NONE_MATCH, &etag),
+            Request::builder()
+                .uri(uri)
+                .header(header::IF_NONE_MATCH, &etag),
         )
         .await;
         assert_eq!(statut, StatusCode::NOT_MODIFIED, "{uri} : 304 attendu");
         assert!(corps304.is_empty(), "{uri} : un 304 ne porte pas de corps");
-        assert_eq!(entetes[header::ETAG].to_str().unwrap(), etag, "{uri} : etiquette rappelee");
+        assert_eq!(
+            entetes[header::ETAG].to_str().unwrap(),
+            etag,
+            "{uri} : etiquette rappelee"
+        );
         // Les en-têtes de sécurité restent posés sur un 304 : la couche qui les pose est
         // au-dessus de celle qui répond.
         for (nom, _) in entetes_securite_liste() {
@@ -832,12 +1039,17 @@ async fn les_reponses_generees_portent_un_etag_et_rendent_304() {
         economise += corps.len();
     }
     // Ce que la couche évite de renvoyer sur une revalidation complète du site.
-    assert!(economise > 10_000, "les neuf reponses pesent {economise} octets, pas moins");
+    assert!(
+        economise > 10_000,
+        "les neuf reponses pesent {economise} octets, pas moins"
+    );
 
     // Une etiquette perimee ne fait rien economiser : le corps repart en entier.
     let (statut, _, corps) = reponse_avec(
         &etat,
-        Request::builder().uri("/healthz").header(header::IF_NONE_MATCH, "\"perimee\""),
+        Request::builder()
+            .uri("/healthz")
+            .header(header::IF_NONE_MATCH, "\"perimee\""),
     )
     .await;
     assert_eq!(statut, StatusCode::OK);
@@ -852,7 +1064,12 @@ async fn les_reponses_generees_portent_un_etag_et_rendent_304() {
 #[tokio::test]
 async fn la_borne_de_debit_compte_par_ip_et_annonce_son_retour() {
     // Rafale de 3 et remplissage lent : la borne est atteignable dans un test sans attendre.
-    let etat = etat_avec(|c| c.debit = nie_site::debit::Reglage { par_seconde: 1.0, rafale: 3.0 });
+    let etat = etat_avec(|c| {
+        c.debit = nie_site::debit::Reglage {
+            par_seconde: 1.0,
+            rafale: 3.0,
+        }
+    });
     let appel = async |uri: &str, ip: &str| {
         reponse_avec(&etat, Request::builder().uri(uri).header("x-real-ip", ip)).await
     };
@@ -899,21 +1116,34 @@ async fn la_borne_de_debit_compte_par_ip_et_annonce_son_retour() {
 
     // Et un `X-Forwarded-For` ne sert JAMAIS de clé : nginx le préfixe de ce que le client a
     // envoyé, donc l'attaquant le contrôle. Le seau de `.10` reste vide malgré l'en-tête.
-    let (statut, _, _) =
-        reponse_avec(&etat, Request::builder().uri("/api/v1/health").header("x-forwarded-for", "203.0.113.10"))
-            .await;
-    assert_eq!(statut, StatusCode::OK, "x-forwarded-for n'ouvre ni ne ferme aucun seau");
+    let (statut, _, _) = reponse_avec(
+        &etat,
+        Request::builder()
+            .uri("/api/v1/health")
+            .header("x-forwarded-for", "203.0.113.10"),
+    )
+    .await;
+    assert_eq!(
+        statut,
+        StatusCode::OK,
+        "x-forwarded-for n'ouvre ni ne ferme aucun seau"
+    );
 
     // Borne éteinte : mille requêtes de la même IP passent toutes.
     let libre = etat_avec(|c| c.debit.par_seconde = 0.0);
     for _ in 0..20 {
         let (statut, _, _) = reponse_avec(
             &libre,
-            Request::builder().uri("/api/v1/health").header("x-real-ip", "203.0.113.10"),
+            Request::builder()
+                .uri("/api/v1/health")
+                .header("x-real-ip", "203.0.113.10"),
         )
         .await;
         assert_eq!(statut, StatusCode::OK, "reglage a zero : aucune borne");
     }
-    assert!(libre.limiteur.is_none(), "un reglage nul ne construit aucun limiteur");
+    assert!(
+        libre.limiteur.is_none(),
+        "un reglage nul ne construit aucun limiteur"
+    );
     assert!(etat.limiteur.is_some());
 }

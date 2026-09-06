@@ -17,23 +17,21 @@
 //! Elles compilent et sont correctement structurées. Un E2E complet nécessite des
 //! creds Steam valides, l'accès à l'app et une connexion réseau.
 
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 
 use anyhow::{Context, Result};
 use steamroom::cdn::{CdnClient, CdnServerPool};
-use steamroom::depot::{DepotId, ManifestId};
 use steamroom::depot::manifest::DepotManifest;
+use steamroom::depot::{DepotId, ManifestId};
 use steamroom_client::download::{CdnChunkFetcher, DepotJob};
 use steamroom_client::event::DownloadEvent;
 use steamroom_client::manifest::ManifestCache;
 use tokio::sync::mpsc;
 use tracing::{info, warn};
 
-use crate::depot_resolver::{
-    self, INVALID_MANIFEST,
-};
+use crate::depot_resolver::{self, INVALID_MANIFEST};
 use crate::options::{
     CollisionReason, DepotInfo, DownloadResult, ManifestCollision, SteamDownloadOptions,
     SteamDownloadPhase, SteamDownloadProgress,
@@ -83,12 +81,24 @@ impl SteamDepotDownloader {
     ) -> Result<DownloadResult> {
         let start = Instant::now();
 
-        emit(&progress, SteamDownloadPhase::Connecting, "Connexion à Steam…", 0, 0);
+        emit(
+            &progress,
+            SteamDownloadPhase::Connecting,
+            "Connexion à Steam…",
+            0,
+            0,
+        );
         let mut session = SteamSession::connect(opts)
             .await
             .context("connexion Steam")?;
 
-        emit(&progress, SteamDownloadPhase::FetchingAppInfo, "Récupération app info…", 0, 0);
+        emit(
+            &progress,
+            SteamDownloadPhase::FetchingAppInfo,
+            "Récupération app info…",
+            0,
+            0,
+        );
         session.request_app_info(opts.app_id, false).await?;
 
         let app_kv = session.app_kv(opts.app_id).ok_or_else(|| {
@@ -103,7 +113,13 @@ impl SteamDepotDownloader {
             .ok_or_else(|| anyhow::anyhow!("app info {} : section 'depots' absente", opts.app_id))?
             .clone();
 
-        emit(&progress, SteamDownloadPhase::FetchingManifests, "Résolution des depots…", 0, 0);
+        emit(
+            &progress,
+            SteamDownloadPhase::FetchingManifests,
+            "Résolution des depots…",
+            0,
+            0,
+        );
 
         // Résout les depots éligibles via le resolver (logique pure, identique C#).
         let depot_ids = depot_resolver::select_depot_ids(
@@ -151,7 +167,13 @@ impl SteamDepotDownloader {
         let mut total_files: u64 = 0;
         let mut completed_depots: Vec<u32> = Vec::new();
 
-        emit(&progress, SteamDownloadPhase::Downloading, "Téléchargement en cours…", 0, 0);
+        emit(
+            &progress,
+            SteamDownloadPhase::Downloading,
+            "Téléchargement en cours…",
+            0,
+            0,
+        );
 
         for plan in &plans {
             let cdn_auth_token = session
@@ -159,21 +181,21 @@ impl SteamDepotDownloader {
                 .await;
 
             let request_code = session
-                .manifest_request_code(
-                    plan.app_id,
-                    plan.depot_id,
-                    plan.manifest_id,
-                    &plan.branch,
-                )
+                .manifest_request_code(plan.app_id, plan.depot_id, plan.manifest_id, &plan.branch)
                 .await;
 
             // Manifest : cache ou CDN.
-            let manifest_bytes =
-                load_or_fetch_manifest(&cdn, &cdn_servers[0], plan, request_code, cdn_auth_token.as_deref(), &manifest_cache)
-                    .await?;
+            let manifest_bytes = load_or_fetch_manifest(
+                &cdn,
+                &cdn_servers[0],
+                plan,
+                request_code,
+                cdn_auth_token.as_deref(),
+                &manifest_cache,
+            )
+            .await?;
 
-            let mut manifest =
-                DepotManifest::parse(&manifest_bytes).context("parse manifest")?;
+            let mut manifest = DepotManifest::parse(&manifest_bytes).context("parse manifest")?;
             if manifest.filenames_encrypted {
                 let _ = manifest.decrypt_filenames(&plan.depot_key);
             }
@@ -185,7 +207,11 @@ impl SteamDepotDownloader {
             // retire, ne laissant que de vrais fichiers au DepotJob.
             let dir_count = {
                 let before = manifest.files.len();
-                for f in manifest.files.iter().filter(|f| is_manifest_directory(f.flags)) {
+                for f in manifest
+                    .files
+                    .iter()
+                    .filter(|f| is_manifest_directory(f.flags))
+                {
                     let path = opts.install_dir.join(f.normalized_path());
                     std::fs::create_dir_all(&path)
                         .with_context(|| format!("créer le répertoire {}", path.display()))?;
@@ -399,7 +425,10 @@ impl SteamDepotDownloader {
             .get("depots")
             .ok_or_else(|| anyhow::anyhow!("section 'depots' absente dans app info"))?;
 
-        Ok(depot_resolver::read_branch_build_id(depots_kv, &opts.branch))
+        Ok(depot_resolver::read_branch_build_id(
+            depots_kv,
+            &opts.branch,
+        ))
     }
 
     /// Inspecte les depots sans télécharger : retourne taille + fichiers par depot.
@@ -443,17 +472,18 @@ impl SteamDepotDownloader {
                 .cdn_auth_token(plan.app_id, plan.depot_id, &cdn_server.host)
                 .await;
             let request_code = session
-                .manifest_request_code(
-                    plan.app_id,
-                    plan.depot_id,
-                    plan.manifest_id,
-                    &plan.branch,
-                )
+                .manifest_request_code(plan.app_id, plan.depot_id, plan.manifest_id, &plan.branch)
                 .await;
 
-            let manifest_bytes =
-                load_or_fetch_manifest(&cdn, cdn_server, plan, request_code, cdn_auth_token.as_deref(), &manifest_cache)
-                    .await?;
+            let manifest_bytes = load_or_fetch_manifest(
+                &cdn,
+                cdn_server,
+                plan,
+                request_code,
+                cdn_auth_token.as_deref(),
+                &manifest_cache,
+            )
+            .await?;
 
             let mut manifest = DepotManifest::parse(&manifest_bytes).context("parse manifest")?;
             if manifest.filenames_encrypted {
@@ -734,7 +764,12 @@ async fn load_or_fetch_manifest(
     let raw = cdn
         .download_manifest(server, depot_id, manifest_id, request_code, cdn_auth_token)
         .await
-        .with_context(|| format!("download manifest {} depot {}", plan.manifest_id, plan.depot_id))?;
+        .with_context(|| {
+            format!(
+                "download manifest {} depot {}",
+                plan.manifest_id, plan.depot_id
+            )
+        })?;
 
     // Décompresse si zippé.
     let bytes = decompress_if_zipped(&raw)?;
@@ -746,8 +781,7 @@ async fn load_or_fetch_manifest(
 fn decompress_if_zipped(data: &[u8]) -> Result<Vec<u8>> {
     if data.len() > 2 && data[0] == 0x50 && data[1] == 0x4B {
         let cursor = std::io::Cursor::new(data);
-        let mut archive = zip::ZipArchive::new(cursor)
-            .context("parse manifest zip")?;
+        let mut archive = zip::ZipArchive::new(cursor).context("parse manifest zip")?;
         if archive.is_empty() {
             anyhow::bail!("archive manifest vide");
         }
@@ -800,7 +834,9 @@ mod tests {
     #[test]
     fn bit_2_is_not_a_directory() {
         assert!(!is_manifest_directory(2));
-        assert!(!is_manifest_directory(steamroom::enums::DepotFileFlags::DIRECTORY.0));
+        assert!(!is_manifest_directory(
+            steamroom::enums::DepotFileFlags::DIRECTORY.0
+        ));
     }
 
     #[test]

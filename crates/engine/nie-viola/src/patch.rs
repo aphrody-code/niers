@@ -73,7 +73,9 @@ fn relever_entrees(clair: &[u8]) -> Result<Vec<Entree>, String> {
         return Err("en-tête T2B invalide (fichier chiffré ou corrompu ?)".to_string());
     }
     let (st_off, st_len, st_count) = (st_off as usize, st_len as usize, st_count as usize);
-    let st_end = st_off.checked_add(st_len).ok_or("débordement table de chaînes")?;
+    let st_end = st_off
+        .checked_add(st_len)
+        .ok_or("débordement table de chaînes")?;
     if st_off < 16 || st_end > clair.len() {
         return Err("table de chaînes hors limites".to_string());
     }
@@ -148,7 +150,9 @@ fn relever_entrees(clair: &[u8]) -> Result<Vec<Entree>, String> {
         {
             continue;
         }
-        let val = |i: usize| i32::from_le_bytes(clair[base + i * 4..base + i * 4 + 4].try_into().unwrap());
+        let val = |i: usize| {
+            i32::from_le_bytes(clair[base + i * 4..base + i * 4 + 4].try_into().unwrap())
+        };
         let (Some(dir), Some(nom)) = (lire_chaine(val(0)), lire_chaine(val(1))) else {
             continue;
         };
@@ -239,7 +243,9 @@ mod tests {
         // Et le fichier reste lisible, avec un cpk désormais vide.
         let cfg = nie_formats::cfgbin::cfgbin_parse(&buf).expect("reparse");
         let e = &cfg.entries[0];
-        assert!(matches!(&e.variables[VAR_CPK], nie_formats::cfgbin::Value::String(s) if s.is_empty()));
+        assert!(
+            matches!(&e.variables[VAR_CPK], nie_formats::cfgbin::Value::String(s) if s.is_empty())
+        );
     }
 
     #[test]

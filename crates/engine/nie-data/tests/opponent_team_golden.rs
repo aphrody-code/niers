@@ -10,10 +10,10 @@
 
 use nie_data::hash::HashId;
 use nie_data::opponent_team::{
-    parse_opponent_team_config, MatchDifficultyInfo, OpponentTeam, PracticeMatchGameInfo,
-    PracticeMatchInfo,
+    MatchDifficultyInfo, OpponentTeam, PracticeMatchGameInfo, PracticeMatchInfo,
+    parse_opponent_team_config,
 };
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 /// 3 premières entrées réelles de `m_OpponentTeamInfoList` (index 0,1,2 du dump).
 fn opponents_head() -> Vec<Value> {
@@ -210,7 +210,11 @@ fn vrai_fichier_si_present() {
     let content = std::fs::read_to_string(path).unwrap();
     let root: Value = serde_json::from_str(&content).unwrap();
     let cfg = parse_opponent_team_config(&root);
-    assert_eq!(cfg.opponents.len(), 17, "17 équipes adverses dans le vrai dump");
+    assert_eq!(
+        cfg.opponents.len(),
+        17,
+        "17 équipes adverses dans le vrai dump"
+    );
     assert_eq!(cfg.match_difficulties.len(), 404);
     assert_eq!(cfg.practice_match_games.len(), 101);
     assert_eq!(cfg.practice_matches.len(), 101);

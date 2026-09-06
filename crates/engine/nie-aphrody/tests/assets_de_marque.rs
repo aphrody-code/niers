@@ -44,7 +44,10 @@ fn un_pixel_transparent_ne_teinte_pas_son_voisin() {
 
 #[test]
 fn les_dimensions_incoherentes_sont_refusees() {
-    assert!(reduire_rgba(&[0; 8], 3, 1, 1, 1).is_none(), "tampon trop court");
+    assert!(
+        reduire_rgba(&[0; 8], 3, 1, 1, 1).is_none(),
+        "tampon trop court"
+    );
     assert!(reduire_rgba(&[0; 8], 2, 1, 0, 1).is_none(), "cible nulle");
     assert!(reduire_rgba(&[], 0, 0, 1, 1).is_none(), "source vide");
 }
@@ -133,7 +136,10 @@ fn le_svg_reste_leger_et_bien_forme() {
     let svg = svg_depuis_png(&png, 1, 1, "Test");
     assert!(svg.starts_with("<svg"));
     assert!(svg.contains("data:image/png;base64,"));
-    assert!(svg.contains("<title>Test</title>"), "un titre pour l'accessibilité");
+    assert!(
+        svg.contains("<title>Test</title>"),
+        "un titre pour l'accessibilité"
+    );
 
     // Le SVG du jeu complet ne doit pas embarquer la plus grande icône : en base64 (+33 %),
     // la 512 pesait 138 Ko, soit plus que toutes les autres réunies.

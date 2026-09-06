@@ -37,7 +37,9 @@ fn load(vfs: &Vfs, prefix: &str, must_contain: &str) -> Option<serde_json::Value
         .map(|(p, _)| p.to_string())
         .filter(|p| {
             p.contains(must_contain)
-                && p.rsplit('/').next().is_some_and(|b| b.starts_with(prefix) && b.ends_with(".cfg.bin"))
+                && p.rsplit('/')
+                    .next()
+                    .is_some_and(|b| b.starts_with(prefix) && b.ends_with(".cfg.bin"))
         })
         .min()?;
     eprintln!("  {path}");
@@ -47,16 +49,21 @@ fn load(vfs: &Vfs, prefix: &str, must_contain: &str) -> Option<serde_json::Value
 }
 
 fn main() {
-    let dir = nie_formats::vfs::resolve_game_dir().to_string_lossy().into_owned();
+    let dir = nie_formats::vfs::resolve_game_dir()
+        .to_string_lossy()
+        .into_owned();
     let mut vfs = Vfs::new();
-    vfs.init(Path::new(&dir).join("data").as_path()).expect("vfs init");
+    vfs.init(Path::new(&dir).join("data").as_path())
+        .expect("vfs init");
 
-    let quest_root = load(&vfs, "quest_config", "/gamedata/quest/").expect("quest_config introuvable");
+    let quest_root =
+        load(&vfs, "quest_config", "/gamedata/quest/").expect("quest_config introuvable");
     let quests = nie_data::quest::parse_quest_config(&quest_root);
     eprintln!("[quest] quêtes = {}", quests.len());
     assert!(!quests.is_empty());
 
-    let title_root = load(&vfs, "quest_title_text", "/text/fr/").expect("quest_title_text fr introuvable");
+    let title_root =
+        load(&vfs, "quest_title_text", "/text/fr/").expect("quest_title_text fr introuvable");
     let titles = nie_data::text::parse_text_file(&title_root);
     eprintln!("[quest_title_text fr] entrées = {}", titles.len());
 
@@ -71,7 +78,14 @@ fn main() {
 
     for q in quests.iter().take(6) {
         let t = nie_data::quest::resolve_title(q, &titles);
-        eprintln!("  quest {} title {} → {:?}", q.quest_id.to_hex(), q.title_hash.to_hex(), t);
+        eprintln!(
+            "  quest {} title {} → {:?}",
+            q.quest_id.to_hex(),
+            q.title_hash.to_hex(),
+            t
+        );
     }
-    eprintln!("✓ END-TO-END OK : {resolved} titres de quête résolus via le résolveur de texte universel");
+    eprintln!(
+        "✓ END-TO-END OK : {resolved} titres de quête résolus via le résolveur de texte universel"
+    );
 }

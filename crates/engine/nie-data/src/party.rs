@@ -62,7 +62,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use serde_json::Value;
 
-use crate::cfgbin::{field_hash, field_i64, list_values, walk_named, Node};
+use crate::cfgbin::{Node, field_hash, field_i64, list_values, walk_named};
 use crate::hash::HashId;
 
 // ─── CtrlCharaData ────────────────────────────────────────────────────────────
@@ -390,7 +390,10 @@ pub fn parse_specify_party(root: &Value) -> SpecifyPartyConfig {
             }
         }
     }
-    SpecifyPartyConfig { chara_list, party_list }
+    SpecifyPartyConfig {
+        chara_list,
+        party_list,
+    }
 }
 
 /// Parse un `guest_limit_config.cfg.bin.json` — 9 règles de limite d'invité.

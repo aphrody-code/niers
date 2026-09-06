@@ -42,7 +42,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use serde_json::Value;
 
-use crate::cfgbin::{field_hash, field_i64, field_str, list_values, walk_named, Node};
+use crate::cfgbin::{Node, field_hash, field_i64, field_str, list_values, walk_named};
 use crate::hash::HashId;
 
 // ─── Utilitaire interne ────────────────────────────────────────────────────────
@@ -240,8 +240,12 @@ impl ScFbtlEffectInfo {
         let arr2 = |key: &str| -> [i64; 2] {
             let a = v.get(key).and_then(Value::as_array);
             [
-                a.and_then(|a| a.first()).and_then(Value::as_i64).unwrap_or(0),
-                a.and_then(|a| a.get(1)).and_then(Value::as_i64).unwrap_or(0),
+                a.and_then(|a| a.first())
+                    .and_then(Value::as_i64)
+                    .unwrap_or(0),
+                a.and_then(|a| a.get(1))
+                    .and_then(Value::as_i64)
+                    .unwrap_or(0),
             ]
         };
         Some(Self {
@@ -302,7 +306,11 @@ impl FocusBattleEffectConfig {
 #[must_use]
 pub fn parse_focus_battle_effect_config(root: &Value) -> FocusBattleEffectConfig {
     FocusBattleEffectConfig {
-        ranges: extract_list(root, "m_soccerFocusBattleEffectRangeList", ScFbtlEffectRange::from_value),
+        ranges: extract_list(
+            root,
+            "m_soccerFocusBattleEffectRangeList",
+            ScFbtlEffectRange::from_value,
+        ),
         activated_effects: extract_list(
             root,
             "m_soccerFocusBattleActivatedEffectList",
@@ -417,8 +425,12 @@ impl ScTechnicInfo {
             desc_text_id: field_hash(v, "descTextId"),
             recast_time: field_i64(v, "recastTime").unwrap_or(0),
             usable_condition: [
-                uc.and_then(|a| a.first()).and_then(Value::as_i64).unwrap_or(0),
-                uc.and_then(|a| a.get(1)).and_then(Value::as_i64).unwrap_or(0),
+                uc.and_then(|a| a.first())
+                    .and_then(Value::as_i64)
+                    .unwrap_or(0),
+                uc.and_then(|a| a.get(1))
+                    .and_then(Value::as_i64)
+                    .unwrap_or(0),
             ],
             focus_battle_effect_id: field_hash(v, "focusBattleEffectId"),
         })
@@ -523,7 +535,11 @@ impl ScBasicEffectInfo {
 /// Renvoie les 102 [`ScBasicEffectInfo`] valides (id non-nul).
 #[must_use]
 pub fn parse_basic_effect_config(root: &Value) -> Vec<ScBasicEffectInfo> {
-    extract_list(root, "m_soccerBasicEffectInfoList", ScBasicEffectInfo::from_value)
+    extract_list(
+        root,
+        "m_soccerBasicEffectInfoList",
+        ScBasicEffectInfo::from_value,
+    )
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -684,7 +700,11 @@ impl SoccerGameAdditionalConfig {
 pub fn parse_soccer_game_additional_config(root: &Value) -> SoccerGameAdditionalConfig {
     SoccerGameAdditionalConfig {
         team_ai_data: extract_list(root, "m_SoccerTeamAIDataList", SoccerTeamAiData::from_value),
-        get_exp_table: extract_list(root, "m_SoccerGetExpDataTable", SoccerGetExpData::from_value),
+        get_exp_table: extract_list(
+            root,
+            "m_SoccerGetExpDataTable",
+            SoccerGetExpData::from_value,
+        ),
         nice_play_exp: extract_list(
             root,
             "m_SoccerNicePlayExpDataList",
@@ -1082,7 +1102,10 @@ mod tests {
     fn difficulty_of_resolution() {
         let cfg = SoccerGameConfig {
             cpu_beans_rates: Vec::new(),
-            difficulties: alloc::vec![SoccerGameDifficulty { difficulty_id: 1, raw: alloc::vec![0i64; 45] }],
+            difficulties: alloc::vec![SoccerGameDifficulty {
+                difficulty_id: 1,
+                raw: alloc::vec![0i64; 45]
+            }],
             game_infos: alloc::vec![SoccerGameInfo {
                 match_id: HashId(1),
                 id_str: String::from("test"),
@@ -1091,7 +1114,9 @@ mod tests {
             }],
         };
         let info = &cfg.game_infos[0];
-        let diff = cfg.difficulty_of(info).expect("difficulty_of doit résoudre");
+        let diff = cfg
+            .difficulty_of(info)
+            .expect("difficulty_of doit résoudre");
         assert_eq!(diff.difficulty_id, 1);
     }
 }

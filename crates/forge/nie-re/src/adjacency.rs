@@ -36,7 +36,7 @@
 //! (RTTI, vtable, héritage de thunk).
 
 use anyhow::Result;
-use nie_index::{rusqlite, Db};
+use nie_index::{Db, rusqlite};
 use tracing::info;
 
 /// Distance maximale, **en nombre de fonctions**, à laquelle un voisin classé
@@ -138,19 +138,28 @@ pub fn classify_by_adjacency(db: &mut Db, bin: i64, dry_run: bool) -> Result<Adj
              FROM function WHERE binary_id=?1 ORDER BY vaddr",
         )?;
         q.query_map([bin], |r| {
-            Ok((r.get::<_, i64>(0)? as u64, r.get::<_, String>(1)?, r.get::<_, String>(2)?))
+            Ok((
+                r.get::<_, i64>(0)? as u64,
+                r.get::<_, String>(1)?,
+                r.get::<_, String>(2)?,
+            ))
         })?
         .collect::<std::result::Result<_, _>>()?
     };
     let subs: Vec<String> = rows.iter().map(|r| r.1.clone()).collect();
     let (left, right) = neighbours(&subs);
 
-    let mut stats = AdjacencyStats { total: rows.len(), ..Default::default() };
+    let mut stats = AdjacencyStats {
+        total: rows.len(),
+        ..Default::default()
+    };
     let mut to_write: Vec<(u64, String)> = Vec::new();
 
     for i in 0..rows.len() {
         // Encadrement concordant et suffisamment proche ?
-        let (Some((li, ld)), Some((ri, rd))) = (left[i], right[i]) else { continue };
+        let (Some((li, ld)), Some((ri, rd))) = (left[i], right[i]) else {
+            continue;
+        };
         if MAX_GAP.is_some_and(|m| ld > m || rd > m) || subs[li] != subs[ri] {
             continue;
         }
@@ -185,8 +194,12 @@ pub fn classify_by_adjacency(db: &mut Db, bin: i64, dry_run: bool) -> Result<Adj
              WHERE binary_id=?1 AND vaddr=?2 AND subsystem='standalone'",
         )?;
         for (va, sub) in &to_write {
-            stats.classified +=
-                upd.execute(rusqlite::params![bin, *va as i64, sub, ADJACENCY_CONFIDENCE])?;
+            stats.classified += upd.execute(rusqlite::params![
+                bin,
+                *va as i64,
+                sub,
+                ADJACENCY_CONFIDENCE
+            ])?;
         }
     }
     tx.commit()?;
@@ -223,7 +236,10 @@ mod tests {
         let subs = s(&["menu", "standalone", "audio"]);
         let (l, r) = neighbours(&subs);
         let (li, ri) = (l[1].unwrap(), r[1].unwrap());
-        assert_ne!(subs[li.0], subs[ri.0], "les deux bords divergent : pas de prédiction");
+        assert_ne!(
+            subs[li.0], subs[ri.0],
+            "les deux bords divergent : pas de prédiction"
+        );
     }
 
     #[test]
@@ -245,7 +261,11 @@ mod tests {
 
     #[test]
     fn la_coherence_se_calcule_sur_les_cas_de_controle() {
-        let st = AdjacencyStats { control_cases: 200, control_hits: 180, ..Default::default() };
+        let st = AdjacencyStats {
+            control_cases: 200,
+            control_hits: 180,
+            ..Default::default()
+        };
         assert!((st.precision_estimate() - 90.0).abs() < 1e-9);
     }
 }

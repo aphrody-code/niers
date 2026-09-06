@@ -59,8 +59,8 @@ extern crate std;
 
 use nie_data::hash::HashId;
 use nie_data::phase::{
-    parse_phase_set, parse_phase_set_layout, parse_phase_title_config, PhaseDataItem,
-    PurposePosItem, PurposeTextItem,
+    PhaseDataItem, PurposePosItem, PurposeTextItem, parse_phase_set, parse_phase_set_layout,
+    parse_phase_title_config,
 };
 use serde_json::json;
 
@@ -85,7 +85,10 @@ fn load_json(path: &str) -> Option<serde_json::Value> {
     }
     let content = std::fs::read_to_string(&path)
         .unwrap_or_else(|e| panic!("Impossible de lire {}: {e}", path.display()));
-    Some(serde_json::from_str(&content).unwrap_or_else(|e| panic!("JSON invalide {}: {e}", path.display())))
+    Some(
+        serde_json::from_str(&content)
+            .unwrap_or_else(|e| panic!("JSON invalide {}: {e}", path.display())),
+    )
 }
 
 // ─── Fixtures inline ─────────────────────────────────────────────────────────
@@ -417,18 +420,12 @@ fn fixture_title_config_find_chapter() {
 
 // ─── Chemins des fichiers réels ───────────────────────────────────────────────
 
-const REAL_C21: &str =
-    "phase/phase_set_c21_0.00.00.cfg.bin.json";
-const REAL_C91: &str =
-    "phase/phase_set_c91_0.00.00.cfg.bin.json";
-const REAL_C97: &str =
-    "phase/phase_set_c97_0.00.00.cfg.bin.json";
-const REAL_C01: &str =
-    "phase/phase_set_c01_0.00.00.cfg.bin.json";
-const REAL_LAYOUT_C01: &str =
-    "phase/phase_set_layout_c01_0.00.00.cfg.bin.json";
-const REAL_TITLE_CFG: &str =
-    "phase/phase_title_config_0.08.56.cfg.bin.json";
+const REAL_C21: &str = "phase/phase_set_c21_0.00.00.cfg.bin.json";
+const REAL_C91: &str = "phase/phase_set_c91_0.00.00.cfg.bin.json";
+const REAL_C97: &str = "phase/phase_set_c97_0.00.00.cfg.bin.json";
+const REAL_C01: &str = "phase/phase_set_c01_0.00.00.cfg.bin.json";
+const REAL_LAYOUT_C01: &str = "phase/phase_set_layout_c01_0.00.00.cfg.bin.json";
+const REAL_TITLE_CFG: &str = "phase/phase_title_config_0.08.56.cfg.bin.json";
 
 // ─── Tests sur fichiers réels (skip silencieux si absents) ────────────────────
 
@@ -436,7 +433,9 @@ const REAL_TITLE_CFG: &str =
 
 #[test]
 fn real_file_c21_compte() {
-    let Some(root) = load_json(REAL_C21) else { return };
+    let Some(root) = load_json(REAL_C21) else {
+        return;
+    };
     let ps = parse_phase_set(&root);
     // phase_set_c21 : DATA_COUNT_0.var[0] = "1"
     assert_eq!(ps.items.len(), 1, "c21 : 1 DATA_ITEM");
@@ -446,7 +445,9 @@ fn real_file_c21_compte() {
 
 #[test]
 fn real_file_c21_data_item_0() {
-    let Some(root) = load_json(REAL_C21) else { return };
+    let Some(root) = load_json(REAL_C21) else {
+        return;
+    };
     let ps = parse_phase_set(&root);
 
     // phase_set_c21 DATA_ITEM_0 : chapter=21, phase=10, seq=0, flag=0, lua="0"
@@ -462,7 +463,9 @@ fn real_file_c21_data_item_0() {
 
 #[test]
 fn real_file_c91_purpose_text_0() {
-    let Some(root) = load_json(REAL_C91) else { return };
+    let Some(root) = load_json(REAL_C91) else {
+        return;
+    };
     let ps = parse_phase_set(&root);
 
     // phase_set_c91 : PURPOSE_TEXT_COUNT_0.var[0] = "1"
@@ -473,17 +476,16 @@ fn real_file_c91_purpose_text_0() {
         ps.purpose_texts[0].text_hash, TEXT_HASH_C91_0,
         "text_hash[0] = HashId(0x525BA705)"
     );
-    assert_eq!(
-        ps.purpose_texts[0].lua_data, "0",
-        "lua_data[0] = \"0\""
-    );
+    assert_eq!(ps.purpose_texts[0].lua_data, "0", "lua_data[0] = \"0\"");
 }
 
 // — phase_set_c97 —
 
 #[test]
 fn real_file_c97_compte() {
-    let Some(root) = load_json(REAL_C97) else { return };
+    let Some(root) = load_json(REAL_C97) else {
+        return;
+    };
     let ps = parse_phase_set(&root);
 
     // phase_set_c97 : DATA_COUNT_0.var[0] = "3"
@@ -494,7 +496,9 @@ fn real_file_c97_compte() {
 
 #[test]
 fn real_file_c97_data_items_chapter() {
-    let Some(root) = load_json(REAL_C97) else { return };
+    let Some(root) = load_json(REAL_C97) else {
+        return;
+    };
     let ps = parse_phase_set(&root);
 
     // Tous les DATA_ITEM ont chapter_no = 97
@@ -511,7 +515,9 @@ fn real_file_c97_data_items_chapter() {
 
 #[test]
 fn real_file_c01_comptes() {
-    let Some(root) = load_json(REAL_C01) else { return };
+    let Some(root) = load_json(REAL_C01) else {
+        return;
+    };
     let ps = parse_phase_set(&root);
 
     // phase_set_c01 : DATA_COUNT_0=19, PURPOSE_TEXT_COUNT_0=27, PURPOSE_POS_COUNT_0=38
@@ -522,7 +528,9 @@ fn real_file_c01_comptes() {
 
 #[test]
 fn real_file_c01_data_item_0() {
-    let Some(root) = load_json(REAL_C01) else { return };
+    let Some(root) = load_json(REAL_C01) else {
+        return;
+    };
     let ps = parse_phase_set(&root);
 
     // DATA_ITEM_0 : chapter=1, phase=10, seq=0, flag=1
@@ -535,7 +543,9 @@ fn real_file_c01_data_item_0() {
 
 #[test]
 fn real_file_c01_tous_chapter_1() {
-    let Some(root) = load_json(REAL_C01) else { return };
+    let Some(root) = load_json(REAL_C01) else {
+        return;
+    };
     let ps = parse_phase_set(&root);
     for (i, item) in ps.items.iter().enumerate() {
         assert_eq!(item.chapter_no, 1, "item[{i}].chapter_no = 1");
@@ -544,7 +554,9 @@ fn real_file_c01_tous_chapter_1() {
 
 #[test]
 fn real_file_c01_phase_pos_item_0() {
-    let Some(root) = load_json(REAL_C01) else { return };
+    let Some(root) = load_json(REAL_C01) else {
+        return;
+    };
     let ps = parse_phase_set(&root);
 
     // PURPOSE_POS_ITEM_0 : pos_id non-nul, 9 variables
@@ -557,7 +569,9 @@ fn real_file_c01_phase_pos_item_0() {
 
 #[test]
 fn real_file_layout_c01_comptes() {
-    let Some(root) = load_json(REAL_LAYOUT_C01) else { return };
+    let Some(root) = load_json(REAL_LAYOUT_C01) else {
+        return;
+    };
     let layout = parse_phase_set_layout(&root);
 
     // LAYOUT_BASE_LIST_BEG_0.var[0] = 3
@@ -566,7 +580,9 @@ fn real_file_layout_c01_comptes() {
 
 #[test]
 fn real_file_layout_c01_base_0_hash() {
-    let Some(root) = load_json(REAL_LAYOUT_C01) else { return };
+    let Some(root) = load_json(REAL_LAYOUT_C01) else {
+        return;
+    };
     let layout = parse_phase_set_layout(&root);
 
     // LAYOUT_BASE_0.var[0] = 1339075865
@@ -579,7 +595,9 @@ fn real_file_layout_c01_base_0_hash() {
 
 #[test]
 fn real_file_layout_c01_base_0_point() {
-    let Some(root) = load_json(REAL_LAYOUT_C01) else { return };
+    let Some(root) = load_json(REAL_LAYOUT_C01) else {
+        return;
+    };
     let layout = parse_phase_set_layout(&root);
 
     // LAYOUT_BASE_POINT_0 = ["22,31", "1,25", "-21,01", "0"]
@@ -604,16 +622,14 @@ fn real_file_layout_c01_base_0_point() {
 
 #[test]
 fn real_file_layout_c01_shape_tous_zeros() {
-    let Some(root) = load_json(REAL_LAYOUT_C01) else { return };
+    let Some(root) = load_json(REAL_LAYOUT_C01) else {
+        return;
+    };
     let layout = parse_phase_set_layout(&root);
 
     // LAYOUT_BASE_SHAPE_N = [0, 0, 0, 0] dans tous les fichiers réels
     for (i, base) in layout.bases.iter().enumerate() {
-        assert_eq!(
-            base.shape,
-            [0, 0, 0, 0],
-            "base[{i}].shape = [0, 0, 0, 0]"
-        );
+        assert_eq!(base.shape, [0, 0, 0, 0], "base[{i}].shape = [0, 0, 0, 0]");
     }
 }
 
@@ -621,7 +637,9 @@ fn real_file_layout_c01_shape_tous_zeros() {
 
 #[test]
 fn real_file_title_config_comptes() {
-    let Some(root) = load_json(REAL_TITLE_CFG) else { return };
+    let Some(root) = load_json(REAL_TITLE_CFG) else {
+        return;
+    };
     let tc = parse_phase_title_config(&root);
 
     // PHASE_TITLE_TEX_INFO_LIST_BEG_0.var[0] = 9
@@ -632,7 +650,9 @@ fn real_file_title_config_comptes() {
 
 #[test]
 fn real_file_title_config_tex_info_0() {
-    let Some(root) = load_json(REAL_TITLE_CFG) else { return };
+    let Some(root) = load_json(REAL_TITLE_CFG) else {
+        return;
+    };
     let tc = parse_phase_title_config(&root);
 
     // PHASE_TITLE_TEX_INFO_0 : var[0]=-16726348, var[1]=667504474
@@ -650,7 +670,9 @@ fn real_file_title_config_tex_info_0() {
 
 #[test]
 fn real_file_title_config_cfg_0() {
-    let Some(root) = load_json(REAL_TITLE_CFG) else { return };
+    let Some(root) = load_json(REAL_TITLE_CFG) else {
+        return;
+    };
     let tc = parse_phase_title_config(&root);
 
     // PHASE_TITLE_CFG_0 : chapter_no=1, title_hash=185538439 → 0x0B0F1787
@@ -665,7 +687,9 @@ fn real_file_title_config_cfg_0() {
 
 #[test]
 fn real_file_title_config_chapters_1_a_9() {
-    let Some(root) = load_json(REAL_TITLE_CFG) else { return };
+    let Some(root) = load_json(REAL_TITLE_CFG) else {
+        return;
+    };
     let tc = parse_phase_title_config(&root);
 
     // Les 9 configs couvrent les chapitres 1 à 9 (dans l'ordre)
@@ -680,7 +704,9 @@ fn real_file_title_config_chapters_1_a_9() {
 
 #[test]
 fn real_file_title_config_find_chapter_9() {
-    let Some(root) = load_json(REAL_TITLE_CFG) else { return };
+    let Some(root) = load_json(REAL_TITLE_CFG) else {
+        return;
+    };
     let tc = parse_phase_title_config(&root);
 
     // PHASE_TITLE_CFG_8 : var[0]="9", var[1]="97820597" → HashId(0x05D49FB5)

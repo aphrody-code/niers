@@ -70,7 +70,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use serde_json::Value;
 
-use crate::cfgbin::{owned, walk_named, Node};
+use crate::cfgbin::{Node, owned, walk_named};
 use crate::hash::HashId;
 
 // ─── PhaseDataItem ─────────────────────────────────────────────────────────────
@@ -481,9 +481,7 @@ pub fn parse_phase_title_config(root: &Value) -> PhaseTitleConfig {
             let cfg_node = children[i];
             let ref_node = children[i + 1];
             // PHASE_TITLE_CFG_N (pas REF) suivi de PHASE_TITLE_CFG_REF_TEX_INFO_N
-            if cfg_node.name().starts_with("PHASE_TITLE_CFG_")
-                && !cfg_node.name().contains("REF")
-            {
+            if cfg_node.name().starts_with("PHASE_TITLE_CFG_") && !cfg_node.name().contains("REF") {
                 cfgs.push(PhaseTitleCfg {
                     chapter_no: cfg_node.int(0),
                     title_hash: cfg_node.hash(1),

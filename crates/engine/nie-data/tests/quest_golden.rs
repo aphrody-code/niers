@@ -9,8 +9,8 @@
 //! `cargo run -p nie-game --example extract_quest`.
 
 use nie_data::hash::HashId;
-use nie_data::quest::{parse_quest_config, QuestType};
-use serde_json::{json, Value};
+use nie_data::quest::{QuestType, parse_quest_config};
+use serde_json::{Value, json};
 
 /// Une variable typée du dump (`type`, `value`), toujours chaîne côté JSON.
 fn var(ty: &str, value: &str) -> Value {
@@ -280,7 +280,8 @@ fn quest_validation_vrai_fichier_si_present() {
     }
     let content = std::fs::read_to_string(path)
         .unwrap_or_else(|e| panic!("Impossible de lire {}: {e}", path));
-    let root: Value = serde_json::from_str(&content).unwrap_or_else(|e| panic!("JSON invalide: {e}"));
+    let root: Value =
+        serde_json::from_str(&content).unwrap_or_else(|e| panic!("JSON invalide: {e}"));
     let quests = parse_quest_config(&root);
     assert_eq!(quests.len(), 182, "182 quêtes attendues dans le vrai dump");
     assert_eq!(quests[0].quest_id.to_hex(), "0x673DC707");

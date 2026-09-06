@@ -49,7 +49,9 @@ fn load_prefix(vfs: &Vfs, prefix: &str, must_contain: &str) -> serde_json::Value
         .map(|(p, _)| p.to_string())
         .filter(|p| {
             p.contains(must_contain)
-                && p.rsplit('/').next().is_some_and(|b| b.starts_with(prefix) && b.ends_with(".cfg.bin"))
+                && p.rsplit('/')
+                    .next()
+                    .is_some_and(|b| b.starts_with(prefix) && b.ends_with(".cfg.bin"))
         })
         .min()
         .unwrap_or_else(|| panic!("{prefix} introuvable"));
@@ -59,9 +61,12 @@ fn load_prefix(vfs: &Vfs, prefix: &str, must_contain: &str) -> serde_json::Value
 }
 
 fn main() {
-    let dir = nie_formats::vfs::resolve_game_dir().to_string_lossy().into_owned();
+    let dir = nie_formats::vfs::resolve_game_dir()
+        .to_string_lossy()
+        .into_owned();
     let mut vfs = Vfs::new();
-    vfs.init(Path::new(&dir).join("data").as_path()).expect("vfs init");
+    vfs.init(Path::new(&dir).join("data").as_path())
+        .expect("vfs init");
 
     let base_root = load_prefix(&vfs, "chara_base_1", "/character/");
     let bases = nie_data::chara_base::parse_all_chara_base(&base_root);
@@ -69,9 +74,16 @@ fn main() {
     let nouns = nie_data::chara_text::parse_all_nouns(&text_root);
     let desc_root = load(&vfs, "chara_description_text.cfg.bin", "/fr/");
     let descs = nie_data::chara_description::parse_chara_descriptions(&desc_root);
-    eprintln!("bases={} nouns={} descriptions={}", bases.len(), nouns.len(), descs.len());
+    eprintln!(
+        "bases={} nouns={} descriptions={}",
+        bases.len(),
+        nouns.len(),
+        descs.len()
+    );
 
-    use nie_data::chara_base::{find_by_chara_id, resolve_description, resolve_first_name, resolve_last_name};
+    use nie_data::chara_base::{
+        find_by_chara_id, resolve_description, resolve_first_name, resolve_last_name,
+    };
     use nie_data::hash::HashId;
 
     // Endou Mamoru = c01000010 = charaId 0x99A1C150.
@@ -79,15 +91,30 @@ fn main() {
     let first = resolve_first_name(endou, &nouns);
     let last = resolve_last_name(endou, &nouns);
     let bio = resolve_description(endou, &descs);
-    eprintln!("Endou ({}) : prénom={first:?} nom={last:?}", endou.internal_code);
-    eprintln!("  bio={:?}…", bio.map(|b| b.chars().take(60).collect::<String>()));
+    eprintln!(
+        "Endou ({}) : prénom={first:?} nom={last:?}",
+        endou.internal_code
+    );
+    eprintln!(
+        "  bio={:?}…",
+        bio.map(|b| b.chars().take(60).collect::<String>())
+    );
     assert_eq!(first, Some("Mark"));
     assert_eq!(last, Some("Evans"));
     assert!(bio.is_some_and(|b| b.starts_with("La passion du football")));
 
     // Statistique globale : combien de personnages ont un prénom résolu ?
-    let named = bases.iter().filter(|b| resolve_first_name(b, &nouns).is_some()).count();
-    let with_bio = bases.iter().filter(|b| resolve_description(b, &descs).is_some()).count();
-    eprintln!("personnages avec prénom résolu = {named}/{} ; avec bio = {with_bio}", bases.len());
+    let named = bases
+        .iter()
+        .filter(|b| resolve_first_name(b, &nouns).is_some())
+        .count();
+    let with_bio = bases
+        .iter()
+        .filter(|b| resolve_description(b, &descs).is_some())
+        .count();
+    eprintln!(
+        "personnages avec prénom résolu = {named}/{} ; avec bio = {with_bio}",
+        bases.len()
+    );
     eprintln!("✓ END-TO-END OK : chaîne base→text→description résolue (Endou = Mark Evans)");
 }

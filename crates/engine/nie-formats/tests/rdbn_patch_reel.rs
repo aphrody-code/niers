@@ -8,7 +8,7 @@
 //! Le test **annonce son saut** quand le jeu n'est pas monté — un test muet est un faux vert.
 
 use nie_formats::cfgbin::{self, RdbnValue};
-use nie_formats::rdbn_patch::{localiser, patch_verifie, Modif, PatchError, Val};
+use nie_formats::rdbn_patch::{Modif, PatchError, Val, localiser, patch_verifie};
 use nie_formats::vfs;
 
 /// Lit un `cfg.bin` du jeu, ou explique pourquoi le test ne peut pas tourner.
@@ -20,7 +20,10 @@ fn lire(chemin_partiel: &str) -> Option<Vec<u8>> {
             return None;
         }
     };
-    let chemin = vfs.iter().map(|(c, _)| c.to_string()).find(|c| c.contains(chemin_partiel))?;
+    let chemin = vfs
+        .iter()
+        .map(|(c, _)| c.to_string())
+        .find(|c| c.contains(chemin_partiel))?;
     match vfs.read(&chemin) {
         Ok(d) => Some(d),
         Err(e) => {
@@ -82,16 +85,28 @@ fn patch_en_place_preserve_tout_sauf_le_champ_vise() {
     let rdbn = cfgbin::parse(&vanilla).expect("RDBN");
     let loc = localiser(&rdbn, "m_LevelLimitInfoList", 0, "level").expect("champ localisé");
     assert!(
-        diffs.iter().all(|o| (loc.offset..loc.offset + loc.size).contains(o)),
+        diffs
+            .iter()
+            .all(|o| (loc.offset..loc.offset + loc.size).contains(o)),
         "octets modifiés hors du champ : {diffs:?} (champ à 0x{:X}..0x{:X})",
         loc.offset,
         loc.offset + loc.size
     );
-    assert!(diffs.len() <= 4, "un Int tient sur 4 octets, {} modifiés", diffs.len());
-    assert!(!diffs.is_empty(), "le patch aurait dû changer au moins un octet");
+    assert!(
+        diffs.len() <= 4,
+        "un Int tient sur 4 octets, {} modifiés",
+        diffs.len()
+    );
+    assert!(
+        !diffs.is_empty(),
+        "le patch aurait dû changer au moins un octet"
+    );
 
     // 3. La relecture rend la nouvelle valeur.
-    assert_eq!(valeur(&patche, "m_LevelLimitInfoList", 0, "level"), Some(RdbnValue::Int(cible)));
+    assert_eq!(
+        valeur(&patche, "m_LevelLimitInfoList", 0, "level"),
+        Some(RdbnValue::Int(cible))
+    );
 
     // 4. Le vanilla est intact — on n'a pas patché la source par effet de bord.
     assert_eq!(
@@ -116,7 +131,10 @@ fn ecrire_le_mauvais_type_est_refuse() {
         valeur: Val::U8(99),
     }];
     let err = patch_verifie(&mut data, &modifs).expect_err("un type incompatible doit échouer");
-    assert!(matches!(err, PatchError::TypeIncompatible { .. }), "erreur inattendue : {err:?}");
+    assert!(
+        matches!(err, PatchError::TypeIncompatible { .. }),
+        "erreur inattendue : {err:?}"
+    );
     assert_eq!(data, vanilla, "un patch refusé ne doit rien écrire");
 }
 

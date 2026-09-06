@@ -38,8 +38,9 @@ use crate::cfgbin::{field_hash, field_i64, list_values};
 use crate::hash::HashId;
 
 /// Les 9 langues du jeu, dans l'ordre exact d'inagle (`TELOP_LANGS`).
-pub const TELOP_LANGS: [&str; 9] =
-    ["ja", "en", "pt", "fr", "it", "de", "es", "zh_hant", "zh_hans"];
+pub const TELOP_LANGS: [&str; 9] = [
+    "ja", "en", "pt", "fr", "it", "de", "es", "zh_hant", "zh_hans",
+];
 
 /// Marges (en pixels) d'**un côté** du télop, résolues pour les 9 langues.
 ///

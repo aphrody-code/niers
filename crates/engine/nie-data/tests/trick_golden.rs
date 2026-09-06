@@ -14,7 +14,7 @@
 //! copiées telles quelles du dump.
 
 use nie_data::hash::HashId;
-use nie_data::trick::{find_trick, parse_trick_config, TrickCategory, TrickInfo};
+use nie_data::trick::{TrickCategory, TrickInfo, find_trick, parse_trick_config};
 use serde_json::json;
 
 /// Fixture : les **9 valeurs réelles** de `m_trickInfoList` (dump VFS), forme iecode.
@@ -108,7 +108,10 @@ fn trick_ligne_0_fire_tornado() {
     assert_eq!(t.event_id, HashId(0xDB8C_ADA2), "eventID = 0xDB8CADA2");
     assert_eq!(t.event_id_name, "ev60_0010", "eventIDName = ev60_0010");
     assert_eq!(t.fail_event_id, HashId::ZERO, "failEventID = 0");
-    assert_eq!(t.fail_event_id_name, "0xFFFFFFFF", "sentinelle failEventIDName");
+    assert_eq!(
+        t.fail_event_id_name, "0xFFFFFFFF",
+        "sentinelle failEventIDName"
+    );
     assert_eq!(t.trick_name, "ファイアトルネード", "trickName JP");
     assert_eq!(t.trick_category, 1, "trickCategory = 1 (Tir)");
     assert_eq!(t.category(), TrickCategory::Shoot);
@@ -124,8 +127,15 @@ fn trick_ligne_4_bloc_avec_echec() {
     assert_eq!(t.trick_id_name, "whd0010");
     assert_eq!(t.event_id_name, "ev62_0010_1");
     // Avec échec : failEventID non nul et failEventIDName = chaîne réelle résolue.
-    assert_eq!(t.fail_event_id, HashId(0xC25E_DF2B), "failEventID = 0xC25EDF2B");
-    assert_eq!(t.fail_event_id_name, "ev62_0010_2", "failEventIDName résolu");
+    assert_eq!(
+        t.fail_event_id,
+        HashId(0xC25E_DF2B),
+        "failEventID = 0xC25EDF2B"
+    );
+    assert_eq!(
+        t.fail_event_id_name, "ev62_0010_2",
+        "failEventIDName résolu"
+    );
     assert_eq!(t.trick_name, "旋風陣");
     assert_eq!(t.category(), TrickCategory::Block);
     assert_eq!(t.category_name(), "Bloc");
@@ -166,7 +176,10 @@ fn trick_find_by_id() {
     let found = find_trick(&tricks, HashId(0x8A22_D09F));
     assert!(found.is_some(), "trick 0x8A22D09F trouvée");
     assert_eq!(found.unwrap().trick_id_name, "whk0010");
-    assert!(find_trick(&tricks, HashId(0xDEAD_BEEF)).is_none(), "id inconnu → None");
+    assert!(
+        find_trick(&tricks, HashId(0xDEAD_BEEF)).is_none(),
+        "id inconnu → None"
+    );
 }
 
 #[test]
@@ -177,6 +190,10 @@ fn trick_5_blocs_arrets_ont_un_echec() {
     assert_eq!(with_fail, 4, "4 tricks avec événement d'échec (dump réel)");
     // Toutes les tricks sans échec gardent la sentinelle.
     for t in tricks.iter().filter(|t| !t.has_fail_event()) {
-        assert_eq!(t.fail_event_id_name, "0xFFFFFFFF", "{} → sentinelle", t.trick_id_name);
+        assert_eq!(
+            t.fail_event_id_name, "0xFFFFFFFF",
+            "{} → sentinelle",
+            t.trick_id_name
+        );
     }
 }

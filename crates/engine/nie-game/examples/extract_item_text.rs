@@ -38,7 +38,9 @@ fn load(vfs: &Vfs, prefix: &str, must_contain: &str) -> Option<serde_json::Value
         .map(|(p, _)| p.to_string())
         .filter(|p| {
             p.contains(must_contain)
-                && p.rsplit('/').next().is_some_and(|b| b.starts_with(prefix) && b.ends_with(".cfg.bin"))
+                && p.rsplit('/')
+                    .next()
+                    .is_some_and(|b| b.starts_with(prefix) && b.ends_with(".cfg.bin"))
         })
         .min()?;
     eprintln!("  {path}");
@@ -48,9 +50,12 @@ fn load(vfs: &Vfs, prefix: &str, must_contain: &str) -> Option<serde_json::Value
 }
 
 fn main() {
-    let dir = nie_formats::vfs::resolve_game_dir().to_string_lossy().into_owned();
+    let dir = nie_formats::vfs::resolve_game_dir()
+        .to_string_lossy()
+        .into_owned();
     let mut vfs = Vfs::new();
-    vfs.init(Path::new(&dir).join("data").as_path()).expect("vfs init");
+    vfs.init(Path::new(&dir).join("data").as_path())
+        .expect("vfs init");
 
     let item_root = load(&vfs, "item_config", "/gamedata/item/").expect("item_config introuvable");
     let items = nie_data::item::parse_all_items(&item_root);
@@ -71,14 +76,27 @@ fn main() {
             described += 1;
         }
     }
-    eprintln!("noms résolus = {named}/{} ; descriptions résolues = {described}/{}", items.len(), items.len());
+    eprintln!(
+        "noms résolus = {named}/{} ; descriptions résolues = {described}/{}",
+        items.len(),
+        items.len()
+    );
     assert!(named > 0, "au moins un nom d'objet résolu");
 
-    for it in items.iter().filter(|i| nie_data::item::resolve_name(i, &item_text).is_some()).take(5) {
+    for it in items
+        .iter()
+        .filter(|i| nie_data::item::resolve_name(i, &item_text).is_some())
+        .take(5)
+    {
         let name = nie_data::item::resolve_name(it, &item_text).unwrap_or("");
         let desc = nie_data::item::resolve_description(it, &item_text);
         let dsnip: Option<String> = desc.map(|d| d.chars().take(50).collect());
-        eprintln!("  item {} → {:?}  desc={:?}", it.item_id.to_hex(), name, dsnip);
+        eprintln!(
+            "  item {} → {:?}  desc={:?}",
+            it.item_id.to_hex(),
+            name,
+            dsnip
+        );
     }
     eprintln!("✓ END-TO-END OK : {named} noms / {described} descriptions d'objets résolus");
 }

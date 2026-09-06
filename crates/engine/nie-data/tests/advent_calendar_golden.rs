@@ -7,10 +7,9 @@
 mod common;
 
 use nie_data::hash::HashId;
-use nie_data::post::{parse_advent_calendar_config, AdventCalendarConfig};
+use nie_data::post::{AdventCalendarConfig, parse_advent_calendar_config};
 
-const REAL_PATH: &str =
-    "post/advent_calendar_config_2.00.17.00.cfg.bin.json";
+const REAL_PATH: &str = "post/advent_calendar_config_2.00.17.00.cfg.bin.json";
 
 fn load_real() -> Option<AdventCalendarConfig> {
     let chemin_abs = common::chemin(REAL_PATH)?;
@@ -30,7 +29,11 @@ fn comptes_listes() {
     let Some(cfg) = load_real() else { return };
     assert_eq!(cfg.calendar.len(), 5, "m_AdventCalendarInfoList");
     assert_eq!(cfg.news.len(), 6, "m_NewsInfoList");
-    assert_eq!(cfg.login_bonus_reward_items.len(), 1, "m_LoginBonusRewardItem");
+    assert_eq!(
+        cfg.login_bonus_reward_items.len(),
+        1,
+        "m_LoginBonusRewardItem"
+    );
     assert_eq!(cfg.login_bonus_rewards.len(), 1, "m_LoginBonusReward");
     assert_eq!(cfg.login_bonus_infos.len(), 1, "m_LoginBonusInfo");
 }

@@ -36,7 +36,7 @@ pub fn strcmp(a: &[u8], b: &[u8]) -> i32 {
     // Prefixe commun jusqu'a min(len) ; la chaine la plus courte a son NUL (0) ici.
     match a.len().cmp(&b.len()) {
         core::cmp::Ordering::Equal => 0,
-        core::cmp::Ordering::Less => -1, // a[n]=0 < b[n]
+        core::cmp::Ordering::Less => -1,   // a[n]=0 < b[n]
         core::cmp::Ordering::Greater => 1, // a[n] > 0 = b[n]
     }
 }

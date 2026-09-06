@@ -58,8 +58,8 @@ extern crate alloc;
 
 use alloc::vec::Vec;
 
-use crate::level5::{self, Level5Header};
 use crate::FormatError;
+use crate::level5::{self, Level5Header};
 
 /// Magic « NAVM » en little-endian.
 const MAGIC: u32 = 0x4D56_414E;
@@ -174,18 +174,26 @@ impl Navm {
     /// Les trois index de sommet du polygone `i`.
     #[must_use]
     pub fn corners_of(&self, i: usize) -> &[u32] {
-        let Some(p) = self.polygons.get(i) else { return &[] };
+        let Some(p) = self.polygons.get(i) else {
+            return &[];
+        };
         let a = p.first_corner as usize;
-        let b = a.saturating_add(p.corner_count as usize).min(self.corners.len());
+        let b = a
+            .saturating_add(p.corner_count as usize)
+            .min(self.corners.len());
         self.corners.get(a..b).unwrap_or(&[])
     }
 
     /// Les index d'arête incidents au polygone `i`.
     #[must_use]
     pub fn edges_of(&self, i: usize) -> &[u32] {
-        let Some(p) = self.polygons.get(i) else { return &[] };
+        let Some(p) = self.polygons.get(i) else {
+            return &[];
+        };
         let a = p.first_edge_ref as usize;
-        let b = a.saturating_add(p.edge_ref_count as usize).min(self.edge_refs.len());
+        let b = a
+            .saturating_add(p.edge_ref_count as usize)
+            .min(self.edge_refs.len());
         self.edge_refs.get(a..b).unwrap_or(&[])
     }
 
@@ -201,7 +209,10 @@ impl Navm {
     /// Nombre de références d'arête pointant hors du tableau (domaine externe).
     #[must_use]
     pub fn external_ref_count(&self) -> usize {
-        self.edge_refs.iter().filter(|&&r| r as usize >= self.edges.len()).count()
+        self.edge_refs
+            .iter()
+            .filter(|&&r| r as usize >= self.edges.len())
+            .count()
     }
 
     /// Positions des trois sommets du polygone `i`, dans l'ordre du fichier.
@@ -235,7 +246,10 @@ fn f32_at(data: &[u8], off: usize) -> Result<f32, FormatError> {
 /// annonce plus de données que le fichier n'en contient.
 pub fn parse(data: &[u8]) -> Result<Navm, FormatError> {
     if data.len() < MIN_LEN {
-        return Err(FormatError::TooShort { got: data.len(), need: MIN_LEN });
+        return Err(FormatError::TooShort {
+            got: data.len(),
+            need: MIN_LEN,
+        });
     }
     let header = level5::parse_header(data, MAGIC, "G4NV")?;
     let mut section_counts = [0u32; SECTION_COUNT];
@@ -261,7 +275,10 @@ pub fn parse(data: &[u8]) -> Result<Navm, FormatError> {
     let o_edges = off;
     off += round_up(n_edges * EDGE_LEN, BLOCK_LEN);
     if off > data.len() {
-        return Err(FormatError::TooShort { got: data.len(), need: off });
+        return Err(FormatError::TooShort {
+            got: data.len(),
+            need: off,
+        });
     }
 
     let mut corners = Vec::with_capacity(n_corners);
@@ -276,7 +293,11 @@ pub fn parse(data: &[u8]) -> Result<Navm, FormatError> {
     for i in 0..n_verts {
         let at = o_verts + i * VERTEX_LEN;
         vertices.push(Vertex {
-            pos: [f32_at(data, at)?, f32_at(data, at + 4)?, f32_at(data, at + 8)?],
+            pos: [
+                f32_at(data, at)?,
+                f32_at(data, at + 4)?,
+                f32_at(data, at + 8)?,
+            ],
             w: f32_at(data, at + 12)?,
             flag: level5::read_u32_le(data, o_flags + i * 4)?,
         });
@@ -286,7 +307,11 @@ pub fn parse(data: &[u8]) -> Result<Navm, FormatError> {
         let at = o_polys + i * POLYGON_LEN;
         let counts = level5::read_u32_le(data, at + 24)?;
         polygons.push(Polygon {
-            center: [f32_at(data, at)?, f32_at(data, at + 4)?, f32_at(data, at + 8)?],
+            center: [
+                f32_at(data, at)?,
+                f32_at(data, at + 4)?,
+                f32_at(data, at + 8)?,
+            ],
             radius_sq: f32_at(data, at + 12)?,
             first_corner: level5::read_u32_le(data, at + 16)?,
             first_edge_ref: level5::read_u32_le(data, at + 20)?,
@@ -337,11 +362,15 @@ pub fn check(n: &Navm) -> Result<(), FormatError> {
     for p in &n.polygons {
         let a = p.first_corner as usize;
         if a + p.corner_count as usize > n.corners.len() {
-            return Err(FormatError::Corrupt("G4NV: tranche de coins hors du tableau"));
+            return Err(FormatError::Corrupt(
+                "G4NV: tranche de coins hors du tableau",
+            ));
         }
         let b = p.first_edge_ref as usize;
         if b + p.edge_ref_count as usize > n.edge_refs.len() {
-            return Err(FormatError::Corrupt("G4NV: tranche de refs d'arêtes hors du tableau"));
+            return Err(FormatError::Corrupt(
+                "G4NV: tranche de refs d'arêtes hors du tableau",
+            ));
         }
     }
     if n.corners.iter().any(|&c| c as usize >= n.vertices.len()) {
@@ -358,7 +387,9 @@ pub fn check(n: &Navm) -> Result<(), FormatError> {
             return Err(FormatError::Corrupt("G4NV: index de polygone hors bornes"));
         }
         if e.vert_a as usize >= n.vertices.len() || e.vert_b as usize >= n.vertices.len() {
-            return Err(FormatError::Corrupt("G4NV: index de sommet d'arête hors bornes"));
+            return Err(FormatError::Corrupt(
+                "G4NV: index de sommet d'arête hors bornes",
+            ));
         }
     }
     Ok(())
@@ -371,13 +402,17 @@ mod tests {
 
     /// Deux triangles formant un carré de 150 × 150 dans le plan XZ, une arête partagée.
     fn synthetique() -> Vec<u8> {
-        let (n_corners, n_refs, n_verts, n_polys, n_edges) = (6usize, 2usize, 4usize, 2usize, 1usize);
+        let (n_corners, n_refs, n_verts, n_polys, n_edges) =
+            (6usize, 2usize, 4usize, 2usize, 1usize);
         let mut d = vec![0u8; HEADER_LEN];
         d[0..4].copy_from_slice(b"NAVM");
         d[4..6].copy_from_slice(&(HEADER_LEN as u16).to_le_bytes());
         d[6..8].copy_from_slice(&0x0066u16.to_le_bytes());
         d[10..12].copy_from_slice(&0x0018u16.to_le_bytes());
-        for (i, c) in [n_corners, n_refs, n_verts, n_polys, n_edges].iter().enumerate() {
+        for (i, c) in [n_corners, n_refs, n_verts, n_polys, n_edges]
+            .iter()
+            .enumerate()
+        {
             d[0x20 + i * 4..0x20 + i * 4 + 4].copy_from_slice(&(*c as u32).to_le_bytes());
         }
         let put_u32 = |d: &mut Vec<u8>, v: u32| d.extend_from_slice(&v.to_le_bytes());
@@ -398,7 +433,12 @@ mod tests {
         }
         d.resize(HEADER_LEN + 3 * BLOCK_LEN, 0);
         // sommets : les 4 coins du carré
-        for (x, z) in [(-75.0f32, 75.0f32), (75.0, 75.0), (-75.0, -75.0), (75.0, -75.0)] {
+        for (x, z) in [
+            (-75.0f32, 75.0f32),
+            (75.0, 75.0),
+            (-75.0, -75.0),
+            (75.0, -75.0),
+        ] {
             put_f32(&mut d, x);
             put_f32(&mut d, 0.0);
             put_f32(&mut d, z);
@@ -406,9 +446,10 @@ mod tests {
         }
         // sommets : 4 × 16 = 64 = déjà un bloc plein.
         // polygones
-        for (c, first_corner, first_ref) in
-            [([-25.0f32, 0.0, 25.0], 0u32, 0u32), ([25.0, 0.0, -25.0], 3, 1)]
-        {
+        for (c, first_corner, first_ref) in [
+            ([-25.0f32, 0.0, 25.0], 0u32, 0u32),
+            ([25.0, 0.0, -25.0], 3, 1),
+        ] {
             put_f32(&mut d, c[0]);
             put_f32(&mut d, c[1]);
             put_f32(&mut d, c[2]);
@@ -464,7 +505,10 @@ mod tests {
 
     #[test]
     fn rejette_magic_et_court() {
-        assert!(matches!(parse(&[0u8; HEADER_LEN]), Err(FormatError::BadMagic { .. })));
+        assert!(matches!(
+            parse(&[0u8; HEADER_LEN]),
+            Err(FormatError::BadMagic { .. })
+        ));
         assert!(matches!(parse(b"NAVM"), Err(FormatError::TooShort { .. })));
         assert!(!is_navm(b"G4SK"));
         assert!(is_navm(b"NAVM____"));

@@ -66,7 +66,9 @@ pub struct ActionData {
 
 impl Default for ActionData {
     fn default() -> Self {
-        Self { raw: [0u8; ACTION_DATA_SIZE] }
+        Self {
+            raw: [0u8; ACTION_DATA_SIZE],
+        }
     }
 }
 

@@ -34,7 +34,7 @@
 use alloc::vec::Vec;
 use serde_json::Value;
 
-use crate::cfgbin::{walk_named, Node};
+use crate::cfgbin::{Node, walk_named};
 use crate::hash::HashId;
 
 /// Sentinelle « condition absente » (`0xC4DC849A` en non signé) — filtrée à l'identique

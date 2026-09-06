@@ -14,7 +14,7 @@ use nie_data::event_subtitle::{
     find_event_text, parse_event_text, parse_subtitle_file, parse_washa_map,
 };
 use nie_data::hash::HashId;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 fn ivar(v: i64) -> Value {
     json!({ "type": "Int", "value": v.to_string() })
@@ -97,18 +97,14 @@ fn dialogue_raw_text_preserved_and_join() {
     assert!(lines[0].raw_text.contains("<MNT:NAGUMOHARA>"));
 
     // Jointure par hash (la clé partagée subtitle ↔ washa ↔ dialogue).
-    assert_eq!(
-        find_event_text(&lines, HashId(0x6540_D3B6)),
-        Some(raw)
-    );
+    assert_eq!(find_event_text(&lines, HashId(0x6540_D3B6)), Some(raw));
     assert_eq!(find_event_text(&lines, HashId(0xDEAD_BEEF)), None);
 }
 
 // ─── Fichiers Subtitle_ev réels + dispatch typé par préfixe (2026-06-23) ─────────
 // ~1321 fichiers `Subtitle_ev<NN>_<bloc>` du mode Histoire deviennent décodables typé
 // via le dispatch par préfixe `Subtitle_ev` (clé par-événement → parse_subtitle_file).
-const SUB_PATH: &str =
-    "event/subtitle/pt/Subtitle_ev01_04800.cfg.bin.json";
+const SUB_PATH: &str = "event/subtitle/pt/Subtitle_ev01_04800.cfg.bin.json";
 
 fn load_sub() -> Option<Value> {
     let chemin_abs = common::chemin(SUB_PATH)?;
@@ -116,7 +112,8 @@ fn load_sub() -> Option<Value> {
         eprintln!("skip : {} absent du corpus", chemin_abs.display());
         return None;
     }
-    let c = std::fs::read_to_string(&chemin_abs).unwrap_or_else(|e| panic!("lecture {}: {e}", chemin_abs.display()));
+    let c = std::fs::read_to_string(&chemin_abs)
+        .unwrap_or_else(|e| panic!("lecture {}: {e}", chemin_abs.display()));
     Some(serde_json::from_str(&c).unwrap_or_else(|e| panic!("JSON {}: {e}", chemin_abs.display())))
 }
 
@@ -126,8 +123,14 @@ fn real_subtitle_file_six_lignes_byte_exact() {
     let rows = parse_subtitle_file(&root);
     assert_eq!(rows.len(), 6, "Subtitle_ev01_04800 = 6 lignes timecodées");
     // Hashes byte-exact (clés de jointure vers le texte localisé).
-    let hashes: [u32; 6] =
-        [0x8BAF_B21B, 0xA082_E1D8, 0xB999_D099, 0xF6D8_465E, 0xEFC3_771F, 0xC4EE_24DC];
+    let hashes: [u32; 6] = [
+        0x8BAF_B21B,
+        0xA082_E1D8,
+        0xB999_D099,
+        0xF6D8_465E,
+        0xEFC3_771F,
+        0xC4EE_24DC,
+    ];
     for (i, h) in hashes.iter().enumerate() {
         assert_eq!(rows[i].text_hash, HashId(*h), "hash ligne {i}");
     }

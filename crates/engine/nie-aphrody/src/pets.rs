@@ -117,7 +117,12 @@ impl Grille {
         let colonnes = self.columns as usize;
         let ligne = (sprite_index / colonnes) as u32;
         let colonne = (sprite_index % colonnes) as u32;
-        Some((colonne * self.width, ligne * self.height, self.width, self.height))
+        Some((
+            colonne * self.width,
+            ligne * self.height,
+            self.width,
+            self.height,
+        ))
     }
 
     /// Vérifie que la grille est cohérente et tient sous les bornes de Codex.
@@ -126,7 +131,9 @@ impl Grille {
     /// Si une dimension est nulle, ou si la grille dépasse [`MAX_FRAMES`].
     pub fn valider(&self) -> Result<(), Error> {
         if self.width == 0 || self.height == 0 || self.columns == 0 || self.rows == 0 {
-            return Err(Error::Invalid("grille : aucune dimension ne peut être nulle".into()));
+            return Err(Error::Invalid(
+                "grille : aucune dimension ne peut être nulle".into(),
+            ));
         }
         if self.cellules() > MAX_FRAMES {
             return Err(Error::Invalid(format!(
@@ -214,7 +221,10 @@ pub struct Tick {
 #[must_use]
 pub fn frame_courante(piste: &Piste, ecoule_ms: u64) -> Option<Tick> {
     if piste.frames.len() <= 1 {
-        return piste.frames.first().map(|f| Tick { sprite_index: f.sprite_index, delai_ms: None });
+        return piste.frames.first().map(|f| Tick {
+            sprite_index: f.sprite_index,
+            delai_ms: None,
+        });
     }
     let total = piste.duree_totale_ms();
     let effectif = match piste.loop_start.filter(|i| *i < piste.frames.len()) {
@@ -229,10 +239,10 @@ pub fn frame_courante(piste: &Piste, ecoule_ms: u64) -> Option<Tick> {
         }
         None => {
             if ecoule_ms >= total {
-                return piste
-                    .frames
-                    .last()
-                    .map(|f| Tick { sprite_index: f.sprite_index, delai_ms: None });
+                return piste.frames.last().map(|f| Tick {
+                    sprite_index: f.sprite_index,
+                    delai_ms: None,
+                });
             }
             ecoule_ms
         }
@@ -252,7 +262,10 @@ fn frame_a(piste: &Piste, ecoule_ms: u64) -> Option<Tick> {
         }
         curseur = fin;
     }
-    piste.frames.last().map(|f| Tick { sprite_index: f.sprite_index, delai_ms: None })
+    piste.frames.last().map(|f| Tick {
+        sprite_index: f.sprite_index,
+        delai_ms: None,
+    })
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -326,10 +339,14 @@ fn valider_chemin_atlas(chemin: &str) -> Result<(), Error> {
         return Err(Error::Invalid("chemin d'atlas vide".into()));
     }
     if chemin.starts_with('/') || chemin.starts_with('\\') || chemin.contains(':') {
-        return Err(Error::Invalid(format!("chemin d'atlas non relatif : « {chemin} »")));
+        return Err(Error::Invalid(format!(
+            "chemin d'atlas non relatif : « {chemin} »"
+        )));
     }
     if chemin.split(['/', '\\']).any(|s| s == "..") {
-        return Err(Error::Invalid(format!("chemin d'atlas sortant du dossier : « {chemin} »")));
+        return Err(Error::Invalid(format!(
+            "chemin d'atlas sortant du dossier : « {chemin} »"
+        )));
     }
     Ok(())
 }
@@ -354,13 +371,17 @@ impl Manifeste {
     /// Au premier contrôle qui échoue, avec la raison — jamais un repli silencieux.
     pub fn valider(self) -> Result<PetCodex, Error> {
         self.frame.valider()?;
-        let atlas = self.spritesheet_path.unwrap_or_else(|| ATLAS_DEFAUT.to_string());
+        let atlas = self
+            .spritesheet_path
+            .unwrap_or_else(|| ATLAS_DEFAUT.to_string());
         valider_chemin_atlas(&atlas)?;
 
         let mut pistes = BTreeMap::new();
         for (nom, p) in self.animations {
             if p.frames.is_empty() {
-                return Err(Error::Invalid(format!("animation « {nom} » sans aucune frame")));
+                return Err(Error::Invalid(format!(
+                    "animation « {nom} » sans aucune frame"
+                )));
             }
             if p.frames.len() > MAX_FRAMES {
                 return Err(Error::Invalid(format!(
@@ -380,7 +401,11 @@ impl Manifeste {
                     self.frame.cellules()
                 )));
             }
-            #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss, reason = "fps borné à ]0,60]")]
+            #[expect(
+                clippy::cast_possible_truncation,
+                clippy::cast_sign_loss,
+                reason = "fps borné à ]0,60]"
+            )]
             let duree_ms = (1000.0 / fps).round().max(1.0) as u64;
             let boucle = p.boucle.unwrap_or(true);
             pistes.insert(
@@ -389,7 +414,10 @@ impl Manifeste {
                     frames: p
                         .frames
                         .into_iter()
-                        .map(|sprite_index| FrameTemps { sprite_index, duree_ms })
+                        .map(|sprite_index| FrameTemps {
+                            sprite_index,
+                            duree_ms,
+                        })
                         .collect(),
                     loop_start: boucle.then_some(0),
                     repli: p.fallback.unwrap_or_else(|| REPLI_DEFAUT.to_string()),
@@ -517,7 +545,9 @@ impl Ambiance {
     #[must_use]
     pub fn animation(&self, maintenant_ms: u64) -> (&'static str, u64) {
         self.etat(maintenant_ms)
-            .map_or((REPLI_DEFAUT, maintenant_ms), |(e, age)| (e.animation(), age))
+            .map_or((REPLI_DEFAUT, maintenant_ms), |(e, age)| {
+                (e.animation(), age)
+            })
     }
 }
 
@@ -527,7 +557,13 @@ mod tests {
 
     fn piste(frames: &[usize], duree_ms: u64, loop_start: Option<usize>) -> Piste {
         Piste {
-            frames: frames.iter().map(|i| FrameTemps { sprite_index: *i, duree_ms }).collect(),
+            frames: frames
+                .iter()
+                .map(|i| FrameTemps {
+                    sprite_index: *i,
+                    duree_ms,
+                })
+                .collect(),
             loop_start,
             repli: "idle".into(),
         }
@@ -545,35 +581,62 @@ mod tests {
 
     #[test]
     fn la_grille_aphrody_v2_est_acceptee_la_ou_codex_la_rejetterait() {
-        let g = Grille { rows: 11, ..Grille::default() };
-        g.valider().expect("11 lignes reste sous le plafond de 256 cellules");
+        let g = Grille {
+            rows: 11,
+            ..Grille::default()
+        };
+        g.valider()
+            .expect("11 lignes reste sous le plafond de 256 cellules");
         assert_eq!(g.atlas(), (1536, 2288));
         assert_eq!(g.cellules(), 88);
         g.valider_atlas(1536, 2288).expect("atlas conforme");
-        assert!(g.valider_atlas(1536, 1872).is_err(), "un atlas 8x9 ne remplit pas 8x11");
+        assert!(
+            g.valider_atlas(1536, 1872).is_err(),
+            "un atlas 8x9 ne remplit pas 8x11"
+        );
     }
 
     #[test]
     fn l_indexation_des_cellules_est_ligne_par_ligne() {
         let g = Grille::default();
         assert_eq!(g.cellule(0), Some((0, 0, 192, 208)));
-        assert_eq!(g.cellule(8), Some((0, 208, 192, 208)), "index 8 = début de la ligne 1");
+        assert_eq!(
+            g.cellule(8),
+            Some((0, 208, 192, 208)),
+            "index 8 = début de la ligne 1"
+        );
         assert_eq!(g.cellule(9), Some((192, 208, 192, 208)));
-        assert_eq!(g.cellule(72), None, "hors grille rend None, pas un rectangle plausible");
+        assert_eq!(
+            g.cellule(72),
+            None,
+            "hors grille rend None, pas un rectangle plausible"
+        );
     }
 
     #[test]
     fn une_piste_figee_ne_planifie_aucun_reveil() {
         let t = frame_courante(&piste(&[3], 100, Some(0)), 10_000).expect("tick");
-        assert_eq!(t, Tick { sprite_index: 3, delai_ms: None });
+        assert_eq!(
+            t,
+            Tick {
+                sprite_index: 3,
+                delai_ms: None
+            }
+        );
     }
 
     #[test]
     fn le_delai_rendu_est_celui_de_la_frame_pas_une_cadence() {
         let p = Piste {
             frames: vec![
-                FrameTemps { sprite_index: 0, duree_ms: 1680 },
-                FrameTemps { sprite_index: 1, duree_ms: 660 },
+                FrameTemps {
+                    sprite_index: 0,
+                    duree_ms: 1680,
+                },
+                FrameTemps {
+                    sprite_index: 1,
+                    duree_ms: 660,
+                },
             ],
             loop_start: Some(0),
             repli: "idle".into(),
@@ -620,25 +683,49 @@ mod tests {
         // Une fois finie : le repli prend la main, sans que l'appelant ait à le savoir.
         let (nom, t) = pet.resoudre("waving", 5_000).expect("tick");
         assert_eq!(nom, "idle");
-        assert!(t.delai_ms.is_some(), "idle boucle, donc un réveil est planifié");
+        assert!(
+            t.delai_ms.is_some(),
+            "idle boucle, donc un réveil est planifié"
+        );
     }
 
     #[test]
     fn le_manifeste_refuse_ce_que_codex_refuse() {
         let cas = [
-            (r#"{"id":"a","animations":{"x":{"frames":[]}}}"#, "sans aucune frame"),
-            (r#"{"id":"a","animations":{"x":{"frames":[0],"fps":0}}}"#, "hors de"),
-            (r#"{"id":"a","animations":{"x":{"frames":[0],"fps":61}}}"#, "hors de"),
-            (r#"{"id":"a","animations":{"x":{"frames":[999]}}}"#, "hors d'une grille"),
-            (r#"{"id":"a","spritesheetPath":"../evade.webp"}"#, "sortant du dossier"),
-            (r#"{"id":"a","spritesheetPath":"/etc/passwd"}"#, "non relatif"),
+            (
+                r#"{"id":"a","animations":{"x":{"frames":[]}}}"#,
+                "sans aucune frame",
+            ),
+            (
+                r#"{"id":"a","animations":{"x":{"frames":[0],"fps":0}}}"#,
+                "hors de",
+            ),
+            (
+                r#"{"id":"a","animations":{"x":{"frames":[0],"fps":61}}}"#,
+                "hors de",
+            ),
+            (
+                r#"{"id":"a","animations":{"x":{"frames":[999]}}}"#,
+                "hors d'une grille",
+            ),
+            (
+                r#"{"id":"a","spritesheetPath":"../evade.webp"}"#,
+                "sortant du dossier",
+            ),
+            (
+                r#"{"id":"a","spritesheetPath":"/etc/passwd"}"#,
+                "non relatif",
+            ),
             (r#"{"id":"a","frame":{"rows":0}}"#, "nulle"),
             (r#"{"id":"a","frame":{"rows":99}}"#, "plafond"),
         ];
         for (json, attendu) in cas {
             let err = Manifeste::depuis_json(json).expect_err(json);
             let msg = format!("{err}");
-            assert!(msg.contains(attendu), "attendu « {attendu} », obtenu « {msg} » pour {json}");
+            assert!(
+                msg.contains(attendu),
+                "attendu « {attendu} », obtenu « {msg} » pour {json}"
+            );
         }
     }
 

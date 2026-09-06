@@ -13,8 +13,8 @@ use rusqlite::Connection;
 use crate::{
     model::{
         AuditReport, AuditTable, CharaProfile, CompareResult, DialogueMatch, ItemProfile,
-        RandomTeam, RandomTeamPlayer, SearchResult, SkillProfile, StatusReport,
-        TeamBuildEntry, TeamProfile,
+        RandomTeam, RandomTeamPlayer, SearchResult, SkillProfile, StatusReport, TeamBuildEntry,
+        TeamProfile,
     },
     query::skill_name_by_id,
 };
@@ -161,15 +161,9 @@ pub fn render_chara_profile(chara: &CharaProfile, conn: &Connection) -> String {
     if let (Some(s1), Some(s50), Some(s99)) = (lv1, lv50, lv99) {
         lines.push(MID.to_string());
         lines.push(one_col("Courbe de progression des statistiques :"));
-        lines.push(one_col(
-            "  ┌──────────────┬─────────┬─────────┬─────────┐",
-        ));
-        lines.push(one_col(
-            "  │ Stat         │ Niv. 1  │ Niv. 50 │ Niv. 99 │",
-        ));
-        lines.push(one_col(
-            "  ├──────────────┼─────────┼─────────┼─────────┤",
-        ));
+        lines.push(one_col("  ┌──────────────┬─────────┬─────────┬─────────┐"));
+        lines.push(one_col("  │ Stat         │ Niv. 1  │ Niv. 50 │ Niv. 99 │"));
+        lines.push(one_col("  ├──────────────┼─────────┼─────────┼─────────┤"));
 
         let stat_row = |label: &str, v1: u16, v50: u16, v99: u16| -> String {
             one_col(&format!(
@@ -183,9 +177,24 @@ pub fn render_chara_profile(chara: &CharaProfile, conn: &Connection) -> String {
 
         lines.push(stat_row("Frappe", s1.kick, s50.kick, s99.kick));
         lines.push(stat_row("Controle", s1.control, s50.control, s99.control));
-        lines.push(stat_row("Physique", s1.physical, s50.physical, s99.physical));
-        lines.push(stat_row("Pression", s1.pressure, s50.pressure, s99.pressure));
-        lines.push(stat_row("Technique", s1.technique, s50.technique, s99.technique));
+        lines.push(stat_row(
+            "Physique",
+            s1.physical,
+            s50.physical,
+            s99.physical,
+        ));
+        lines.push(stat_row(
+            "Pression",
+            s1.pressure,
+            s50.pressure,
+            s99.pressure,
+        ));
+        lines.push(stat_row(
+            "Technique",
+            s1.technique,
+            s50.technique,
+            s99.technique,
+        ));
         lines.push(stat_row("Agilite", s1.agility, s50.agility, s99.agility));
         lines.push(stat_row(
             "Intelligence",
@@ -193,16 +202,12 @@ pub fn render_chara_profile(chara: &CharaProfile, conn: &Connection) -> String {
             s50.intelligence,
             s99.intelligence,
         ));
-        lines.push(one_col(
-            "  ├──────────────┼─────────┼─────────┼─────────┤",
-        ));
+        lines.push(one_col("  ├──────────────┼─────────┼─────────┼─────────┤"));
         lines.push(one_col(&format!(
             "  │ {:<12} │ {:>7} │ {:>7} │ {:>7} │",
             "TOTAL", t1, t50, t99
         )));
-        lines.push(one_col(
-            "  └──────────────┴─────────┴─────────┴─────────┘",
-        ));
+        lines.push(one_col("  └──────────────┴─────────┴─────────┴─────────┘"));
     }
 
     // Techniques
@@ -232,10 +237,7 @@ pub fn render_chara_profile(chara: &CharaProfile, conn: &Connection) -> String {
                 "miximax" => "Miximax",
                 other => other,
             };
-            lines.push(one_col(&format!(
-                "  - {} [{}]",
-                aura.name, type_label
-            )));
+            lines.push(one_col(&format!("  - {} [{}]", aura.name, type_label)));
         }
     }
 
@@ -316,10 +318,7 @@ pub fn render_item_profile(item: &ItemProfile) -> String {
         .unwrap_or_else(|| "N/A".to_string());
 
     lines.push(TOP.to_string());
-    lines.push(two_col(
-        name_fr,
-        &format!("ID: {}", item.id),
-    ));
+    lines.push(two_col(name_fr, &format!("ID: {}", item.id)));
     lines.push(two_col(
         &format!("EN: {}", name_en),
         &format!("JA: {}", name_ja),
@@ -362,10 +361,7 @@ pub fn render_team_profile(team: &TeamProfile) -> String {
     let region = team.region.as_deref().unwrap_or("");
 
     lines.push(TOP.to_string());
-    lines.push(two_col(
-        name_fr,
-        &format!("ID: {}", team.id),
-    ));
+    lines.push(two_col(name_fr, &format!("ID: {}", team.id)));
     lines.push(two_col(
         &format!("EN: {}", name_en),
         &format!("JA: {}", name_ja),
@@ -541,20 +537,28 @@ pub fn render_compare(result: &CompareResult) -> String {
     let max_skills = c1.skills.len().max(c2.skills.len());
     lines.push(row3("", "TECHNIQUES", ""));
     for i in 0..max_skills {
-        let s1 = c1.skills.get(i).map(|sk| {
-            if let Some(p) = sk.power {
-                format!("{} (L.{} {}P)", sk.name, sk.learn_level, p)
-            } else {
-                format!("{} (L.{})", sk.name, sk.learn_level)
-            }
-        }).unwrap_or_default();
-        let s2 = c2.skills.get(i).map(|sk| {
-            if let Some(p) = sk.power {
-                format!("{} (L.{} {}P)", sk.name, sk.learn_level, p)
-            } else {
-                format!("{} (L.{})", sk.name, sk.learn_level)
-            }
-        }).unwrap_or_default();
+        let s1 = c1
+            .skills
+            .get(i)
+            .map(|sk| {
+                if let Some(p) = sk.power {
+                    format!("{} (L.{} {}P)", sk.name, sk.learn_level, p)
+                } else {
+                    format!("{} (L.{})", sk.name, sk.learn_level)
+                }
+            })
+            .unwrap_or_default();
+        let s2 = c2
+            .skills
+            .get(i)
+            .map(|sk| {
+                if let Some(p) = sk.power {
+                    format!("{} (L.{} {}P)", sk.name, sk.learn_level, p)
+                } else {
+                    format!("{} (L.{})", sk.name, sk.learn_level)
+                }
+            })
+            .unwrap_or_default();
         lines.push(row3(&s1, &format!("Slot {}", i + 1), &s2));
     }
 
@@ -579,7 +583,11 @@ pub fn render_search_results(results: &[SearchResult]) -> String {
             r.entity_type.to_uppercase(),
             &r.name[..r.name.len().min(30)],
             r.id,
-            if extra.is_empty() { String::new() } else { format!(" | {extra}") }
+            if extra.is_empty() {
+                String::new()
+            } else {
+                format!(" | {extra}")
+            }
         ));
     }
     lines.push(sep);
@@ -682,7 +690,11 @@ pub fn render_dialogues(matches: &[DialogueMatch], query: &str) -> String {
     if matches.is_empty() {
         return format!("Aucun dialogue trouvé pour \"{}\".", query);
     }
-    let mut lines = vec![format!("Dialogues pour \"{}\" ({} resultats) :\n", query, matches.len())];
+    let mut lines = vec![format!(
+        "Dialogues pour \"{}\" ({} resultats) :\n",
+        query,
+        matches.len()
+    )];
     for m in matches {
         lines.push(format!(
             "[{}  l.{}] (ep: {})",
@@ -705,11 +717,19 @@ pub fn render_dialogues(matches: &[DialogueMatch], query: &str) -> String {
 pub fn render_random_team(team: &RandomTeam) -> String {
     let mut lines = Vec::new();
 
-    let title = format!("TERRAIN - FORMATION {} (seed={})", team.formation, team.seed);
+    let title = format!(
+        "TERRAIN - FORMATION {} (seed={})",
+        team.formation, team.seed
+    );
     let w = 78usize;
     let pad = w.saturating_sub(title.len()) / 2;
     lines.push(format!("\n╔{}╗", "═".repeat(w)));
-    lines.push(format!("║{}{}{}║", " ".repeat(pad), title, " ".repeat(w.saturating_sub(pad + title.len()))));
+    lines.push(format!(
+        "║{}{}{}║",
+        " ".repeat(pad),
+        title,
+        " ".repeat(w.saturating_sub(pad + title.len()))
+    ));
     lines.push(format!("╠{}╣", "═".repeat(w)));
 
     let section_line = |label: &str, players: &[RandomTeamPlayer]| -> String {
@@ -752,7 +772,8 @@ pub fn render_random_team(team: &RandomTeam) -> String {
 
     if let Some(coach) = &team.coach {
         let el = coach.element.as_deref().unwrap_or("N/A");
-        lines.push(format!("║ Coach   : {:<30} ({}){}║",
+        lines.push(format!(
+            "║ Coach   : {:<30} ({}){}║",
             &coach.name[..coach.name.len().min(30)],
             el,
             " ".repeat(w.saturating_sub(coach.name.len().min(30) + el.len() + 14))
@@ -760,7 +781,8 @@ pub fn render_random_team(team: &RandomTeam) -> String {
     }
     for (i, m) in team.managers.iter().enumerate() {
         let el = m.element.as_deref().unwrap_or("N/A");
-        lines.push(format!("║ Mgr {}   : {:<30} ({}){}║",
+        lines.push(format!(
+            "║ Mgr {}   : {:<30} ({}){}║",
             i + 1,
             &m.name[..m.name.len().min(30)],
             el,
@@ -777,7 +799,8 @@ pub fn render_random_team(team: &RandomTeam) -> String {
 /// Rendu ASCII d'une liste d'entrées team-builder.
 pub fn render_team_build_list(entries: &[TeamBuildEntry]) -> String {
     if entries.is_empty() {
-        return "Aucune entree dans inagle_team_build (table vide ou absente du miroir).".to_string();
+        return "Aucune entree dans inagle_team_build (table vide ou absente du miroir)."
+            .to_string();
     }
     let mut rows: Vec<serde_json::Value> = entries
         .iter()
@@ -798,10 +821,7 @@ pub fn render_team_build_list(entries: &[TeamBuildEntry]) -> String {
 pub fn render_team_build_entry(e: &TeamBuildEntry) -> String {
     let mut lines = Vec::new();
     lines.push(TOP.to_string());
-    lines.push(two_col(
-        &e.name.to_string(),
-        &format!("ID: {}", e.id),
-    ));
+    lines.push(two_col(&e.name.to_string(), &format!("ID: {}", e.id)));
     lines.push(two_col(
         &format!("Poste: {}", e.position.as_deref().unwrap_or("N/A")),
         &format!("Element: {}", e.element.as_deref().unwrap_or("N/A")),
@@ -810,7 +830,15 @@ pub fn render_team_build_entry(e: &TeamBuildEntry) -> String {
     if let Some(stats) = e.data.get("stats").and_then(|s| s.get("lv99")) {
         lines.push(MID.to_string());
         lines.push(one_col("Stats lv99 :"));
-        for key in &["kick", "control", "technique", "physical", "pressure", "agility", "intelligence"] {
+        for key in &[
+            "kick",
+            "control",
+            "technique",
+            "physical",
+            "pressure",
+            "agility",
+            "intelligence",
+        ] {
             if let Some(v) = stats.get(*key).and_then(|v| v.as_u64()) {
                 lines.push(one_col(&format!("  {}: {}", key, v)));
             }

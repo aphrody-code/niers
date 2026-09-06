@@ -48,7 +48,11 @@ impl BustupEntry {
                 model_paths.push(String::from(var.value));
             }
         }
-        Some(Self { chara_id: node.hash(0), motion_id: node.hash(1), model_paths })
+        Some(Self {
+            chara_id: node.hash(0),
+            motion_id: node.hash(1),
+            model_paths,
+        })
     }
 }
 
@@ -96,7 +100,10 @@ pub fn parse_event_bustup_talk(root: &Value) -> EventBustupTalkConfig {
                     items.push(entry);
                 }
             }
-            chr_slots.push(BustupChrSlot { slot, entries: items });
+            chr_slots.push(BustupChrSlot {
+                slot,
+                entries: items,
+            });
         }
     }
     EventBustupTalkConfig { chr_slots }

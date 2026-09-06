@@ -83,12 +83,18 @@ fn les_lua_bin_se_decodent_par_le_dispatch() {
         eprintln!("  ÉCHEC {e}");
     }
     assert!(echecs.is_empty(), "{} fichier(s) en échec", echecs.len());
-    assert!(instructions > 0, "aucune instruction décodée : rien n'est prouvé");
+    assert!(
+        instructions > 0,
+        "aucune instruction décodée : rien n'est prouvé"
+    );
 }
 
 /// `format_name` doit nommer le bytecode Lua **avant** de retomber sur « inconnu ».
 #[test]
 fn format_name_nomme_le_bytecode_lua() {
-    assert_eq!(nie_formats::decode::format_name(b"\x1bLua\x52\0suite"), "lua-bytecode");
+    assert_eq!(
+        nie_formats::decode::format_name(b"\x1bLua\x52\0suite"),
+        "lua-bytecode"
+    );
     assert_eq!(nie_formats::decode::format_name(b"lip\0suite"), "lip");
 }

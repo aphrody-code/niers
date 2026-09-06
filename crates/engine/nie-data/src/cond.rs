@@ -132,6 +132,9 @@ mod tests {
         let v1 = [0x00, 0x00, 0x00, 0x01, 0x2f, 0x4d, 0xaa, 0xbb];
         let b = CondBlob::parse(&v1).unwrap();
         assert_eq!(b.version, 1);
-        assert!(!b.framing_valid_v0(), "version 1 ⇒ cadrage v0 invalide (forme liste, INCOMPLET)");
+        assert!(
+            !b.framing_valid_v0(),
+            "version 1 ⇒ cadrage v0 invalide (forme liste, INCOMPLET)"
+        );
     }
 }

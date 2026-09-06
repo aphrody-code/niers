@@ -7,10 +7,9 @@
 mod common;
 
 use nie_data::hash::HashId;
-use nie_data::post::{parse_delivery_config, DeliveryConfig};
+use nie_data::post::{DeliveryConfig, parse_delivery_config};
 
-const REAL_PATH: &str =
-    "post/delivery_config_1.03.63.00.cfg.bin.json";
+const REAL_PATH: &str = "post/delivery_config_1.03.63.00.cfg.bin.json";
 
 fn load_real() -> Option<DeliveryConfig> {
     let chemin_abs = common::chemin(REAL_PATH)?;

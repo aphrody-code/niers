@@ -228,7 +228,10 @@ pub fn numero_de_page(query: Option<&str>) -> usize {
 /// Un seul compteur pour les trois langues : 2 unités pour un caractère large, 1 sinon.
 #[must_use]
 pub fn largeur_affichage(texte: &str) -> usize {
-    texte.chars().map(|c| if est_large(c) { 2 } else { 1 }).sum()
+    texte
+        .chars()
+        .map(|c| if est_large(c) { 2 } else { 1 })
+        .sum()
 }
 
 /// Dit si un caractère occupe deux demi-cadratins (UAX #11, classes `W` et `F`).
@@ -554,11 +557,13 @@ pub fn construire(
         Langue::En => ("Previous page", "Next page"),
         Langue::Ja => ("前のページ", "次のページ"),
     };
-    let libelle_total = catalogue.as_ref().map_or_else(String::new, |c| match langue {
-        Langue::Fr => format!("{} fichiers · page {} sur {}", c.total, c.page, c.pages),
-        Langue::En => format!("{} files · page {} of {}", c.total, c.page, c.pages),
-        Langue::Ja => format!("{} 件 · {} / {} ページ", c.total, c.page, c.pages),
-    });
+    let libelle_total = catalogue
+        .as_ref()
+        .map_or_else(String::new, |c| match langue {
+            Langue::Fr => format!("{} fichiers · page {} sur {}", c.total, c.page, c.pages),
+            Langue::En => format!("{} files · page {} of {}", c.total, c.page, c.pages),
+            Langue::Ja => format!("{} 件 · {} / {} ページ", c.total, c.page, c.pages),
+        });
     // La page courante fait partie de l'identite de l'URL : sans `?page=` au canonique, les
     // pages 2 et suivantes se declarent toutes copies de la premiere et disparaissent.
     let url = match catalogue.as_ref().map(|c| c.page) {
@@ -568,7 +573,14 @@ pub fn construire(
     Coquille {
         lang: langue.code(),
         prefixe_langue: langue.prefixe(),
-        jsonld: donnees_structurees(origine, route, langue, &titre, &description, catalogue.as_ref()),
+        jsonld: donnees_structurees(
+            origine,
+            route,
+            langue,
+            &titre,
+            &description,
+            catalogue.as_ref(),
+        ),
         url,
         og_locale: langue.og_locale(),
         og_locales_alternes: Langue::TOUTES
@@ -631,7 +643,11 @@ fn charger_catalogue(
     let lien = |n: usize| {
         let base = langue.url("", route);
         let base = if base.is_empty() { "/" } else { &base };
-        if n == 1 { base.to_owned() } else { format!("{base}?page={n}") }
+        if n == 1 {
+            base.to_owned()
+        } else {
+            format!("{base}?page={n}")
+        }
     };
     Some(Catalogue {
         elements,
@@ -651,7 +667,11 @@ pub async fn coquille(State(etat): State<EtatSite>, uri: Uri) -> Response {
         // parce qu'il préserve la méthode et se laisse revenir en arrière : un 301 se grave
         // dans le cache des navigateurs déjà passés, et ne s'en retire plus.
         let cible = demande.langue.url("", &demande.route);
-        let cible = if cible.is_empty() { "/".to_owned() } else { cible };
+        let cible = if cible.is_empty() {
+            "/".to_owned()
+        } else {
+            cible
+        };
         return Redirect::permanent(&cible).into_response();
     }
     let (feuille, script) =
@@ -771,7 +791,10 @@ mod tests {
         // L'image n'est plus injectee par le test : elle doit etre la SANS qu'on la pose,
         // sinon on verifie une balise que la production n'emet pas.
         let c = construire("https://aphrody.com", "/", Langue::Fr, None, None, None);
-        assert_eq!(c.image.as_deref(), Some("https://aphrody.com/static/og.png"));
+        assert_eq!(
+            c.image.as_deref(),
+            Some("https://aphrody.com/static/og.png")
+        );
         let html = c.render().expect("rendu");
         for balise in [
             "og:title",
@@ -824,7 +847,8 @@ mod tests {
             // confondait deux mécanismes qui n'ont en commun que le mot.
             assert_eq!(html.matches("rel=\"alternate\" hreflang=").count(), 4);
             assert_eq!(
-                html.matches(r#"<link rel="alternate" type="application/atom+xml""#).count(),
+                html.matches(r#"<link rel="alternate" type="application/atom+xml""#)
+                    .count(),
                 1,
                 "un flux, et un seul : c'est ce lien qui le rend decouvrable"
             );
@@ -833,10 +857,13 @@ mod tests {
 
     #[test]
     fn le_canonical_porte_le_prefixe_de_langue() {
-        assert!(page("/textures", Langue::Ja)
-            .contains(r#"<link rel="canonical" href="https://aphrody.com/ja/textures">"#));
-        assert!(page("/", Langue::Fr)
-            .contains(r#"<link rel="canonical" href="https://aphrody.com">"#));
+        assert!(
+            page("/textures", Langue::Ja)
+                .contains(r#"<link rel="canonical" href="https://aphrody.com/ja/textures">"#)
+        );
+        assert!(
+            page("/", Langue::Fr).contains(r#"<link rel="canonical" href="https://aphrody.com">"#)
+        );
     }
 
     #[test]
@@ -911,7 +938,11 @@ mod tests {
             assert_eq!(titres.len(), routes.len(), "titres dupliqués en {langue}");
             let descriptions: std::collections::BTreeSet<_> =
                 routes.iter().map(|r| metadonnees(r, langue).1).collect();
-            assert_eq!(descriptions.len(), routes.len(), "descriptions dupliquées en {langue}");
+            assert_eq!(
+                descriptions.len(),
+                routes.len(),
+                "descriptions dupliquées en {langue}"
+            );
         }
     }
 
@@ -975,7 +1006,11 @@ mod tests {
         let html = c.render().expect("rendu");
         assert!(html.contains(r#"<link rel="prev" href="/textures?page=6">"#));
         assert!(html.contains(r#"<link rel="next" href="/textures?page=8">"#));
-        assert!(html.contains(r#"<link rel="canonical" href="https://aphrody.com/ja/textures?page=7">"#));
+        assert!(
+            html.contains(
+                r#"<link rel="canonical" href="https://aphrody.com/ja/textures?page=7">"#
+            )
+        );
         // Les libelles suivent la langue.
         assert!(html.contains("前のページ"));
         assert!(html.contains("54203 件 · 7 / 904 ページ"));
@@ -1026,7 +1061,10 @@ mod tests {
         assert_eq!(liste["numberOfItems"], 54_203);
         // 10 elements decrits, jamais les 60 : annoncer plus que le document ne porte invalide
         // le bloc entier.
-        assert_eq!(liste["itemListElement"].as_array().expect("items").len(), 10);
+        assert_eq!(
+            liste["itemListElement"].as_array().expect("items").len(),
+            10
+        );
         assert_eq!(liste["itemListElement"][0]["position"], 1);
         assert_eq!(
             liste["itemListElement"][0]["url"],
@@ -1043,7 +1081,11 @@ mod tests {
             for route in ["/", "/textures"] {
                 let c = construire("https://aphrody.com", route, langue, None, None, None);
                 // Le `<` échappé doit se relire comme du JSON : sinon la page porte un bloc mort.
-                let brut = c.jsonld.replace(r"\u003c", "<").replace(r"\u003e", ">").replace(r"\u0026", "&");
+                let brut = c
+                    .jsonld
+                    .replace(r"\u003c", "<")
+                    .replace(r"\u003e", ">")
+                    .replace(r"\u0026", "&");
                 let v: serde_json::Value = serde_json::from_str(&brut).expect("json-ld valide");
                 assert_eq!(v["@context"], "https://schema.org");
                 assert!(v["@graph"].as_array().is_some_and(|g| !g.is_empty()));
@@ -1051,8 +1093,19 @@ mod tests {
                 assert!(!c.jsonld.contains('<'), "jsonld non échappé en {langue}");
             }
         }
-        let c = construire("https://aphrody.com", "/textures", Langue::Fr, None, None, None);
-        let brut = c.jsonld.replace(r"\u003c", "<").replace(r"\u003e", ">").replace(r"\u0026", "&");
+        let c = construire(
+            "https://aphrody.com",
+            "/textures",
+            Langue::Fr,
+            None,
+            None,
+            None,
+        );
+        let brut = c
+            .jsonld
+            .replace(r"\u003c", "<")
+            .replace(r"\u003e", ">")
+            .replace(r"\u0026", "&");
         let v: serde_json::Value = serde_json::from_str(&brut).expect("json-ld");
         let types: Vec<_> = v["@graph"]
             .as_array()

@@ -32,7 +32,7 @@
 use alloc::vec::Vec;
 use serde_json::Value;
 
-use crate::cfgbin::{walk_named, Node};
+use crate::cfgbin::{Node, walk_named};
 use crate::hash::HashId;
 
 /// Libellé **anglais** d'un identifiant de style de jeu, ou `None` hors `0..=5`.

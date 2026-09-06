@@ -33,25 +33,55 @@ fn to_iecode(siblings: &[CfgEntry]) -> Vec<serde_json::Value> {
 }
 
 fn load(vfs: &Vfs, pred: impl Fn(&str) -> bool, what: &str) -> serde_json::Value {
-    let path = vfs.iter().map(|(p, _)| p.to_string()).filter(|p| pred(p)).min().unwrap_or_else(|| panic!("{what} introuvable"));
+    let path = vfs
+        .iter()
+        .map(|(p, _)| p.to_string())
+        .filter(|p| pred(p))
+        .min()
+        .unwrap_or_else(|| panic!("{what} introuvable"));
     eprintln!("  {path}");
     let file = cfgbin::parse_t2b(&vfs.read(&path).expect("read")).expect("parse");
     json!({ "entries": to_iecode(&file.entries) })
 }
 
 fn main() {
-    let out = std::env::args().nth(1).unwrap_or_else(|| "var/shops-resolved.json".into());
-    let dir = nie_formats::vfs::resolve_game_dir().to_string_lossy().into_owned();
+    let out = std::env::args()
+        .nth(1)
+        .unwrap_or_else(|| "var/shops-resolved.json".into());
+    let dir = nie_formats::vfs::resolve_game_dir()
+        .to_string_lossy()
+        .into_owned();
     let mut vfs = Vfs::new();
-    vfs.init(Path::new(&dir).join("data").as_path()).expect("vfs init");
+    vfs.init(Path::new(&dir).join("data").as_path())
+        .expect("vfs init");
 
-    let shops = nie_data::shop::parse_shop_config(&load(&vfs, |p| p.contains("/gamedata/shop/") && p.rsplit('/').next().is_some_and(|b| b.starts_with("shop_config") && b.ends_with(".cfg.bin")), "shop_config"));
-    let text = nie_data::text::parse_text_file(&load(&vfs, |p| p.contains("/fr/") && p.rsplit('/').next().is_some_and(|b| b.starts_with("shop_text") && b.ends_with(".cfg.bin")), "shop_text fr"));
+    let shops = nie_data::shop::parse_shop_config(&load(
+        &vfs,
+        |p| {
+            p.contains("/gamedata/shop/")
+                && p.rsplit('/')
+                    .next()
+                    .is_some_and(|b| b.starts_with("shop_config") && b.ends_with(".cfg.bin"))
+        },
+        "shop_config",
+    ));
+    let text = nie_data::text::parse_text_file(&load(
+        &vfs,
+        |p| {
+            p.contains("/fr/")
+                && p.rsplit('/')
+                    .next()
+                    .is_some_and(|b| b.starts_with("shop_text") && b.ends_with(".cfg.bin"))
+        },
+        "shop_text fr",
+    ));
 
     use nie_data::shop::resolve_name;
     let mut list: Vec<serde_json::Value> = Vec::new();
     for s in &shops {
-        let Some(name) = resolve_name(s, &text) else { continue };
+        let Some(name) = resolve_name(s, &text) else {
+            continue;
+        };
         list.push(json!({
             "shopId": s.shop_id.to_hex(),
             "name": name,
@@ -69,5 +99,9 @@ fn main() {
     let txt = serde_json::to_string_pretty(&doc).expect("serialize");
     std::fs::create_dir_all(Path::new(&out).parent().unwrap_or(Path::new("."))).ok();
     std::fs::write(&out, &txt).unwrap_or_else(|e| panic!("écriture {out} : {e}"));
-    eprintln!("✓ export-shops: {} boutiques résolues → {out} ({} octets)", doc["count"], txt.len());
+    eprintln!(
+        "✓ export-shops: {} boutiques résolues → {out} ({} octets)",
+        doc["count"],
+        txt.len()
+    );
 }

@@ -42,7 +42,7 @@ mod common;
 extern crate std;
 
 use nie_data::hash::HashId;
-use nie_data::skill_view::{parse_skill_view_preset_config, SkillViewPresetData};
+use nie_data::skill_view::{SkillViewPresetData, parse_skill_view_preset_config};
 use serde_json::json;
 
 // ─── Constantes golden (valeurs lues dans le JSON réel 0.00.28) ──────────────────
@@ -136,7 +136,11 @@ fn fixture() -> serde_json::Value {
 fn fixture_compte() {
     let cfg = parse_skill_view_preset_config(&fixture());
     // 3 entrées data (y compris l'emplacement vide), 1 preset
-    assert_eq!(cfg.preset_data.len(), 3, "3 SkillViewPresetData (vide conservé)");
+    assert_eq!(
+        cfg.preset_data.len(),
+        3,
+        "3 SkillViewPresetData (vide conservé)"
+    );
     assert_eq!(cfg.presets.len(), 1, "1 SkillViewPresetInfo");
 }
 
@@ -210,10 +214,8 @@ fn from_value_emplacement_vide() {
 
 // ─── Tests sur fichiers réels (skip silencieux si absents) ───────────────────────
 
-const REAL_028: &str =
-    "skill_view/skill_view_preset_config_0.00.28.cfg.bin.json";
-const REAL_BASE: &str =
-    "skill_view/skill_view_preset_config.cfg.bin.json";
+const REAL_028: &str = "skill_view/skill_view_preset_config_0.00.28.cfg.bin.json";
+const REAL_BASE: &str = "skill_view/skill_view_preset_config.cfg.bin.json";
 
 fn load_json(path: &str) -> Option<serde_json::Value> {
     let path = common::chemin(path)?;
@@ -223,7 +225,10 @@ fn load_json(path: &str) -> Option<serde_json::Value> {
     }
     let content = std::fs::read_to_string(&path)
         .unwrap_or_else(|e| panic!("Impossible de lire {}: {e}", path.display()));
-    Some(serde_json::from_str(&content).unwrap_or_else(|e| panic!("JSON invalide {}: {e}", path.display())))
+    Some(
+        serde_json::from_str(&content)
+            .unwrap_or_else(|e| panic!("JSON invalide {}: {e}", path.display())),
+    )
 }
 
 // — version 0.00.28 (golden principal) —
@@ -234,8 +239,16 @@ fn real_028_compte() {
         return;
     };
     let cfg = parse_skill_view_preset_config(&root);
-    assert_eq!(cfg.preset_data.len(), 17, "m_SkillViewPresetDataList : 17 entrées");
-    assert_eq!(cfg.presets.len(), 5, "m_SkillViewPresetInfoList : 5 presets");
+    assert_eq!(
+        cfg.preset_data.len(),
+        17,
+        "m_SkillViewPresetDataList : 17 entrées"
+    );
+    assert_eq!(
+        cfg.presets.len(),
+        5,
+        "m_SkillViewPresetInfoList : 5 presets"
+    );
 }
 
 #[test]
@@ -247,8 +260,14 @@ fn real_028_data_0() {
     let d = &cfg.preset_data[0];
     assert_eq!(d.chara_id, DATA0_CHARA, "charaId[0] = 0xB7127F3A");
     assert_eq!(d.skill_type, 0, "skillType[0] = 0");
-    assert_eq!(d.uniform_id, DATA0_UNIFORM_028, "uniformId[0] = 0x47A6D3D3 (0.00.28)");
-    assert_eq!(d.shoes_id, DATA0_SHOES_028, "shoesId[0] = 0xD233B8D6 (0.00.28)");
+    assert_eq!(
+        d.uniform_id, DATA0_UNIFORM_028,
+        "uniformId[0] = 0x47A6D3D3 (0.00.28)"
+    );
+    assert_eq!(
+        d.shoes_id, DATA0_SHOES_028,
+        "shoesId[0] = 0xD233B8D6 (0.00.28)"
+    );
     assert_eq!(d.uniform_number, 8, "uniformNumber[0] = 8");
 }
 
@@ -349,7 +368,10 @@ fn real_028_preset_last() {
     let cfg = parse_skill_view_preset_config(&root);
     let p = &cfg.presets[4];
     assert_eq!(p.preset_id, PRESET4_ID, "presetId[4] = 0x921B7D7F");
-    assert_eq!(p.preset_name, "プリセット【発動者0人テスト】", "presetName[4]");
+    assert_eq!(
+        p.preset_name, "プリセット【発動者0人テスト】",
+        "presetName[4]"
+    );
     assert_eq!(p.data_offset, 15, "data_offset[4] = 15");
     assert_eq!(p.data_count, 2, "data_count[4] = 2");
 }
@@ -366,7 +388,10 @@ fn real_028_preset_data_of_resolu() {
     assert_eq!(data[0].chara_id, DATA0_CHARA, "data[0] = 0xB7127F3A");
     // somme des counts = 17 (couvre toutes les entrées)
     let total: i64 = cfg.presets.iter().map(|p| p.data_count).sum();
-    assert_eq!(total, 17, "somme des data_count = 17 (= toutes les entrées)");
+    assert_eq!(
+        total, 17,
+        "somme des data_count = 17 (= toutes les entrées)"
+    );
 }
 
 #[test]
@@ -375,8 +400,14 @@ fn real_028_find_et_default() {
         return;
     };
     let cfg = parse_skill_view_preset_config(&root);
-    assert!(cfg.find_preset(PRESET4_ID).is_some(), "find_preset(0x921B7D7F)");
-    assert!(cfg.find_preset(HashId(0xDEAD_BEEF)).is_none(), "find_preset inconnu → None");
+    assert!(
+        cfg.find_preset(PRESET4_ID).is_some(),
+        "find_preset(0x921B7D7F)"
+    );
+    assert!(
+        cfg.find_preset(HashId(0xDEAD_BEEF)).is_none(),
+        "find_preset inconnu → None"
+    );
     assert_eq!(
         cfg.default_preset().unwrap().preset_id,
         PRESET0_ID,
@@ -404,8 +435,14 @@ fn real_base_data_0_uniform_differe() {
     let cfg = parse_skill_view_preset_config(&root);
     let d = &cfg.preset_data[0];
     // dans la version de base, l'entrée 0 a un uniforme différent et pas de chaussures
-    assert_eq!(d.chara_id, DATA0_CHARA, "charaId[0] = 0xB7127F3A (inchangé)");
-    assert_eq!(d.uniform_id, DATA0_UNIFORM_BASE, "uniformId[0] = 0x26E5E3F1 (base)");
+    assert_eq!(
+        d.chara_id, DATA0_CHARA,
+        "charaId[0] = 0xB7127F3A (inchangé)"
+    );
+    assert_eq!(
+        d.uniform_id, DATA0_UNIFORM_BASE,
+        "uniformId[0] = 0x26E5E3F1 (base)"
+    );
     assert_eq!(d.shoes_id, HashId::ZERO, "shoesId[0] = 0 (base)");
     assert_eq!(d.uniform_number, 8, "uniformNumber[0] = 8");
 }

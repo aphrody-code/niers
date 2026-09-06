@@ -15,10 +15,8 @@ use nie_data::craft::{parse_craft_obj_config, parse_craft_theme_config};
 use nie_data::hash::HashId;
 use serde_json::json;
 
-const REAL_OBJ: &str =
-    "craft/craft_obj_config_1.04.10.00.cfg.bin.json";
-const REAL_THEME: &str =
-    "craft/craft_theme_config_0.00.00.cfg.bin.json";
+const REAL_OBJ: &str = "craft/craft_obj_config_1.04.10.00.cfg.bin.json";
+const REAL_THEME: &str = "craft/craft_theme_config_0.00.00.cfg.bin.json";
 
 fn load_json(path: &str) -> Option<serde_json::Value> {
     let path = common::chemin(path)?;
@@ -26,9 +24,12 @@ fn load_json(path: &str) -> Option<serde_json::Value> {
         eprintln!("skip : {} absent du corpus", path.display());
         return None;
     }
-    let content =
-        std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("Impossible de lire {}: {e}", path.display()));
-    Some(serde_json::from_str(&content).unwrap_or_else(|e| panic!("JSON invalide {}: {e}", path.display())))
+    let content = std::fs::read_to_string(&path)
+        .unwrap_or_else(|e| panic!("Impossible de lire {}: {e}", path.display()));
+    Some(
+        serde_json::from_str(&content)
+            .unwrap_or_else(|e| panic!("JSON invalide {}: {e}", path.display())),
+    )
 }
 
 // ─── Fixture inline (craft_obj) ────────────────────────────────────────────────
@@ -223,7 +224,9 @@ fn fixture_obj_find() {
 
 #[test]
 fn real_obj_comptes() {
-    let Some(root) = load_json(REAL_OBJ) else { return };
+    let Some(root) = load_json(REAL_OBJ) else {
+        return;
+    };
     let cfg = parse_craft_obj_config(&root);
     assert_eq!(cfg.lottery_unique_charas.len(), 1005, "loteries");
     assert_eq!(cfg.sockets.len(), 87, "sockets");
@@ -236,10 +239,15 @@ fn real_obj_comptes() {
 
 #[test]
 fn real_obj_lottery_0_et_688() {
-    let Some(root) = load_json(REAL_OBJ) else { return };
+    let Some(root) = load_json(REAL_OBJ) else {
+        return;
+    };
     let cfg = parse_craft_obj_config(&root);
     // entrée 0 : [-1717452464, 2]
-    assert_eq!(cfg.lottery_unique_charas[0].chara_id, HashId::from_i64(-1717452464));
+    assert_eq!(
+        cfg.lottery_unique_charas[0].chara_id,
+        HashId::from_i64(-1717452464)
+    );
     assert_eq!(cfg.lottery_unique_charas[0].weight, 2.0);
     // entrée 688 : [150881673, 1,5] — seul Float de la liste
     assert_eq!(cfg.lottery_unique_charas[688].chara_id, HashId(0x08FE_4589));
@@ -248,7 +256,9 @@ fn real_obj_lottery_0_et_688() {
 
 #[test]
 fn real_obj_socket_floats() {
-    let Some(root) = load_json(REAL_OBJ) else { return };
+    let Some(root) = load_json(REAL_OBJ) else {
+        return;
+    };
     let cfg = parse_craft_obj_config(&root);
     // socket 0 : [1, 0, 3, 0]
     assert_eq!(cfg.sockets[0].raw, [1.0, 0.0, 3.0, 0.0]);
@@ -260,21 +270,31 @@ fn real_obj_socket_floats() {
 
 #[test]
 fn real_obj_npc_stick() {
-    let Some(root) = load_json(REAL_OBJ) else { return };
+    let Some(root) = load_json(REAL_OBJ) else {
+        return;
+    };
     let cfg = parse_craft_obj_config(&root);
     // npc 0 : [0, 0, 1.5, -1, 0, 0]
     assert_eq!(cfg.npc_stick_points[0].raw, [0.0, 0.0, 1.5, -1.0, 0.0, 0.0]);
     // npc 1 : [1.7, 0, 1.5, -1, 0, 0]
     assert_eq!(cfg.npc_stick_points[1].raw, [1.7, 0.0, 1.5, -1.0, 0.0, 0.0]);
     // npc 2 : [-1.7, 0, 1.5, -1, 0, 0]
-    assert_eq!(cfg.npc_stick_points[2].raw, [-1.7, 0.0, 1.5, -1.0, 0.0, 0.0]);
+    assert_eq!(
+        cfg.npc_stick_points[2].raw,
+        [-1.7, 0.0, 1.5, -1.0, 0.0, 0.0]
+    );
     // npc 6 : [-4, 0, 5, -1, 0, 0]
-    assert_eq!(cfg.npc_stick_points[6].raw, [-4.0, 0.0, 5.0, -1.0, 0.0, 0.0]);
+    assert_eq!(
+        cfg.npc_stick_points[6].raw,
+        [-4.0, 0.0, 5.0, -1.0, 0.0, 0.0]
+    );
 }
 
 #[test]
 fn real_obj_visual_0() {
-    let Some(root) = load_json(REAL_OBJ) else { return };
+    let Some(root) = load_json(REAL_OBJ) else {
+        return;
+    };
     let cfg = parse_craft_obj_config(&root);
     // visual 0 : [757857389, 0, 1]
     assert_eq!(cfg.visual_infos[0].visual_id, HashId(0x2D2B_FC6D));
@@ -284,7 +304,9 @@ fn real_obj_visual_0() {
 
 #[test]
 fn real_obj_visual_groups_0_1() {
-    let Some(root) = load_json(REAL_OBJ) else { return };
+    let Some(root) = load_json(REAL_OBJ) else {
+        return;
+    };
     let cfg = parse_craft_obj_config(&root);
     // group 0 : group_id 0xE35E00DF, ref [0,1]
     assert_eq!(cfg.visual_groups[0].group_id, HashId(0xE35E_00DF));
@@ -297,7 +319,9 @@ fn real_obj_visual_groups_0_1() {
 
 #[test]
 fn real_obj_main_0_et_2() {
-    let Some(root) = load_json(REAL_OBJ) else { return };
+    let Some(root) = load_json(REAL_OBJ) else {
+        return;
+    };
     let cfg = parse_craft_obj_config(&root);
 
     // objet 0 : craft_id 0x46B34E49 ; ref_visual_group [0,1] ; 3 autres refs [0,0]
@@ -333,7 +357,9 @@ fn real_obj_main_0_et_2() {
 
 #[test]
 fn real_obj_categories() {
-    let Some(root) = load_json(REAL_OBJ) else { return };
+    let Some(root) = load_json(REAL_OBJ) else {
+        return;
+    };
     let cfg = parse_craft_obj_config(&root);
     // [1,80] [2,50] [3,20] [4,100] [5,2]
     let expected = [(1, 80), (2, 50), (3, 20), (4, 100), (5, 2)];
@@ -345,7 +371,9 @@ fn real_obj_categories() {
 
 #[test]
 fn real_obj_find() {
-    let Some(root) = load_json(REAL_OBJ) else { return };
+    let Some(root) = load_json(REAL_OBJ) else {
+        return;
+    };
     let cfg = parse_craft_obj_config(&root);
     assert!(cfg.find_obj(HashId(0x46B3_4E49)).is_some());
     assert!(cfg.find_obj(HashId(0xDEAD_BEEF)).is_none());
@@ -435,7 +463,10 @@ fn fixture_theme_type_0_et_1() {
     let t1 = &cfg.theme_types[1];
     assert_eq!(t1.type_id, HashId(0x3D56_4C8A));
     assert_eq!(t1.variant_hash, HashId(0x8CE9_4D48));
-    assert_eq!(t1.data_b64, "AAAAACEFNY12ZtgAEwIoAAYCNLCWyF8oAAYCMgAAAAEyAAAAAXg=");
+    assert_eq!(
+        t1.data_b64,
+        "AAAAACEFNY12ZtgAEwIoAAYCNLCWyF8oAAYCMgAAAAEyAAAAAXg="
+    );
     assert_eq!(t1.extra_hash, HashId(0x0EB2_AC6A));
 }
 
@@ -454,7 +485,9 @@ fn fixture_theme_0_ref() {
 
 #[test]
 fn real_theme_comptes() {
-    let Some(root) = load_json(REAL_THEME) else { return };
+    let Some(root) = load_json(REAL_THEME) else {
+        return;
+    };
     let cfg = parse_craft_theme_config(&root);
     assert_eq!(cfg.theme_types.len(), 9, "9 types");
     assert_eq!(cfg.themes.len(), 3, "3 thèmes");
@@ -462,7 +495,9 @@ fn real_theme_comptes() {
 
 #[test]
 fn real_theme_types() {
-    let Some(root) = load_json(REAL_THEME) else { return };
+    let Some(root) = load_json(REAL_THEME) else {
+        return;
+    };
     let cfg = parse_craft_theme_config(&root);
     // type 0 : data_b64 vide (Int "0")
     assert_eq!(cfg.theme_types[0].type_id, HashId(0xA45F_1D30));
@@ -479,7 +514,9 @@ fn real_theme_types() {
 
 #[test]
 fn real_theme_infos_et_refs() {
-    let Some(root) = load_json(REAL_THEME) else { return };
+    let Some(root) = load_json(REAL_THEME) else {
+        return;
+    };
     let cfg = parse_craft_theme_config(&root);
     // thème 0 : [-1917049535, 489051273, 0], ref [0,3]
     assert_eq!(cfg.themes[0].theme_id, HashId(0x8DBC_2541));

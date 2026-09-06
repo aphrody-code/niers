@@ -107,11 +107,7 @@ impl HeroVariantInfo {
 fn variant_param(v: &Value, flag_key: &str, id_key: &str) -> Option<HashId> {
     let has = field_bool(v, flag_key).unwrap_or(false);
     let id = field_hash(v, id_key);
-    if has && !id.is_zero() {
-        Some(id)
-    } else {
-        None
-    }
+    if has && !id.is_zero() { Some(id) } else { None }
 }
 
 /// Parse tout le config : la liste `m_soccerCharaUniqueRarityList` en ordre du fichier.

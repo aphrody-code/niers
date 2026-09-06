@@ -80,7 +80,11 @@ fn build_info_0_chara_param_id() {
 fn build_info_0_type_info_offset_count() {
     let cfg = parse_basara_chara_config(&fixture_basara());
     // m_basaraBuildInfoList[0].typeInfo = [0, 6]
-    assert_eq!(cfg.build_infos[0].type_info, vec![0, 6], "typeInfo brut [0,6]");
+    assert_eq!(
+        cfg.build_infos[0].type_info,
+        vec![0, 6],
+        "typeInfo brut [0,6]"
+    );
     assert_eq!(cfg.build_infos[0].type_offset(), 0, "offset = 0");
     assert_eq!(cfg.build_infos[0].type_count(), 6, "count = 6");
 }
@@ -111,7 +115,10 @@ fn build_type_0() {
 fn build_type_5_type_zero_garde_board_non_nul() {
     let cfg = parse_basara_chara_config(&fixture_basara());
     // m_basaraBuildTypeList[5] = { type: 0, boardId: "0x11E8C045" } — type 0 conservé.
-    assert_eq!(cfg.build_types[5].build_type, 0, "type 0 est valide, non filtré");
+    assert_eq!(
+        cfg.build_types[5].build_type, 0,
+        "type 0 est valide, non filtré"
+    );
     assert_eq!(cfg.build_types[5].board_id, HashId(0x11E8_C045));
 }
 
@@ -169,7 +176,10 @@ fn types_of_hors_limites_renvoie_vide() {
     let cfg = parse_basara_chara_config(&fixture_basara());
     // build_infos[2].typeInfo = [12, 6] → [12..18], or la fixture n'a que 12 build_types.
     let builds = cfg.types_of(&cfg.build_infos[2]);
-    assert!(builds.is_empty(), "plage hors limites → tranche vide (pas de panique)");
+    assert!(
+        builds.is_empty(),
+        "plage hors limites → tranche vide (pas de panique)"
+    );
 }
 
 // ─── Accesseurs ──────────────────────────────────────────────────────────────────
@@ -178,7 +188,10 @@ fn types_of_hors_limites_renvoie_vide() {
 fn find_build_trouve_et_absent() {
     let cfg = parse_basara_chara_config(&fixture_basara());
     let found = cfg.find_build(HashId(0x36D8_C89C));
-    assert!(found.is_some(), "find_build(0x36D8C89C) doit trouver l'entrée");
+    assert!(
+        found.is_some(),
+        "find_build(0x36D8C89C) doit trouver l'entrée"
+    );
     assert_eq!(found.unwrap().type_offset(), 6);
 
     assert!(

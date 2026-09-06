@@ -129,10 +129,7 @@ const COL_AVANT_VTABLE: usize = 8;
 /// `complete object locator`, qui pointe dans `.rdata`.
 fn methodes_de(img: &nie_pe::PeImage, vtable: u64) -> Vec<u64> {
     let mut out = Vec::new();
-    let Some(mut off) = img
-        .va_to_offset(vtable)
-        .map(|o| o + COL_AVANT_VTABLE)
-    else {
+    let Some(mut off) = img.va_to_offset(vtable).map(|o| o + COL_AVANT_VTABLE) else {
         return out;
     };
     while out.len() < MAX_METHODES {
@@ -171,8 +168,8 @@ pub fn synchroniser(
     bytes: &[u8],
     img: Option<&nie_pe::PeImage>,
 ) -> anyhow::Result<Bilan> {
-    let mut conn = rusqlite::Connection::open(db)
-        .with_context(|| format!("ouverture de {}", db.display()))?;
+    let mut conn =
+        rusqlite::Connection::open(db).with_context(|| format!("ouverture de {}", db.display()))?;
     conn.execute_batch(SCHEMA).context("schéma forge_unit")?;
 
     // Le binaire visé est celui qui porte les fonctions : la table `binary` en
@@ -271,7 +268,10 @@ fn classes(
               WHERE binary_id = ?1 AND vaddr IS NOT NULL AND kind = 'fn'",
         )?;
         let rows = q.query_map([binary_id], |r| {
-            Ok((r.get::<_, i64>(0)?, (r.get::<_, String>(1)?, r.get::<_, i64>(2)?)))
+            Ok((
+                r.get::<_, i64>(0)?,
+                (r.get::<_, String>(1)?, r.get::<_, i64>(2)?),
+            ))
         })?;
         rows.flatten().collect()
     };

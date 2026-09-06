@@ -115,7 +115,11 @@ pub enum SaveError {
 
     /// Intégrité CRC32 échouée.
     #[error("CRC32 invalide : attendu 0x{expected:08X}, calculé 0x{computed:08X} ({context})")]
-    BadCrc { expected: u32, computed: u32, context: &'static str },
+    BadCrc {
+        expected: u32,
+        computed: u32,
+        context: &'static str,
+    },
 
     /// Données corrompues.
     #[error("données corrompues : {0}")]
@@ -351,7 +355,10 @@ impl LivesContainer {
 /// - [`SaveError::Corrupt`] pour toute incohérence structurelle.
 pub fn parse(data: &[u8], filename: &str) -> Result<LivesContainer, SaveError> {
     if data.len() < DATA_START {
-        return Err(SaveError::TooShort { got: data.len(), need: DATA_START });
+        return Err(SaveError::TooShort {
+            got: data.len(),
+            need: DATA_START,
+        });
     }
 
     let key = key_from_filename(filename);
@@ -363,17 +370,22 @@ pub fn parse(data: &[u8], filename: &str) -> Result<LivesContainer, SaveError> {
     // Vérifier le magic.
     // SAFETY: plain.len() >= DATA_START (0x800) >= 8, les slices [0..4] et [4..8] sont valides.
     let magic = u32::from_le_bytes(
-        plain.get(0..4)
+        plain
+            .get(0..4)
             .and_then(|s| s.try_into().ok())
             .ok_or(SaveError::Corrupt("lecture magic: slice invalide"))?,
     );
     if magic != LIVES_MAGIC {
-        return Err(SaveError::BadMagic { expected: LIVES_MAGIC, got: magic });
+        return Err(SaveError::BadMagic {
+            expected: LIVES_MAGIC,
+            got: magic,
+        });
     }
 
     // Vérifier le CRC32 du header.
     let stored_hdr_crc = u32::from_le_bytes(
-        plain.get(4..8)
+        plain
+            .get(4..8)
             .and_then(|s| s.try_into().ok())
             .ok_or(SaveError::Corrupt("lecture hdr_crc: slice invalide"))?,
     );
@@ -388,7 +400,10 @@ pub fn parse(data: &[u8], filename: &str) -> Result<LivesContainer, SaveError> {
 
     // Lire le nom du slot.
     let slot_name_bytes = &plain[0x10..0x50];
-    let nul = slot_name_bytes.iter().position(|&b| b == 0).unwrap_or(slot_name_bytes.len());
+    let nul = slot_name_bytes
+        .iter()
+        .position(|&b| b == 0)
+        .unwrap_or(slot_name_bytes.len());
     let slot_name = String::from_utf8_lossy(&slot_name_bytes[..nul]).into_owned();
 
     // Parser le répertoire.
@@ -397,23 +412,29 @@ pub fn parse(data: &[u8], filename: &str) -> Result<LivesContainer, SaveError> {
     while off + DIR_ENTRY_STRIDE <= DATA_START {
         // Les slices sont garanties valides par la condition de boucle (off + 0x80 <= 0x800).
         let crc32 = u32::from_le_bytes(
-            plain.get(off..off + 4)
+            plain
+                .get(off..off + 4)
                 .and_then(|s| s.try_into().ok())
                 .ok_or(SaveError::Corrupt("répertoire: lecture crc32"))?,
         );
         let size = u32::from_le_bytes(
-            plain.get(off + 4..off + 8)
+            plain
+                .get(off + 4..off + 8)
                 .and_then(|s| s.try_into().ok())
                 .ok_or(SaveError::Corrupt("répertoire: lecture size"))?,
         );
         let blob_offset = u32::from_le_bytes(
-            plain.get(off + 8..off + 12)
+            plain
+                .get(off + 8..off + 12)
                 .and_then(|s| s.try_into().ok())
                 .ok_or(SaveError::Corrupt("répertoire: lecture offset"))?,
         );
         // Nom : null-terminé dans les 116 octets restants de l'entrée
         let name_slice = &plain[off + 12..off + DIR_ENTRY_STRIDE];
-        let name_nul = name_slice.iter().position(|&b| b == 0).unwrap_or(name_slice.len());
+        let name_nul = name_slice
+            .iter()
+            .position(|&b| b == 0)
+            .unwrap_or(name_slice.len());
         let filename_entry = String::from_utf8_lossy(&name_slice[..name_nul]).into_owned();
 
         // Une entrée avec size=0 ET nom vide = fin du répertoire
@@ -421,7 +442,12 @@ pub fn parse(data: &[u8], filename: &str) -> Result<LivesContainer, SaveError> {
             break;
         }
 
-        entries.push(DirEntry { crc32, size, offset: blob_offset, filename: filename_entry });
+        entries.push(DirEntry {
+            crc32,
+            size,
+            offset: blob_offset,
+            filename: filename_entry,
+        });
         off += DIR_ENTRY_STRIDE;
     }
 
@@ -435,13 +461,18 @@ pub fn parse(data: &[u8], filename: &str) -> Result<LivesContainer, SaveError> {
         // Utiliser checked_add pour éviter l'overflow sur wasm32 (usize = 32 bits).
         let abs_start = DATA_START
             .checked_add(entry.offset as usize)
-            .ok_or(SaveError::Corrupt("dépassement d'offset dans le répertoire"))?;
+            .ok_or(SaveError::Corrupt(
+                "dépassement d'offset dans le répertoire",
+            ))?;
         let abs_end = abs_start
             .checked_add(entry.size as usize)
             .ok_or(SaveError::Corrupt("dépassement de taille de blob"))?;
 
         if abs_end > plain.len() {
-            return Err(SaveError::TooShort { got: plain.len(), need: abs_end });
+            return Err(SaveError::TooShort {
+                got: plain.len(),
+                need: abs_end,
+            });
         }
 
         let blob_bytes = &plain[abs_start..abs_end];
@@ -458,12 +489,16 @@ pub fn parse(data: &[u8], filename: &str) -> Result<LivesContainer, SaveError> {
 
         // Parser l'en-tête du blob (12 octets).
         if blob_bytes.len() < BLOB_HEADER_SIZE {
-            return Err(SaveError::TooShort { got: blob_bytes.len(), need: BLOB_HEADER_SIZE });
+            return Err(SaveError::TooShort {
+                got: blob_bytes.len(),
+                need: BLOB_HEADER_SIZE,
+            });
         }
 
         // blob_bytes.len() >= BLOB_HEADER_SIZE (12) est vérifié juste avant.
         let blob_magic = u16::from_be_bytes(
-            blob_bytes.get(0..2)
+            blob_bytes
+                .get(0..2)
                 .and_then(|s| s.try_into().ok())
                 .ok_or(SaveError::Corrupt("blob: lecture magic"))?,
         );
@@ -475,17 +510,20 @@ pub fn parse(data: &[u8], filename: &str) -> Result<LivesContainer, SaveError> {
         }
 
         let subtype_raw = u16::from_be_bytes(
-            blob_bytes.get(2..4)
+            blob_bytes
+                .get(2..4)
                 .and_then(|s| s.try_into().ok())
                 .ok_or(SaveError::Corrupt("blob: lecture subtype"))?,
         );
         let payload_size = u32::from_le_bytes(
-            blob_bytes.get(4..8)
+            blob_bytes
+                .get(4..8)
                 .and_then(|s| s.try_into().ok())
                 .ok_or(SaveError::Corrupt("blob: lecture payload_size"))?,
         );
         let field8 = u32::from_le_bytes(
-            blob_bytes.get(8..12)
+            blob_bytes
+                .get(8..12)
                 .and_then(|s| s.try_into().ok())
                 .ok_or(SaveError::Corrupt("blob: lecture field8"))?,
         );
@@ -506,7 +544,12 @@ pub fn parse(data: &[u8], filename: &str) -> Result<LivesContainer, SaveError> {
         });
     }
 
-    Ok(LivesContainer { slot_name, key, entries, blobs })
+    Ok(LivesContainer {
+        slot_name,
+        key,
+        entries,
+        blobs,
+    })
 }
 
 // ---------------------------------------------------------------------------
@@ -564,7 +607,10 @@ impl CharaRef {
     /// Construit un `CharaRef` avec nom résolu.
     #[must_use]
     pub fn with_name(id: body::autosave_roster::CharaId, name: impl Into<String>) -> Self {
-        CharaRef { id, name: Some(name.into()) }
+        CharaRef {
+            id,
+            name: Some(name.into()),
+        }
     }
 }
 
@@ -670,7 +716,10 @@ impl Team {
     /// Construit une `Team` non résolue (état initial — section OPAQUE).
     #[must_use]
     pub fn unresolved() -> Self {
-        Team { members: Vec::new(), resolved: false }
+        Team {
+            members: Vec::new(),
+            resolved: false,
+        }
     }
 }
 
@@ -749,7 +798,6 @@ pub struct SaveSummary {
 
     // Champs legacy (rétrocompatibilité — pointent sur roster.owned)
     // NE PAS utiliser dans le nouveau code ; préférer summary.roster.owned.
-
     /// DEPRECATED — utiliser `summary.roster.owned` à la place.
     /// Conservé pour rétrocompatibilité avec le code existant (page /save azalee).
     #[doc(hidden)]
@@ -782,27 +830,27 @@ pub struct SaveSummary {
 /// ```
 #[must_use]
 pub fn summarize(container: &LivesContainer) -> SaveSummary {
-    use body::{
-        autosave_roster::parse_autosave_roster,
-        headersave::parse_headersave,
-    };
+    use body::{autosave_roster::parse_autosave_roster, headersave::parse_headersave};
 
     // --- HEADERSAVE ---
     let hs = container
         .blob_by_subtype(BlobSubtype::Headersave)
         .and_then(|blob| parse_headersave(&blob.body).ok());
 
-    let player_name   = hs.as_ref().map(|h| h.player_name.clone()).unwrap_or_default();
-    let level_str     = hs.as_ref().map(|h| h.level_str.clone()).unwrap_or_default();
-    let unique_id     = hs.as_ref().map(|h| h.unique_id.clone()).unwrap_or_default();
-    let last_save     = hs.as_ref().map(|h| h.save_timestamp.clone());
-    let used_slots    = hs.as_ref().map(|h| h.used_slots);
-    let max_slots_v   = hs.as_ref().map(|h| h.max_slots);
+    let player_name = hs
+        .as_ref()
+        .map(|h| h.player_name.clone())
+        .unwrap_or_default();
+    let level_str = hs.as_ref().map(|h| h.level_str.clone()).unwrap_or_default();
+    let unique_id = hs.as_ref().map(|h| h.unique_id.clone()).unwrap_or_default();
+    let last_save = hs.as_ref().map(|h| h.save_timestamp.clone());
+    let used_slots = hs.as_ref().map(|h| h.used_slots);
+    let max_slots_v = hs.as_ref().map(|h| h.max_slots);
 
     // playtime depuis les slots HEADERSAVE si AUTOSAVE ne l'a pas encore
-    let hs_playtime: Option<u32> = hs.as_ref().and_then(|h| {
-        h.slots.iter().find_map(|s| s.playtime_secs)
-    });
+    let hs_playtime: Option<u32> = hs
+        .as_ref()
+        .and_then(|h| h.slots.iter().find_map(|s| s.playtime_secs));
 
     // --- AUTOSAVE ---
     let autosave = container
@@ -869,10 +917,10 @@ mod tests {
 
         // En-tête blob (12 octets) : magic BE + subtype BE + payload_size LE + field8 LE
         let mut blob: Vec<u8> = Vec::new();
-        blob.extend_from_slice(&BLOB_MAGIC.to_be_bytes());           // EE FF
-        blob.extend_from_slice(&BLOB_SUBTYPE_SYSTEM.to_be_bytes());  // F0 10
-        blob.extend_from_slice(&(body.len() as u32).to_le_bytes());  // 08 00 00 00
-        blob.extend_from_slice(&0xDEAD_BEEFu32.to_le_bytes());       // field8
+        blob.extend_from_slice(&BLOB_MAGIC.to_be_bytes()); // EE FF
+        blob.extend_from_slice(&BLOB_SUBTYPE_SYSTEM.to_be_bytes()); // F0 10
+        blob.extend_from_slice(&(body.len() as u32).to_le_bytes()); // 08 00 00 00
+        blob.extend_from_slice(&0xDEAD_BEEFu32.to_le_bytes()); // field8
         blob.extend_from_slice(&body);
 
         let blob_crc = crc32_of(&blob);
@@ -889,9 +937,9 @@ mod tests {
         hdr[0x10..0x10 + sn.len()].copy_from_slice(sn);
 
         // Répertoire @ 0x50
-        hdr[0x50..0x54].copy_from_slice(&blob_crc.to_le_bytes());   // crc32
-        hdr[0x54..0x58].copy_from_slice(&blob_size.to_le_bytes());  // size
-        hdr[0x58..0x5C].copy_from_slice(&0u32.to_le_bytes());       // offset=0
+        hdr[0x50..0x54].copy_from_slice(&blob_crc.to_le_bytes()); // crc32
+        hdr[0x54..0x58].copy_from_slice(&blob_size.to_le_bytes()); // size
+        hdr[0x58..0x5C].copy_from_slice(&0u32.to_le_bytes()); // offset=0
         let fname = b"SYSTEM_data.bin";
         hdr[0x5C..0x5C + fname.len()].copy_from_slice(fname);
 
@@ -928,7 +976,10 @@ mod tests {
         assert_eq!(container.entries[0].filename, "SYSTEM_data.bin");
         assert_eq!(container.blobs.len(), 1);
         assert_eq!(container.blobs[0].header.subtype, BlobSubtype::System);
-        assert_eq!(container.blobs[0].body, vec![0x01, 0x02, 0x03, 0x04, 0xAA, 0xBB, 0xCC, 0xDD]);
+        assert_eq!(
+            container.blobs[0].body,
+            vec![0x01, 0x02, 0x03, 0x04, 0xAA, 0xBB, 0xCC, 0xDD]
+        );
     }
 
     #[test]
@@ -1011,9 +1062,15 @@ mod tests {
         let reenc = container.encrypt().unwrap();
         // Re-parser pour vérifier la modification
         let container2 = parse(&reenc, FAKE_SLOT_NAME).unwrap();
-        assert_eq!(container2.blobs[0].body[0], 0xFF, "la modification doit survivre au round-trip");
+        assert_eq!(
+            container2.blobs[0].body[0], 0xFF,
+            "la modification doit survivre au round-trip"
+        );
         // Les autres octets ne doivent pas avoir changé
-        assert_eq!(container2.blobs[0].body[1..], vec![0x02, 0x03, 0x04, 0xAA, 0xBB, 0xCC, 0xDD]);
+        assert_eq!(
+            container2.blobs[0].body[1..],
+            vec![0x02, 0x03, 0x04, 0xAA, 0xBB, 0xCC, 0xDD]
+        );
     }
 
     #[test]
@@ -1077,7 +1134,12 @@ mod tests {
         let result = parse(&enc, FAKE_SLOT_NAME);
         // TooShort ou Corrupt selon le chemin d'exécution — jamais panic.
         assert!(
-            matches!(result, Err(SaveError::TooShort { .. }) | Err(SaveError::Corrupt(_)) | Err(SaveError::BadCrc { .. })),
+            matches!(
+                result,
+                Err(SaveError::TooShort { .. })
+                    | Err(SaveError::Corrupt(_))
+                    | Err(SaveError::BadCrc { .. })
+            ),
             "blob_offset=u32::MAX doit retourner une erreur, pas paniquer"
         );
     }
@@ -1095,7 +1157,12 @@ mod tests {
         let result = parse(&enc, FAKE_SLOT_NAME);
         // Doit retourner TooShort ou Corrupt — jamais panic.
         assert!(
-            matches!(result, Err(SaveError::TooShort { .. }) | Err(SaveError::Corrupt(_)) | Err(SaveError::BadCrc { .. })),
+            matches!(
+                result,
+                Err(SaveError::TooShort { .. })
+                    | Err(SaveError::Corrupt(_))
+                    | Err(SaveError::BadCrc { .. })
+            ),
             "blob_size=u32::MAX doit retourner une erreur"
         );
     }
@@ -1149,8 +1216,8 @@ mod tests {
         use crate::body::headersave::HEADERSAVE_MIN_LEN;
         let mut buf = vec![0u8; HEADERSAVE_MIN_LEN];
         buf[3] = 0x01; // format_version=1 BE
-        buf[8] = 10;   // max_slots=10
-        buf[12] = 0;   // used_slots=0
+        buf[8] = 10; // max_slots=10
+        buf[12] = 0; // used_slots=0
         let _ = parse_headersave(&buf);
     }
 
@@ -1187,7 +1254,11 @@ mod tests {
             total_slots: 6000,
         };
         roster.resolve(|id| {
-            if id == 0xF5E1_E7CD { Some("Max Scara".to_string()) } else { None }
+            if id == 0xF5E1_E7CD {
+                Some("Max Scara".to_string())
+            } else {
+                None
+            }
         });
         assert_eq!(roster.owned[0].name.as_deref(), Some("Max Scara"));
         assert!(roster.owned[1].name.is_none(), "id inconnu → None");

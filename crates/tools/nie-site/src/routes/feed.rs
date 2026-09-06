@@ -107,10 +107,13 @@ pub fn horodatage(brut: &str) -> Option<String> {
     }
     let jour_valide = |j: &str| {
         j.len() == 10
-            && j.as_bytes()
-                .iter()
-                .enumerate()
-                .all(|(i, c)| if i == 4 || i == 7 { *c == b'-' } else { c.is_ascii_digit() })
+            && j.as_bytes().iter().enumerate().all(|(i, c)| {
+                if i == 4 || i == 7 {
+                    *c == b'-'
+                } else {
+                    c.is_ascii_digit()
+                }
+            })
     };
     let Some((jour, heure)) = s.split_once('T') else {
         return jour_valide(s).then(|| format!("{s}T00:00:00Z"));
@@ -127,20 +130,19 @@ pub fn horodatage(brut: &str) -> Option<String> {
         None => return None,
     };
     let horloge_ok = horloge.len() == 8
-        && horloge
-            .as_bytes()
-            .iter()
-            .enumerate()
-            .all(|(i, c)| if i == 2 || i == 5 { *c == b':' } else { c.is_ascii_digit() });
+        && horloge.as_bytes().iter().enumerate().all(|(i, c)| {
+            if i == 2 || i == 5 {
+                *c == b':'
+            } else {
+                c.is_ascii_digit()
+            }
+        });
     let decalage_ok = decalage.is_none_or(|d| {
-        d.as_bytes()
-            .iter()
-            .enumerate()
-            .all(|(i, c)| match i {
-                0 => *c == b'+' || *c == b'-',
-                3 => *c == b':',
-                _ => c.is_ascii_digit(),
-            })
+        d.as_bytes().iter().enumerate().all(|(i, c)| match i {
+            0 => *c == b'+' || *c == b'-',
+            3 => *c == b':',
+            _ => c.is_ascii_digit(),
+        })
     });
     (horloge_ok && decalage_ok).then(|| s.to_owned())
 }
@@ -155,8 +157,7 @@ pub async fn atom(State(etat): State<EtatSite>) -> Response {
         .into_response();
     }
     let origine = etat.config.origine.clone();
-    let lecture =
-        tokio::task::spawn_blocking(move || lire(&chemin, &origine, ENTREES_MAX)).await;
+    let lecture = tokio::task::spawn_blocking(move || lire(&chemin, &origine, ENTREES_MAX)).await;
     let entrees = match lecture {
         Ok(Ok(e)) => e,
         Ok(Err(e)) => return e.into_response(),
@@ -184,7 +185,10 @@ pub async fn atom(State(etat): State<EtatSite>) -> Response {
     match flux.render() {
         Ok(xml) => (
             StatusCode::OK,
-            [(header::CONTENT_TYPE, TYPE_CONTENU), (header::CACHE_CONTROL, CONTROLE)],
+            [
+                (header::CONTENT_TYPE, TYPE_CONTENU),
+                (header::CACHE_CONTROL, CONTROLE),
+            ],
             xml,
         )
             .into_response(),
@@ -198,7 +202,10 @@ pub async fn atom(State(etat): State<EtatSite>) -> Response {
 /// Date de dernière écriture du catalogue, en RFC 3339.
 fn date_du_fichier(chemin: &std::path::Path) -> Option<String> {
     let modifie = std::fs::metadata(chemin).ok()?.modified().ok()?;
-    let secondes = modifie.duration_since(std::time::UNIX_EPOCH).ok()?.as_secs();
+    let secondes = modifie
+        .duration_since(std::time::UNIX_EPOCH)
+        .ok()?
+        .as_secs();
     Some(crate::routes::well_known::iso8601_utc(secondes))
 }
 
@@ -249,7 +256,10 @@ pub fn lire(
 /// L'identifiant est dérivé de l'origine configurée, comme toutes les URL de la crate : rien
 /// n'est codé en dur, au prix assumé qu'un changement d'origine renumérote le flux — un
 /// déploiement de préversion doit se décrire lui-même plutôt qu'usurper `aphrody.com`.
-#[expect(clippy::too_many_arguments, reason = "neuf colonnes de la table, nommees une par une")]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "neuf colonnes de la table, nommees une par une"
+)]
 #[must_use]
 pub fn entree(
     origine: &str,
@@ -284,7 +294,11 @@ pub fn entree(
     if let Some(jp) = titre_jp.filter(|t| !t.trim().is_empty()) {
         morceaux.push(jp);
     }
-    let resume = if morceaux.is_empty() { titre.clone() } else { morceaux.join(" — ") };
+    let resume = if morceaux.is_empty() {
+        titre.clone()
+    } else {
+        morceaux.join(" — ")
+    };
     EntreeFlux {
         id: format!("{origine}/api/v1/episodes#{id}"),
         titre,
@@ -409,7 +423,10 @@ mod tests {
         // `&#39;` — `filters/escape.rs:127-133`), pas en entites nommees. Les deux sont
         // valides en XML, mais seules les numeriques le sont SANS DTD : un `&amp;` est defini
         // par XML lui-meme, un `&nbsp;` ne l'est pas. Le flux est donc du XML autonome.
-        assert!(rendu.contains("Fussball &#38; &#60;Freunde&#62;"), "esperluette et chevrons");
+        assert!(
+            rendu.contains("Fussball &#38; &#60;Freunde&#62;"),
+            "esperluette et chevrons"
+        );
         assert!(rendu.contains("&#34;Kapitel 1&#34;"), "guillemets");
         assert!(!rendu.contains("& <"), "aucun caractere brut ne subsiste");
         assert_eq!(rendu.matches("<entry>").count(), 1);
@@ -420,8 +437,14 @@ mod tests {
         for exige in ["<id>", "<title>", "<updated>"] {
             assert!(rendu.contains(exige), "{exige} absent du flux");
         }
-        assert!(rendu.contains("rel=\"self\""), "un flux doit savoir se nommer");
-        assert!(!rendu.contains("aphrody.com"), "aucune origine codee en dur");
+        assert!(
+            rendu.contains("rel=\"self\""),
+            "un flux doit savoir se nommer"
+        );
+        assert!(
+            !rendu.contains("aphrody.com"),
+            "aucune origine codee en dur"
+        );
     }
 
     #[test]

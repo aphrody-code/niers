@@ -207,7 +207,9 @@ impl SoccerAiCmdConfig {
     /// Recherche une condition par son `condition_id`. `None` si absente.
     #[must_use]
     pub fn find_condition(&self, condition_id: i64) -> Option<&AiCmdInfo> {
-        self.conditions.iter().find(|c| c.condition_id == condition_id)
+        self.conditions
+            .iter()
+            .find(|c| c.condition_id == condition_id)
     }
 }
 
@@ -953,18 +955,10 @@ pub fn parse_strategy_ai_config(root: &Value) -> StrategyAiConfig {
             "m_StrategyAITacticsInfoList",
             StrategyAiTacticsInfo::from_value,
         ),
-        strategy_infos: extract_list(
-            root,
-            "m_StrategyAIInfoList",
-            StrategyAiInfo::from_value,
-        ),
+        strategy_infos: extract_list(root, "m_StrategyAIInfoList", StrategyAiInfo::from_value),
         condition_ids: extract_list(root, "m_ConditionIdList", ConditionIdInfo::from_value),
         condition_ids2: extract_list(root, "m_ConditionIdList2", ConditionIdInfo::from_value),
-        phase_checks: extract_list(
-            root,
-            "m_PhaseCheckInfoList",
-            PhaseCheckInfo::from_value,
-        ),
+        phase_checks: extract_list(root, "m_PhaseCheckInfoList", PhaseCheckInfo::from_value),
         eval_adjust_params: extract_list(
             root,
             "m_EvaluationAdjustParamInfoList",
@@ -1236,7 +1230,9 @@ impl TacticsAiConfig {
     /// Recherche une tactique par son `tactics_id`. `None` si absente.
     #[must_use]
     pub fn find_tactics(&self, tactics_id: HashId) -> Option<&TacticsAiInfo> {
-        self.tactics_infos.iter().find(|t| t.tactics_id == tactics_id)
+        self.tactics_infos
+            .iter()
+            .find(|t| t.tactics_id == tactics_id)
     }
 
     /// Renvoie les tactiques d'un groupe personnage (tranche dans `chara_tactics_data`).

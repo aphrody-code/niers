@@ -208,7 +208,10 @@ impl OpponentTeamConfig {
     /// Toutes les équipes adverses rattachées à un `teamId` (équivalent du `byTeamId` d'inagle).
     #[must_use]
     pub fn opponents_by_team_id(&self, team_id: HashId) -> Vec<&OpponentTeam> {
-        self.opponents.iter().filter(|o| o.team_id == team_id).collect()
+        self.opponents
+            .iter()
+            .filter(|o| o.team_id == team_id)
+            .collect()
     }
 }
 
@@ -216,8 +219,14 @@ impl OpponentTeamConfig {
 /// absent ou mal formé.
 fn pair(v: &Value, key: &str) -> [i64; 2] {
     let arr = v.get(key).and_then(Value::as_array);
-    let a = arr.and_then(|a| a.first()).and_then(Value::as_i64).unwrap_or(0);
-    let b = arr.and_then(|a| a.get(1)).and_then(Value::as_i64).unwrap_or(0);
+    let a = arr
+        .and_then(|a| a.first())
+        .and_then(Value::as_i64)
+        .unwrap_or(0);
+    let b = arr
+        .and_then(|a| a.get(1))
+        .and_then(Value::as_i64)
+        .unwrap_or(0);
     [a, b]
 }
 
@@ -260,7 +269,9 @@ fn pair(v: &Value, key: &str) -> [i64; 2] {
 pub fn parse_opponent_team_config(root: &Value) -> OpponentTeamConfig {
     /// Mappe une liste nommée vers un `Vec`, ou `Vec` vide si la liste est absente.
     fn collect<T>(root: &Value, name: &str, f: fn(&Value) -> T) -> Vec<T> {
-        list_values(root, name).map(|vs| vs.iter().map(f).collect()).unwrap_or_default()
+        list_values(root, name)
+            .map(|vs| vs.iter().map(f).collect())
+            .unwrap_or_default()
     }
     OpponentTeamConfig {
         opponents: collect(root, "m_OpponentTeamInfoList", OpponentTeam::from_value),
@@ -274,6 +285,10 @@ pub fn parse_opponent_team_config(root: &Value) -> OpponentTeamConfig {
             "m_PracticeMatchGameInfoList",
             PracticeMatchGameInfo::from_value,
         ),
-        practice_matches: collect(root, "m_PracticeMatchInfoList", PracticeMatchInfo::from_value),
+        practice_matches: collect(
+            root,
+            "m_PracticeMatchInfoList",
+            PracticeMatchInfo::from_value,
+        ),
     }
 }

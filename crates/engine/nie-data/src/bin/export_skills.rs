@@ -16,7 +16,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use nie_data::skill::parse_skill_config;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 /// Racine des données décodées, sans chemin de poste en dur : `NIE_GAME_DIR/data` si la
 /// variable est posée, sinon `./data` (le dépôt est fusionné avec l'installation du jeu).
@@ -93,7 +93,10 @@ fn main() {
         "[export_skills] OK — {} skills ({with_cutin} avec cut-in), {kb}Ko → {out_path}",
         skills.len()
     );
-    println!("skill_count={} cutin_count={with_cutin} size_kb={kb}", skills.len());
+    println!(
+        "skill_count={} cutin_count={with_cutin} size_kb={kb}",
+        skills.len()
+    );
 }
 
 /// Trouve le `*.cfg.bin.json` le plus récent de `subdir` commençant par `prefix`.
@@ -109,13 +112,17 @@ fn find_cfg(data_root: &Path, subdir: &str, prefix: &str) -> PathBuf {
             }
         }
     }
-    assert!(!candidates.is_empty(), "[export_skills] introuvable : {subdir}/{prefix}*.cfg.bin.json");
+    assert!(
+        !candidates.is_empty(),
+        "[export_skills] introuvable : {subdir}/{prefix}*.cfg.bin.json"
+    );
     candidates.sort_unstable_by(|a, b| b.cmp(a));
     candidates.remove(0)
 }
 
 /// Lit et parse un fichier JSON.
 fn read_json(path: &Path) -> Value {
-    let raw = fs::read_to_string(path).unwrap_or_else(|e| panic!("[export_skills] lecture {path:?}: {e}"));
+    let raw = fs::read_to_string(path)
+        .unwrap_or_else(|e| panic!("[export_skills] lecture {path:?}: {e}"));
     serde_json::from_str(&raw).unwrap_or_else(|e| panic!("[export_skills] parse {path:?}: {e}"))
 }

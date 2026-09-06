@@ -52,8 +52,8 @@ use alloc::format;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
-use crate::level5::{self, Level5Header};
 use crate::FormatError;
+use crate::level5::{self, Level5Header};
 
 /// Raccourci local : toutes les fonctions du module rendent une [`FormatError`].
 type Result<T> = core::result::Result<T, FormatError>;
@@ -308,13 +308,19 @@ pub struct CameraAnim {
 fn u16_at(d: &[u8], at: usize) -> Result<u16> {
     d.get(at..at + 2)
         .map(|b| u16::from_le_bytes([b[0], b[1]]))
-        .ok_or(FormatError::TooShort { got: d.len(), need: at + 2 })
+        .ok_or(FormatError::TooShort {
+            got: d.len(),
+            need: at + 2,
+        })
 }
 
 fn u32_at(d: &[u8], at: usize) -> Result<u32> {
     d.get(at..at + 4)
         .map(|b| u32::from_le_bytes([b[0], b[1], b[2], b[3]]))
-        .ok_or(FormatError::TooShort { got: d.len(), need: at + 4 })
+        .ok_or(FormatError::TooShort {
+            got: d.len(),
+            need: at + 4,
+        })
 }
 
 /// `true` si le tampon commence par le magic « G4CM ».
@@ -359,9 +365,7 @@ pub fn decode(data: &[u8]) -> Result<CameraAnim> {
     let shift = u32::from(counters[11]);
 
     // section(i) = ((counters[i] << shift) + align) * 4   — cf. doc du module.
-    let section = |i: usize| -> usize {
-        ((usize::from(counters[i]) << shift) + align) * 4
-    };
+    let section = |i: usize| -> usize { ((usize::from(counters[i]) << shift) + align) * 4 };
     let o_objects = section(2);
     let o_channels = section(3);
     if o_objects < hs || o_channels < o_objects || o_channels > data.len() {
@@ -377,7 +381,10 @@ pub fn decode(data: &[u8]) -> Result<CameraAnim> {
     for i in 0..nobj {
         let at = hs + i * CLIP_ENTRY_LEN;
         let mut tail = [0u8; 8];
-        tail.copy_from_slice(data.get(at + 8..at + 16).ok_or(FormatError::TooShort { got: data.len(), need: at + 16 })?);
+        tail.copy_from_slice(data.get(at + 8..at + 16).ok_or(FormatError::TooShort {
+            got: data.len(),
+            need: at + 16,
+        })?);
         clips.push(Clip {
             start: u16_at(data, at)?,
             end: u16_at(data, at + 2)?,
@@ -406,10 +413,14 @@ pub fn decode(data: &[u8]) -> Result<CameraAnim> {
     for i in 0..nobj {
         let off = usize::from(u16_at(data, o_names_header + i * 2)?);
         let at = o_names_header + off;
-        let raw = data.get(at..).ok_or(FormatError::TooShort { got: data.len(), need: at + 1 })?;
-        let end = raw.iter().position(|&b| b == 0).ok_or_else(|| {
-            FormatError::Malformed(format!("nom d'objet non terminé à 0x{at:X}"))
+        let raw = data.get(at..).ok_or(FormatError::TooShort {
+            got: data.len(),
+            need: at + 1,
         })?;
+        let end = raw
+            .iter()
+            .position(|&b| b == 0)
+            .ok_or_else(|| FormatError::Malformed(format!("nom d'objet non terminé à 0x{at:X}")))?;
         names.push(String::from_utf8_lossy(&raw[..end]).into_owned());
         names_end = names_end.max(at + end + 1);
     }
@@ -433,7 +444,8 @@ pub fn decode(data: &[u8]) -> Result<CameraAnim> {
         });
     }
     let objects_end = o_objects + n_entries * OBJECT_ENTRY_LEN;
-    let gap_objects_channels = data[objects_end.min(data.len())..o_channels.min(data.len())].to_vec();
+    let gap_objects_channels =
+        data[objects_end.min(data.len())..o_channels.min(data.len())].to_vec();
 
     // Table de canaux.
     let total: usize = objects.iter().map(|o| o.channel_count as usize).sum();
@@ -457,7 +469,10 @@ pub fn decode(data: &[u8]) -> Result<CameraAnim> {
     let mut raws = Vec::with_capacity(total);
     for i in 0..total {
         let at = o_channels + i * CHANNEL_ENTRY_LEN;
-        let hdr = data.get(at..at + 8).ok_or(FormatError::TooShort { got: data.len(), need: at + 8 })?;
+        let hdr = data.get(at..at + 8).ok_or(FormatError::TooShort {
+            got: data.len(),
+            need: at + 8,
+        })?;
         raws.push(RawChan {
             kind: hdr[0],
             mode: hdr[1],
@@ -529,7 +544,10 @@ pub fn decode(data: &[u8]) -> Result<CameraAnim> {
                 let end = base + n;
                 Track::Raw8(
                     data.get(base..end)
-                        .ok_or(FormatError::TooShort { got: data.len(), need: end })?
+                        .ok_or(FormatError::TooShort {
+                            got: data.len(),
+                            need: end,
+                        })?
                         .to_vec(),
                 )
             }
@@ -572,9 +590,8 @@ pub fn decode(data: &[u8]) -> Result<CameraAnim> {
 /// trop tôt laisserait des octets non nuls après la fin.
 fn locate_values(data: &[u8], times_end: usize, values_len: usize) -> Result<usize> {
     let nominal = (times_end + 15) & !15;
-    let fits = |v: usize| {
-        v + values_len <= data.len() && data[v + values_len..].iter().all(|&b| b == 0)
-    };
+    let fits =
+        |v: usize| v + values_len <= data.len() && data[v + values_len..].iter().all(|&b| b == 0);
     if fits(nominal) {
         return Ok(nominal);
     }
@@ -741,9 +758,13 @@ impl CameraAnim {
     /// Canaux appartenant à l'objet `i`.
     #[must_use]
     pub fn channels_of(&self, i: usize) -> &[Channel] {
-        let Some(o) = self.objects.get(i) else { return &[] };
+        let Some(o) = self.objects.get(i) else {
+            return &[];
+        };
         let a = o.first_channel as usize;
-        let b = a.saturating_add(o.channel_count as usize).min(self.channels.len());
+        let b = a
+            .saturating_add(o.channel_count as usize)
+            .min(self.channels.len());
         self.channels.get(a..b).unwrap_or(&[])
     }
 
@@ -872,12 +893,19 @@ mod tests {
         let re = encode(&a).expect("encodage");
         let b = decode(&re).expect("re-décodage");
         assert_eq!(b.channels[0].track.values(), Some(&[-10.0f32, -48.25][..]));
-        assert_eq!(re.len(), raw.len(), "l'édition d'une valeur ne change pas la taille");
+        assert_eq!(
+            re.len(),
+            raw.len(),
+            "l'édition d'une valeur ne change pas la taille"
+        );
     }
 
     #[test]
     fn rejette_magic_et_version() {
-        assert!(matches!(decode(&[0u8; 0x40]), Err(FormatError::BadMagic { .. })));
+        assert!(matches!(
+            decode(&[0u8; 0x40]),
+            Err(FormatError::BadMagic { .. })
+        ));
         let mut raw = synthetic();
         raw[6..8].copy_from_slice(&0x0066u16.to_le_bytes());
         assert!(matches!(decode(&raw), Err(FormatError::Malformed(_))));

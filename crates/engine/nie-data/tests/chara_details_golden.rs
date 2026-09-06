@@ -6,9 +6,9 @@
 //! Trois premières lignes réelles figées ci-dessous ; l'égalité END-TO-END (550 lignes, ligne 0
 //! exacte) est asserée par l'exemple.
 
-use nie_data::chara_details::{find_by_chara_id, parse_chara_details, CharaDetails};
+use nie_data::chara_details::{CharaDetails, find_by_chara_id, parse_chara_details};
 use nie_data::hash::HashId;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 /// Une ligne RDBN `m_charaDetailsList` (hash en chaîne hex, `personality_type` en nombre).
 fn row(chara_id: &str, pers: i64, first: &str, m2: &str, f2: &str) -> Value {
@@ -63,7 +63,8 @@ fn empty_or_missing_list_yields_nothing() {
     assert!(parse_chara_details(&json!({ "lists": [] })).is_empty());
     assert!(parse_chara_details(&json!({})).is_empty());
     // Mauvais nom de liste → vide.
-    let other = json!({ "lists": [{ "name": "m_other", "values": [row("0x1", 0, "0x0", "0x0", "0x0")] }] });
+    let other =
+        json!({ "lists": [{ "name": "m_other", "values": [row("0x1", 0, "0x0", "0x0", "0x0")] }] });
     assert!(parse_chara_details(&other).is_empty());
 }
 

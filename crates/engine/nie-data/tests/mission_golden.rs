@@ -41,7 +41,7 @@ mod common;
 extern crate std;
 
 use nie_data::hash::HashId;
-use nie_data::mission::{parse_mission_config, parse_mission_trigger, MissionConfigInfo};
+use nie_data::mission::{MissionConfigInfo, parse_mission_config, parse_mission_trigger};
 use serde_json::json;
 
 // ─── Helpers de conversion vérifiés ──────────────────────────────────────────
@@ -187,7 +187,10 @@ fn fixture_mission_config_mission_code() {
     let info: &MissionConfigInfo = &infos[0];
 
     // MISSION_CONFIG_INFO_0.variables[1] : type=String, value="msa999999"
-    assert_eq!(info.mission_code, "msa999999", "mission_code = \"msa999999\"");
+    assert_eq!(
+        info.mission_code, "msa999999",
+        "mission_code = \"msa999999\""
+    );
 }
 
 #[test]
@@ -246,7 +249,10 @@ fn fixture_trigger_item0_type_et_hash() {
     // DATA_ITEM_0.variables[0].value = "1" → trigger_type = 1
     assert_eq!(item.trigger_type, 1, "trigger_type = 1");
     // DATA_ITEM_0.variables[1].value = "-1369358024" → 0xAE614138
-    assert_eq!(item.trigger_hash, TRIGGER_HASH_0, "trigger_hash = 0xAE614138");
+    assert_eq!(
+        item.trigger_hash, TRIGGER_HASH_0,
+        "trigger_hash = 0xAE614138"
+    );
 }
 
 #[test]
@@ -275,10 +281,8 @@ fn fixture_trigger_item0_flags() {
 
 // ─── Tests sur fichiers réels (skip silencieux si absents) ────────────────────
 
-const REAL_MISSION_CONFIG: &str =
-    "mission/mission_config_0.00.00.cfg.bin.json";
-const REAL_TRIGGER: &str =
-    "mission/msa999999_trigger_0.04.78.cfg.bin.json";
+const REAL_MISSION_CONFIG: &str = "mission/mission_config_0.00.00.cfg.bin.json";
+const REAL_TRIGGER: &str = "mission/msa999999_trigger_0.04.78.cfg.bin.json";
 
 fn load_json(path: &str) -> Option<serde_json::Value> {
     let path = common::chemin(path)?;
@@ -288,14 +292,19 @@ fn load_json(path: &str) -> Option<serde_json::Value> {
     }
     let content = std::fs::read_to_string(&path)
         .unwrap_or_else(|e| panic!("Impossible de lire {}: {e}", path.display()));
-    Some(serde_json::from_str(&content).unwrap_or_else(|e| panic!("JSON invalide {}: {e}", path.display())))
+    Some(
+        serde_json::from_str(&content)
+            .unwrap_or_else(|e| panic!("JSON invalide {}: {e}", path.display())),
+    )
 }
 
 // — mission_config —
 
 #[test]
 fn real_file_mission_config_compte() {
-    let Some(root) = load_json(REAL_MISSION_CONFIG) else { return };
+    let Some(root) = load_json(REAL_MISSION_CONFIG) else {
+        return;
+    };
     let infos = parse_mission_config(&root);
     // mission_config_0.00.00 : MISSION_CONFIG_INFO_LIST_BEG_0.variables[0].value = "1"
     assert_eq!(infos.len(), 1, "mission_config: 1 MISSION_CONFIG_INFO");
@@ -303,7 +312,9 @@ fn real_file_mission_config_compte() {
 
 #[test]
 fn real_file_mission_config_id() {
-    let Some(root) = load_json(REAL_MISSION_CONFIG) else { return };
+    let Some(root) = load_json(REAL_MISSION_CONFIG) else {
+        return;
+    };
     let infos = parse_mission_config(&root);
 
     // mission_config_0.00.00 : MISSION_CONFIG_INFO_0.variables[0].value = "1013400427"
@@ -313,16 +324,23 @@ fn real_file_mission_config_id() {
 
 #[test]
 fn real_file_mission_config_code() {
-    let Some(root) = load_json(REAL_MISSION_CONFIG) else { return };
+    let Some(root) = load_json(REAL_MISSION_CONFIG) else {
+        return;
+    };
     let infos = parse_mission_config(&root);
 
     // mission_config_0.00.00 : MISSION_CONFIG_INFO_0.variables[1].value = "msa999999"
-    assert_eq!(infos[0].mission_code, "msa999999", "mission_code = \"msa999999\"");
+    assert_eq!(
+        infos[0].mission_code, "msa999999",
+        "mission_code = \"msa999999\""
+    );
 }
 
 #[test]
 fn real_file_mission_config_raw_hashes_non_nuls() {
-    let Some(root) = load_json(REAL_MISSION_CONFIG) else { return };
+    let Some(root) = load_json(REAL_MISSION_CONFIG) else {
+        return;
+    };
     let infos = parse_mission_config(&root);
     let info = &infos[0];
 
@@ -362,7 +380,9 @@ fn real_file_mission_config_raw_hashes_non_nuls() {
 
 #[test]
 fn real_file_trigger_compte() {
-    let Some(root) = load_json(REAL_TRIGGER) else { return };
+    let Some(root) = load_json(REAL_TRIGGER) else {
+        return;
+    };
     let items = parse_mission_trigger(&root);
     // msa999999_trigger_0.04.78 : DATA_COUNT_0.variables[0].value = "1" → 1 DATA_ITEM
     assert_eq!(items.len(), 1, "trigger: 1 DATA_ITEM");
@@ -370,7 +390,9 @@ fn real_file_trigger_compte() {
 
 #[test]
 fn real_file_trigger_item0_type_et_hash() {
-    let Some(root) = load_json(REAL_TRIGGER) else { return };
+    let Some(root) = load_json(REAL_TRIGGER) else {
+        return;
+    };
     let items = parse_mission_trigger(&root);
 
     // DATA_ITEM_0.variables[0].value = "1" → trigger_type = 1
@@ -385,7 +407,9 @@ fn real_file_trigger_item0_type_et_hash() {
 
 #[test]
 fn real_file_trigger_item0_data() {
-    let Some(root) = load_json(REAL_TRIGGER) else { return };
+    let Some(root) = load_json(REAL_TRIGGER) else {
+        return;
+    };
     let items = parse_mission_trigger(&root);
 
     // DATA_ITEM_0.variables[3] : type=String, value="AAAAAAoDNbkZNtoAAQB4"
@@ -398,7 +422,9 @@ fn real_file_trigger_item0_data() {
 
 #[test]
 fn real_file_trigger_item0_flags() {
-    let Some(root) = load_json(REAL_TRIGGER) else { return };
+    let Some(root) = load_json(REAL_TRIGGER) else {
+        return;
+    };
     let items = parse_mission_trigger(&root);
 
     // DATA_ITEM_0 : var[2]=0, var[4]=1, var[5]=0, var[6]=1

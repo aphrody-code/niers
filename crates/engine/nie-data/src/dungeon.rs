@@ -31,7 +31,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use serde_json::Value;
 
-use crate::cfgbin::{walk_named, Node};
+use crate::cfgbin::{Node, walk_named};
 use crate::hash::HashId;
 
 // ─── GimmickNumTableGroupData ─────────────────────────────────────────────────
@@ -258,9 +258,7 @@ fn collect_system_info_groups(info_node: Node<'_>) -> Vec<GimmickNumSystemInfoGr
         }
         for group_node in list_beg.children() {
             let gname = group_node.name();
-            if gname.starts_with("DUNGEON_NUM_SYSTEM_INFO_GROUP_")
-                && !gname.contains("_LIST_")
-            {
+            if gname.starts_with("DUNGEON_NUM_SYSTEM_INFO_GROUP_") && !gname.contains("_LIST_") {
                 // var[0] = group_id (Int), var[1] = payload (String base64)
                 sub_groups.push(GimmickNumSystemInfoGroup {
                     group_id: group_node.hash(0),

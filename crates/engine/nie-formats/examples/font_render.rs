@@ -13,20 +13,30 @@ fn main() {
     let cfg = cfgbin::parse_t2b(&std::fs::read(&args[1]).unwrap()).unwrap();
     let metrics = font::parse_metrics(&cfg);
     let g4tx_bytes = std::fs::read(&args[2]).unwrap();
-    let text = args.get(3).cloned().unwrap_or_else(|| "INAZUMA ELEVEN Victory Road - BUT 3-2".into());
+    let text = args
+        .get(3)
+        .cloned()
+        .unwrap_or_else(|| "INAZUMA ELEVEN Victory Road - BUT 3-2".into());
 
     // Atlas BGRA8 mip0.
     let tx = g4tx::parse(&g4tx_bytes).unwrap();
     let t = &tx.textures[0];
     let dds = &g4tx_bytes[t.data_offset..];
-    let px_off = if dds.len() >= 88 && &dds[84..88] == b"DX10" { 148 } else { 128 };
+    let px_off = if dds.len() >= 88 && &dds[84..88] == b"DX10" {
+        148
+    } else {
+        128
+    };
     let atlas = &dds[px_off..];
     let (aw, ah) = (t.width as usize, t.height as usize);
     let stride = aw * 4;
     let cell_h = metrics.dims.cell_height as usize;
 
     // Rangée physique ASCII (y de base) — réglable par env YBASE.
-    let yb: usize = std::env::var("YBASE").ok().and_then(|s| s.parse().ok()).unwrap_or(946);
+    let yb: usize = std::env::var("YBASE")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(946);
 
     // EDGE-SCAN de la rangée sur toute la largeur : colonnes d'alpha → spans (x0,x1) de glyphes.
     let mut spans: Vec<(usize, usize)> = Vec::new();
@@ -62,7 +72,11 @@ fn main() {
         merged.push((a, b));
     }
     let spans = merged;
-    println!("atlas {aw}×{ah}, rangée y={yb}, {} spans physiques → codepoints {:#X}..", spans.len(), FIRST_CP);
+    println!(
+        "atlas {aw}×{ah}, rangée y={yb}, {} spans physiques → codepoints {:#X}..",
+        spans.len(),
+        FIRST_CP
+    );
 
     // Map codepoint → span physique (x0,x1). span[k] = 0x21 + k.
     let cp_span = |cp: u32| -> Option<(usize, usize)> {

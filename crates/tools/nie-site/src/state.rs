@@ -199,9 +199,9 @@ impl EtatSite {
                 "index du VFS en cours de construction, reessayez dans quelques instants"
                     .to_owned(),
             )),
-            StatutVfs::Absent(r) => {
-                Err(crate::ErreurSite::Indisponible(format!("VFS indisponible: {r}")))
-            }
+            StatutVfs::Absent(r) => Err(crate::ErreurSite::Indisponible(format!(
+                "VFS indisponible: {r}"
+            ))),
         }
     }
 
@@ -224,9 +224,9 @@ impl EtatSite {
             StatutVfs::EnCours => Err(crate::ErreurSite::Indisponible(
                 "VFS en cours de montage, reessayez dans quelques instants".to_owned(),
             )),
-            StatutVfs::Absent(r) => {
-                Err(crate::ErreurSite::Indisponible(format!("VFS indisponible: {r}")))
-            }
+            StatutVfs::Absent(r) => Err(crate::ErreurSite::Indisponible(format!(
+                "VFS indisponible: {r}"
+            ))),
         }
     }
 
@@ -235,9 +235,7 @@ impl EtatSite {
     pub fn capacites(&self) -> Capacites {
         let (vfs, vfs_entrees, vfs_dump, vfs_contenu) = match self.vfs.read() {
             Ok(g) => match &*g {
-                StatutVfs::Pret { vfs, index, dump } => {
-                    ("pret", index.len(), *dump, vfs.is_some())
-                }
+                StatutVfs::Pret { vfs, index, dump } => ("pret", index.len(), *dump, vfs.is_some()),
                 StatutVfs::EnCours => ("en_cours", 0, false, false),
                 StatutVfs::Absent(_) => ("absent", 0, false, false),
             },

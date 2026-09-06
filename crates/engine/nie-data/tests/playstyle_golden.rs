@@ -12,13 +12,13 @@
 //! `values[5]=1`) est recoupé indépendamment par `nie_data::chara_param` (doc-comment du module)
 //! ET l'extraction live → ancre golden de confiance maximale.
 
+use nie_data::cfgbin::Node;
 use nie_data::hash::HashId;
 use nie_data::playstyle::{
-    parse_all_playstyles, parse_playstyle_node, playstyle_id_to_en, playstyle_id_to_fr,
-    PlaystyleEntry,
+    PlaystyleEntry, parse_all_playstyles, parse_playstyle_node, playstyle_id_to_en,
+    playstyle_id_to_fr,
 };
-use nie_data::cfgbin::Node;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 /// Variable `Int` typée (le dump stocke toujours la valeur en chaîne décimale).
 fn ivar(v: i64) -> Value {
@@ -38,9 +38,49 @@ fn int_node(name: &str, ints: &[i64]) -> Value {
 
 /// Les 43 variables Int réelles de `CHARA_PARAM_INFO_1` (dump `chara_param_1.03.66.00`).
 const CPI_1: [i64; 43] = [
-    -357386801, 1128709053, 4, 2, 4, 1, 11, 1, 0, 3, 0, 604761586, 1, 598373713, 13, 1591574804,
-    20, 724843777, 30, 1988803013, 38, -1508771477, 43, 724843777, 30, -1325922806, 38,
-    1210030151, 43, 2, 0, -1, 2, 1, -2, -2, 1, 0, 0, 0, 743008281, 0, 200626314,
+    -357386801,
+    1128709053,
+    4,
+    2,
+    4,
+    1,
+    11,
+    1,
+    0,
+    3,
+    0,
+    604761586,
+    1,
+    598373713,
+    13,
+    1591574804,
+    20,
+    724843777,
+    30,
+    1988803013,
+    38,
+    -1508771477,
+    43,
+    724843777,
+    30,
+    -1325922806,
+    38,
+    1210030151,
+    43,
+    2,
+    0,
+    -1,
+    2,
+    1,
+    -2,
+    -2,
+    1,
+    0,
+    0,
+    0,
+    743008281,
+    0,
+    200626314,
 ];
 
 #[test]
@@ -85,10 +125,28 @@ fn all_six_real_samples_via_walk() {
     });
 
     let parsed = parse_all_playstyles(&root);
-    assert_eq!(parsed.len(), 6, "6 noeuds CHARA_PARAM_INFO (LIST_BEG exclu)");
+    assert_eq!(
+        parsed.len(),
+        6,
+        "6 noeuds CHARA_PARAM_INFO (LIST_BEG exclu)"
+    );
 
-    let expected_en = ["Counter", "Bond", "Tension", "Rough Play", "Justice", "Freedom"];
-    let expected_fr = ["Contre", "Lien", "Tension", "Jeu violent", "Justice", "Liberté"];
+    let expected_en = [
+        "Counter",
+        "Bond",
+        "Tension",
+        "Rough Play",
+        "Justice",
+        "Freedom",
+    ];
+    let expected_fr = [
+        "Contre",
+        "Lien",
+        "Tension",
+        "Jeu violent",
+        "Justice",
+        "Liberté",
+    ];
     for (e, (id, ps)) in parsed.iter().zip(samples.iter()) {
         assert_eq!(e.chara_param_id, HashId(*id));
         assert_eq!(e.play_style, *ps);
@@ -128,13 +186,19 @@ fn non_int_vars_are_skipped_in_indexing() {
     });
     let e = parse_playstyle_node(&Node::new(&node)).expect("6 ints présents");
     assert_eq!(e.chara_param_id, HashId(100));
-    assert_eq!(e.play_style, 15, "values[5] = 6ᵉ Int (15), pas la var brute #5 (14)");
+    assert_eq!(
+        e.play_style, 15,
+        "values[5] = 6ᵉ Int (15), pas la var brute #5 (14)"
+    );
     assert_eq!(e.label_en(), None, "15 hors 0..=5");
 }
 
 #[test]
 fn entry_is_copy_and_eq() {
-    let a = PlaystyleEntry { chara_param_id: HashId(1), play_style: 2 };
+    let a = PlaystyleEntry {
+        chara_param_id: HashId(1),
+        play_style: 2,
+    };
     let b = a; // Copy
     assert_eq!(a, b);
     assert_eq!(b.label_en(), Some("Tension"));

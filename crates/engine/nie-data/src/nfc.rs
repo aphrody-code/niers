@@ -245,10 +245,7 @@ pub fn parse_nfc_lottery_config(root: &Value) -> Vec<NfcLottery> {
                 } else {
                     Vec::new()
                 };
-                lotteries.push(NfcLottery {
-                    lottery_id,
-                    tables,
-                });
+                lotteries.push(NfcLottery { lottery_id, tables });
             }
             idx += 1;
         }

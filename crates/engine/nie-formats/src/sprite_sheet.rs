@@ -267,7 +267,9 @@ fn echapper_url(u: &str) -> String {
 
 /// Échappe le texte inséré dans un nœud XML.
 fn echapper_xml(s: &str) -> String {
-    s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;")
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
 }
 
 /// Échappe une chaîne JSON.
@@ -290,8 +292,16 @@ fn base64(entree: &[u8]) -> String {
         let n = (u32::from(b[0]) << 16) | (u32::from(b[1]) << 8) | u32::from(b[2]);
         s.push(T[(n >> 18) as usize & 63] as char);
         s.push(T[(n >> 12) as usize & 63] as char);
-        s.push(if c.len() > 1 { T[(n >> 6) as usize & 63] as char } else { '=' });
-        s.push(if c.len() > 2 { T[n as usize & 63] as char } else { '=' });
+        s.push(if c.len() > 1 {
+            T[(n >> 6) as usize & 63] as char
+        } else {
+            '='
+        });
+        s.push(if c.len() > 2 {
+            T[n as usize & 63] as char
+        } else {
+            '='
+        });
     }
     s
 }
@@ -307,8 +317,22 @@ mod tests {
             largeur: 512,
             hauteur: 256,
             sprites: alloc::vec![
-                Sprite { nom: "gtxt_rarity01_05".into(), classe: "gtxt_rarity01_05".into(), x: 128, y: 64, largeur: 96, hauteur: 32 },
-                Sprite { nom: "icon 01".into(), classe: "icon-01".into(), x: 0, y: 0, largeur: 32, hauteur: 32 },
+                Sprite {
+                    nom: "gtxt_rarity01_05".into(),
+                    classe: "gtxt_rarity01_05".into(),
+                    x: 128,
+                    y: 64,
+                    largeur: 96,
+                    hauteur: 32
+                },
+                Sprite {
+                    nom: "icon 01".into(),
+                    classe: "icon-01".into(),
+                    x: 0,
+                    y: 0,
+                    largeur: 32,
+                    hauteur: 32
+                },
             ],
         }
     }
@@ -342,7 +366,10 @@ mod tests {
             sub_texture_count: 1,
             texture_data_size: 0,
         };
-        let g = G4tx { header: entete, textures: alloc::vec![t] };
+        let g = G4tx {
+            header: entete,
+            textures: alloc::vec![t],
+        };
 
         let f = depuis_g4tx(&g, 0).expect("texture 0");
         assert_eq!(f.nom, "gaiji_game");
@@ -361,7 +388,10 @@ mod tests {
             css.contains(".nie-gtxt_rarity01_05 { width: 96px; height: 32px; background-position: -128px -64px; }"),
             "{css}"
         );
-        assert!(css.contains("image-rendering: pixelated"), "les icônes ne doivent pas être lissées");
+        assert!(
+            css.contains("image-rendering: pixelated"),
+            "les icônes ne doivent pas être lissées"
+        );
     }
 
     /// Sans `background-size`, mettre l'atlas à l'échelle décale toutes les régions et les
@@ -377,22 +407,33 @@ mod tests {
         let css = atlas_exemple().vers_css_mode("a.webp", ModeCss::Masque);
         assert!(css.contains("background-color: currentColor;"), "{css}");
         assert!(css.contains("mask-image: url(\"a.webp\")"));
-        assert!(css.contains("-webkit-mask-image: url(\"a.webp\")"), "préfixe WebKit requis");
+        assert!(
+            css.contains("-webkit-mask-image: url(\"a.webp\")"),
+            "préfixe WebKit requis"
+        );
         assert!(css.contains("mask-size: 512px 256px;"));
         assert!(
-            css.contains(".nie-gtxt_rarity01_05 { width: 96px; height: 32px; \
-                          -webkit-mask-position: -128px -64px; mask-position: -128px -64px; }"),
+            css.contains(
+                ".nie-gtxt_rarity01_05 { width: 96px; height: 32px; \
+                          -webkit-mask-position: -128px -64px; mask-position: -128px -64px; }"
+            ),
             "{css}"
         );
         // En mode masque, aucune image de fond : la couleur seule remplit la silhouette.
-        assert!(!css.contains("background-image"), "le mode masque ne pose pas d'image de fond");
+        assert!(
+            !css.contains("background-image"),
+            "le mode masque ne pose pas d'image de fond"
+        );
     }
 
     #[test]
     fn le_svg_est_autonome_et_declare_un_symbole_par_region() {
         let svg = atlas_exemple().vers_svg("data:image/png;base64,AAAA");
         assert!(svg.starts_with("<svg xmlns="));
-        assert!(svg.contains("href=\"data:image/png;base64,AAAA\""), "atlas embarqué");
+        assert!(
+            svg.contains("href=\"data:image/png;base64,AAAA\""),
+            "atlas embarqué"
+        );
         assert!(svg.contains("<symbol id=\"nie-gtxt_rarity01_05\" viewBox=\"128 64 96 32\""));
         assert_eq!(svg.matches("<symbol").count(), 2, "un symbole par région");
         assert!(svg.ends_with("</svg>\n"));
@@ -414,7 +455,11 @@ mod tests {
         assert_eq!(assainir_nom("gtxt_rarity01_05"), "gtxt_rarity01_05");
         assert_eq!(assainir_nom("icon 01"), "icon-01");
         assert_eq!(assainir_nom("A/B.c"), "a-b-c");
-        assert_eq!(assainir_nom("01_debut"), "s01_debut", "un id CSS ne commence pas par un chiffre");
+        assert_eq!(
+            assainir_nom("01_debut"),
+            "s01_debut",
+            "un id CSS ne commence pas par un chiffre"
+        );
         assert_eq!(assainir_nom(""), "sprite");
         assert_eq!(assainir_nom("MAJ"), "maj", "les classes sont en minuscules");
     }

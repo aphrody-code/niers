@@ -38,7 +38,9 @@
 
 mod common;
 
-use nie_data::friendmap::{parse_friendmap_config, FriendMapBaseInfo, FriendMapConfig, FriendMapLineInfo};
+use nie_data::friendmap::{
+    FriendMapBaseInfo, FriendMapConfig, FriendMapLineInfo, parse_friendmap_config,
+};
 use nie_data::hash::HashId;
 use serde_json::json;
 
@@ -94,7 +96,11 @@ fn line_index0_ligne_vide() {
 
     // m_friendMapLineInfo[0] du dump réel : lineNo=0, lineElemAry=0x00000000
     assert_eq!(l.line_no, 0);
-    assert_eq!(l.line_elem_ary, HashId(0x0000_0000), "ligne vide = hash nul");
+    assert_eq!(
+        l.line_elem_ary,
+        HashId(0x0000_0000),
+        "ligne vide = hash nul"
+    );
     assert!(l.line_elem_ary.is_zero(), "is_zero() doit être vrai");
 }
 
@@ -198,8 +204,7 @@ fn lines_of_hors_bornes_retourne_vide() {
 
 // ─── Tests sur le vrai fichier (skip si absent du VPS) ───────────────────────
 
-const REAL_PATH: &str =
-    "friendmap/friendmap_config_0.00.00.cfg.bin.json";
+const REAL_PATH: &str = "friendmap/friendmap_config_0.00.00.cfg.bin.json";
 
 fn load_real() -> Option<FriendMapConfig> {
     let chemin_abs = common::chemin(REAL_PATH)?;
@@ -282,7 +287,10 @@ fn real_file_line0_vide() {
     // m_friendMapLineInfo[0] du dump réel : lineNo=0, ligne vide
     let l0 = &cfg.lines[0];
     assert_eq!(l0.line_no, 0);
-    assert!(l0.line_elem_ary.is_zero(), "m_friendMapLineInfo[0] doit être vide");
+    assert!(
+        l0.line_elem_ary.is_zero(),
+        "m_friendMapLineInfo[0] doit être vide"
+    );
 }
 
 #[test]

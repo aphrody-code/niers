@@ -35,7 +35,11 @@ fn main() {
     let tx = g4tx::parse(&g4tx_bytes).unwrap();
     let t = &tx.textures[0];
     let dds = &g4tx_bytes[t.data_offset..];
-    let px_off = if dds.len() >= 88 && &dds[84..88] == b"DX10" { 148 } else { 128 };
+    let px_off = if dds.len() >= 88 && &dds[84..88] == b"DX10" {
+        148
+    } else {
+        128
+    };
     let atlas = &dds[px_off..];
     let (aw, ah) = (t.width as usize, t.height as usize);
     let cell_h = metrics.dims.cell_height;
@@ -65,7 +69,11 @@ fn main() {
     for para in text.split("\\n").flat_map(|p| p.split('\n')) {
         let mut cur = String::new();
         for word in para.split_whitespace() {
-            let trial = if cur.is_empty() { word.to_string() } else { format!("{cur} {word}") };
+            let trial = if cur.is_empty() {
+                word.to_string()
+            } else {
+                format!("{cur} {word}")
+            };
             if la.measure(&trial) <= max_w {
                 cur = trial;
             } else {
@@ -84,15 +92,54 @@ fn main() {
     fill_rect(&mut buf, bx0, by0, bx1, by0 + 3, [90, 200, 255, 255]); // liseré haut
     // Onglet nom du locuteur (au-dessus de la boîte).
     let name_w = (la.measure(&speaker) as i32 + 40).min(440);
-    fill_rect(&mut buf, bx0 + 20, by0 - 40, bx0 + 20 + name_w, by0 + 2, [30, 60, 110, 238]);
-    fill_rect(&mut buf, bx0 + 20, by0 - 40, bx0 + 20 + name_w, by0 - 37, [120, 220, 255, 255]);
-    la.blit_line(atlas, aw, &mut buf, W, bx0 + 38, by0 - 32, &speaker, [200, 235, 255, 255]);
+    fill_rect(
+        &mut buf,
+        bx0 + 20,
+        by0 - 40,
+        bx0 + 20 + name_w,
+        by0 + 2,
+        [30, 60, 110, 238],
+    );
+    fill_rect(
+        &mut buf,
+        bx0 + 20,
+        by0 - 40,
+        bx0 + 20 + name_w,
+        by0 - 37,
+        [120, 220, 255, 255],
+    );
+    la.blit_line(
+        atlas,
+        aw,
+        &mut buf,
+        W,
+        bx0 + 38,
+        by0 - 32,
+        &speaker,
+        [200, 235, 255, 255],
+    );
     // Texte du dialogue.
     for (i, line) in lines.iter().enumerate() {
-        la.blit_line(atlas, aw, &mut buf, W, bx0 + 40, by0 + 22 + i as i32 * line_h, line, [240, 244, 250, 255]);
+        la.blit_line(
+            atlas,
+            aw,
+            &mut buf,
+            W,
+            bx0 + 40,
+            by0 + 22 + i as i32 * line_h,
+            line,
+            [240, 244, 250, 255],
+        );
     }
     // Indicateur « suite » (petit carré cyan en bas à droite).
-    fill_rect(&mut buf, bx1 - 36, by1 - 24, bx1 - 20, by1 - 8, [120, 220, 255, 255]);
+    fill_rect(
+        &mut buf,
+        bx1 - 36,
+        by1 - 24,
+        bx1 - 20,
+        by1 - 8,
+        [120, 220, 255, 255],
+    );
 
     let mut out = Vec::new();
     {
@@ -102,5 +149,8 @@ fn main() {
         e.write_header().unwrap().write_image_data(&buf).unwrap();
     }
     std::fs::write("/tmp/dialogue_scene.png", &out).unwrap();
-    println!("scène : locuteur={speaker:?} {} lignes → /tmp/dialogue_scene.png", lines.len());
+    println!(
+        "scène : locuteur={speaker:?} {} lignes → /tmp/dialogue_scene.png",
+        lines.len()
+    );
 }

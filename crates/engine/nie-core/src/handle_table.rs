@@ -72,7 +72,8 @@ mod tests {
     fn build_records(recs: &[(u16, u8)]) -> Vec<u8> {
         let mut buf = vec![0u8; REC_STRIDE * (recs.len() + 1)];
         for (i, &(genr, act)) in recs.iter().enumerate() {
-            buf[i * REC_STRIDE + 0x1462..i * REC_STRIDE + 0x1464].copy_from_slice(&genr.to_le_bytes());
+            buf[i * REC_STRIDE + 0x1462..i * REC_STRIDE + 0x1464]
+                .copy_from_slice(&genr.to_le_bytes());
             buf[i * REC_STRIDE + 0x48] = act;
         }
         buf
@@ -88,7 +89,11 @@ mod tests {
         let recs = [(1u16, 0u8), (2, 1), (3, 1)]; // rec0 inactif, rec1/rec2 actifs
         let buf = build_records(&recs);
         let handles = [handle(1, 0), handle(2, 1), handle(3, 2)];
-        let t = HandleTable { records: &buf, handles: &handles, count: 3 };
+        let t = HandleTable {
+            records: &buf,
+            handles: &handles,
+            count: 3,
+        };
         assert_eq!(t.find_active(), Some(1), "saute rec0 inactif → rec1 actif");
     }
 
@@ -98,7 +103,11 @@ mod tests {
         let recs = [(1u16, 1u8)];
         let buf = build_records(&recs);
         let handles = [0, handle(1, 0)];
-        let t = HandleTable { records: &buf, handles: &handles, count: 2 };
+        let t = HandleTable {
+            records: &buf,
+            handles: &handles,
+            count: 2,
+        };
         assert_eq!(t.find_active(), None);
     }
 
@@ -108,7 +117,11 @@ mod tests {
         let recs = [(5u16, 1u8)];
         let buf = build_records(&recs);
         let handles = [handle(9, 0)]; // gen 9 ≠ rec gen 5
-        let t = HandleTable { records: &buf, handles: &handles, count: 1 };
+        let t = HandleTable {
+            records: &buf,
+            handles: &handles,
+            count: 1,
+        };
         assert_eq!(t.find_active(), None);
     }
 
@@ -118,7 +131,11 @@ mod tests {
         let recs = [(1u16, 0u8), (2, 0)];
         let buf = build_records(&recs);
         let handles = [handle(1, 0), handle(2, 1)];
-        let t = HandleTable { records: &buf, handles: &handles, count: 2 };
+        let t = HandleTable {
+            records: &buf,
+            handles: &handles,
+            count: 2,
+        };
         assert_eq!(t.find_active(), None);
     }
 }

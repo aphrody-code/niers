@@ -124,11 +124,7 @@ fn hash_or_none(value: i32) -> Option<String> {
         return None;
     }
     let h = to_hex(value);
-    if h == "0x00000000" {
-        None
-    } else {
-        Some(h)
-    }
+    if h == "0x00000000" { None } else { Some(h) }
 }
 
 /// Élément depuis vars[8] (clampé 0-4, sinon Néant).
@@ -347,7 +343,7 @@ mod tests {
 #[cfg(all(test, feature = "data"))]
 mod golden_tests {
     use super::*;
-    use crate::skill::{load_skill_fixture, Category};
+    use crate::skill::{Category, load_skill_fixture};
 
     /// Golden : parse complet de l'aura réelle wks00020.
     #[test]

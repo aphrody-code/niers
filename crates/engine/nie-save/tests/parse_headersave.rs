@@ -3,8 +3,8 @@
 //! Ce test nécessite le fichier de save réel sur le VPS.
 //! Si le fichier est absent, le test est ignoré (skip soft).
 
-use nie_save::{parse, BlobSubtype};
 use nie_save::body::headersave::parse_headersave;
+use nie_save::{BlobSubtype, parse};
 
 const SAVE_PATH: &str = "data/saves/002AB8F4-USERDATALIVE";
 const SAVE_NAME: &str = "002AB8F4-USERDATALIVE";
@@ -36,8 +36,7 @@ fn parse_headersave_ancres_validees() {
         .find(|b| b.header.subtype == BlobSubtype::Headersave)
         .expect("blob HEADERSAVE absent");
 
-    let hs = parse_headersave(&headersave_blob.body)
-        .expect("parse_headersave échoué");
+    let hs = parse_headersave(&headersave_blob.body).expect("parse_headersave échoué");
 
     // --- Champs d'en-tête global ---
     assert_eq!(
@@ -46,18 +45,21 @@ fn parse_headersave_ancres_validees() {
     );
     assert_eq!(hs.max_slots, EXPECTED_MAX_SLOTS, "max_slots incorrect");
     assert_eq!(hs.used_slots, EXPECTED_USED_SLOTS, "used_slots incorrect");
-    assert!(
-        hs.used_slots <= hs.max_slots,
-        "used_slots > max_slots"
-    );
+    assert!(hs.used_slots <= hs.max_slots, "used_slots > max_slots");
 
     // --- Horodatage de sauvegarde ---
     assert!(
         !hs.save_timestamp.is_unset(),
         "save_timestamp est unset (attendu 2026-02-21)"
     );
-    assert_eq!(hs.save_timestamp.year, EXPECTED_SAVE_YEAR, "année incorrecte");
-    assert_eq!(hs.save_timestamp.month, EXPECTED_SAVE_MONTH, "mois incorrect");
+    assert_eq!(
+        hs.save_timestamp.year, EXPECTED_SAVE_YEAR,
+        "année incorrecte"
+    );
+    assert_eq!(
+        hs.save_timestamp.month, EXPECTED_SAVE_MONTH,
+        "mois incorrect"
+    );
     assert_eq!(hs.save_timestamp.day, EXPECTED_SAVE_DAY, "jour incorrect");
 
     // --- Ancres joueur ---
@@ -69,14 +71,8 @@ fn parse_headersave_ancres_validees() {
     assert_eq!(hs.unique_id, EXPECTED_UNIQUE_ID, "unique_id incorrect");
 
     // --- Cohérence de la table de slots ---
-    assert!(
-        !hs.slots.is_empty(),
-        "table de slots vide"
-    );
-    assert!(
-        hs.slots.len() <= 28,
-        "plus de 28 slots (max supporté)"
-    );
+    assert!(!hs.slots.is_empty(), "table de slots vide");
+    assert!(hs.slots.len() <= 28, "plus de 28 slots (max supporté)");
 
     // Au moins un slot actif dans la section secondaire (index ≥ 14)
     let active_count = hs.slots.iter().filter(|s| s.is_active).count();
@@ -84,7 +80,9 @@ fn parse_headersave_ancres_validees() {
 
     // Le slot TYPE-B avec l'horodatage 2026-05-08T12:41:54 doit exister
     let type_b_with_dt = hs.slots.iter().find(|s| {
-        s.slot_datetime.as_ref().is_some_and(|dt| dt.year == 2026 && !dt.is_unset())
+        s.slot_datetime
+            .as_ref()
+            .is_some_and(|dt| dt.year == 2026 && !dt.is_unset())
     });
     assert!(
         type_b_with_dt.is_some(),

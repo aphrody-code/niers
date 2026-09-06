@@ -102,7 +102,9 @@ pub fn ls_paged(vfs: &Vfs, prefix: &str, limit: usize, offset: usize) -> Listing
     let mut files: Vec<FileEntry> = Vec::new();
 
     for (path, entry) in vfs.iter() {
-        let Some(rest) = sous_prefixe(path, prefix) else { continue };
+        let Some(rest) = sous_prefixe(path, prefix) else {
+            continue;
+        };
         match rest.split_once('/') {
             // Un descendant : il compte pour le sous-dossier de premier niveau qui le porte.
             Some((seg, _)) => *dirs.entry(seg).or_insert(0) += 1,
@@ -125,13 +127,18 @@ pub fn ls_paged(vfs: &Vfs, prefix: &str, limit: usize, offset: usize) -> Listing
         dirs: dirs
             .into_iter()
             .filter(|(name, _)| !name.is_empty())
-            .map(|(name, count)| DirEntry { name: name.to_string(), count })
+            .map(|(name, count)| DirEntry {
+                name: name.to_string(),
+                count,
+            })
             .collect(),
         files,
         file_total,
         file_offset: offset,
-        role: crate::folder_roles::describe_folder(prefix)
-            .map(|r| Role { role: r.role.to_string(), status: r.status.to_string() }),
+        role: crate::folder_roles::describe_folder(prefix).map(|r| Role {
+            role: r.role.to_string(),
+            status: r.status.to_string(),
+        }),
     }
 }
 
@@ -188,7 +195,11 @@ pub fn find_paged(
     }
     out.sort_by(|a, b| a.path.cmp(&b.path));
     let total = out.len();
-    FindResult { files: out.into_iter().skip(offset).take(limit).collect(), total, offset }
+    FindResult {
+        files: out.into_iter().skip(offset).take(limit).collect(),
+        total,
+        offset,
+    }
 }
 
 /// Première page de résultats — forme courte de [`find_paged`].

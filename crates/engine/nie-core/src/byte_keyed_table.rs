@@ -67,7 +67,10 @@ mod tests {
     /// Golden capturés de l'oracle uemu (scripts/validate_byte_keyed_table.py).
     #[test]
     fn golden_hit_and_miss() {
-        let recs = [Record { key: 0x41, value: 0xDEAD_BEEF }];
+        let recs = [Record {
+            key: 0x41,
+            value: 0xDEAD_BEEF,
+        }];
         assert_eq!(lookup(&recs, 0x41), 0xDEAD_BEEF);
         assert_eq!(lookup(&recs, 0x42), 0); // absent → 0
         assert_eq!(lookup(&[], 0x41), 0); // table vide → 0
@@ -76,9 +79,18 @@ mod tests {
     #[test]
     fn golden_first_occurrence_wins() {
         let recs = [
-            Record { key: 7, value: 0x1111_1111 },
-            Record { key: 7, value: 0x2222_2222 },
-            Record { key: 9, value: 0x3333_3333 },
+            Record {
+                key: 7,
+                value: 0x1111_1111,
+            },
+            Record {
+                key: 7,
+                value: 0x2222_2222,
+            },
+            Record {
+                key: 9,
+                value: 0x3333_3333,
+            },
         ];
         assert_eq!(lookup(&recs, 7), 0x1111_1111);
         assert_eq!(lookup(&recs, 9), 0x3333_3333);
@@ -87,8 +99,14 @@ mod tests {
     #[test]
     fn golden_key_zero_matches_zero_byte() {
         let recs = [
-            Record { key: 0, value: 0x0BAD_F00D },
-            Record { key: 1, value: 0xCAFE_BABE },
+            Record {
+                key: 0,
+                value: 0x0BAD_F00D,
+            },
+            Record {
+                key: 1,
+                value: 0xCAFE_BABE,
+            },
         ];
         assert_eq!(lookup(&recs, 0), 0x0BAD_F00D);
     }

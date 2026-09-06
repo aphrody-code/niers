@@ -20,8 +20,12 @@ fn load() -> Option<serde_json::Value> {
         eprintln!("skip : {} absent du corpus", chemin_abs.display());
         return None;
     }
-    let content = std::fs::read_to_string(&chemin_abs).unwrap_or_else(|e| panic!("lecture {}: {e}", chemin_abs.display()));
-    Some(serde_json::from_str(&content).unwrap_or_else(|e| panic!("JSON {}: {e}", chemin_abs.display())))
+    let content = std::fs::read_to_string(&chemin_abs)
+        .unwrap_or_else(|e| panic!("lecture {}: {e}", chemin_abs.display()));
+    Some(
+        serde_json::from_str(&content)
+            .unwrap_or_else(|e| panic!("JSON {}: {e}", chemin_abs.display())),
+    )
 }
 
 #[test]
@@ -29,7 +33,11 @@ fn comptes_byte_exact() {
     let Some(root) = load() else { return };
     let cfg = parse_ai_type_config(&root);
     assert_eq!(cfg.hobies.len(), 4);
-    assert_eq!(cfg.ai_infos.len(), 5, "5 infos (les 5 nœuds REF ne sont pas des entrées)");
+    assert_eq!(
+        cfg.ai_infos.len(),
+        5,
+        "5 infos (les 5 nœuds REF ne sont pas des entrées)"
+    );
     assert_eq!(cfg.hobies[0].params, [1, 20, 0]);
     assert_eq!(cfg.hobies[3].params, [20, 10, 0]);
 }

@@ -188,7 +188,8 @@ impl EnteteVideo {
     /// Cadence rationnelle `(num, den)` si elle est déclarée et cohérente.
     #[must_use]
     pub fn cadence(&self) -> Option<(u32, u32)> {
-        (self.cadence_num > 0 && self.cadence_den > 0).then_some((self.cadence_num, self.cadence_den))
+        (self.cadence_num > 0 && self.cadence_den > 0)
+            .then_some((self.cadence_num, self.cadence_den))
     }
 
     /// Cadence en images par seconde.
@@ -373,7 +374,9 @@ impl Usm {
                     secondes: r.secondes,
                 })
             }
-            _ => Err(FormatError::Corrupt("USM : ce codec n'a pas de conteneur web")),
+            _ => Err(FormatError::Corrupt(
+                "USM : ce codec n'a pas de conteneur web",
+            )),
         }
     }
 
@@ -405,7 +408,10 @@ impl Usm {
         let unites: Vec<&[u8]> = self.images.iter().map(Vec::as_slice).collect();
         crate::mp4::muxer_h264_avec(
             &unites,
-            &crate::mp4::Options { cadence: self.cadence(), affichage: self.affichage() },
+            &crate::mp4::Options {
+                cadence: self.cadence(),
+                affichage: self.affichage(),
+            },
         )
     }
 }
@@ -495,7 +501,10 @@ pub fn langue_de(radical: &str) -> Option<&'static str> {
 /// le fichier ne commence pas par `CRID` (fichier chiffré : passer par [`demuxer_nomme`]).
 pub fn demuxer(data: &[u8]) -> Result<Usm, FormatError> {
     if data.len() < 8 {
-        return Err(FormatError::TooShort { got: data.len(), need: 8 });
+        return Err(FormatError::TooShort {
+            got: data.len(),
+            need: 8,
+        });
     }
     if data[..4] != STMID_CRID {
         return Err(FormatError::BadMagic { format: "USM/CRID" });
@@ -520,7 +529,9 @@ pub fn demuxer_nomme(data: &[u8], nom_fichier: &str) -> Result<Usm, FormatError>
             if clair.len() >= 4 && clair[..4] == STMID_CRID {
                 Ok(parcourir(&clair, true, true))
             } else {
-                Err(FormatError::BadMagic { format: "USM/CRID (même déchiffré)" })
+                Err(FormatError::BadMagic {
+                    format: "USM/CRID (même déchiffré)",
+                })
             }
         }
         Err(e) => Err(e),
@@ -546,7 +557,9 @@ pub fn inspecter(data: &[u8], nom_fichier: &str) -> Result<Apercu, FormatError> 
             if clair.len() >= 4 && clair[..4] == STMID_CRID {
                 parcourir(&clair, true, false)
             } else {
-                return Err(FormatError::BadMagic { format: "USM/CRID (même déchiffré)" });
+                return Err(FormatError::BadMagic {
+                    format: "USM/CRID (même déchiffré)",
+                });
             }
         }
         Err(e) => return Err(e),
@@ -565,7 +578,10 @@ pub fn inspecter(data: &[u8], nom_fichier: &str) -> Result<Apercu, FormatError> 
 /// Parcours sans rétention, sur des octets déjà en clair.
 fn demuxer_sans_images(data: &[u8]) -> Result<Usm, FormatError> {
     if data.len() < 8 {
-        return Err(FormatError::TooShort { got: data.len(), need: 8 });
+        return Err(FormatError::TooShort {
+            got: data.len(),
+            need: 8,
+        });
     }
     if data[..4] != STMID_CRID {
         return Err(FormatError::BadMagic { format: "USM/CRID" });
@@ -593,12 +609,9 @@ fn parcourir(data: &[u8], dechiffre: bool, retenir: bool) -> Usm {
     while pos + 0x20 <= data.len() {
         let mut stmid = [0u8; 4];
         stmid.copy_from_slice(&data[pos..pos + 4]);
-        let data_size = u32::from_be_bytes([
-            data[pos + 4],
-            data[pos + 5],
-            data[pos + 6],
-            data[pos + 7],
-        ]) as usize;
+        let data_size =
+            u32::from_be_bytes([data[pos + 4], data[pos + 5], data[pos + 6], data[pos + 7]])
+                as usize;
         let bloc_total = 8 + data_size;
         if data_size < 0x18 || pos + bloc_total > data.len() {
             break;
@@ -610,7 +623,9 @@ fn parcourir(data: &[u8], dechiffre: bool, retenir: bool) -> Usm {
         let block_type = data[pos + 0x0F];
 
         let debut = pos + 8 + data_offset;
-        let dispo = data_size.saturating_sub(data_offset).saturating_sub(padding);
+        let dispo = data_size
+            .saturating_sub(data_offset)
+            .saturating_sub(padding);
         if dispo > 0 && debut + dispo <= data.len() {
             let charge = &data[debut..debut + dispo];
             match block_type {
@@ -668,7 +683,17 @@ fn parcourir(data: &[u8], dechiffre: bool, retenir: bool) -> Usm {
     if let Some(c) = CodecVideo::depuis_mpeg_codec(entete.mpeg_codec) {
         codec = c;
     }
-    Usm { nom, entete, codec, images, pistes, sous_titres, dechiffre, octets_video, entetes }
+    Usm {
+        nom,
+        entete,
+        codec,
+        images,
+        pistes,
+        sous_titres,
+        dechiffre,
+        octets_video,
+        entetes,
+    }
 }
 
 /// Magic d'un flux IVF (`DKIF`) — l'emballage des flux VP9 dans les blocs `@SFV`.
@@ -705,12 +730,15 @@ fn extraire_ivf(
         *entete_lu = true;
     }
     while tampon.len() >= 12 {
-        let taille =
-            u32::from_le_bytes([tampon[0], tampon[1], tampon[2], tampon[3]]) as usize;
+        let taille = u32::from_le_bytes([tampon[0], tampon[1], tampon[2], tampon[3]]) as usize;
         if taille == 0 || tampon.len() < 12 + taille {
             break;
         }
-        images.push(if retenir { tampon[12..12 + taille].to_vec() } else { Vec::new() });
+        images.push(if retenir {
+            tampon[12..12 + taille].to_vec()
+        } else {
+            Vec::new()
+        });
         *octets_video += taille as u64;
         tampon.drain(..12 + taille);
     }
@@ -883,7 +911,10 @@ mod tests {
     #[test]
     fn le_radical_et_le_nom_de_fichier_se_derivent_du_chemin() {
         assert_eq!(radical_de("data/common/movie/ev01_00050.usm"), "ev01_00050");
-        assert_eq!(nom_fichier_de("data/common/movie/ev01_00050.usm"), "ev01_00050.usm");
+        assert_eq!(
+            nom_fichier_de("data/common/movie/ev01_00050.usm"),
+            "ev01_00050.usm"
+        );
         assert_eq!(radical_de("L5logo.usm"), "L5logo");
         // Un chemin sans extension reste entier — on ne coupe pas ce qu'on ne reconnaît pas.
         assert_eq!(radical_de("dossier/fichier"), "fichier");
@@ -891,7 +922,10 @@ mod tests {
 
     #[test]
     fn un_fichier_qui_ne_commence_pas_par_crid_est_refuse() {
-        assert!(matches!(demuxer(b"XXXX0000"), Err(FormatError::BadMagic { .. })));
+        assert!(matches!(
+            demuxer(b"XXXX0000"),
+            Err(FormatError::BadMagic { .. })
+        ));
         assert!(matches!(demuxer(b"CRI"), Err(FormatError::TooShort { .. })));
     }
 
@@ -914,7 +948,10 @@ mod tests {
         assert_eq!(u.pistes.len(), 2, "deux canaux audio");
         assert_eq!(u.pistes[0].canal, 0);
         assert_eq!(u.pistes[0].codec, CodecAudio::Hca);
-        assert_eq!(u.pistes[0].octets, b"HCA\0abcdefgh", "les blocs d'un canal se concatènent");
+        assert_eq!(
+            u.pistes[0].octets, b"HCA\0abcdefgh",
+            "les blocs d'un canal se concatènent"
+        );
         assert_eq!(u.pistes[1].codec, CodecAudio::Adx);
     }
 
@@ -937,7 +974,11 @@ mod tests {
         let mut f = bloc(&STMID_CRID, 1, 0, b"");
         f.extend(b);
         let u = demuxer(&f).expect("démux");
-        assert_eq!(u.images[0], vec![0, 0, 0, 1, 0x65, 0x11], "les 3 octets de bourrage sautent");
+        assert_eq!(
+            u.images[0],
+            vec![0, 0, 0, 1, 0x65, 0x11],
+            "les 3 octets de bourrage sautent"
+        );
     }
 
     #[test]
@@ -960,7 +1001,11 @@ mod tests {
         let nom = "film_de_test.usm";
         let mut chiffre = clair.clone();
         crate::cpk::decrypt_block(&mut chiffre, 0, crate::cpk::key_from_filename(nom));
-        assert_ne!(&chiffre[..4], &STMID_CRID, "les octets chiffrés ne portent plus le magic");
+        assert_ne!(
+            &chiffre[..4],
+            &STMID_CRID,
+            "les octets chiffrés ne portent plus le magic"
+        );
 
         // Sans le nom : refus net, aucun octet fabriqué.
         assert!(demuxer(&chiffre).is_err());
@@ -974,7 +1019,11 @@ mod tests {
 
     #[test]
     fn la_cadence_et_la_duree_viennent_de_l_entete() {
-        let e = EnteteVideo { cadence_num: 2997, cadence_den: 100, ..EnteteVideo::default() };
+        let e = EnteteVideo {
+            cadence_num: 2997,
+            cadence_den: 100,
+            ..EnteteVideo::default()
+        };
         assert_eq!(e.cadence(), Some((2997, 100)));
         let ips = e.images_par_seconde().expect("cadence");
         assert!((ips - 29.97).abs() < 1e-9);
@@ -991,19 +1040,30 @@ mod tests {
             entetes: Vec::new(),
         };
         let d = u.duree().expect("durée");
-        assert!((d - 100.0).abs() < 1e-9, "2997 images à 29,97 i/s = 100 s, obtenu {d}");
+        assert!(
+            (d - 100.0).abs() < 1e-9,
+            "2997 images à 29,97 i/s = 100 s, obtenu {d}"
+        );
     }
 
     #[test]
     fn l_entete_impose_le_codec_contre_le_reniflage() {
         // `00 00 01 07` : une tranche MPEG-2 n° 7, que le reniflage prend pour un SPS H.264.
         let charge = [0u8, 0, 1, 0x07, 0xAA, 0xBB];
-        assert_eq!(deviner_codec(&charge), CodecVideo::H264, "le reniflage seul se trompe");
+        assert_eq!(
+            deviner_codec(&charge),
+            CodecVideo::H264,
+            "le reniflage seul se trompe"
+        );
 
         let mut f = bloc(&STMID_CRID, 1, 0, b"");
         f.extend(bloc(&STMID_SFV, 0, 0, &charge));
         let u = demuxer(&f).expect("démux");
-        assert_eq!(u.codec, CodecVideo::H264, "sans en-tête, le reniflage reste seul juge");
+        assert_eq!(
+            u.codec,
+            CodecVideo::H264,
+            "sans en-tête, le reniflage reste seul juge"
+        );
 
         // La correspondance `mpeg_codec` est ce qui redresse le verdict.
         assert_eq!(CodecVideo::depuis_mpeg_codec(1), Some(CodecVideo::Mpeg2));
@@ -1031,10 +1091,16 @@ mod tests {
         assert_eq!(apercu.entete, complet.entete);
         assert_eq!(apercu.pistes.len(), complet.pistes.len());
         assert_eq!(apercu.pistes[0].codec, complet.pistes[0].codec);
-        assert_eq!(apercu.pistes[0].taille, complet.pistes[0].octets.len() as u64);
+        assert_eq!(
+            apercu.pistes[0].taille,
+            complet.pistes[0].octets.len() as u64
+        );
 
         // Et surtout : l'aperçu ne garde AUCUN octet, c'est toute sa raison d'être.
-        assert!(apercu.pistes[0].octets.is_empty(), "l'aperçu ne retient pas l'audio");
+        assert!(
+            apercu.pistes[0].octets.is_empty(),
+            "l'aperçu ne retient pas l'audio"
+        );
         assert_eq!(apercu.octets_video, 13, "6 + 7 octets de charge vidéo");
     }
 

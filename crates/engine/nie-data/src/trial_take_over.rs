@@ -74,7 +74,10 @@ impl TrialPartTakeOverInfo {
         if id.is_zero() {
             return None;
         }
-        Some(Self { id, flag_no: field_i64(v, "flagNo").unwrap_or(0) })
+        Some(Self {
+            id,
+            flag_no: field_i64(v, "flagNo").unwrap_or(0),
+        })
     }
 }
 
@@ -107,7 +110,10 @@ pub fn parse_trial_take_over_config(root: &Value) -> TrialTakeOverConfig {
             }
         }
     }
-    TrialTakeOverConfig { take_over, part_take_over }
+    TrialTakeOverConfig {
+        take_over,
+        part_take_over,
+    }
 }
 
 #[cfg(test)]

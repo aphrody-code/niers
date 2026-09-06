@@ -8,10 +8,18 @@
 //! la jointure movie↔caption (par `captionId`) est exercée explicitement.
 
 use nie_data::hash::HashId;
-use nie_data::video_waza::{parse_video_waza, EventSongCaptionData, EventSubtitleMenuData};
-use serde_json::{json, Value};
+use nie_data::video_waza::{EventSongCaptionData, EventSubtitleMenuData, parse_video_waza};
+use serde_json::{Value, json};
 
-fn movie(event: &str, caption: &str, path: &str, bgm: &str, fin: f64, fout: f64, staff: &str) -> Value {
+fn movie(
+    event: &str,
+    caption: &str,
+    path: &str,
+    bgm: &str,
+    fin: f64,
+    fout: f64,
+    staff: &str,
+) -> Value {
     json!({
         "eventId": event, "menuId": "0x00000000", "captionId": caption,
         "moviePath": path, "bgmName": bgm,
@@ -53,7 +61,10 @@ fn movie_zero_real_no_caption() {
     assert_eq!(v0.movie.fede_in_time, 1.0);
     assert_eq!(v0.movie.fede_out_time, 1.0);
     assert_eq!(v0.movie.staffroll_data_name, "0xFFFFFFFF"); // sentinelle « aucun »
-    assert!(v0.caption.is_none(), "captionId 0x00000000 → pas de légende");
+    assert!(
+        v0.caption.is_none(),
+        "captionId 0x00000000 → pas de légende"
+    );
 }
 
 #[test]

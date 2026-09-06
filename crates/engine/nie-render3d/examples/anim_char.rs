@@ -19,7 +19,11 @@ fn decode_texture(g4tx_bytes: &[u8]) -> Texture {
     let tx = g4tx::parse(g4tx_bytes).expect("parse g4tx");
     let t = &tx.textures[0];
     let dds = &g4tx_bytes[t.data_offset..];
-    let px_off = if dds.len() >= 88 && &dds[84..88] == b"DX10" { 148 } else { 128 };
+    let px_off = if dds.len() >= 88 && &dds[84..88] == b"DX10" {
+        148
+    } else {
+        128
+    };
     let data = &dds[px_off..];
     let (w, h) = (t.width as usize, t.height as usize);
     let (bw, bh) = (w / 4, h / 4);
@@ -41,7 +45,11 @@ fn decode_texture(g4tx_bytes: &[u8]) -> Texture {
             }
         }
     }
-    Texture { width: w as u32, height: h as u32, rgba }
+    Texture {
+        width: w as u32,
+        height: h as u32,
+        rgba,
+    }
 }
 
 fn main() {
@@ -70,7 +78,10 @@ fn main() {
     let f = pk.files.iter().find(|f| f.name.ends_with(".g4mt")).unwrap();
     let g4mt_bytes = &pk_bytes[f.offset..f.offset + f.size];
     let motion = g4mt::Motion::parse(g4mt_bytes).unwrap();
-    let clip_selector: usize = std::env::var("CLIP").ok().and_then(|s| s.parse().ok()).unwrap_or(0);
+    let clip_selector: usize = std::env::var("CLIP")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(0);
     let clip = &motion.clips[clip_selector.min(motion.clips.len() - 1)];
 
     // Mapping correct : cible → hash CRC32 du nom d'os, résolu contre le G4SK réel (remplace
@@ -94,7 +105,12 @@ fn main() {
         tex.height
     );
 
-    let cam = Camera { eye: [0.0, 1.0, 3.2], target: [0.0, 0.95, 0.0], up: [0.0, 1.0, 0.0], fov_y: 0.6 };
+    let cam = Camera {
+        eye: [0.0, 1.0, 3.2],
+        target: [0.0, 0.95, 0.0],
+        up: [0.0, 1.0, 0.0],
+        fov_y: 0.6,
+    };
 
     for frame in 0..clip.frame_count() as usize {
         let mut world: Vec<[[f32; 4]; 4]> = Vec::with_capacity(nb);
@@ -113,8 +129,9 @@ fn main() {
                 g4sk::mat_mul(&world[par as usize], &local)
             });
         }
-        let skinm: Vec<[[f32; 4]; 4]> =
-            (0..nb).map(|i| g4sk::mat_mul(&world[i], &poses[i].inverse_bind)).collect();
+        let skinm: Vec<[[f32; 4]; 4]> = (0..nb)
+            .map(|i| g4sk::mat_mul(&world[i], &poses[i].inverse_bind))
+            .collect();
 
         let sp: Vec<[f32; 3]> = (0..pos.len())
             .map(|v| {
@@ -131,7 +148,11 @@ fn main() {
                     }
                     wsum += w;
                 }
-                if wsum > 0.0 { [acc[0] / wsum, acc[1] / wsum, acc[2] / wsum] } else { pos[v] }
+                if wsum > 0.0 {
+                    [acc[0] / wsum, acc[1] / wsum, acc[2] / wsum]
+                } else {
+                    pos[v]
+                }
             })
             .collect();
 
@@ -142,8 +163,15 @@ fn main() {
             indices: idx.clone(),
             texture: if has_uv { Some(0) } else { None },
         };
-        let model = Model { primitives: vec![prim], textures: vec![tex_clone(&tex)] };
-        let inst = Instance { model: &model, transform: scene::mat_identity(), two_sided: true };
+        let model = Model {
+            primitives: vec![prim],
+            textures: vec![tex_clone(&tex)],
+        };
+        let inst = Instance {
+            model: &model,
+            transform: scene::mat_identity(),
+            two_sided: true,
+        };
         let px = scene::render_scene(&[], &[inst], &cam, 480, 640, [30, 36, 54], [12, 14, 22]);
         let mut out = Vec::new();
         {
@@ -158,5 +186,9 @@ fn main() {
 }
 
 fn tex_clone(t: &Texture) -> Texture {
-    Texture { width: t.width, height: t.height, rgba: t.rgba.clone() }
+    Texture {
+        width: t.width,
+        height: t.height,
+        rgba: t.rgba.clone(),
+    }
 }

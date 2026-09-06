@@ -5,7 +5,9 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 fn main() {
-    let game = nie_formats::vfs::resolve_game_dir().to_string_lossy().into_owned();
+    let game = nie_formats::vfs::resolve_game_dir()
+        .to_string_lossy()
+        .into_owned();
     let data = PathBuf::from(&game).join("data");
     let mut vfs = Vfs::new();
     vfs.init(&data).expect("vfs init");
@@ -19,7 +21,9 @@ fn main() {
         };
         *counts.entry(ext.clone()).or_default() += 1;
         let s = sample.entry(ext).or_default();
-        if s.len() < 3 { s.push(path.to_string()); }
+        if s.len() < 3 {
+            s.push(path.to_string());
+        }
     }
     let mut v: Vec<_> = counts.into_iter().collect();
     v.sort_by_key(|b| std::cmp::Reverse(b.1));

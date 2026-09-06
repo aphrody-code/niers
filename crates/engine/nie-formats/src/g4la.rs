@@ -6,8 +6,8 @@
 //! `type_id`=0x68, `align`=16). Le corps (pistes d'animation de lumière) n'est pas décodé faute de
 //! vérité terrain (pas de parseur iecode) — en-tête byte-exact seulement, comme [`crate::g4ma`].
 
-use crate::level5::{self, Level5Header};
 use crate::FormatError;
+use crate::level5::{self, Level5Header};
 
 /// Magic « G4LA » en little-endian.
 const MAGIC: u32 = 0x414C_3447;
@@ -42,10 +42,16 @@ pub fn is_g4la(data: &[u8]) -> bool {
 /// [`FormatError::TooShort`] si < 0x40 octets, [`FormatError::BadMagic`] si le magic ≠ « G4LA ».
 pub fn parse(data: &[u8]) -> Result<G4la, FormatError> {
     if data.len() < HEADER_LEN {
-        return Err(FormatError::TooShort { got: data.len(), need: HEADER_LEN });
+        return Err(FormatError::TooShort {
+            got: data.len(),
+            need: HEADER_LEN,
+        });
     }
     let header = level5::parse_header(data, MAGIC, "G4LA")?;
-    Ok(G4la { header, file_size: data.len() })
+    Ok(G4la {
+        header,
+        file_size: data.len(),
+    })
 }
 
 #[cfg(test)]
@@ -69,7 +75,10 @@ mod tests {
 
     #[test]
     fn rejette_magic_et_court() {
-        assert!(matches!(parse(&[0u8; HEADER_LEN]), Err(FormatError::BadMagic { .. })));
+        assert!(matches!(
+            parse(&[0u8; HEADER_LEN]),
+            Err(FormatError::BadMagic { .. })
+        ));
         assert!(matches!(parse(b"G4LA"), Err(FormatError::TooShort { .. })));
         assert!(is_g4la(b"G4LA____"));
         assert!(!is_g4la(b"G4VS"));
@@ -80,8 +89,16 @@ mod tests {
     #[test]
     fn golden_g4la_reels() {
         for (bytes, size, data_size) in [
-            (include_bytes!("../tests/fixtures/g4la/small.g4la").as_slice(), 896usize, 0x340u32),
-            (include_bytes!("../tests/fixtures/g4la/med.g4la").as_slice(), 2112usize, 0x800u32),
+            (
+                include_bytes!("../tests/fixtures/g4la/small.g4la").as_slice(),
+                896usize,
+                0x340u32,
+            ),
+            (
+                include_bytes!("../tests/fixtures/g4la/med.g4la").as_slice(),
+                2112usize,
+                0x800u32,
+            ),
         ] {
             let g = parse(bytes).expect("g4la réel");
             assert_eq!(&g.header.magic.to_le_bytes(), b"G4LA");

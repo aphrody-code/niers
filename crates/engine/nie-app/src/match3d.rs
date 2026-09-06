@@ -77,7 +77,9 @@ pub fn charger_modele_joueur(vfs: &Vfs, essais: usize) -> Result<Model> {
 
     let mut derniere = None;
     for dossier in dossiers.iter().take(essais) {
-        let Some(code) = dossier.rsplit('/').next() else { continue };
+        let Some(code) = dossier.rsplit('/').next() else {
+            continue;
+        };
         match lire_personnage(vfs, dossier, code) {
             Ok(m) if !m.primitives.is_empty() => return Ok(m),
             Ok(_) => {}
@@ -95,20 +97,38 @@ fn pelouse() -> Vec<Tri> {
     for i in 0..BANDES {
         let x0 = -HALF_LEN + 2.0 * HALF_LEN * (i as f32 / BANDES as f32);
         let x1 = -HALF_LEN + 2.0 * HALF_LEN * ((i + 1) as f32 / BANDES as f32);
-        let c = if i % 2 == 0 { [34, 139, 53] } else { [40, 150, 58] };
+        let c = if i % 2 == 0 {
+            [34, 139, 53]
+        } else {
+            [40, 150, 58]
+        };
         let (y0, y1) = (-HALF_WID, HALF_WID);
-        t.push(Tri { p: [[x0, 0.0, y0], [x1, 0.0, y0], [x1, 0.0, y1]], color: c });
-        t.push(Tri { p: [[x0, 0.0, y0], [x1, 0.0, y1], [x0, 0.0, y1]], color: c });
+        t.push(Tri {
+            p: [[x0, 0.0, y0], [x1, 0.0, y0], [x1, 0.0, y1]],
+            color: c,
+        });
+        t.push(Tri {
+            p: [[x0, 0.0, y0], [x1, 0.0, y1], [x0, 0.0, y1]],
+            color: c,
+        });
     }
     // Ligne médiane et lignes de but, posées juste au-dessus du sol pour ne pas z-fighter.
     let blanc = [235, 240, 235];
     let mut bande = |x: f32, demi: f32| {
         t.push(Tri {
-            p: [[x - demi, 0.02, -HALF_WID], [x + demi, 0.02, -HALF_WID], [x + demi, 0.02, HALF_WID]],
+            p: [
+                [x - demi, 0.02, -HALF_WID],
+                [x + demi, 0.02, -HALF_WID],
+                [x + demi, 0.02, HALF_WID],
+            ],
             color: blanc,
         });
         t.push(Tri {
-            p: [[x - demi, 0.02, -HALF_WID], [x + demi, 0.02, HALF_WID], [x - demi, 0.02, HALF_WID]],
+            p: [
+                [x - demi, 0.02, -HALF_WID],
+                [x + demi, 0.02, HALF_WID],
+                [x - demi, 0.02, HALF_WID],
+            ],
             color: blanc,
         });
     };
@@ -126,16 +146,32 @@ fn pelouse() -> Vec<Tri> {
 /// d'équipe — ce que les disques du rendu top-down donnaient déjà —, la tête reste le vrai
 /// maillage du jeu. Rien ici ne prétend être un asset d'origine.
 fn corps(x: f32, z: f32, equipe: u8) -> Vec<Tri> {
-    let c = if equipe == 0 { [40, 110, 230] } else { [225, 60, 60] };
+    let c = if equipe == 0 {
+        [40, 110, 230]
+    } else {
+        [225, 60, 60]
+    };
     // Épaules à 1,22 m — exactement là où commence la boîte englobante d'une tête du jeu, pour
     // que les deux se rejoignent sans interstice.
     const HAUT: f32 = 1.22;
     const DEMI: f32 = 0.28;
     vec![
-        Tri { p: [[x - DEMI, 0.0, z], [x + DEMI, 0.0, z], [x + DEMI, HAUT, z]], color: c },
-        Tri { p: [[x - DEMI, 0.0, z], [x + DEMI, HAUT, z], [x - DEMI, HAUT, z]], color: c },
-        Tri { p: [[x, 0.0, z - DEMI], [x, 0.0, z + DEMI], [x, HAUT, z + DEMI]], color: c },
-        Tri { p: [[x, 0.0, z - DEMI], [x, HAUT, z + DEMI], [x, HAUT, z - DEMI]], color: c },
+        Tri {
+            p: [[x - DEMI, 0.0, z], [x + DEMI, 0.0, z], [x + DEMI, HAUT, z]],
+            color: c,
+        },
+        Tri {
+            p: [[x - DEMI, 0.0, z], [x + DEMI, HAUT, z], [x - DEMI, HAUT, z]],
+            color: c,
+        },
+        Tri {
+            p: [[x, 0.0, z - DEMI], [x, 0.0, z + DEMI], [x, HAUT, z + DEMI]],
+            color: c,
+        },
+        Tri {
+            p: [[x, 0.0, z - DEMI], [x, HAUT, z + DEMI], [x, HAUT, z - DEMI]],
+            color: c,
+        },
     ]
 }
 
@@ -145,10 +181,22 @@ fn ballon(p: [f32; 3], r: f32) -> Vec<Tri> {
     let (x, y, z) = (p[0], p[1].max(r), p[2]);
     // Deux quads croisés : lisible sous tous les angles pour un coût dérisoire.
     vec![
-        Tri { p: [[x - r, y - r, z], [x + r, y - r, z], [x + r, y + r, z]], color: c },
-        Tri { p: [[x - r, y - r, z], [x + r, y + r, z], [x - r, y + r, z]], color: c },
-        Tri { p: [[x, y - r, z - r], [x, y - r, z + r], [x, y + r, z + r]], color: c },
-        Tri { p: [[x, y - r, z - r], [x, y + r, z + r], [x, y + r, z - r]], color: c },
+        Tri {
+            p: [[x - r, y - r, z], [x + r, y - r, z], [x + r, y + r, z]],
+            color: c,
+        },
+        Tri {
+            p: [[x - r, y - r, z], [x + r, y + r, z], [x - r, y + r, z]],
+            color: c,
+        },
+        Tri {
+            p: [[x, y - r, z - r], [x, y - r, z + r], [x, y + r, z + r]],
+            color: c,
+        },
+        Tri {
+            p: [[x, y - r, z - r], [x, y + r, z + r], [x, y + r, z - r]],
+            color: c,
+        },
     ]
 }
 
@@ -180,7 +228,10 @@ pub fn rendre(world: &World, modele: &Model) -> Vec<u8> {
     for p in &world.players {
         plats.extend(corps(p.pos.x, p.pos.y, p.team));
     }
-    plats.extend(ballon([world.ball.pos.x, world.ball.pos.z, world.ball.pos.y], 0.35));
+    plats.extend(ballon(
+        [world.ball.pos.x, world.ball.pos.z, world.ball.pos.y],
+        0.35,
+    ));
 
     // **Aucune mise à l'échelle.** Les maillages du jeu sont déjà en mètres ET à leur place dans
     // le repère du personnage : la tête de `c11010010` occupe Y ∈ [1,22 ; 1,63], exactement la
@@ -194,7 +245,11 @@ pub fn rendre(world: &World, modele: &Model) -> Vec<u8> {
         .map(|p| {
             // Le joueur regarde le but qu'il attaque ; le gardien, le terrain.
             let angle = if p.role == Role::Goalkeeper {
-                if p.team == 0 { 0.0 } else { core::f32::consts::PI }
+                if p.team == 0 {
+                    0.0
+                } else {
+                    core::f32::consts::PI
+                }
             } else if p.team == 0 {
                 0.0
             } else {
@@ -204,7 +259,11 @@ pub fn rendre(world: &World, modele: &Model) -> Vec<u8> {
                 &scene::mat_translate([p.pos.x, 0.0, p.pos.y]),
                 &scene::mat_rot_y(angle),
             );
-            Instance { model: modele, transform: t, two_sided: false }
+            Instance {
+                model: modele,
+                transform: t,
+                two_sided: false,
+            }
         })
         .collect();
 
@@ -218,4 +277,3 @@ pub fn rendre(world: &World, modele: &Model) -> Vec<u8> {
         [58, 86, 140],
     )
 }
-

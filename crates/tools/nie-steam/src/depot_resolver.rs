@@ -7,7 +7,7 @@
 //! Contrairement à SteamKit2, les enfants sont un [`BTreeMap<String, KeyValue>`]
 //! (accès par `.get("clé")`), non une liste indexée.
 
-use steamroom::types::key_value::{KvValue, KeyValue};
+use steamroom::types::key_value::{KeyValue, KvValue};
 
 /// Valeur de sentinel : manifest absent / introuvable.
 pub const INVALID_MANIFEST: u64 = 0;
@@ -208,7 +208,7 @@ fn kv_as_u32(kv: &KeyValue) -> Option<u32> {
 #[cfg(test)]
 mod kv_builder {
     use std::collections::BTreeMap;
-    use steamroom::types::key_value::{KvValue, KeyValue};
+    use steamroom::types::key_value::{KeyValue, KvValue};
 
     /// Crée un nœud KV enfants (section / object).
     pub fn children(key: &str, pairs: Vec<(&str, KeyValue)>) -> KeyValue {
@@ -288,7 +288,14 @@ mod tests {
     #[test]
     fn explicit_depots_returned_deduped() {
         let depots = children("depots", vec![]);
-        let result = select_depot_ids(&depots, &[10, 20, 10, 30], false, "windows", None, "english");
+        let result = select_depot_ids(
+            &depots,
+            &[10, 20, 10, 30],
+            false,
+            "windows",
+            None,
+            "english",
+        );
         assert_eq!(result, vec![10, 20, 30]);
     }
 
@@ -317,8 +324,7 @@ mod tests {
     fn depot_without_config_is_eligible() {
         // Un depot sans nœud "config" est toujours éligible.
         let manifest_gid = str_val("gid", "99999");
-        let branch_node =
-            children("public", vec![("gid", manifest_gid)]);
+        let branch_node = children("public", vec![("gid", manifest_gid)]);
         let manifests = children("manifests", vec![("public", branch_node)]);
         let depot = children("9999", vec![("manifests", manifests)]);
         let depots = children("depots", vec![("9999", depot)]);
@@ -405,7 +411,10 @@ mod tests {
     #[test]
     fn proxied_from_app_returns_target() {
         // Pas de "manifests", mais "depotfromapp" présent.
-        let depot = children("42", vec![("depotfromapp", str_val("depotfromapp", "9999"))]);
+        let depot = children(
+            "42",
+            vec![("depotfromapp", str_val("depotfromapp", "9999"))],
+        );
         assert_eq!(proxied_from_app(&depot), 9999);
     }
 
@@ -414,10 +423,13 @@ mod tests {
         let gid = str_val("gid", "1");
         let branch = children("public", vec![("gid", gid)]);
         let manifests = children("manifests", vec![("public", branch)]);
-        let depot = children("42", vec![
-            ("manifests", manifests),
-            ("depotfromapp", str_val("depotfromapp", "9999")),
-        ]);
+        let depot = children(
+            "42",
+            vec![
+                ("manifests", manifests),
+                ("depotfromapp", str_val("depotfromapp", "9999")),
+            ],
+        );
         // Manifests présents → pas un proxy
         assert_eq!(proxied_from_app(&depot), 0);
     }

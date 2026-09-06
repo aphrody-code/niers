@@ -10,8 +10,8 @@
 //! La fixture embarque un échantillon représentatif (2-3 entrées par liste, salons complets).
 
 use nie_data::hash::HashId;
-use nie_data::inacode::{parse_inacode_config, InacodeRange};
-use serde_json::{json, Value};
+use nie_data::inacode::{InacodeRange, parse_inacode_config};
+use serde_json::{Value, json};
 
 /// Fixture = vrais noeuds du dump, forme iecode `{lists:[{name,typeName,values}]}`.
 fn fixture() -> Value {
@@ -204,12 +204,36 @@ fn rooms_reels_complets() {
     // openCond = condition base64 (offset Condition résolu) conservée brute.
     assert_eq!(r0.open_cond, "AAAAAA8FNbkZNtoAAQAyAAAng3E=");
     // ShortTuple → plages (offset, count).
-    assert_eq!(r0.member, InacodeRange { offset: 0, count: 28 });
-    assert_eq!(r0.comment, InacodeRange { offset: 0, count: 68 });
+    assert_eq!(
+        r0.member,
+        InacodeRange {
+            offset: 0,
+            count: 28
+        }
+    );
+    assert_eq!(
+        r0.comment,
+        InacodeRange {
+            offset: 0,
+            count: 68
+        }
+    );
     let r1 = &cfg.rooms[1];
     assert_eq!(r1.orderby, 4);
-    assert_eq!(r1.member, InacodeRange { offset: 28, count: 5 });
-    assert_eq!(r1.comment, InacodeRange { offset: 68, count: 6 });
+    assert_eq!(
+        r1.member,
+        InacodeRange {
+            offset: 28,
+            count: 5
+        }
+    );
+    assert_eq!(
+        r1.comment,
+        InacodeRange {
+            offset: 68,
+            count: 6
+        }
+    );
 }
 
 #[test]
@@ -239,7 +263,13 @@ fn comments_reels_complets() {
     assert_eq!(c0.overwrite_author, HashId::ZERO);
     assert_eq!(c0.text, HashId(0xA124_6860));
     assert!(!c0.is_mention_all);
-    assert_eq!(c0.mention, InacodeRange { offset: 0, count: 0 });
+    assert_eq!(
+        c0.mention,
+        InacodeRange {
+            offset: 0,
+            count: 0
+        }
+    );
     assert_eq!(c0.hour, 16);
     assert_eq!(c0.minutes, 40);
     assert_eq!(c0.selection_flag_index, 0);
@@ -251,7 +281,13 @@ fn comments_reels_complets() {
     let c1 = &cfg.comments[1];
     assert!(c1.is_mention_all);
     assert_eq!(c1.text, HashId(0x8A09_3BA3));
-    assert_eq!(c1.selection, InacodeRange { offset: 0, count: 2 });
+    assert_eq!(
+        c1.selection,
+        InacodeRange {
+            offset: 0,
+            count: 2
+        }
+    );
     assert_eq!(c1.disable_reply_cond, "AAAAAA8FNbkZNtoAAQAyAAAnLnE=");
     assert!(!c1.need_separator_line);
 }
@@ -264,9 +300,24 @@ fn comment_sets_reels() {
     assert_eq!(cs0.id_crc, HashId(0x2E5B_C85F));
     assert_eq!(cs0.open_cond, "0xFFFFFFFF");
     assert_eq!(cs0.opened_flag_index, 1);
-    assert_eq!(cs0.comment, InacodeRange { offset: 0, count: 3 });
-    assert_eq!(cfg.comment_sets[1].open_cond, "AAAAABgFNZkhwUAACgEoAAYCMgAAAAEyAAAAAXg=");
-    assert_eq!(cfg.comment_sets[2].comment, InacodeRange { offset: 6, count: 4 });
+    assert_eq!(
+        cs0.comment,
+        InacodeRange {
+            offset: 0,
+            count: 3
+        }
+    );
+    assert_eq!(
+        cfg.comment_sets[1].open_cond,
+        "AAAAABgFNZkhwUAACgEoAAYCMgAAAAEyAAAAAXg="
+    );
+    assert_eq!(
+        cfg.comment_sets[2].comment,
+        InacodeRange {
+            offset: 6,
+            count: 4
+        }
+    );
 }
 
 #[test]
@@ -281,7 +332,10 @@ fn references_croisees_internes() {
     // room0.member [0,28] + room1.member [28,5] couvrent les 33 m_InacodeMemberDataList réels.
     let m0 = cfg.rooms[0].member;
     let m1 = cfg.rooms[1].member;
-    assert_eq!(i32::from(m0.offset) + i32::from(m0.count), i32::from(m1.offset));
+    assert_eq!(
+        i32::from(m0.offset) + i32::from(m0.count),
+        i32::from(m1.offset)
+    );
     assert_eq!(i32::from(m1.offset) + i32::from(m1.count), 33);
     // room0.comment [0,68] + room1.comment [68,6] couvrent les 74 m_InacodeCommentSetIdDataList.
     let cm1 = cfg.rooms[1].comment;

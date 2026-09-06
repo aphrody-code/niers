@@ -14,7 +14,10 @@ fn main() {
         out_dir = args.get(i + 1).cloned();
         args.drain(i..=i + 1);
     }
-    assert!(!args.is_empty(), "usage: cfgbin_envelope <f.cfg.bin>… [--out-dir <d>]");
+    assert!(
+        !args.is_empty(),
+        "usage: cfgbin_envelope <f.cfg.bin>… [--out-dir <d>]"
+    );
 
     for path in &args {
         let brut = match std::fs::read(path) {
@@ -47,7 +50,10 @@ fn main() {
         }
 
         match trouve {
-            None => println!("{nom}\n  {} o — AUCUNE enveloppe connue ne le rend lisible", brut.len()),
+            None => println!(
+                "{nom}\n  {} o — AUCUNE enveloppe connue ne le rend lisible",
+                brut.len()
+            ),
             Some((quoi, clair)) => {
                 let cfg = nie_formats::cfgbin::cfgbin_parse(&clair).expect("déjà validé");
                 let enfants = cfg.entries.first().map_or(0, |e| e.children.len());

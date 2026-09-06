@@ -259,7 +259,9 @@ impl ExceptionDropChara {
         if exception_drop_chara_id.is_zero() {
             return None;
         }
-        Some(Self { exception_drop_chara_id })
+        Some(Self {
+            exception_drop_chara_id,
+        })
     }
 }
 
@@ -284,7 +286,10 @@ impl SliceTable {
     #[must_use]
     pub fn from_value(v: &Value, id_key: &str) -> Option<Self> {
         let data = field_pair(v, "data")?;
-        Some(Self { id: field_hash(v, id_key), data })
+        Some(Self {
+            id: field_hash(v, id_key),
+            data,
+        })
     }
 
     /// Borne de fin réelle de la tranche, plafonnée à `len` (port `j < list.length` inagle).
@@ -404,11 +409,19 @@ impl SoccerDropConfig {
 #[must_use]
 pub fn parse_soccer_drop_config(root: &Value) -> SoccerDropConfig {
     SoccerDropConfig {
-        rarity_decide_tables: parse_list(root, "m_rarityDecideTableList", RarityDecideTable::from_value),
+        rarity_decide_tables: parse_list(
+            root,
+            "m_rarityDecideTableList",
+            RarityDecideTable::from_value,
+        ),
         lottery_nums: parse_list(root, "m_lotteryNumInfoList", LotteryNumInfo::from_value),
         item_drop_data: parse_list_infallible(root, "m_itemDropDataList", ItemDropData::from_value),
         item_drop_tables: parse_slice_tables(root, "m_itemDropTableList", "id"),
-        spirit_drop_data: parse_list_infallible(root, "m_spiritDropDataList", SpiritDropData::from_value),
+        spirit_drop_data: parse_list_infallible(
+            root,
+            "m_spiritDropDataList",
+            SpiritDropData::from_value,
+        ),
         spirit_drop_tables: parse_slice_tables(root, "m_spiritDropTableList", "id"),
         spirit_table_data: parse_list(root, "m_spiritTableDataList", SpiritTableData::from_value),
         spirit_chara_tables: parse_slice_tables(root, "m_spiritCharaTableList", "id"),
@@ -419,7 +432,11 @@ pub fn parse_soccer_drop_config(root: &Value) -> SoccerDropConfig {
             "m_exceptionDropCharaList",
             ExceptionDropChara::from_value,
         ),
-        exception_drop_lists: parse_slice_tables(root, "m_exceptionDropList", "exceptionDropListId"),
+        exception_drop_lists: parse_slice_tables(
+            root,
+            "m_exceptionDropList",
+            "exceptionDropListId",
+        ),
     }
 }
 
@@ -514,14 +531,28 @@ mod tests {
     fn item_drop_data_infallible_positions() {
         let cfg = parse_soccer_drop_config(&fixture());
         assert_eq!(cfg.item_drop_data.len(), 2);
-        assert_eq!(cfg.item_drop_data[0], ItemDropData { drop_rarity: 0, weight: 5 });
-        assert_eq!(cfg.item_drop_data[1], ItemDropData { drop_rarity: 1, weight: 5 });
+        assert_eq!(
+            cfg.item_drop_data[0],
+            ItemDropData {
+                drop_rarity: 0,
+                weight: 5
+            }
+        );
+        assert_eq!(
+            cfg.item_drop_data[1],
+            ItemDropData {
+                drop_rarity: 1,
+                weight: 5
+            }
+        );
     }
 
     #[test]
     fn item_drop_slice_resolution() {
         let cfg = parse_soccer_drop_config(&fixture());
-        let slice = cfg.item_drop_slice(HashId(0x9CCA_B1C6)).expect("table présente");
+        let slice = cfg
+            .item_drop_slice(HashId(0x9CCA_B1C6))
+            .expect("table présente");
         assert_eq!(slice.len(), 2);
         assert_eq!(slice[1].weight, 5);
         assert!(cfg.item_drop_slice(HashId(0xDEAD_BEEF)).is_none());
@@ -532,7 +563,10 @@ mod tests {
         let cfg = parse_soccer_drop_config(&fixture());
         assert_eq!(cfg.spirit_drop_data.len(), 3);
         // Poids flottant : 20.75 et 4.25 sont exacts en f64 (vérité terrain).
-        assert_eq!(cfg.spirit_drop_data[0].weight.to_bits(), 20.75_f64.to_bits());
+        assert_eq!(
+            cfg.spirit_drop_data[0].weight.to_bits(),
+            20.75_f64.to_bits()
+        );
         assert_eq!(cfg.spirit_drop_data[1].weight.to_bits(), 4.25_f64.to_bits());
         // weight: 20 (entier dans le JSON) lu en f64 = 20.0.
         assert_eq!(cfg.spirit_drop_data[2].weight.to_bits(), 20.0_f64.to_bits());

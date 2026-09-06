@@ -110,10 +110,14 @@ pub fn conformite(pet: &PetManifest, manifest: &AnimationsManifest) -> Conformit
     // lit avant de décoder l'atlas : si elle ment, il découpe la grille au mauvais pas.
     match (version, pet.sprite_version_number) {
         (Some(Version::V2), n) if n != 2 => {
-            ecarts.push(format!("atlas v2 mais spriteVersionNumber = {n} (attendu 2)"));
+            ecarts.push(format!(
+                "atlas v2 mais spriteVersionNumber = {n} (attendu 2)"
+            ));
         }
         (Some(Version::V1), n) if n != 1 => {
-            ecarts.push(format!("atlas v1 mais spriteVersionNumber = {n} (attendu 1)"));
+            ecarts.push(format!(
+                "atlas v1 mais spriteVersionNumber = {n} (attendu 1)"
+            ));
         }
         _ => {}
     }

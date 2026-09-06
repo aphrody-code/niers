@@ -12,8 +12,7 @@ mod common;
 use nie_data::enjoy_mode_team::parse_enjoy_mode_team_config;
 use nie_data::hash::HashId;
 
-const PATH: &str =
-    "team/enjoy_mode_team_config_1.04.02.00.cfg.bin.json";
+const PATH: &str = "team/enjoy_mode_team_config_1.04.02.00.cfg.bin.json";
 
 fn load() -> Option<serde_json::Value> {
     let chemin_abs = common::chemin(PATH)?;
@@ -21,15 +20,23 @@ fn load() -> Option<serde_json::Value> {
         eprintln!("skip : {} absent du corpus", chemin_abs.display());
         return None;
     }
-    let content = std::fs::read_to_string(&chemin_abs).unwrap_or_else(|e| panic!("lecture {}: {e}", chemin_abs.display()));
-    Some(serde_json::from_str(&content).unwrap_or_else(|e| panic!("JSON {}: {e}", chemin_abs.display())))
+    let content = std::fs::read_to_string(&chemin_abs)
+        .unwrap_or_else(|e| panic!("lecture {}: {e}", chemin_abs.display()));
+    Some(
+        serde_json::from_str(&content)
+            .unwrap_or_else(|e| panic!("JSON {}: {e}", chemin_abs.display())),
+    )
 }
 
 #[test]
 fn vingt_huit_equipes() {
     let Some(root) = load() else { return };
     let cfg = parse_enjoy_mode_team_config(&root);
-    assert_eq!(cfg.teams.len(), 28, "28 équipes dans ENJOY_MODE_TEAM_INFO_LIST_BEG_0");
+    assert_eq!(
+        cfg.teams.len(),
+        28,
+        "28 équipes dans ENJOY_MODE_TEAM_INFO_LIST_BEG_0"
+    );
 }
 
 #[test]

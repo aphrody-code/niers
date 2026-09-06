@@ -439,8 +439,14 @@ fn additional_config_exp_table() {
     // m_SoccerGetExpDataTable[0] — soccer_game_additional_config lignes 67-70
     assert_eq!(cfg.get_exp_table.len(), 2);
     assert_eq!(cfg.get_exp_table[0].id, 0);
-    assert!((cfg.get_exp_table[0].ratio - 7.8_f64).abs() < 1e-9, "ratio[0] = 7.8");
-    assert!((cfg.get_exp_table[1].ratio - 7.3_f64).abs() < 1e-9, "ratio[1] = 7.3");
+    assert!(
+        (cfg.get_exp_table[0].ratio - 7.8_f64).abs() < 1e-9,
+        "ratio[0] = 7.8"
+    );
+    assert!(
+        (cfg.get_exp_table[1].ratio - 7.3_f64).abs() < 1e-9,
+        "ratio[1] = 7.3"
+    );
 }
 
 #[test]
@@ -494,7 +500,10 @@ fn game_config_plus_game_info_0() {
     let g = &cfg.game_infos[0];
     assert_eq!(g.match_id, HashId(0xAFE2_AFC5), "match_id = 0xAFE2AFC5");
     assert_eq!(g.id_str, "fbtl_st_0904", "id_str = fbtl_st_0904");
-    assert_eq!(g.difficulty_index, 0, "difficulty_index = 0 depuis REF_DIFFICULTY");
+    assert_eq!(
+        g.difficulty_index, 0,
+        "difficulty_index = 0 depuis REF_DIFFICULTY"
+    );
     // raw[0] = var[2] = 1
     assert_eq!(g.raw[0], 1_i64, "raw[0] = var[2] = 1");
     // raw[1] = var[3] = -724197456 → 0xD4D59FB0
@@ -529,7 +538,10 @@ fn load_json(filename: &str) -> Option<serde_json::Value> {
     }
     let content = std::fs::read_to_string(&path)
         .unwrap_or_else(|e| panic!("Impossible de lire {}: {e}", path.display()));
-    Some(serde_json::from_str(&content).unwrap_or_else(|e| panic!("JSON invalide {}: {e}", path.display())))
+    Some(
+        serde_json::from_str(&content)
+            .unwrap_or_else(|e| panic!("JSON invalide {}: {e}", path.display())),
+    )
 }
 
 #[test]
@@ -578,7 +590,10 @@ fn real_file_focus_battle_demo_trigger0() {
     let cfg = parse_focus_battle_effect_config(&root);
     // m_soccerFocusBattleDemoTriggerList[0] — lignes 190-198 du fichier
     assert_eq!(cfg.demo_triggers[0].demo_trigger_type, 3);
-    assert_eq!(cfg.demo_triggers[0].demo_trigger_text_id, HashId(0x8901_F53D));
+    assert_eq!(
+        cfg.demo_triggers[0].demo_trigger_text_id,
+        HashId(0x8901_F53D)
+    );
 }
 
 #[test]
@@ -653,7 +668,10 @@ fn real_file_basic_effect_0() {
     assert_eq!(effects[0].func_name, HashId(0xC9D6_04D4));
     assert_eq!(effects[0].build_icon_type, 6);
     // tous ont buildIconType=6 dans le dump réel
-    assert!(effects.iter().all(|e| e.build_icon_type == 6), "tous buildIconType=6");
+    assert!(
+        effects.iter().all(|e| e.build_icon_type == 6),
+        "tous buildIconType=6"
+    );
 }
 
 #[test]
@@ -675,10 +693,16 @@ fn real_file_additional_exp_table_bornes() {
     let cfg = parse_soccer_game_additional_config(&root);
     // m_SoccerGetExpDataTable[0] — lignes 67-70 du fichier
     assert_eq!(cfg.get_exp_table[0].id, 0);
-    assert!((cfg.get_exp_table[0].ratio - 7.8_f64).abs() < 1e-9, "ratio[0] = 7.8");
+    assert!(
+        (cfg.get_exp_table[0].ratio - 7.8_f64).abs() < 1e-9,
+        "ratio[0] = 7.8"
+    );
     // m_SoccerGetExpDataTable[16] — dernière entrée
     assert_eq!(cfg.get_exp_table[16].id, 16);
-    assert!((cfg.get_exp_table[16].ratio - 4.0_f64).abs() < 1e-9, "ratio[16] = 4.0");
+    assert!(
+        (cfg.get_exp_table[16].ratio - 4.0_f64).abs() < 1e-9,
+        "ratio[16] = 4.0"
+    );
 }
 
 #[test]
@@ -700,7 +724,11 @@ fn real_file_game_config_plus_difficulte() {
     };
     let cfg = parse_soccer_game_config(&root);
     // soccer_game_config_plus_1.04.08.00.cfg.bin.json : 1 difficulté
-    assert_eq!(cfg.difficulties.len(), 1, "1 difficulté dans le fichier plus");
+    assert_eq!(
+        cfg.difficulties.len(),
+        1,
+        "1 difficulté dans le fichier plus"
+    );
     assert_eq!(cfg.difficulties[0].difficulty_id, 1, "difficulty_id = 1");
     // var[2]=40 → raw[1]=40 (ligne 25 du fichier)
     assert_eq!(cfg.difficulties[0].raw[1], 40, "raw[1] = var[2] = 40");
@@ -722,7 +750,10 @@ fn real_file_game_config_plus_match_info() {
     // -1344098363 as u32 = 0xAFE2AFC5
     assert_eq!(g.match_id, HashId(0xAFE2_AFC5), "match_id = 0xAFE2AFC5");
     assert_eq!(g.id_str, "fbtl_st_0904", "id_str = fbtl_st_0904");
-    assert_eq!(g.difficulty_index, 0, "difficulty_index depuis REF_DIFFICULTY_0.var[0]=0");
+    assert_eq!(
+        g.difficulty_index, 0,
+        "difficulty_index depuis REF_DIFFICULTY_0.var[0]=0"
+    );
     // raw[1] = var[3] = -724197456 → 0xD4D59FB0
     assert_eq!(g.raw[1], -724197456_i64, "raw[1] = var[3]");
 }
@@ -747,13 +778,22 @@ fn real_file_game_config_full_cpu_beans() {
     let cfg = parse_soccer_game_config(&root);
     // CPU_BEANS_RATE_INFO_0 = [1, 1] → kind=1, rate=1.0
     assert_eq!(cfg.cpu_beans_rates[0].kind, 1);
-    assert!((cfg.cpu_beans_rates[0].rate - 1.0_f64).abs() < 1e-9, "rate[0] = 1.0");
+    assert!(
+        (cfg.cpu_beans_rates[0].rate - 1.0_f64).abs() < 1e-9,
+        "rate[0] = 1.0"
+    );
     // CPU_BEANS_RATE_INFO_3 = [4, 0] → kind=4, rate=0.0
     assert_eq!(cfg.cpu_beans_rates[3].kind, 4);
-    assert!((cfg.cpu_beans_rates[3].rate - 0.0_f64).abs() < 1e-9, "rate[3] = 0.0");
+    assert!(
+        (cfg.cpu_beans_rates[3].rate - 0.0_f64).abs() < 1e-9,
+        "rate[3] = 0.0"
+    );
     // CPU_BEANS_RATE_INFO_6 = [7, 1] → kind=7, rate=1.0
     assert_eq!(cfg.cpu_beans_rates[6].kind, 7);
-    assert!((cfg.cpu_beans_rates[6].rate - 1.0_f64).abs() < 1e-9, "rate[6] = 1.0");
+    assert!(
+        (cfg.cpu_beans_rates[6].rate - 1.0_f64).abs() < 1e-9,
+        "rate[6] = 1.0"
+    );
 }
 
 #[test]

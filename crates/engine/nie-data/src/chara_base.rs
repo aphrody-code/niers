@@ -29,7 +29,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use serde_json::Value;
 
-use crate::cfgbin::{walk_named, Node};
+use crate::cfgbin::{Node, walk_named};
 use crate::hash::HashId;
 
 /// Une entrée `CHARA_BASE_INFO` portée (port de `ParsedCharaBase`, hors `rawVariables`).

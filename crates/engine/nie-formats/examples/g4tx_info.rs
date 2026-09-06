@@ -7,7 +7,9 @@
 //! Usage : `cargo run -p nie-formats --example g4tx_info -- <fichier.g4tx>`
 
 fn main() {
-    let path = std::env::args().nth(1).expect("usage: g4tx_info <fichier.g4tx>");
+    let path = std::env::args()
+        .nth(1)
+        .expect("usage: g4tx_info <fichier.g4tx>");
     let data = std::fs::read(&path).expect("lecture");
     let g = nie_formats::g4tx::parse(&data).expect("parse g4tx");
 
@@ -24,7 +26,10 @@ fn main() {
     for t in &g.textures {
         println!("\n── texture id={} « {} »", t.id, t.name);
         println!("   {}x{}  is_dds={}", t.width, t.height, t.is_dds);
-        println!("   data_offset=0x{:X} data_size={}", t.data_offset, t.data_size);
+        println!(
+            "   data_offset=0x{:X} data_size={}",
+            t.data_offset, t.data_size
+        );
         let px = i64::from(t.width) * i64::from(t.height);
         if px > 0 {
             #[allow(clippy::cast_precision_loss)]
@@ -46,10 +51,16 @@ fn main() {
             let mips = u32::from_le_bytes([d[28], d[29], d[30], d[31]]);
             println!("   DDS {w}x{h} mipmaps={mips}");
         } else if d.len() >= 4 {
-            println!("   pas d'en-tête DDS — 4 premiers octets : {:02X?}", &d[0..4]);
+            println!(
+                "   pas d'en-tête DDS — 4 premiers octets : {:02X?}",
+                &d[0..4]
+            );
         }
         for s in &t.sub_textures {
-            println!("   région id={} « {} » x={} y={} {}x{}", s.id, s.name, s.x, s.y, s.width, s.height);
+            println!(
+                "   région id={} « {} » x={} y={} {}x{}",
+                s.id, s.name, s.x, s.y, s.width, s.height
+            );
         }
     }
 }

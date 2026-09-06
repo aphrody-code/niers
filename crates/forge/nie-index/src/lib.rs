@@ -66,23 +66,26 @@ impl Db {
     /// Ouvre (ou crée) la base au chemin donné et applique le schéma.
     pub fn open(path: impl AsRef<std::path::Path>) -> Result<Self> {
         let conn = Connection::open(path)?;
-        let db = Self { conn, redis_pool: None };
+        let db = Self {
+            conn,
+            redis_pool: None,
+        };
         db.init()?;
         Ok(db)
     }
 
     /// Ouvre la base SQLite et initialise également la connexion à Redis via un pool.
-    pub fn open_with_redis(
-        path: impl AsRef<std::path::Path>,
-        redis_url: &str,
-    ) -> Result<Self> {
+    pub fn open_with_redis(path: impl AsRef<std::path::Path>, redis_url: &str) -> Result<Self> {
         let conn = Connection::open(path)?;
         let client = redis::Client::open(redis_url)?;
         let redis_pool = r2d2::Pool::builder()
             .build(client)
             .map_err(|e| IndexError::RedisPool(e.to_string()))?;
-        
-        let db = Self { conn, redis_pool: Some(redis_pool) };
+
+        let db = Self {
+            conn,
+            redis_pool: Some(redis_pool),
+        };
         db.init()?;
         Ok(db)
     }
@@ -90,7 +93,10 @@ impl Db {
     /// Base en mémoire (tests).
     pub fn open_in_memory() -> Result<Self> {
         let conn = Connection::open_in_memory()?;
-        let db = Self { conn, redis_pool: None };
+        let db = Self {
+            conn,
+            redis_pool: None,
+        };
         db.init()?;
         Ok(db)
     }
@@ -146,7 +152,9 @@ impl Db {
              ON CONFLICT(key) DO UPDATE SET value = excluded.value",
             (key, value),
         )?;
-        if let Some(ref pool) = self.redis_pool && let Ok(mut rconn) = pool.get() {
+        if let Some(ref pool) = self.redis_pool
+            && let Ok(mut rconn) = pool.get()
+        {
             use redis::Commands;
             let redis_key = format!("niers:meta:{}", key);
             let _: std::result::Result<(), redis::RedisError> = rconn.set(redis_key, value);
@@ -155,7 +163,9 @@ impl Db {
     }
 
     pub fn get_meta(&self, key: &str) -> Result<Option<String>> {
-        if let Some(ref pool) = self.redis_pool && let Ok(mut rconn) = pool.get() {
+        if let Some(ref pool) = self.redis_pool
+            && let Ok(mut rconn) = pool.get()
+        {
             use redis::Commands;
             let redis_key = format!("niers:meta:{}", key);
             if let Ok(val) = rconn.get::<_, String>(redis_key) {
@@ -188,9 +198,11 @@ impl Db {
              ON CONFLICT(sha256) DO UPDATE SET path = excluded.path",
             rusqlite::params![path, sha256, arch, bits, base_addr, size, pdb_ref, compiled],
         )?;
-        let id =
-            self.conn
-                .query_row("SELECT id FROM binary WHERE sha256 = ?1", [sha256], |r| r.get(0))?;
+        let id = self
+            .conn
+            .query_row("SELECT id FROM binary WHERE sha256 = ?1", [sha256], |r| {
+                r.get(0)
+            })?;
         Ok(id)
     }
 
@@ -222,7 +234,7 @@ impl Db {
 /// ```
 pub mod ingest {
     use super::Result;
-    use rusqlite::{params, Connection};
+    use rusqlite::{Connection, params};
 
     /// Insère/maj une fonction (idempotent par (binary, vaddr)). Renvoie son id.
     #[allow(clippy::too_many_arguments)]
@@ -271,7 +283,13 @@ pub mod ingest {
     }
 
     /// Référence croisée (kind : call|data|code).
-    pub fn xref(conn: &Connection, binary_id: i64, from_addr: i64, to_addr: i64, kind: &str) -> Result<()> {
+    pub fn xref(
+        conn: &Connection,
+        binary_id: i64,
+        from_addr: i64,
+        to_addr: i64,
+        kind: &str,
+    ) -> Result<()> {
         conn.prepare_cached(
             "INSERT OR IGNORE INTO xref(binary_id, from_addr, to_addr, kind) VALUES(?1,?2,?3,?4)",
         )?
@@ -297,10 +315,8 @@ pub mod ingest {
 
     /// Global (DAT_*).
     pub fn glob(conn: &Connection, binary_id: i64, vaddr: i64, name: Option<&str>) -> Result<()> {
-        conn.prepare_cached(
-            "INSERT OR IGNORE INTO glob(binary_id, vaddr, name) VALUES(?1,?2,?3)",
-        )?
-        .execute(params![binary_id, vaddr, name])?;
+        conn.prepare_cached("INSERT OR IGNORE INTO glob(binary_id, vaddr, name) VALUES(?1,?2,?3)")?
+            .execute(params![binary_id, vaddr, name])?;
         Ok(())
     }
 
@@ -359,7 +375,13 @@ pub mod ingest {
     }
 
     /// Format Level-5 documenté (savoir iecode/inagle). Renvoie son id.
-    pub fn format(conn: &Connection, name: &str, magic: Option<&str>, source: &str, doc: Option<&str>) -> Result<i64> {
+    pub fn format(
+        conn: &Connection,
+        name: &str,
+        magic: Option<&str>,
+        source: &str,
+        doc: Option<&str>,
+    ) -> Result<i64> {
         conn.prepare_cached(
             "INSERT INTO format(name, magic, source, doc) VALUES(?1,?2,?3,?4)
              ON CONFLICT(name) DO UPDATE SET magic=excluded.magic, doc=excluded.doc",
@@ -370,7 +392,13 @@ pub mod ingest {
     }
 
     /// Table hash→nom d'inagle (CRC32/FNV des IDs).
-    pub fn hash_name(conn: &Connection, hash: i64, kind: &str, name: &str, source: &str) -> Result<()> {
+    pub fn hash_name(
+        conn: &Connection,
+        hash: i64,
+        kind: &str,
+        name: &str,
+        source: &str,
+    ) -> Result<()> {
         conn.prepare_cached(
             "INSERT OR IGNORE INTO hash_name(hash, kind, name, source) VALUES(?1,?2,?3,?4)",
         )?
@@ -395,8 +423,11 @@ pub mod query {
     }
 
     pub fn coverage(conn: &Connection, binary_id: i64) -> Result<Coverage> {
-        let total: i64 =
-            conn.query_row("SELECT COUNT(*) FROM function WHERE binary_id=?1", [binary_id], |r| r.get(0))?;
+        let total: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM function WHERE binary_id=?1",
+            [binary_id],
+            |r| r.get(0),
+        )?;
         // `GLOB`, pas `LIKE` : dans un motif `LIKE`, `_` est un joker et la
         // comparaison ignore la casse ASCII, si bien que `'FUN_%'` excluait
         // aussi tout nom commençant par « fun » + un caractère — dont les
@@ -413,8 +444,17 @@ pub mod query {
             [binary_id],
             |r| r.get(0),
         )?;
-        let pct = if total > 0 { (classified as f64) * 100.0 / (total as f64) } else { 0.0 };
-        Ok(Coverage { total, named, classified, pct })
+        let pct = if total > 0 {
+            (classified as f64) * 100.0 / (total as f64)
+        } else {
+            0.0
+        };
+        Ok(Coverage {
+            total,
+            named,
+            classified,
+            pct,
+        })
     }
 
     /// Nombre de fonctions par sous-système.
@@ -423,7 +463,9 @@ pub mod query {
             "SELECT COALESCE(subsystem,'?') s, COUNT(*) n FROM function WHERE binary_id=?1 GROUP BY s ORDER BY n DESC",
         )?;
         let rows = stmt
-            .query_map([binary_id], |r| Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1)?)))?
+            .query_map([binary_id], |r| {
+                Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1)?))
+            })?
             .collect::<std::result::Result<Vec<_>, _>>()?;
         Ok(rows)
     }
@@ -463,7 +505,10 @@ mod tests {
     #[test]
     fn schema_applies_and_coverage_computes() {
         let mut db = Db::open_in_memory().unwrap();
-        assert_eq!(db.get_meta("schema_version").unwrap().as_deref(), Some(SCHEMA_VERSION));
+        assert_eq!(
+            db.get_meta("schema_version").unwrap().as_deref(),
+            Some(SCHEMA_VERSION)
+        );
         // La migration caméra est appliquée par `init` : ses tables et vues existent.
         let cam_tables: i64 = db
             .conn()
@@ -489,13 +534,41 @@ mod tests {
             assert_eq!(n, 1, "colonne {table}.{column} absente");
         }
         let bin = db
-            .upsert_binary("nie.exe", "abc123", "x86_64", 64, 0x1_4000_0000, 31_468_032, None, None)
+            .upsert_binary(
+                "nie.exe",
+                "abc123",
+                "x86_64",
+                64,
+                0x1_4000_0000,
+                31_468_032,
+                None,
+                None,
+            )
             .unwrap();
         let tx = db.conn_mut().transaction().unwrap();
         // une fonction non classifiée (standalone) + une classifiée
-        ingest::function(&tx, bin, 0x1_4000_1000, None, Some("re"), "standalone", "leaf", 0.0).unwrap();
-        let fid =
-            ingest::function(&tx, bin, 0x1_4002_4b80, None, Some("re"), "game", "hub", 0.5).unwrap();
+        ingest::function(
+            &tx,
+            bin,
+            0x1_4000_1000,
+            None,
+            Some("re"),
+            "standalone",
+            "leaf",
+            0.0,
+        )
+        .unwrap();
+        let fid = ingest::function(
+            &tx,
+            bin,
+            0x1_4002_4b80,
+            None,
+            Some("re"),
+            "game",
+            "hub",
+            0.5,
+        )
+        .unwrap();
         ingest::str_ref(&tx, bin, fid, "CHARA_PARAM_INFO").unwrap();
         tx.commit().unwrap();
         let cov = db.snapshot_coverage(bin).unwrap();
@@ -508,7 +581,10 @@ mod tests {
     fn redis_meta_fallback_ignored_if_no_redis() {
         let db = Db::open_in_memory().unwrap();
         db.set_meta("test_key", "test_val").unwrap();
-        assert_eq!(db.get_meta("test_key").unwrap().as_deref(), Some("test_val"));
+        assert_eq!(
+            db.get_meta("test_key").unwrap().as_deref(),
+            Some("test_val")
+        );
     }
 
     #[test]
@@ -516,7 +592,10 @@ mod tests {
         // Enregistre en base SQLite en mémoire et tente Redis local
         if let Ok(db) = Db::open_with_redis(":memory:", "redis://127.0.0.1/") {
             db.set_meta("redis_test_key", "redis_val").unwrap();
-            assert_eq!(db.get_meta("redis_test_key").unwrap().as_deref(), Some("redis_val"));
+            assert_eq!(
+                db.get_meta("redis_test_key").unwrap().as_deref(),
+                Some("redis_val")
+            );
         }
     }
 }

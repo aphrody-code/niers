@@ -19,9 +19,9 @@ use axum::extract::{Path, Query, State};
 use serde::Serialize;
 
 use crate::error::ErreurSite;
+use crate::routes::{DemandePage, Page};
 use crate::state::EtatSite;
 use crate::vfs_index::{Fichier, VUES, Vue};
-use crate::routes::{DemandePage, Page};
 
 /// Table du miroir dont sont tirés les personnages. Constante de la crate : jamais un nom de
 /// table venu du client.
@@ -110,7 +110,11 @@ pub async fn vue(
     let p = demande.bornee();
     // `?q=` restreint la vue. Vide ou absent, la vue entière est rendue — un filtre qui ne
     // filtre rien ne doit pas coûter un parcours de plus.
-    let motif = demande.q.as_deref().map(str::trim).filter(|m| !m.is_empty());
+    let motif = demande
+        .q
+        .as_deref()
+        .map(str::trim)
+        .filter(|m| !m.is_empty());
     let (elements, total) = match motif {
         Some(m) => (
             index.page_vue_filtree(vue, m, p.offset(), p.per_page as usize),
@@ -168,8 +172,11 @@ pub async fn chara(
     let gisement = std::sync::Arc::clone(&etat.gisement);
     let page = tokio::task::spawn_blocking(move || {
         gisement.lire(|c| {
-            let total: i64 =
-                c.query_row(&format!("SELECT count(*) FROM \"{TABLE_CHARA}\""), [], |r| r.get(0))?;
+            let total: i64 = c.query_row(
+                &format!("SELECT count(*) FROM \"{TABLE_CHARA}\""),
+                [],
+                |r| r.get(0),
+            )?;
             let sql = format!(
                 "SELECT {} FROM \"{TABLE_CHARA}\" ORDER BY \
                  CASE WHEN zukan_order IS NULL THEN 1 ELSE 0 END, zukan_order, internal_code \
@@ -198,7 +205,11 @@ pub async fn chara(
                     },
                 )?
                 .collect::<Result<Vec<_>, _>>()?;
-            Ok(Page::nouvelle(lignes, p, usize::try_from(total).unwrap_or(0)))
+            Ok(Page::nouvelle(
+                lignes,
+                p,
+                usize::try_from(total).unwrap_or(0),
+            ))
         })
     })
     .await??;

@@ -15,8 +15,8 @@ use std::process::ExitCode;
 use nie_trace::aob::Pattern;
 use nie_trace::catalog::{self, Category, Entry, Kind, Ty};
 use nie_trace::{
-    find_module_base, find_pid_by_name, module_regions, read_exact, resolve_chain, scan_regions_masked,
-    write_exact,
+    find_module_base, find_pid_by_name, module_regions, read_exact, resolve_chain,
+    scan_regions_masked, write_exact,
 };
 
 /// Octets exacts de l'AOB `max-abilities` (`44 8B 6F 10 8B 47 04`), implantés **deux fois** dans
@@ -103,7 +103,10 @@ fn run(args: &[String]) -> Result<(), String> {
 fn cmd_list(flags: &Flags) -> Result<(), String> {
     let filter = flags.get("category").and_then(Clone::clone);
     let want = filter.as_deref().map(parse_category).transpose()?;
-    println!("  {:<26} {:<8} {:<11} {:<4} rva", "id", "cat", "kind", "type");
+    println!(
+        "  {:<26} {:<8} {:<11} {:<4} rva",
+        "id", "cat", "kind", "type"
+    );
     for e in catalog::CATALOG {
         if let Some(w) = want
             && e.category != w
@@ -111,7 +114,14 @@ fn cmd_list(flags: &Flags) -> Result<(), String> {
             continue;
         }
         let rva = e.rva.map_or_else(|| "—".to_owned(), |r| format!("0x{r:X}"));
-        println!("  {:<26} {:<8} {:<11} {:<4} {}", e.id, e.category.label(), kind_label(e.kind), e.ty.name(), rva);
+        println!(
+            "  {:<26} {:<8} {:<11} {:<4} {}",
+            e.id,
+            e.category.label(),
+            kind_label(e.kind),
+            e.ty.name(),
+            rva
+        );
     }
     Ok(())
 }
@@ -120,7 +130,11 @@ fn cmd_info(pos: &[String]) -> Result<(), String> {
     let e = entry(pos.first())?;
     println!("  id        {}", e.id);
     println!("  feature   {}", e.feature);
-    println!("  catégorie {}  ({})", e.category.label(), kind_label(e.kind));
+    println!(
+        "  catégorie {}  ({})",
+        e.category.label(),
+        kind_label(e.kind)
+    );
     println!("  type      {}", e.ty.name());
     if let Some(p) = e.aob {
         println!("  aob       {p}");
@@ -143,10 +157,14 @@ fn cmd_info(pos: &[String]) -> Result<(), String> {
 fn cmd_slide(flags: &Flags) -> Result<(), String> {
     let pid = resolve_pid(flags)?;
     let module = module_of(flags);
-    let base = find_module_base(pid, &module).ok_or_else(|| format!("« {module} » introuvable dans le process"))?;
+    let base = find_module_base(pid, &module)
+        .ok_or_else(|| format!("« {module} » introuvable dans le process"))?;
     let slide = base.wrapping_sub(catalog::NIE_IMAGE_BASE);
     println!("  {module} @ 0x{base:X}  (pid {pid})");
-    println!("  base statique 0x{:X}  →  slide ASLR 0x{slide:X}", catalog::NIE_IMAGE_BASE);
+    println!(
+        "  base statique 0x{:X}  →  slide ASLR 0x{slide:X}",
+        catalog::NIE_IMAGE_BASE
+    );
     println!("  live = statique + slide  |  statique = live − slide");
     Ok(())
 }
@@ -223,7 +241,10 @@ fn cmd_resolve(pos: &[String], flags: &Flags) -> Result<(), String> {
                 Some((noyau, pat_noyau)) => {
                     let cands = scan_regions_masked(pid, &regions, Some(base), &pat_noyau, 32);
                     if cands.is_empty() {
-                        println!("  {:<26} ✗ aucun hit (noyau « {noyau} » absent aussi)", e.id);
+                        println!(
+                            "  {:<26} ✗ aucun hit (noyau « {noyau} » absent aussi)",
+                            e.id
+                        );
                     } else {
                         println!(
                             "  {:<26} ✗ signature complète absente — noyau « {noyau} » : {} candidat(s)",
@@ -231,7 +252,11 @@ fn cmd_resolve(pos: &[String], flags: &Flags) -> Result<(), String> {
                             cands.len()
                         );
                         for h in cands.iter().take(8) {
-                            println!("      candidat  0x{:X}  rva 0x{:X}", h.addr, h.rva.unwrap_or(0));
+                            println!(
+                                "      candidat  0x{:X}  rva 0x{:X}",
+                                h.addr,
+                                h.rva.unwrap_or(0)
+                            );
                         }
                     }
                 }
@@ -255,7 +280,11 @@ fn cmd_resolve(pos: &[String], flags: &Flags) -> Result<(), String> {
                 }
                 RvaVerdict::New => "• nouveau (dump: —)".to_owned(),
             };
-            let extra = if hits.len() > 1 { format!("  [{} hits]", hits.len()) } else { String::new() };
+            let extra = if hits.len() > 1 {
+                format!("  [{} hits]", hits.len())
+            } else {
+                String::new()
+            };
             println!("  {:<26} 0x{:X}  rva 0x{rva:X}  {tag}{extra}", e.id, h.addr);
         }
     }
@@ -267,10 +296,12 @@ fn cmd_resolve(pos: &[String], flags: &Flags) -> Result<(), String> {
 
 /// Résout l'adresse d'un `StructField` à partir d'une base d'objet (`--base`).
 fn struct_field_addr(pid: i32, e: &Entry, flags: &Flags) -> Result<u64, String> {
-    let base = flags
-        .get("base")
-        .and_then(Clone::clone)
-        .ok_or_else(|| format!("« {} » est un champ d'objet : précise --base 0xADDR (base de l'objet)", e.id))?;
+    let base = flags.get("base").and_then(Clone::clone).ok_or_else(|| {
+        format!(
+            "« {} » est un champ d'objet : précise --base 0xADDR (base de l'objet)",
+            e.id
+        )
+    })?;
     let base = parse_addr(&base, pid)?;
     if let Some(chain) = e.chain {
         return resolve_chain(pid, base, chain).map_err(|err| err.to_string());
@@ -312,7 +343,13 @@ fn cmd_set(pos: &[String], flags: &Flags) -> Result<(), String> {
     }
     let addr = struct_field_addr(pid, e, flags)?;
     let bytes = e.ty.encode(val)?;
-    write_guarded(pid, addr, &bytes, flags, &format!("{} ({})", e.id, e.ty.name()))
+    write_guarded(
+        pid,
+        addr,
+        &bytes,
+        flags,
+        &format!("{} ({})", e.id, e.ty.name()),
+    )
 }
 
 fn cmd_get_va(pos: &[String], flags: &Flags) -> Result<(), String> {
@@ -329,10 +366,20 @@ fn cmd_set_va(pos: &[String], flags: &Flags) -> Result<(), String> {
     let pid = resolve_pid(flags)?;
     let addr_s = pos.first().ok_or("adresse manquante")?;
     let ty = type_arg(pos, flags)?;
-    let val = pos.iter().skip(1).find(|p| !p.starts_with(':')).ok_or("valeur manquante")?;
+    let val = pos
+        .iter()
+        .skip(1)
+        .find(|p| !p.starts_with(':'))
+        .ok_or("valeur manquante")?;
     let addr = parse_addr(addr_s, pid)?;
     let bytes = ty.encode(val)?;
-    write_guarded(pid, addr, &bytes, flags, &format!("0x{addr:X} ({})", ty.name()))
+    write_guarded(
+        pid,
+        addr,
+        &bytes,
+        flags,
+        &format!("0x{addr:X} ({})", ty.name()),
+    )
 }
 
 fn cmd_ptr(pos: &[String], flags: &Flags) -> Result<(), String> {
@@ -364,7 +411,10 @@ fn cmd_watch(pos: &[String], flags: &Flags) -> Result<(), String> {
     let first = pos.first().ok_or("cible manquante (name ou 0xVA)")?;
     let (addr, ty) = if let Some(e) = catalog::find(first) {
         if e.kind != Kind::StructField {
-            return Err(format!("« {} » n'est pas un champ adressable ; vois `watch 0xVA :TYPE`", e.id));
+            return Err(format!(
+                "« {} » n'est pas un champ adressable ; vois `watch 0xVA :TYPE`",
+                e.id
+            ));
         }
         (struct_field_addr(pid, e, flags)?, e.ty)
     } else {
@@ -372,7 +422,10 @@ fn cmd_watch(pos: &[String], flags: &Flags) -> Result<(), String> {
     };
     let interval = flag_num(flags, "interval").unwrap_or(500u64).max(10);
     let count: u64 = flag_num(flags, "count").unwrap_or(0); // 0 = infini
-    println!("  watch 0x{addr:X} ({}) toutes les {interval}ms — Ctrl-C pour stopper", ty.name());
+    println!(
+        "  watch 0x{addr:X} ({}) toutes les {interval}ms — Ctrl-C pour stopper",
+        ty.name()
+    );
     let mut last: Option<String> = None;
     let mut i = 0u64;
     loop {
@@ -408,10 +461,22 @@ fn cmd_scan(pos: &[String], flags: &Flags) -> Result<(), String> {
     let limit: usize = flag_num(flags, "limit").unwrap_or(20);
     let hits = scan_regions_masked(pid, &regions, base, &pat, limit);
     for h in &hits {
-        let rva = h.rva.map(|r| format!("  nie.exe+0x{r:X}  (statique 0x{:X})", catalog::NIE_IMAGE_BASE + r)).unwrap_or_default();
+        let rva = h
+            .rva
+            .map(|r| {
+                format!(
+                    "  nie.exe+0x{r:X}  (statique 0x{:X})",
+                    catalog::NIE_IMAGE_BASE + r
+                )
+            })
+            .unwrap_or_default();
         println!("  0x{:X}  [{}]{rva}", h.addr, h.perms);
     }
-    let capped = if hits.len() >= limit { format!(" (limité à {limit})") } else { String::new() };
+    let capped = if hits.len() >= limit {
+        format!(" (limité à {limit})")
+    } else {
+        String::new()
+    };
     println!("\n  {} hit(s){capped}", hits.len());
     Ok(())
 }
@@ -421,7 +486,13 @@ fn cmd_patch(pos: &[String], flags: &Flags) -> Result<(), String> {
     let addr = parse_addr(pos.first().ok_or("adresse manquante")?, pid)?;
     let bytes = parse_hex_bytes(pos.get(1).ok_or("octets manquants")?)?;
     save_original(pid, addr, bytes.len(), flags)?;
-    write_guarded(pid, addr, &bytes, flags, &format!("0x{addr:X} ({} octets)", bytes.len()))
+    write_guarded(
+        pid,
+        addr,
+        &bytes,
+        flags,
+        &format!("0x{addr:X} ({} octets)", bytes.len()),
+    )
 }
 
 /// Garde-fou : un patch de code ne dépasse jamais quelques Ko ; borne la longueur saisie pour éviter
@@ -431,13 +502,25 @@ const MAX_PATCH_LEN: usize = 0x1_0000;
 fn cmd_nop(pos: &[String], flags: &Flags) -> Result<(), String> {
     let pid = resolve_pid(flags)?;
     let addr = parse_addr(pos.first().ok_or("adresse manquante")?, pid)?;
-    let len: usize = pos.get(1).ok_or("longueur manquante")?.parse().map_err(|_| "longueur invalide")?;
+    let len: usize = pos
+        .get(1)
+        .ok_or("longueur manquante")?
+        .parse()
+        .map_err(|_| "longueur invalide")?;
     if len > MAX_PATCH_LEN {
-        return Err(format!("longueur {len} déraisonnable (max {MAX_PATCH_LEN})"));
+        return Err(format!(
+            "longueur {len} déraisonnable (max {MAX_PATCH_LEN})"
+        ));
     }
     save_original(pid, addr, len, flags)?;
     let bytes = vec![0x90u8; len];
-    write_guarded(pid, addr, &bytes, flags, &format!("0x{addr:X} ({len}× nop)"))
+    write_guarded(
+        pid,
+        addr,
+        &bytes,
+        flags,
+        &format!("0x{addr:X} ({len}× nop)"),
+    )
 }
 
 /// Sauvegarde les octets d'origine vers `--save FICHIER` avant un patch (restauration manuelle).
@@ -447,7 +530,11 @@ fn save_original(pid: i32, addr: u64, len: usize, flags: &Flags) -> Result<(), S
     };
     let orig = read_exact(pid, addr, len).map_err(|e| e.to_string())?;
     std::fs::write(&path, &orig).map_err(|e| e.to_string())?;
-    println!("  sauvegarde {} octets @ 0x{addr:X} → {path}  ({})", len, hex_join(&orig));
+    println!(
+        "  sauvegarde {} octets @ 0x{addr:X} → {path}  ({})",
+        len,
+        hex_join(&orig)
+    );
     Ok(())
 }
 
@@ -461,9 +548,18 @@ fn read_typed(pid: i32, addr: u64, ty: Ty) -> Result<String, String> {
 }
 
 /// Écrit `bytes` si `--force`, sinon imprime le dry-run.
-fn write_guarded(pid: i32, addr: u64, bytes: &[u8], flags: &Flags, what: &str) -> Result<(), String> {
+fn write_guarded(
+    pid: i32,
+    addr: u64,
+    bytes: &[u8],
+    flags: &Flags,
+    what: &str,
+) -> Result<(), String> {
     if !flags.contains_key("force") {
-        println!("  DRY-RUN  écrirait {what} @ 0x{addr:X} ← {}  (ajoute --force pour appliquer)", hex_join(bytes));
+        println!(
+            "  DRY-RUN  écrirait {what} @ 0x{addr:X} ← {}  (ajoute --force pour appliquer)",
+            hex_join(bytes)
+        );
         return Ok(());
     }
     write_exact(pid, addr, bytes).map_err(|e| e.to_string())?;
@@ -505,7 +601,11 @@ fn parse_category(s: &str) -> Result<Category, String> {
 }
 
 fn add_off(addr: u64, off: i64) -> u64 {
-    if off >= 0 { addr.wrapping_add(off as u64) } else { addr.wrapping_sub(off.unsigned_abs()) }
+    if off >= 0 {
+        addr.wrapping_add(off as u64)
+    } else {
+        addr.wrapping_sub(off.unsigned_abs())
+    }
 }
 
 /// `0xADDR` (absolu), `nie.exe+0xRVA`, ou décimal.
@@ -514,7 +614,8 @@ fn parse_addr(s: &str, pid: i32) -> Result<u64, String> {
     if let Some(plus) = s.find('+') {
         let module = &s[..plus];
         let rva = parse_u64(&s[plus + 1..])?;
-        let base = find_module_base(pid, module).ok_or_else(|| format!("module « {module} » introuvable"))?;
+        let base = find_module_base(pid, module)
+            .ok_or_else(|| format!("module « {module} » introuvable"))?;
         return Ok(base.wrapping_add(rva));
     }
     parse_u64(s)
@@ -525,7 +626,8 @@ fn parse_u64(s: &str) -> Result<u64, String> {
     if let Some(h) = s.strip_prefix("0x").or_else(|| s.strip_prefix("0X")) {
         u64::from_str_radix(h, 16).map_err(|_| format!("hex invalide: {s}"))
     } else {
-        s.parse::<u64>().map_err(|_| format!("nombre invalide: {s}"))
+        s.parse::<u64>()
+            .map_err(|_| format!("nombre invalide: {s}"))
     }
 }
 
@@ -535,13 +637,17 @@ fn parse_signed(s: &str) -> Result<i64, String> {
     let v = if let Some(h) = body.strip_prefix("0x").or_else(|| body.strip_prefix("0X")) {
         i64::from_str_radix(h, 16).map_err(|_| format!("hex invalide: {s}"))?
     } else {
-        body.parse::<i64>().map_err(|_| format!("offset invalide: {s}"))?
+        body.parse::<i64>()
+            .map_err(|_| format!("offset invalide: {s}"))?
     };
     Ok(if neg { -v } else { v })
 }
 
 fn parse_hex_bytes(s: &str) -> Result<Vec<u8>, String> {
-    let hex: String = s.chars().filter(|c| !c.is_whitespace() && *c != '-').collect();
+    let hex: String = s
+        .chars()
+        .filter(|c| !c.is_whitespace() && *c != '-')
+        .collect();
     if !hex.is_ascii() {
         return Err("octets hex non-ASCII".to_owned());
     }
@@ -550,13 +656,19 @@ fn parse_hex_bytes(s: &str) -> Result<Vec<u8>, String> {
     }
     let mut out = Vec::with_capacity(hex.len() / 2);
     for i in (0..hex.len()).step_by(2) {
-        out.push(u8::from_str_radix(&hex[i..i + 2], 16).map_err(|_| format!("octet hex invalide à {i}"))?);
+        out.push(
+            u8::from_str_radix(&hex[i..i + 2], 16)
+                .map_err(|_| format!("octet hex invalide à {i}"))?,
+        );
     }
     Ok(out)
 }
 
 fn hex_join(b: &[u8]) -> String {
-    b.iter().map(|x| format!("{x:02X}")).collect::<Vec<_>>().join(" ")
+    b.iter()
+        .map(|x| format!("{x:02X}"))
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 fn resolve_pid(flags: &Flags) -> Result<i32, String> {
@@ -564,16 +676,23 @@ fn resolve_pid(flags: &Flags) -> Result<i32, String> {
     if pid > 0 {
         return Ok(pid);
     }
-    find_pid_by_name("nie.exe").ok_or_else(|| "nie.exe introuvable — lance le jeu, ou précise --pid".to_owned())
+    find_pid_by_name("nie.exe")
+        .ok_or_else(|| "nie.exe introuvable — lance le jeu, ou précise --pid".to_owned())
 }
 
 /// Module ciblé (`--module`, défaut `nie.exe`) — pour `slide`/`resolve`/`scan`.
 fn module_of(flags: &Flags) -> String {
-    flags.get("module").and_then(Clone::clone).unwrap_or_else(|| "nie.exe".to_owned())
+    flags
+        .get("module")
+        .and_then(Clone::clone)
+        .unwrap_or_else(|| "nie.exe".to_owned())
 }
 
 fn flag_num<T: std::str::FromStr>(flags: &Flags, key: &str) -> Option<T> {
-    flags.get(key).and_then(Clone::clone).and_then(|v| v.parse::<T>().ok())
+    flags
+        .get(key)
+        .and_then(Clone::clone)
+        .and_then(|v| v.parse::<T>().ok())
 }
 
 /// Sépare positionnels et flags. `--k v` (valeur) ou `--k` (booléen → None). Les booléens connus
@@ -617,7 +736,10 @@ mod tests {
         std::process::id().to_string()
     }
     fn comm() -> String {
-        std::fs::read_to_string("/proc/self/comm").unwrap().trim().to_owned()
+        std::fs::read_to_string("/proc/self/comm")
+            .unwrap()
+            .trim()
+            .to_owned()
     }
     fn run_ok(args: &[&str]) {
         let v: Vec<String> = args.iter().map(|a| (*a).to_owned()).collect();
@@ -653,7 +775,10 @@ mod tests {
         assert_eq!(parse_addr("0x20", 0).unwrap(), 0x20);
         // branche module+rva : résout la base du binaire de test puis +0.
         let base = find_module_base(std::process::id() as i32, &comm()).unwrap();
-        assert_eq!(parse_addr(&format!("{}+0x0", comm()), std::process::id() as i32).unwrap(), base);
+        assert_eq!(
+            parse_addr(&format!("{}+0x0", comm()), std::process::id() as i32).unwrap(),
+            base
+        );
         assert!(parse_addr("zzz-absent+0x0", std::process::id() as i32).is_err());
         assert!(parse_addr("nothex", 0).is_err());
     }
@@ -671,7 +796,14 @@ mod tests {
 
     #[test]
     fn pure_category_kind_type() {
-        for (s, ok) in [("player", true), ("match", true), ("shop", true), ("spirit", true), ("passive", true), ("bogus", false)] {
+        for (s, ok) in [
+            ("player", true),
+            ("match", true),
+            ("shop", true),
+            ("spirit", true),
+            ("passive", true),
+            ("bogus", false),
+        ] {
             assert_eq!(parse_category(s).is_ok(), ok);
         }
         assert_eq!(kind_label(Kind::Toggle), "toggle");
@@ -690,7 +822,13 @@ mod tests {
     #[test]
     fn pure_arg_splitter() {
         // --all/--force sont booléens et ne consomment pas l'argument suivant.
-        let (pos, flags) = parse(&["--all".into(), "--pid".into(), "5".into(), "p".into(), "--force".into()]);
+        let (pos, flags) = parse(&[
+            "--all".into(),
+            "--pid".into(),
+            "5".into(),
+            "p".into(),
+            "--force".into(),
+        ]);
         assert_eq!(pos, vec!["p"]);
         assert!(flags.contains_key("all") && flags.contains_key("force"));
         assert_eq!(flags.get("pid"), Some(&Some("5".to_owned())));
@@ -774,7 +912,16 @@ mod tests {
         let buf = [0u8; 64];
         let a = hexaddr(buf.as_ptr() as u64);
         run_ok(&["get", "spirit-id", "--base", &a, "--pid", &me()]);
-        run_ok(&["set", "spirit-id", "9", "--base", &a, "--pid", &me(), "--force"]);
+        run_ok(&[
+            "set",
+            "spirit-id",
+            "9",
+            "--base",
+            &a,
+            "--pid",
+            &me(),
+            "--force",
+        ]);
         run_ok(&["set", "spirit-id", "9", "--base", &a, "--pid", &me()]); // dry-run
         run_err(&["get", "tension", "--pid", &me()]); // --base manquant
         run_err(&["get", "max-abilities", "--base", &a, "--pid", &me()]); // toggle, pas un champ
@@ -796,9 +943,28 @@ mod tests {
     fn run_watch_self() {
         let buf = [0u8; 8];
         let a = hexaddr(buf.as_ptr() as u64);
-        run_ok(&["watch", &a, ":u32", "--count", "2", "--interval", "10", "--pid", &me()]);
+        run_ok(&[
+            "watch",
+            &a,
+            ":u32",
+            "--count",
+            "2",
+            "--interval",
+            "10",
+            "--pid",
+            &me(),
+        ]);
         run_ok(&["watch", "0x1", ":u32", "--count", "1", "--pid", &me()]); // lecture impossible
-        run_ok(&["watch", "tension", "--base", &a, "--count", "1", "--pid", &me()]); // nom StructField
+        run_ok(&[
+            "watch",
+            "tension",
+            "--base",
+            &a,
+            "--count",
+            "1",
+            "--pid",
+            &me(),
+        ]); // nom StructField
         run_err(&["watch", "max-abilities", "--base", &a, "--pid", &me()]); // toggle
         run_err(&["watch", "--pid", &me()]); // cible manquante
     }
@@ -806,8 +972,24 @@ mod tests {
     #[test]
     fn run_scan_self_finds_marker() {
         let _ = std::hint::black_box(&MARKER); // garantit la rétention du marqueur
-        run_ok(&["scan", "44 8B 6F 10 8B 47 04", "--pid", &me(), "--module", &comm()]);
-        run_ok(&["scan", "44 8B ?? 10", "--limit", "3", "--pid", &me(), "--module", &comm()]);
+        run_ok(&[
+            "scan",
+            "44 8B 6F 10 8B 47 04",
+            "--pid",
+            &me(),
+            "--module",
+            &comm(),
+        ]);
+        run_ok(&[
+            "scan",
+            "44 8B ?? 10",
+            "--limit",
+            "3",
+            "--pid",
+            &me(),
+            "--module",
+            &comm(),
+        ]);
         run_err(&["scan", "ZZ", "--pid", &me()]); // motif invalide
         run_err(&["scan", "--pid", &me()]); // motif manquant
     }
@@ -816,9 +998,23 @@ mod tests {
     fn run_resolve_self() {
         let _ = std::hint::black_box((&MARKER, &MARKER_DUP, &MARKER_NEW));
         // max-abilities : MARKER(+DUP) trouvés → hits, RVA ≠ dump → drift (+ branche multi-hits).
-        run_ok(&["resolve", "max-abilities", "--module", &comm(), "--pid", &me()]);
+        run_ok(&[
+            "resolve",
+            "max-abilities",
+            "--module",
+            &comm(),
+            "--pid",
+            &me(),
+        ]);
         // unlimited-spirits : entrée sans RVA au dump → verdict « nouveau » (New).
-        run_ok(&["resolve", "unlimited-spirits", "--module", &comm(), "--pid", &me()]);
+        run_ok(&[
+            "resolve",
+            "unlimited-spirits",
+            "--module",
+            &comm(),
+            "--pid",
+            &me(),
+        ]);
         run_ok(&["resolve", "--all", "--module", &comm(), "--pid", &me()]); // miss + drift + new + résumé
         run_err(&["resolve", "tension", "--pid", &me()]); // nie.exe introuvable
         run_err(&["resolve", "--module", &comm(), "--pid", &me()]); // nom manquant
@@ -833,15 +1029,26 @@ mod tests {
         assert!(struct_field_addr(me_pid, field_entry, &flags).is_err());
         // base présente → branche field (offset ajouté).
         flags.insert("base".to_owned(), Some("0x1000".to_owned()));
-        assert_eq!(struct_field_addr(me_pid, field_entry, &flags).unwrap(), 0x1000 + 0x18);
+        assert_eq!(
+            struct_field_addr(me_pid, field_entry, &flags).unwrap(),
+            0x1000 + 0x18
+        );
         // base invalide → erreur parse_addr.
         flags.insert("base".to_owned(), Some("pas-hex".to_owned()));
         assert!(struct_field_addr(me_pid, field_entry, &flags).is_err());
         // StructField sans field ni chain (synthétique) → erreur « ni field ni chain ».
         flags.insert("base".to_owned(), Some("0x1000".to_owned()));
         let bogus = Entry {
-            id: "b", feature: "b", category: Category::Match, kind: Kind::StructField, ty: Ty::U32,
-            aob: None, rva: None, field: None, chain: None, doc: "",
+            id: "b",
+            feature: "b",
+            category: Category::Match,
+            kind: Kind::StructField,
+            ty: Ty::U32,
+            aob: None,
+            rva: None,
+            field: None,
+            chain: None,
+            doc: "",
         };
         assert!(struct_field_addr(me_pid, &bogus, &flags).is_err());
     }
@@ -858,7 +1065,16 @@ mod tests {
         let a = hexaddr(buf.as_ptr() as u64);
         let save = std::env::temp_dir().join(format!("nie-edit-orig-{}.bin", std::process::id()));
         let save_s = save.to_string_lossy().into_owned();
-        run_ok(&["patch", &a, "90 90", "--pid", &me(), "--force", "--save", &save_s]); // patch + sauvegarde
+        run_ok(&[
+            "patch",
+            &a,
+            "90 90",
+            "--pid",
+            &me(),
+            "--force",
+            "--save",
+            &save_s,
+        ]); // patch + sauvegarde
         assert_eq!(buf[0], 0x90);
         assert!(save.exists());
         run_ok(&["patch", &a, "90", "--pid", &me()]); // dry-run, sans --save

@@ -318,10 +318,7 @@ impl SettingListConfig {
 /// Récupère le noeud racine de nom exact `name` dans `root["entries"]`.
 fn root_node<'a>(root: &'a Value, name: &str) -> Option<Node<'a>> {
     let entries = root.get("entries")?.as_array()?;
-    entries
-        .iter()
-        .map(Node::new)
-        .find(|n| n.name() == name)
+    entries.iter().map(Node::new).find(|n| n.name() == name)
 }
 
 /// Parse un pool simple (1 variable par enfant) via `f` appliqué à chaque noeud.
@@ -396,17 +393,17 @@ where
 #[must_use]
 pub fn parse_setting_list_config(root: &Value) -> SettingListConfig {
     // Pools (résolus avant les listes INFO qui les référencent).
-    let obj_data: Vec<HashId> =
-        parse_pool(root, "SETTING_OBJ_DATA_LIST_BEG_0", |n| n.hash(0));
+    let obj_data: Vec<HashId> = parse_pool(root, "SETTING_OBJ_DATA_LIST_BEG_0", |n| n.hash(0));
     let mapping_data: Vec<KeyConfigMappingData> = parse_pool(
         root,
         "KEYCONFIG_MAPPING_LIST_MAPPING_DATA_LIST_BEG_0",
         KeyConfigMappingData::from_node,
     );
     let text_data: Vec<HashId> =
-        parse_pool(root, "EXPLANATION_TEXT_LIST_TEXT_DATA_LIST_BEG_0", |n| n.hash(0));
-    let pad_data: Vec<i64> =
-        parse_pool(root, "PAD_GROUPKEY_LIST_DATA_LIST_BEG_0", |n| n.int(0));
+        parse_pool(root, "EXPLANATION_TEXT_LIST_TEXT_DATA_LIST_BEG_0", |n| {
+            n.hash(0)
+        });
+    let pad_data: Vec<i64> = parse_pool(root, "PAD_GROUPKEY_LIST_DATA_LIST_BEG_0", |n| n.int(0));
 
     SettingListConfig {
         settings: parse_scalar_list(root, "SETTING_INFO_LIST_BEG_0", SettingInfo::from_node),

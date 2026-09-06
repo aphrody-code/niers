@@ -24,7 +24,7 @@
 use alloc::vec::Vec;
 use serde_json::Value;
 
-use crate::cfgbin::{walk_named, Node};
+use crate::cfgbin::{Node, walk_named};
 use crate::hash::HashId;
 
 // ─── LightVal ─────────────────────────────────────────────────────────────────
@@ -226,11 +226,13 @@ pub fn parse_light_overwrite_config(root: &Value) -> LightOverwriteConfig {
     let infos = info_ids
         .into_iter()
         .zip(ref_params)
-        .map(|(info_id, (param_offset, param_count))| LightOverwriteInfo {
-            info_id,
-            param_offset,
-            param_count,
-        })
+        .map(
+            |(info_id, (param_offset, param_count))| LightOverwriteInfo {
+                info_id,
+                param_offset,
+                param_count,
+            },
+        )
         .collect();
 
     LightOverwriteConfig { params, infos }

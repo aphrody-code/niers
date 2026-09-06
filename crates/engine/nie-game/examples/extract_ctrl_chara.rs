@@ -52,9 +52,12 @@ fn visit(e: &CfgEntry, out: &mut Vec<(i32, i32, i32)>) {
 }
 
 fn main() {
-    let dir = nie_formats::vfs::resolve_game_dir().to_string_lossy().into_owned();
+    let dir = nie_formats::vfs::resolve_game_dir()
+        .to_string_lossy()
+        .into_owned();
     let mut vfs = Vfs::new();
-    vfs.init(Path::new(&dir).join("data").as_path()).expect("vfs init");
+    vfs.init(Path::new(&dir).join("data").as_path())
+        .expect("vfs init");
 
     let path = vfs
         .iter()
@@ -93,11 +96,18 @@ fn main() {
     let root = json!({ "entries": to_iecode(&file.entries) });
     let parsed = nie_data::ctrl_chara::parse_all_ctrl_chara(&root);
     eprintln!("[module] parse_all_ctrl_chara = {} entrées", parsed.len());
-    assert_eq!(parsed.len(), nodes.len(), "module vs brut : nombre d'entrées");
+    assert_eq!(
+        parsed.len(),
+        nodes.len(),
+        "module vs brut : nombre d'entrées"
+    );
     for (p, (id, ct, fl)) in parsed.iter().zip(nodes.iter()) {
         assert_eq!(p.chara_param_id, nie_data::hash::HashId(*id as u32));
         assert_eq!(p.control_type, i64::from(*ct));
         assert_eq!(p.flags, i64::from(*fl));
     }
-    eprintln!("✓ END-TO-END OK : nie_data::ctrl_chara == extraction brute sur {} noeuds", nodes.len());
+    eprintln!(
+        "✓ END-TO-END OK : nie_data::ctrl_chara == extraction brute sur {} noeuds",
+        nodes.len()
+    );
 }

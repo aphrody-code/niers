@@ -49,7 +49,7 @@
 use alloc::vec::Vec;
 use serde_json::Value;
 
-use crate::cfgbin::{field_i64, list_values, walk_named, Node};
+use crate::cfgbin::{Node, field_i64, list_values, walk_named};
 use crate::hash::HashId;
 
 // ─── WeatherConvert ───────────────────────────────────────────────────────────
