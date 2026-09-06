@@ -1,5 +1,5 @@
 #![allow(clippy::pedantic)]
-//! Tests golden `team` (enjoy_mode_team) — noeuds réels `ENJOY_MODE_TEAM_INFO_*` tirés de :
+//! Tests golden `enjoy_mode_team` sur les **12 variables réelles** — noeuds `ENJOY_MODE_TEAM_INFO_*` tirés de :
 //! `data/common/gamedata/team/enjoy_mode_team_config_1.04.02.00.cfg.bin` (VFS IEVR, format T2B).
 //!
 //! Port 1:1 d'inagle `packages/inagle/src/parsers/enjoy-mode-team-config.ts` (l.52-90).
@@ -7,7 +7,7 @@
 //! (28 entrées). Les valeurs hex ci-dessous ont été vérifiées byte-exact contre ce fichier.
 
 use nie_data::hash::HashId;
-use nie_data::team::{EnjoyModeTeam, parse_enjoy_mode_team_config};
+use nie_data::enjoy_mode_team::{EnjoyModeTeam, parse_enjoy_mode_teams};
 use serde_json::{Value, json};
 
 /// Une variable CfgBin entière (les CRC/Int du dump).
@@ -158,7 +158,7 @@ fn real_children() -> Vec<Value> {
 
 #[test]
 fn enjoy_mode_team_compte_et_premiere_entree() {
-    let teams = parse_enjoy_mode_team_config(&node_fixture(real_children()));
+    let teams = parse_enjoy_mode_teams(&node_fixture(real_children()));
     assert_eq!(teams.len(), 6, "6 entrées dans la fixture");
 
     let t: &EnjoyModeTeam = &teams[0];
@@ -175,7 +175,7 @@ fn enjoy_mode_team_compte_et_premiere_entree() {
 
 #[test]
 fn enjoy_mode_team_crc_negatifs_signe_vers_non_signe() {
-    let teams = parse_enjoy_mode_team_config(&node_fixture(real_children()));
+    let teams = parse_enjoy_mode_teams(&node_fixture(real_children()));
     // Entrée ev_bb_s52g001_01 : teamId -1814806523 >>> 0 = 0x93D44005 (signé→non-signé inagle).
     let t = &teams[3];
     assert_eq!(t.team_id, HashId(0x93D4_4005));
@@ -192,7 +192,7 @@ fn enjoy_mode_team_crc_negatifs_signe_vers_non_signe() {
 fn enjoy_mode_team_var7_blob_ignore_et_champs_corrects() {
     // Les entrées avec un blob base64 au var7 (ev_bb_b10g004_01, ev_ch_s06g001_0121)
     // se parsent normalement : seules les vars 0..6 sont exposées (1:1 inagle).
-    let teams = parse_enjoy_mode_team_config(&node_fixture(real_children()));
+    let teams = parse_enjoy_mode_teams(&node_fixture(real_children()));
 
     let b10 = &teams[4]; // ev_bb_b10g004_01
     assert_eq!(b10.team_id, HashId(0x6372_F595));
@@ -214,7 +214,7 @@ fn enjoy_mode_team_var7_blob_ignore_et_champs_corrects() {
 
 #[test]
 fn enjoy_mode_team_entrees_1_et_2() {
-    let teams = parse_enjoy_mode_team_config(&node_fixture(real_children()));
+    let teams = parse_enjoy_mode_teams(&node_fixture(real_children()));
 
     let t1 = &teams[1]; // ev_bb_s11g001_01
     assert_eq!(t1.team_id, HashId(0x54EA_4346));
@@ -235,7 +235,7 @@ fn enjoy_mode_team_entrees_1_et_2() {
 fn enjoy_mode_team_liste_vide_si_pas_de_noeud() {
     // Garde : un root sans liste ENJOY_MODE_TEAM_INFO_LIST_BEG produit une liste vide.
     let empty = json!({ "entries": [] });
-    assert!(parse_enjoy_mode_team_config(&empty).is_empty());
+    assert!(parse_enjoy_mode_teams(&empty).is_empty());
 
     // Une entrée sans la bonne enveloppe LIST_BEG est ignorée (pas de faux positif).
     let stray = json!({
@@ -245,5 +245,5 @@ fn enjoy_mode_team_liste_vide_si_pas_de_noeud() {
             "children": [{ "name": "ENJOY_MODE_TEAM_INFO_0", "variables": [], "children": [] }]
         }]
     });
-    assert!(parse_enjoy_mode_team_config(&stray).is_empty());
+    assert!(parse_enjoy_mode_teams(&stray).is_empty());
 }

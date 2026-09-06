@@ -77,6 +77,20 @@ impl CondBlob {
         })
     }
 
+    /// Décode le cadrage d'un blob **encore encodé en base64**, tel qu'il apparaît dans les
+    /// données du jeu (`openCond`, `cond`, `condition`, `runCond`, `aocCondition`).
+    ///
+    /// `None` si le base64 est invalide ou si le blob décodé fait moins de 6 octets.
+    ///
+    /// Le décodeur base64 est celui de [`crate::unlock_condition`], et c'est délibéré : les
+    /// deux couches — cadrage ici, sémantique là-bas — lisent le **même** blob, et deux
+    /// implémentations de base64 dans la même crate divergeraient au premier caractère de
+    /// remplissage mal traité.
+    #[must_use]
+    pub fn parse_base64(encoded: &str) -> Option<Self> {
+        Self::parse(&crate::unlock_condition::decode_base64(encoded)?)
+    }
+
     /// `true` si le cadrage **version 0** est cohérent : `version == 0` et `declared_len` == longueur
     /// réelle du reste (`payload.len() + 1`). Prouvé sur 17 772/17 772 blobs version-0 réels.
     #[must_use]

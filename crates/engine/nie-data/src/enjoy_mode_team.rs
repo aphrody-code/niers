@@ -117,6 +117,55 @@ pub fn parse_enjoy_mode_team_config(root: &Value) -> EnjoyModeTeamConfig {
     EnjoyModeTeamConfig { teams }
 }
 
+/// Les équipes seules, sans le conteneur — la forme que portait le module `team`, fusionné ici
+/// le **2026-09-06**.
+///
+/// # Pourquoi cette fonction existe
+///
+/// `team.rs` et ce module étaient **deux ports du même fichier**, arrivés dans le même commit
+/// (`2291911`, 2026-08-10) : mêmes 7 variables, même `parseEntries` d'inagle en référence, même
+/// `EnjoyModeTeam`. Aucune antériorité ne les départageait ; c'est ce module qui était câblé
+/// dans `typed::decode_by_key` et cité par les docs, le C++ et le TypeScript, donc c'est lui
+/// qui garde le nom. La doctrine du dépôt est de **fusionner, pas de supprimer** : la seule
+/// chose que `team.rs` avait en propre — rendre un `Vec` plutôt qu'un conteneur — est ici.
+///
+/// # Exemple
+///
+/// ```
+/// use nie_data::enjoy_mode_team::parse_enjoy_mode_teams;
+/// use nie_data::hash::HashId;
+/// use serde_json::json;
+///
+/// let root = json!({
+///     "entries": [{
+///         "name": "ENJOY_MODE_TEAM_INFO_LIST_BEG_0",
+///         "variables": [{"type":"Int","value":"1"}],
+///         "children": [{
+///             "name": "ENJOY_MODE_TEAM_INFO_0",
+///             "variables": [
+///                 {"type":"Int","value":"901280304"},
+///                 {"type":"Int","value":"810929954"},
+///                 {"type":"Int","value":"-1306387704"},
+///                 {"type":"Int","value":"1"},
+///                 {"type":"Int","value":"585721253"},
+///                 {"type":"String","value":"ev_chronicle_img/ev_bb_s10g001_01.g4tx"},
+///                 {"type":"String","value":"ev_bb_s10g001_01"}
+///             ],
+///             "children": []
+///         }]
+///     }]
+/// });
+/// let teams = parse_enjoy_mode_teams(&root);
+/// assert_eq!(teams.len(), 1);
+/// assert_eq!(teams[0].team_id, HashId(0x35B87230));
+/// assert_eq!(teams[0].team_type, 1);
+/// assert_eq!(teams[0].texture_name, "ev_bb_s10g001_01");
+/// ```
+#[must_use]
+pub fn parse_enjoy_mode_teams(root: &Value) -> Vec<EnjoyModeTeam> {
+    parse_enjoy_mode_team_config(root).teams
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

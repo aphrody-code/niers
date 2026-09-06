@@ -325,7 +325,12 @@ pub fn crc32_str(s: &str) -> u32 {
 /// Décodeur base64 standard (alphabet `A-Za-z0-9+/`, padding `=`), sans dépendance.
 ///
 /// Retourne `None` si l'entrée est vide ou contient un caractère invalide.
-fn decode_base64(value: &str) -> Option<Vec<u8>> {
+///
+/// `pub(crate)` depuis le 2026-09-06 : [`crate::cond`] décode le **cadrage** du même blob que
+/// ce module décode sémantiquement, et les deux couches doivent partir des mêmes octets. Une
+/// seconde implémentation de base64 dans le dépôt serait exactement le doublon que la
+/// doctrine interdit — cf. [`crate::cond::CondBlob::parse_base64`].
+pub(crate) fn decode_base64(value: &str) -> Option<Vec<u8>> {
     if value.is_empty() {
         return None;
     }
