@@ -33,6 +33,9 @@ pub const SCREENS_ROUTE: &str = "/api/v1/menu/screens";
 /// Chemin public d'une entrée du catalogue de navigation.
 pub const SCREEN_ROUTE: &str = "/api/v1/menu/screens/{stem}";
 
+/// Chemin public d'une définition typée `menu_setting`.
+pub const SETTING_ROUTE: &str = "/api/v1/menu/settings/{screen}";
+
 /// Chemin public d'un layout statique construit depuis le VFS.
 pub const LAYOUT_ROUTE: &str = "/api/v1/menu/layout/{screen}";
 
@@ -56,6 +59,26 @@ fn upstream_screen(stem: &str) -> Result<String, ErreurSite> {
         ));
     }
     Ok(format!("menu-tree/{stem}.json"))
+}
+
+/// Construit le chemin VFS d'une définition `menu_setting`.
+fn setting_path(screen: &str) -> Result<String, ErreurSite> {
+    if screen.is_empty()
+        || screen == "."
+        || screen == ".."
+        || screen.contains('/')
+        || screen.contains('\\')
+        || screen.contains("..")
+        || screen.ends_with(".json")
+        || screen.ends_with(".cfg.bin")
+    {
+        return Err(ErreurSite::Demande(
+            "ecran de menu invalide : attendez le stem sans chemin ni suffixe".to_owned(),
+        ));
+    }
+    Ok(format!(
+        "data/common/gamedata/menu/cfg/{screen}_setting.cfg.bin"
+    ))
 }
 
 /// Relaie une ressource de menu par le proxy partagé.
@@ -87,6 +110,39 @@ pub async fn screen(
         Err(error) => return error.into_response(),
     };
     relay(state, path, query, headers).await
+}
+
+/// `GET /api/v1/menu/settings/{screen}` — définition typée d'un écran du VFS.
+///
+/// Cette route est locale au site : elle lit les octets du montage courant, les convertit via
+/// `nie_formats::cfgbin`, puis appelle le parseur unique `nie_data::menu_setting`. Elle expose
+/// donc les neuf listes sémantiques sans recopier un dump JSON ni dépendre de l'amont HTTP.
+pub async fn setting(
+    State(state): State<EtatSite>,
+    Path(screen): Path<String>,
+) -> Result<Json<Value>, ErreurSite> {
+    let chemin = setting_path(&screen)?;
+    let vfs = state.vfs()?;
+    let a_lire = chemin.clone();
+    let octets = tokio::task::spawn_blocking(move || vfs.read(&a_lire))
+        .await?
+        .map_err(|e| {
+            tracing::debug!(erreur = %e, chemin = %chemin, "lecture menu_setting impossible");
+            ErreurSite::Introuvable(format!("définition de menu absente du VFS : {chemin}"))
+        })?;
+    let racine = nie_formats::cfgbin::to_iecode_json(&octets).ok_or_else(|| {
+        ErreurSite::Demande(format!(
+            "définition de menu illisible (ni RDBN ni T2B) : {chemin}"
+        ))
+    })?;
+    let setting = nie_data::menu_setting::parse(&racine);
+    Ok(Json(json!({
+        "schema": "niers.menu.setting/v1",
+        "screen": screen,
+        "path": chemin,
+        "bytes": octets.len(),
+        "setting": setting,
+    })))
 }
 
 /// Convertit les frères T2B dans la forme arborescente attendue par `nie-data`.
@@ -430,6 +486,21 @@ mod tests {
     fn le_stem_ne_peut_pas_sortir_de_l_espace_menu() {
         for stem in ["", ".", "..", "../secret", "a/b", "a\\b", "a.json"] {
             assert!(upstream_screen(stem).is_err(), "stem accepté : {stem:?}");
+        }
+    }
+
+    #[test]
+    fn le_stem_devient_un_cfg_menu_setting() {
+        assert_eq!(
+            setting_path("main_menu").unwrap(),
+            "data/common/gamedata/menu/cfg/main_menu_setting.cfg.bin"
+        );
+    }
+
+    #[test]
+    fn le_stem_setting_refuse_un_chemin_ou_un_suffixe() {
+        for stem in ["", "..", "../secret", "a/b", "a\\b", "a.json", "a.cfg.bin"] {
+            assert!(setting_path(stem).is_err(), "stem accepté : {stem:?}");
         }
     }
 }
