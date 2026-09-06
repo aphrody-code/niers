@@ -299,10 +299,10 @@ vignette), compté à part et jamais comme un manque.
 | 27 | Tri du catalogue | ❌ | ✅ | ❌ | **SERVI** | `0x0377CEAB` / `0xAF0720CB` |
 | **Techniques / objets / autres catalogues** |
 | 28 | Catégorie de technique | ✅ | ◐ | ❌ | **SERVI** | 1 002 → 433 |
-| 29 | Présence d'une vidéo | ✅ | ❌ | ❌ | **ABSENT** | l'égalité ne sait pas dire **non nul**, et `has_telop` vaut 1 sur les 1 002 |
+| 29 | Présence d'une vidéo | ✅ | ❌ | ❌ | **SERVI** | `video_url=__present__` → 1 002 → 967 |
 | 30 | Inclure hyper/aura | ✅ | ❌ | ❌ | **SERVI**\* | colonne acceptée ; `is_hyper` vaut 0 partout ici |
 | 31 | Overdrive (`is_eldorado`) | ✅ | ❌ | ❌ | **SERVI**\* | colonne acceptée ; constante à 0 ici |
-| 32 | Fourchette numérique (puissance) | ✅ | ❌ | ❌ | **ABSENT** | refusé en **400**, jamais avalé |
+| 32 | Fourchette numérique (puissance) | ✅ | ❌ | ❌ | **SERVI** | `power_max__min=400` → 1 002 → 598 ; avec `__max=880`, 596 |
 | 33 | Tri par puissance / coût | ✅ | ✅ | ❌ | **SERVI** | 0 / 900 |
 | 34 | Catégorie d'objet | ✅ | ◐ | ❌ | **SERVI** | 1 807 → 334 |
 | 35 | Catégorie d'illustration | ✅ | ✅ | ❌ | **SERVI** | 360 → 1 |
@@ -332,10 +332,14 @@ tort — c'est le gisement qui est pauvre, pas la route.
 ### Compte — 2026-09-06 au soir
 
 ```
-servis 32 · absents 14 · côté client 2 · à relire 0  (sur 48)
+servis 34 · absents 12 · côté client 2 · à relire 0  (sur 48)
 ```
 
-- **API : 32 servis, 14 absents, 2 hors périmètre.** Le matin, la même colonne comptait 6 servis.
+- **API : 34 servis, 12 absents, 2 hors périmètre.** Le matin, la même colonne comptait 6 servis.
+- Les deux derniers (#29, #32) ont été gagnés **le soir même, par la mesure** : le script les a
+  classés `ABSENT` en disant *pourquoi* — « l'égalité ne sait dire ni l'intervalle ni la
+  présence » — et cette phrase était le cahier des charges. `entites` a gagné `colonne__min` /
+  `colonne__max` et les jetons `__present__` / `__absent__` : **un seul endroit, les 219 tables**.
 - Ce qui a changé n'est pas 26 filtres écrits un par un, mais **deux routes génériques** :
   `/api/v1/recherche` (`q`, `ext`, `cpk`, `taille_min`, `taille_max`, `tri`, `ordre`) couvre le
   VFS, et `/api/v1/entites/{table}` (`q`, `tri`, `ordre`, **égalité sur toute colonne du schéma**)
@@ -358,7 +362,7 @@ servis 32 · absents 14 · côté client 2 · à relire 0  (sur 48)
 ---
 
 
-## 6. Les 14 manques restants : source de données et coût
+## 6. Les 12 manques restants : source de données et coût
 
 > Réécrit le 2026-09-06 au soir contre la mesure. Les 26 lignes que cette section chiffrait le
 > matin (#1–#3, #7–#10, #14–#17, #17–#28, #33–#35, #42, #43, #47) sont **servies** : elles ne
@@ -368,8 +372,6 @@ servis 32 · absents 14 · côté client 2 · à relire 0  (sur 48)
 |---|---|---|---|
 | 6 | Recherche restreinte à un sous-arbre | index trié (`vfs_index.rs:224`) | **calculable** : `partition_point` sur le préfixe puis balayage filtré. `/api/v1/recherche` a déjà `q`, il lui manque un `prefixe=` ; les deux mécanismes existent, il n'y a qu'à les composer |
 | 11 | Glob (`**`, `!excl`, listes) | `crates/engine/nie-viola/src/filtre.rs` | **moteur déjà écrit et testé**, à rendre atteignable depuis `nie-site`. Double `ext=` pour un public plus étroit |
-| 29 | Présence d'une valeur (non nul) | toute colonne du gisement | **forme de filtre manquante**, pas donnée manquante : `entites` ne sait dire qu'`égal`. Un `colonne=__present__` (ou `__absent__`) couvrirait #29 et toutes ses sœurs futures d'un coup |
-| 32 | Fourchette numérique (`power_max` 0→880) | mêmes colonnes | **même famille** : `colonne__min` / `colonne__max` sur les colonnes non-texte. `entites` connaît déjà le type SQL de chaque colonne (`Colonne.type_sql`), donc sait lesquelles l'acceptent |
 | 36 | Langue / variante d'un asset | segment de chemin du VFS | lisible sans passe ; Inacord le fait déjà (`lib/galerie.ts:24-59`). Coût quasi nul une fois #6 fait |
 | 37–39 | Saison, épisode, langue, sous-titres | `data/anime/episodes.db` — colonnes déjà lues (`episodes.rs:56-83`) | **décision avant code** : `/api/v1/episodes` est une API de **synchronisation** (`since`/`limit`), pas un catalogue. Soit on la dénature, soit on sert `episodes.db` par `entites` — la seconde donne les quatre filtres gratuitement, et c'est ce que la mesure suggère |
 | 40/41 | Pertinence pondérée, fuzzy | — | **à écrire** ; `apps/inacord/src/lib/recherche.ts:186-295` est un portage direct |
@@ -378,10 +380,9 @@ servis 32 · absents 14 · côté client 2 · à relire 0  (sur 48)
 | 48 | Export de la liste filtrée | la page déjà rendue | **client seul** — la liste filtrée est déjà servie en JSON, l'exporter est un `<a download>` |
 
 **Le constat central n'a pas changé de forme, il a changé de côté.** Le matin : « aucun des 42
-manques n'exige une passe sur les 255 308 entrées ». Le soir : il n'en reste 14, dont **5 sont une
-forme de filtre** (`non nul`, fourchette, glob, sous-arbre, fuzzy) et non des données à aller
-chercher. Deux d'entre elles — #29 et #32 — se traitent **ensemble**, dans `entites::analyser`, et
-couvriraient au passage toutes les colonnes des 219 tables.
+manques n'exige une passe sur les 255 308 entrées ». Le soir : il n'en reste **12**, et les deux
+qui ont sauté dans la journée l'ont fait parce que la mesure disait *pourquoi* elles manquaient.
+Trois restent une **forme** de filtre (glob, sous-arbre, fuzzy) plutôt qu'une donnée à chercher.
 
 ---
 
@@ -391,9 +392,11 @@ couvriraient au passage toutes les colonnes des 219 tables.
    32 filtres servis, 3 utilisés. L'explorateur (`Explorateur.tsx:43-117`) n'a aucun champ de
    recherche alors que `/b?q=` répond ; le catalogue fige `PAR_PAGE = 60` alors que `per_page`
    monte à 200 ; aucun état ne passe par l'URL. **Zéro ligne de serveur.**
-2. **Les deux formes de filtre manquantes dans `entites` (#29, #32)** — `colonne__min`,
-   `colonne__max`, `colonne=__present__`. Un seul endroit (`entites::analyser`), et elles
-   s'appliquent aux 219 tables d'un coup. C'est le meilleur rapport ligne/couverture qui reste.
+2. ~~Les deux formes de filtre manquantes dans `entites` (#29, #32).~~ **Fait le 2026-09-06** —
+   `colonne__min`, `colonne__max`, `colonne=__present__` / `__absent__`, dans `entites::analyser`,
+   donc sur les 219 tables. Mesuré : 1 002 → 967 présents, 1 002 → 598 au-dessus de 400, 596 dans
+   l'intervalle ; borne sur colonne texte, borne non numérique et colonne inconnue sont trois
+   `400` distincts.
 3. **`prefixe=` sur `/api/v1/recherche` (#6)**, qui rend aussi #36 presque gratuit : chercher dans
    un sous-arbre est la question qu'on pose vraiment sur 255 308 fichiers.
 4. **Servir `episodes.db` par `entites` (#37–#39)** plutôt que dénaturer `/api/v1/episodes` :

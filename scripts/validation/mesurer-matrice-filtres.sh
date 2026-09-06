@@ -179,9 +179,12 @@ echo "-- Techniques / objets / autres catalogues"
 reduit 28 "categorie de technique" \
         "/api/v1/entites/inagle_skills?per_page=1" \
         "/api/v1/entites/inagle_skills?per_page=1&category=Tir"
-absent_prouve 29 "presence d'une video" \
-        "/api/v1/entites/inagle_skills?per_page=1&has_telop=1" '.total == 1002' \
-        "l'egalite ne sait pas dire NON NUL, et has_telop vaut 1 sur les 1 002"
+# `has_telop` vaut 1 sur les 1 002 lignes : l'interroger ne prouvait rien. La vraie question
+# est « cette technique a-t-elle une video », c'est-a-dire une colonne RENSEIGNEE — la forme
+# `__present__`, ajoutee le 2026-09-06 apres que cette ligne l'ait montree manquante.
+reduit 29 "presence d'une video" \
+        "/api/v1/entites/inagle_skills?per_page=1" \
+        "/api/v1/entites/inagle_skills?per_page=1&video_url=__present__"
 accepte 30 "hyper / aura" \
         "/api/v1/entites/inagle_skills?per_page=1&is_hyper=1" \
         "/api/v1/entites/inagle_skills?per_page=1&is_hyperr=1" \
@@ -190,8 +193,9 @@ accepte 31 "eldorado (dit overdrive cote wiki)" \
         "/api/v1/entites/inagle_skills?per_page=1&is_eldorado=1" \
         "/api/v1/entites/inagle_skills?per_page=1&is_eldoradoo=1" \
         "is_eldorado vaut 0 sur les 1 002 lignes de ce gisement"
-absent_400 32 "fourchette numerique (puissance 0->880)" \
-        "/api/v1/entites/inagle_skills?per_page=1&power_max_min=400"
+reduit 32 "fourchette numerique (puissance 0->880)" \
+        "/api/v1/entites/inagle_skills?per_page=1" \
+        "/api/v1/entites/inagle_skills?per_page=1&power_max__min=400"
 ordonne 33 "tri par puissance / cout" '.elements[0].power_max' \
         "/api/v1/entites/inagle_skills?per_page=1&tri=power_max&ordre=asc" \
         "/api/v1/entites/inagle_skills?per_page=1&tri=power_max&ordre=desc"

@@ -45,6 +45,34 @@
 //! - la réponse republie ce qui a été appliqué (`filtres`), pour qu'un client puisse le vérifier
 //!   sans relire ce fichier.
 //!
+//! ## Trois formes de filtre, parce que l'égalité seule ment par omission
+//!
+//! `scripts/validation/mesurer-matrice-filtres.sh` a mesuré le 2026-09-06 que deux des quatorze
+//! manques restants n'étaient pas des données absentes mais des **formes** que cette route ne
+//! savait pas exprimer : « puissance entre 400 et 880 » et « a une vidéo ». Les colonnes
+//! existaient ; seule l'égalité était servie, et l'égalité ne sait dire ni l'intervalle ni la
+//! présence. Une facette qui n'existe pas est un manque visible ; une facette qu'on approxime
+//! par l'égalité est un résultat faux.
+//!
+//! | Forme | Écriture | Sur quelles colonnes |
+//! |---|---|---|
+//! | Égalité | `?element=Feu` | toutes |
+//! | Intervalle | `?power_max__min=400&power_max__max=880` | **numériques seulement** |
+//! | Présence | `?video_url=__present__` / `__absent__` | toutes |
+//!
+//! Chacune refuse plutôt que d'approximer, et c'est le point :
+//!
+//! - `__min`/`__max` sur une colonne **texte** est un `400`. SQLite comparerait volontiers
+//!   `'Mark' >= '400'` par ordre lexicographique et rendrait une page pleine de lignes
+//!   plausibles : le pire résultat possible, faux sans en avoir l'air ;
+//! - une borne non numérique est un `400` ;
+//! - `__present__` compte `NULL` **et** la chaîne vide comme absents. Le miroir mélange les deux
+//!   (`age_group` est vide, pas nul, sur les 6 166 personnages) ; distinguer un `NULL` d'un `''`
+//!   ici publierait une nuance de l'importeur, pas une du jeu ;
+//! - un `?colonne=__present__` sur une colonne qui contiendrait littéralement la chaîne
+//!   `__present__` serait détourné. Mesuré avant d'écrire : **0 occurrence** des deux jetons
+//!   dans les 165 249 lignes des 219 tables.
+//!
 //! Sans miroir, les trois routes répondent `503` avec la raison : le service démarre toujours.
 
 use std::collections::BTreeMap;
@@ -76,6 +104,21 @@ pub const PREFIXE_INTERNE: char = '_';
 /// ([`crate::routes::DemandePage`]) et qu'un client qui l'emploie ne doit pas se retrouver avec
 /// un `400` sur une « colonne inconnue `per_page` ».
 pub const PARAMS_RESERVES: [&str; 6] = ["page", "par_page", "per_page", "tri", "ordre", "q"];
+
+/// Suffixe de borne basse — `?power_max__min=400`.
+pub const SUFFIXE_MIN: &str = "__min";
+
+/// Suffixe de borne haute — `?power_max__max=880`.
+pub const SUFFIXE_MAX: &str = "__max";
+
+/// Valeur-jeton demandant les lignes où la colonne est renseignée.
+///
+/// Mesuré avant d'être choisi : **0 des 165 249 lignes** des 219 tables ne porte cette chaîne,
+/// donc aucun filtre d'égalité légitime n'est détourné par elle.
+pub const JETON_PRESENT: &str = "__present__";
+
+/// Valeur-jeton demandant les lignes où la colonne est nulle ou vide.
+pub const JETON_ABSENT: &str = "__absent__";
 
 /// Longueur maximale d'un identifiant SQL accepté depuis le client.
 ///
@@ -197,6 +240,10 @@ pub struct FiltresAppliques {
     pub ordre: &'static str,
     /// Filtres d'égalité retenus, colonne → valeur.
     pub egalites: BTreeMap<String, String>,
+    /// Bornes retenues, `colonne__min` / `colonne__max` → valeur numérique.
+    pub bornes: BTreeMap<String, f64>,
+    /// Tests de présence retenus, colonne → `"present"` ou `"absent"`.
+    pub presences: BTreeMap<String, &'static str>,
 }
 
 /// Une demande analysée et validée contre le schéma d'une table.
@@ -212,6 +259,39 @@ pub struct Demande {
     pub ordre: Ordre,
     /// Égalités demandées, colonne du catalogue → valeur brute (qui sera liée).
     pub egalites: Vec<(String, String)>,
+    /// Bornes demandées : colonne du catalogue, sens, valeur.
+    pub bornes: Vec<(String, Borne, f64)>,
+    /// Présences demandées : colonne du catalogue, et si l'on veut ce qui est renseigné.
+    pub presences: Vec<(String, bool)>,
+}
+
+/// Le sens d'une borne. Deux variantes closes, jamais une chaîne du client.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Borne {
+    /// `>=` — le suffixe `__min`.
+    Minimum,
+    /// `<=` — le suffixe `__max`.
+    Maximum,
+}
+
+impl Borne {
+    /// L'opérateur SQL. **Constant** : aucune chaîne du client n'entre là.
+    #[must_use]
+    pub fn sql(self) -> &'static str {
+        match self {
+            Self::Minimum => ">=",
+            Self::Maximum => "<=",
+        }
+    }
+
+    /// Le suffixe public, celui que la réponse republie.
+    #[must_use]
+    pub fn suffixe(self) -> &'static str {
+        match self {
+            Self::Minimum => SUFFIXE_MIN,
+            Self::Maximum => SUFFIXE_MAX,
+        }
+    }
 }
 
 impl Demande {
@@ -223,6 +303,21 @@ impl Demande {
             tri: self.tri.clone(),
             ordre: self.ordre.jeton(),
             egalites: self.egalites.iter().cloned().collect(),
+            bornes: self
+                .bornes
+                .iter()
+                .map(|(c, b, v)| (format!("{c}{}", b.suffixe()), *v))
+                .collect(),
+            presences: self
+                .presences
+                .iter()
+                .map(|(c, present)| {
+                    (
+                        c.clone(),
+                        if *present { "present" } else { "absent" },
+                    )
+                })
+                .collect(),
         }
     }
 }
@@ -464,10 +559,45 @@ pub fn analyser(
     };
 
     let mut egalites = Vec::new();
+    let mut bornes = Vec::new();
+    let mut presences = Vec::new();
     for (cle, valeur) in brut {
         if PARAMS_RESERVES.contains(&cle.as_str()) {
             continue;
         }
+
+        // Une borne se reconnait au SUFFIXE du parametre, pas a sa valeur : `power_max__min`
+        // vise la colonne `power_max`. Le suffixe est retire avant de chercher la colonne, sans
+        // quoi la recherche echouerait sur un nom qui n'existe pas.
+        if let Some((base, sens)) = cle
+            .strip_suffix(SUFFIXE_MIN)
+            .map(|b| (b, Borne::Minimum))
+            .or_else(|| cle.strip_suffix(SUFFIXE_MAX).map(|b| (b, Borne::Maximum)))
+        {
+            let colonne = table.colonne(base).ok_or_else(|| {
+                ErreurSite::Demande(format!(
+                    "`{cle}` : `{}` n'a pas de colonne `{base}` ; son schema est sur \
+                     /api/v1/entites",
+                    table.nom
+                ))
+            })?;
+            // Refuser plutot qu'approximer : SQLite comparerait `'Mark' >= '400'` par ordre
+            // lexicographique et rendrait une page de lignes plausibles — faux sans en avoir
+            // l'air, ce qui est le pire des resultats.
+            if colonne.texte {
+                return Err(ErreurSite::Demande(format!(
+                    "`{cle}` : `{base}` est une colonne texte ({}), et une fourchette sur du \
+                     texte comparerait des mots par ordre alphabetique ; utilisez l'egalite",
+                    colonne.type_sql
+                )));
+            }
+            let n: f64 = valeur.trim().parse().map_err(|_| {
+                ErreurSite::Demande(format!("`{cle}={valeur}` : une borne est un nombre"))
+            })?;
+            bornes.push((colonne.nom.clone(), sens, n));
+            continue;
+        }
+
         let colonne = table.colonne(cle).ok_or_else(|| {
             ErreurSite::Demande(format!(
                 "`{cle}` n'est ni un parametre de cette route ni une colonne de `{}` ; son \
@@ -481,9 +611,17 @@ pub fn analyser(
                  parametre pour ne pas filtrer"
             )));
         }
-        egalites.push((colonne.nom.clone(), valeur.clone()));
+        // La presence se reconnait a la VALEUR, parce qu'elle porte sur la colonne elle-meme et
+        // non sur un contenu. Les deux jetons sont surs : 0 des 165 249 lignes ne les porte.
+        match valeur.as_str() {
+            JETON_PRESENT => presences.push((colonne.nom.clone(), true)),
+            JETON_ABSENT => presences.push((colonne.nom.clone(), false)),
+            _ => egalites.push((colonne.nom.clone(), valeur.clone())),
+        }
     }
     egalites.sort_by(|a, b| a.0.cmp(&b.0));
+    bornes.sort_by(|a, b| (&a.0, a.1.suffixe()).cmp(&(&b.0, b.1.suffixe())));
+    presences.sort_by(|a, b| a.0.cmp(&b.0));
 
     Ok(Demande {
         pagination,
@@ -491,6 +629,8 @@ pub fn analyser(
         tri,
         ordre,
         egalites,
+        bornes,
+        presences,
     })
 }
 
@@ -528,6 +668,29 @@ pub fn clause(table: &TableServie, d: &Demande) -> Clause {
     for (colonne, valeur) in &d.egalites {
         morceaux.push(format!("\"{colonne}\" = ?"));
         params.push(ValeurSql::Text(valeur.clone()));
+    }
+
+    for (colonne, sens, valeur) in &d.bornes {
+        // `CAST(... AS REAL)` parce que l'importeur a stocke des nombres dans des colonnes
+        // declarees INTEGER *et* dans des colonnes declarees REAL, et que SQLite compare selon
+        // le TYPE STOCKE : sans le cast, une valeur ecrite en texte serait comparee comme du
+        // texte, ce que le refus ci-dessus vise justement a empecher.
+        morceaux.push(format!(
+            "CAST(\"{colonne}\" AS REAL) {} ?",
+            sens.sql()
+        ));
+        params.push(ValeurSql::Real(*valeur));
+    }
+
+    for (colonne, present) in &d.presences {
+        // `NULL` et la chaine vide comptent pour la meme chose : le miroir melange les deux
+        // (`age_group` est vide, pas nul), et publier la nuance publierait une propriete de
+        // l'importeur, pas une du jeu.
+        morceaux.push(if *present {
+            format!("(\"{colonne}\" IS NOT NULL AND \"{colonne}\" != '')")
+        } else {
+            format!("(\"{colonne}\" IS NULL OR \"{colonne}\" = '')")
+        });
     }
 
     Clause {
@@ -847,6 +1010,120 @@ mod tests {
             .iter()
             .map(|(k, v)| ((*k).to_owned(), (*v).to_owned()))
             .collect()
+    }
+
+    /// Retrouve une table du catalogue de test.
+    fn table_de(g: &crate::dataset::Gisement, nom: &str) -> TableServie {
+        g.lire(catalogue_compte)
+            .unwrap()
+            .into_iter()
+            .map(|t| t.table)
+            .find(|t| t.nom == nom)
+            .unwrap()
+    }
+
+    /// Compte les lignes que rend une demande, en passant par la clause reellement construite.
+    fn compter(g: &crate::dataset::Gisement, table: &TableServie, d: &Demande) -> usize {
+        let cl = clause(table, d);
+        let sql = format!("SELECT COUNT(*) FROM \"{}\"{}", table.nom, cl.sql);
+        g.lire(move |c| {
+            let n: i64 = c.query_row(&sql, rusqlite::params_from_iter(cl.params.iter()), |r| {
+                r.get(0)
+            })?;
+            Ok(usize::try_from(n).unwrap_or(0))
+        })
+        .unwrap()
+    }
+
+    #[test]
+    fn une_borne_retient_un_intervalle_et_ses_deux_bords() {
+        // La moitie positive seule ne prouverait rien : une clause qui ne filtrerait pas
+        // rendrait 3 aux quatre appels. Les bords sont testes parce que `>=`/`<=` sont un
+        // choix — un intervalle exclusif serait une autre reponse, et il faut qu'elle rougisse.
+        let (_d, g) = base();
+        let t = table_de(&g, "inagle_characters");
+        let cas = [
+            (vec![("zukan__min", "2")], 2),
+            (vec![("zukan__max", "2")], 2),
+            (vec![("zukan__min", "2"), ("zukan__max", "2")], 1),
+            (vec![("zukan__min", "9")], 0),
+        ];
+        for (params, attendu) in cas {
+            let d = analyser(&t, &q(&params)).unwrap();
+            assert_eq!(compter(&g, &t, &d), attendu, "pour {params:?}");
+        }
+    }
+
+    #[test]
+    fn une_borne_sur_une_colonne_texte_est_refusee_pas_approximee() {
+        // C'est le coeur de la regle : SQLite comparerait volontiers `'Mark' >= '400'` et
+        // rendrait une page plausible. Un 400 dit ce qui ne peut pas etre demande.
+        let (_d, g) = base();
+        let t = table_de(&g, "inagle_characters");
+        let e = analyser(&t, &q(&[("name_fr__min", "400")])).unwrap_err();
+        assert!(matches!(e, ErreurSite::Demande(_)));
+        // Et la meme borne sur la colonne numerique passe : sans cette moitie, un refus
+        // universel passerait aussi le test.
+        assert!(analyser(&t, &q(&[("zukan__min", "400")])).is_ok());
+    }
+
+    #[test]
+    fn une_borne_non_numerique_et_une_colonne_inconnue_sont_deux_400_distincts() {
+        let (_d, g) = base();
+        let t = table_de(&g, "inagle_characters");
+        for cle in ["zukan__min", "zukan__max"] {
+            assert!(analyser(&t, &q(&[(cle, "beaucoup")])).is_err());
+        }
+        assert!(analyser(&t, &q(&[("absente__min", "1")])).is_err());
+    }
+
+    #[test]
+    fn la_presence_separe_le_renseigne_du_vide_et_du_nul() {
+        // Le miroir melange NULL et chaine vide ; le test le reproduit exactement, sinon il
+        // testerait une base plus propre que la vraie.
+        let (dir, g) = base();
+        // L'ecriture passe par une connexion a part : le gisement est ouvert en LECTURE SEULE,
+        // et un `execute_batch` a travers lui echouerait — silencieusement si on l'ignorait.
+        let ecriture = Connection::open(dir.path().join("mirror.sqlite")).unwrap();
+        ecriture
+            .execute_batch(
+                "INSERT INTO inagle_characters VALUES ('c4', NULL, 'Feu', 4);
+                 INSERT INTO inagle_characters VALUES ('c5', '', 'Feu', 5);",
+            )
+            .unwrap();
+        drop(ecriture);
+        let t = table_de(&g, "inagle_characters");
+        let present = analyser(&t, &q(&[("name_fr", JETON_PRESENT)])).unwrap();
+        let absent = analyser(&t, &q(&[("name_fr", JETON_ABSENT)])).unwrap();
+        let total = analyser(&t, &q(&[])).unwrap();
+        let (p, a, n) = (
+            compter(&g, &t, &present),
+            compter(&g, &t, &absent),
+            compter(&g, &t, &total),
+        );
+        assert_eq!(p + a, n, "les deux moities doivent partitionner la table");
+        assert!(p > 0 && p < n, "un filtre qui ne retient ni tout ni rien");
+    }
+
+    #[test]
+    fn les_trois_formes_sont_republiees_telles_qu_appliquees() {
+        // La lecon du lot 8 : appliquer sans avouer est le meme aveuglement que ne pas
+        // appliquer, vu du client.
+        let (_d, g) = base();
+        let t = table_de(&g, "inagle_characters");
+        let d = analyser(
+            &t,
+            &q(&[
+                ("element", "Feu"),
+                ("zukan__min", "2"),
+                ("name_fr", JETON_PRESENT),
+            ]),
+        )
+        .unwrap();
+        let f = d.appliques();
+        assert_eq!(f.egalites.get("element").map(String::as_str), Some("Feu"));
+        assert_eq!(f.bornes.get("zukan__min"), Some(&2.0));
+        assert_eq!(f.presences.get("name_fr"), Some(&"present"));
     }
 
     #[test]
