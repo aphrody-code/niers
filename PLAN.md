@@ -39,6 +39,35 @@ maître du moteur et de la forge reste [`docs/PLAN.md`](docs/PLAN.md).
 > descend que par du reverse ; et les quatre autres conditions du § 8 du cap (475 écrans, SSIM
 > par écran, sas `legacy/` à 87 fichiers) ne sont pas touchées.
 
+> **Amendement du 2026-09-06 (8) — les cinq autres conditions du § 8 sont réglées, et le lot 8
+> est clos.** Ce que l'amendement 7 laissait ouvert l'est encore sur un seul point.
+>
+> ```bash
+> ./target/release/nie-site --regenerer-couverture var/couverture-site.json
+> scripts/e2e-site.sh                            # 65 vérifications, 0 échec, 0 saut
+> scripts/validation/mesurer-filtres.sh          # 14/14 appliqués ET republiés
+> scripts/validation/mesurer-matrice-filtres.sh  # servis 41 · absents 5 · côté client 2
+> ```
+>
+> | Condition du § 8 | État mesuré |
+> |---|---|
+> | 1. `manquant = 0`, `partiel = 0` | **tenue** — 287 servi, 294 interne, 1 bloqué |
+> | 2. 255 308 fichiers classés | **tenu** — `bloqué` est passé de 3 600 fichiers à **9**, sans une ligne de reverse : le classement se faisait par extension, la lecture se fait par magic |
+> | 3. chaque corpus prouvé par une requête qui rend un total | **tenu** — quatre scripts, et l'e2e à 65/65 |
+> | 4. `écrans servis / 475` + trois nombres par écran | **publié** — 475 écrans, 171 servis (36,00 %), 4 858 calques déclarés / 3 549 résolus. La **SSIM n'existe pas** : ce dépôt ne porte aucune capture de référence du jeu, et la route le dit dans son champ plutôt que de le laisser croire |
+> | 5. le sas `legacy/` est vide | **tenu** — 90 fichiers, 23 647 lignes retirés après preuve qu'ils étaient morts |
+> | 6. le site tourne | **tenu** — vérifié à travers nginx, sur `https://aphrody.com`, à chaque lot |
+>
+> **Le lot 8 (les filtres) est clos** : 41 servis, 5 absents dont **trois sont des refus
+> argumentés** (la KB n'est pas ancrée sur la cible ; le jeu et la série n'ont aucune clé
+> commune). Le plan annonçait `manquant = 42` — la mesure en a trouvé 5, et la moitié de l'écart
+> était **déjà servie** sans que le recensement, fait en lecture de code, le sache.
+>
+> **Ce qui reste, et c'est le seul point ouvert :** 35 des 41 filtres servis n'ont **aucune
+> commande à l'écran**. L'explorateur et le catalogue en utilisent six ; le combler ne coûte
+> aucune ligne de Rust. Détail : amendement 8 de
+> [`docs/PLAN-SITE-ULTIME.md`](docs/PLAN-SITE-ULTIME.md) et `docs/FILTRES.md` § 5.
+
 > **Amendement du 2026-09-06 (6) — la matrice de couverture existe, et la gate est rompue.**
 > Le § 4 du cap prévoyait « une seule table, régénérée par une commande, jamais tenue à la
 > main » ; elle n'existait pas, et c'était le trou le plus coûteux du plan — sans instrument, le
