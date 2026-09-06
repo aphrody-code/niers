@@ -1,7 +1,6 @@
 "use client";
 
 import {
-	ArrowLeftRight,
 	ChevronLeft,
 	ChevronRight,
 	CircleDot,
@@ -624,16 +623,6 @@ export function CharacterSheet({
 								</NextLink>
 							)}
 
-							{slug && (
-								<NextLink
-									href={`/tools/compare?char1=${slug}`}
-									className="inline-flex items-center gap-1.5 px-4 py-2 sm:px-3 sm:py-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white/80 hover:text-white text-xs font-bold ml-auto min-h-11 sm:min-h-0"
-									title="Comparer avec un autre personnage"
-								>
-									<ArrowLeftRight size={16} aria-hidden="true" />
-									Comparer
-								</NextLink>
-							)}
 						</div>
 					</div>
 

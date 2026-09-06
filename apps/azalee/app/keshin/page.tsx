@@ -1,16 +1,13 @@
 /**
- * `/keshin` — conservée pour les liens existants, redirige vers la famille correspondante.
+ * `/keshin` — conservée pour les liens existants, redirige vers la page qui la remplace.
  *
- * Les esprits guerriers et leurs armures étaient une page à part, alimentée par le miroir, à
- * côté d'un `/modeles` filtré par un manifeste statique : deux pages, deux sources, une fraction
- * du corpus. Elles ne font plus qu'une — `/modeles` couvre les 6 236 modèles du jeu, esprits
- * compris, sur le VFS live.
- *
- * Redirection permanente : l'URL a été indexée et partagée, elle doit continuer à mener au bon
- * endroit plutôt que rendre un doublon.
+ * L'ancienne cible était `/modeles/keshin` ; les collections média ont migré vers l'explorateur
+ * de bureau (`docs/MIGRATION-EXPLORATEUR.md`) et cette URL ne mène plus nulle part sur le wiki.
+ * Une redirection permanente vers une page morte est pire qu'un 404 : le navigateur la met en
+ * cache. Elle pointe donc vers la section du wiki qui traite encore des esprits guerriers.
  */
 import { permanentRedirect } from "next/navigation";
 
 export default function KeshinPage(): never {
-	permanentRedirect("/modeles/keshin");
+	permanentRedirect("/aura/esprits-guerriers");
 }

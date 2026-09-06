@@ -2,6 +2,11 @@ import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
 import { cn } from "@/lib/utils";
 
+/**
+ * Les cinq outils du wiki (comparateur, équipe aléatoire, traducteur, calculateur, Mon Équipe)
+ * ont migré vers l'explorateur de bureau — cf. `docs/MIGRATION-EXPLORATEUR.md`. Cette section
+ * ne promet donc plus des pages qui n'existent plus : elle mène à leur nouvelle adresse.
+ */
 const TOOLS: Array<{
 	href: string;
 	icon: string;
@@ -11,31 +16,10 @@ const TOOLS: Array<{
 }> = [
 	{
 		container: "bg-primary-container text-on-primary-container",
-		description: "Stats, techniques et auras de deux joueurs côte à côte.",
-		href: "/tools/compare",
-		icon: "compare_arrows",
-		title: "Comparateur",
-	},
-	{
-		container: "bg-secondary-container text-on-secondary-container",
-		description: "11 joueurs, 1 coach, 3 manageuses. Filtrez par élément ou style de jeu.",
-		href: "/tools/random-team",
-		icon: "casino",
-		title: "Équipe aléatoire",
-	},
-	{
-		container: "bg-tertiary-container text-on-tertiary-container",
-		description: "Trouvez les noms français, anglais et japonais de toutes les entités du jeu.",
-		href: "/tools/translator",
-		icon: "translate",
-		title: "Traducteur",
-	},
-	{
-		container: "bg-primary-container text-on-primary-container",
-		description: "Composez votre équipe idéale en glissant-déposant vos joueurs sur le terrain.",
-		href: "/tools/my-team",
-		icon: "stadium",
-		title: "Mon Équipe",
+		description: "Comparateur, équipe aléatoire, traducteur et calculateur de stats, hors ligne.",
+		href: "/tools/niers",
+		icon: "download",
+		title: "Explorateur",
 	},
 ];
 
@@ -49,12 +33,12 @@ export function ToolsPreview() {
 					Outils interactifs
 				</h2>
 				<p className="mt-2 type-body-medium text-on-surface-variant">
-					Comparez, générez, traduisez et composez vos équipes.
+					Comparez, générez et traduisez depuis l'explorateur de bureau.
 				</p>
 			</div>
 
 			{/* Responsive grid: 1 col → 2 (sm) → 4 (lg) */}
-			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 px-0 md:px-8 lg:px-12">
+			<div className="grid grid-cols-1 gap-4 md:gap-5 px-0 md:px-8 lg:px-12">
 				{TOOLS.map((tool) => (
 					<Link
 						key={tool.href}

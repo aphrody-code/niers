@@ -168,68 +168,12 @@ export const navigationItems: NavItem[] = [
 		path: "/succes",
 	},
 	{
-		// Médias : illustrations curées, corpus complet des textures, banques sonores,
-		// cinématiques, et modèles 3D (esprits/armures + objets/animaux).
-		children: [
-			{ label: "nav.wiki.gallery", path: "/gallery", icon: "image" },
-			{ label: "nav.wiki.textures", path: "/textures", icon: "texture" },
-			{ label: "nav.wiki.sounds", path: "/sons", icon: "graphic_eq" },
-			{ label: "nav.wiki.videos", path: "/videos", icon: "movie" },
-			// `/keshin` a fusionné dans `/modeles` : une seule page couvre les 6 236 modèles du
-			// jeu (personnages, techniques, objets, esprits, armures, animaux). L'ancienne URL
-			// redirige, mais elle n'a plus à figurer au menu à côté de celle qui la contient.
-			{ label: "nav.wiki.models", path: "/modeles", icon: "deployed_code" },
-			// `/mode` figurait dans la sous-navigation média (`MediaShell`) mais nulle part
-			// dans le menu : la sixième collection n'était atteignable qu'en passant par une
-			// des cinq autres.
-			{ label: "nav.wiki.modes", path: "/mode", icon: "stadia_controller" },
-		],
-		icon: "perm_media",
-		label: "nav.section.media",
-		path: "/gallery",
-	},
-	{
-		// Explorer le jeu : données brutes des CPK.
-		children: [
-			{ label: "nav.wiki.cpk_browser", path: "/cpk", icon: "account_tree" },
-		],
-		icon: "travel_explore",
-		label: "nav.section.explore",
-		path: "/cpk",
-	},
-	{
-		children: [
-			{
-				label: "nav.tools.stats",
-				path: "/tools/stats",
-				icon: "calculate",
-			},
-			{
-				label: "nav.tools.compare",
-				path: "/tools/compare",
-				icon: "compare_arrows",
-			},
-			{
-				label: "nav.tools.random_team",
-				path: "/tools/random-team",
-				icon: "casino",
-			},
-			{ label: "nav.tools.my_team", path: "/tools/my-team", icon: "stadium" },
-			{
-				label: "nav.tools.translator",
-				path: "/tools/translator",
-				icon: "translate",
-			},
-			{
-				label: "nav.tools.save_reader",
-				path: "/save",
-				icon: "save",
-			},
-			{ label: "nav.tools.demo", path: "/demo", icon: "view_in_ar" },
-		],
+		// Les collections média et les cinq outils du wiki ont migré vers l'explorateur de
+		// bureau (`docs/MIGRATION-EXPLORATEUR.md`). Ne reste ici que sa page de
+		// téléchargement : un menu ne doit pointer que vers des routes servies.
 		icon: "build",
 		label: "nav.tools",
-		path: "/tools",
+		path: "/tools/niers",
 	},
 	{
 		icon: "settings",
@@ -252,20 +196,12 @@ export const mobileNavItems: NavItem[] = [
 			"/aura",
 			"/passive",
 			"/tactic",
-			"/gallery",
 			"/quete",
 			"/succes",
 			"/entraineur",
 			"/stade",
 			"/drops",
 			"/niveau",
-			"/keshin",
-			"/modeles",
-			"/mode",
-			"/textures",
-			"/sons",
-			"/videos",
-			"/cpk",
 			"/wiki",
 			"/search",
 		],
@@ -280,10 +216,10 @@ export const mobileNavItems: NavItem[] = [
 		path: "/news",
 	},
 	{
-		activePaths: ["/tools", "/demo"],
+		activePaths: ["/tools"],
 		icon: "build",
 		label: "nav.tools",
-		path: "/tools",
+		path: "/tools/niers",
 	},
 	{
 		activePaths: ["/settings"],

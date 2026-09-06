@@ -177,9 +177,8 @@ export default async function SkillsPage({
 				/>
 			</div>
 
-			{/* Ligne de compte partagée avec /gallery, /textures, /sons, /videos et
-			    /modeles : /skill la réimplémentait à l'identique, aux détails de
-			    classes près, et dérivait donc à chaque retouche de l'une des cinq. */}
+			{/* Ligne de compte héritée des pages média (parties dans l'explorateur) :
+			    /skill la réimplémentait à l'identique, elle vit dans MediaShell. */}
 			<MediaCount
 				left={`${total.toLocaleString("fr-FR")} techniques`}
 				right={`Page ${pageNumber} sur ${Math.max(1, Math.ceil(total / ITEMS_PER_PAGE))}`}

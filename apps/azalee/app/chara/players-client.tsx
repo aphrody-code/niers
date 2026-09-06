@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeftRight, Eye, EyeOff, Gamepad2, Loader2, X } from "lucide-react";
+import { Eye, EyeOff, Gamepad2, Loader2, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLanguage } from "@/components/providers/language-provider";
@@ -257,13 +257,6 @@ export function PlayersClient({
 						<Gamepad2 size={13} aria-hidden="true" />
 						<span className="hidden sm:inline">Jouables</span>
 					</button>
-					<Link
-						href="/tools/compare"
-						className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface-variant hover:text-primary transition-all normal-case tracking-normal ml-auto"
-					>
-						<ArrowLeftRight size={13} aria-hidden="true" />
-						<span className="text-[11px] md:text-xs font-bold">Comparer</span>
-					</Link>
 				</div>
 
 				{/* Content area with loading overlay */}

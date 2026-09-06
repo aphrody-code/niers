@@ -63,20 +63,6 @@ const WIKI_SECTIONS: Array<{
 		title: "Passifs",
 	},
 	{
-		description: "Comparez deux joueurs côte à côte",
-		gradientColors: "bg-linear-to-r from-indigo-600 to-blue-500",
-		href: "/tools/compare",
-		icon: "compare_arrows",
-		title: "Comparateur",
-	},
-	{
-		description: "Composez votre équipe idéale",
-		gradientColors: "bg-linear-to-r from-teal-600 to-cyan-500",
-		href: "/tools/my-team",
-		icon: "stadium",
-		title: "Mon Équipe",
-	},
-	{
 		description: "News et mises à jour",
 		gradientColors: "bg-linear-to-r from-slate-600 to-gray-500",
 		href: "/news",

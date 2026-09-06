@@ -187,9 +187,22 @@ const nextConfig: NextConfig = {
 					source: `${prefixe}/:path*`,
 				}))
 			: [];
+		// Les deux raccourcis historiques suivent les memes pages, mais sous un autre chemin :
+		// leur destination est mappee, pas recopiee.
+		const raccourcisOutils = origineOutils
+			? [
+					{ source: "/compare", cible: "/tools/compare" },
+					{ source: "/random-team", cible: "/tools/random-team" },
+				].map(({ source, cible }) => ({
+					destination: `${origineOutils}${cible}`,
+					permanent: true,
+					source,
+				}))
+			: [];
 
 		return [
 			...versAphrody,
+			...raccourcisOutils,
 			{
 				destination: "/cross",
 				permanent: true,
@@ -200,16 +213,11 @@ const nextConfig: NextConfig = {
 				permanent: true,
 				source: "/dashboard/news/edit",
 			},
-			{
-				destination: "/tools/compare",
-				permanent: true,
-				source: "/compare",
-			},
-			{
-				destination: "/tools/random-team",
-				permanent: true,
-				source: "/random-team",
-			},
+			// `/compare` et `/random-team` pointaient vers `/tools/compare` et
+			// `/tools/random-team`, retirés avec les cinq outils partis dans l'explorateur.
+			// Une redirection permanente vers une page morte est pire qu'un 404 : elle est
+			// mise en cache par le navigateur. Les quatre URL sont donc traitées ensemble
+			// par `versAphrody` quand `NEXT_PUBLIC_TOOLS_ORIGIN` est posée.
 			{
 				destination: "/news",
 				permanent: true,

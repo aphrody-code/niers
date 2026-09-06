@@ -78,47 +78,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		{ changeFrequency: "weekly" as const, priority: 0.6, url: "/capsule" },
 		{ changeFrequency: "weekly" as const, priority: 0.6, url: "/drops" },
 		{ changeFrequency: "weekly" as const, priority: 0.6, url: "/invocation" },
-		// `/keshin` a fusionné dans `/modeles` (redirection permanente) : ne pas l'annoncer, un
-		// sitemap ne doit lister que des URLs canoniques.
-		{ changeFrequency: "weekly" as const, priority: 0.6, url: "/modeles/keshin" },
-		{ changeFrequency: "weekly" as const, priority: 0.6, url: "/modeles/chara" },
-		{ changeFrequency: "weekly" as const, priority: 0.6, url: "/modeles/waza" },
-		{ changeFrequency: "weekly" as const, priority: 0.6, url: "/modeles/item" },
-		{ changeFrequency: "weekly" as const, priority: 0.6, url: "/modeles/armd" },
-		// Sixième famille de modèles, oubliée alors que les cinq autres sont listées.
-		{ changeFrequency: "weekly" as const, priority: 0.6, url: "/modeles/animal" },
-		{ changeFrequency: "weekly" as const, priority: 0.6, url: "/gallery" },
-		{ changeFrequency: "weekly" as const, priority: 0.6, url: "/textures" },
-		{ changeFrequency: "weekly" as const, priority: 0.6, url: "/sons" },
-		{ changeFrequency: "monthly" as const, priority: 0.5, url: "/modeles" },
-		// Sections existantes qui n'étaient annoncées nulle part : la sixième
-		// collection média, la table d'expérience et la démonstration technique.
-		{ changeFrequency: "monthly" as const, priority: 0.5, url: "/mode" },
 		{ changeFrequency: "monthly" as const, priority: 0.6, url: "/niveau" },
-		{ changeFrequency: "monthly" as const, priority: 0.4, url: "/demo" },
-		{ changeFrequency: "monthly" as const, priority: 0.5, url: "/videos" },
 		{ changeFrequency: "monthly" as const, priority: 0.5, url: "/cross" },
-		{ changeFrequency: "monthly" as const, priority: 0.4, url: "/save" },
-		{ changeFrequency: "monthly" as const, priority: 0.4, url: "/cpk" },
-		{ changeFrequency: "monthly" as const, priority: 0.5, url: "/tools" },
-		{ changeFrequency: "monthly" as const, priority: 0.5, url: "/tools/my-team" },
-		{ changeFrequency: "monthly" as const, priority: 0.5, url: "/tools/stats" },
+		// Les collections média (`/gallery`, `/textures`, `/sons`, `/videos`, `/modeles`,
+		// `/mode`) et les cinq outils (`/tools/{stats,compare,random-team,my-team,translator}`)
+		// ont migré vers l'explorateur de bureau — cf. `docs/MIGRATION-EXPLORATEUR.md`. Un plan
+		// de site n'annonce que des URLs servies : ne pas les remettre ici.
 		{ changeFrequency: "monthly" as const, priority: 0.4, url: "/tools/niers" },
-		{
-			changeFrequency: "monthly" as const,
-			priority: 0.6,
-			url: "/tools/compare",
-		},
-		{
-			changeFrequency: "monthly" as const,
-			priority: 0.5,
-			url: "/tools/random-team",
-		},
-		{
-			changeFrequency: "monthly" as const,
-			priority: 0.6,
-			url: "/tools/translator",
-		},
 		{ changeFrequency: "yearly" as const, priority: 0.3, url: "/contact" },
 		{ changeFrequency: "yearly" as const, priority: 0.3, url: "/soutenir" },
 		{ changeFrequency: "yearly" as const, priority: 0.2, url: "/charte" },

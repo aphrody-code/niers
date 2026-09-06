@@ -140,7 +140,13 @@ consignés pour la suite :
 
 ## 4. Ce qui devient redondant côté `apps/azalee`
 
-**Rien n'a été supprimé dans `apps/azalee` par ce chantier.** Le site est en production, un autre
+**Fait le 2026-09-06** : les pages, composants et *server actions* listés ci-dessous ont été
+retirés d'`apps/azalee`, et les références entrantes de §4.2 corrigées dans le même commit
+(menu, barre latérale mobile, plan de site, redirections, boutons « Comparer », ossature média).
+Ce qui suit reste la liste exacte de ce qui est parti, et de ce qui ne devait pas partir (§4.3,
+respecté : `app/tools/niers/` et son endpoint de mise à jour sont intacts).
+
+Rédaction d'origine, conservée : **rien n'avait été supprimé dans `apps/azalee` par ce chantier.** Le site est en production, un autre
 agent y travaillait en parallèle (27 fichiers modifiés non commités, dont `app/videos`, `app/skill`
 et `packages/azalee/src/cpk`), et retirer `/tools` et `/gallery` du web est une décision de mise en
 ligne. Cette section est la liste exacte qui permet de le faire proprement.
@@ -295,4 +301,7 @@ bunx oxlint -c .oxlintrc.json -A style -A pedantic -A restriction apps/inacord/s
 * **Le glisser-déposer est natif** (`draggable` + `dragover`/`drop`), pas `@dnd-kit`. Suffisant
   pour des cases ; il n'y a ici ni liste triable ni capteur tactile. `@dnd-kit/core` est au
   catalogue de la racine si on veut la parité de geste.
-* **Le retrait côté `apps/azalee` n'est pas fait** — cf. §4, qui en donne la liste exacte.
+* **Le retrait côté `apps/azalee` est fait** (2026-09-06) — cf. §4. Restent ouverts, côté web :
+  les cinq URL retirées ne sont redirigées que si `NEXT_PUBLIC_TOOLS_ORIGIN` est posée ; sans
+  elle, `/gallery` et `/tools/{stats,compare,random-team,my-team,translator}` répondent 404,
+  comme `/textures`, `/modeles`, `/sons` et `/videos` avant elles.

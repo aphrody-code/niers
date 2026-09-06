@@ -5,7 +5,6 @@ export const revalidate = 3600;
 export const dynamic = "force-static";
 export const dynamicParams = true;
 
-import { ArrowLeftRight } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -583,13 +582,6 @@ export default async function PlayerDetailPage({ params }: { params: Promise<{ i
 						{charName}
 					</span>
 				</nav>
-				<Link
-					href={`/tools/compare?char1=${baseChar.slug || id}`}
-					className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-surface-container-high hover:bg-surface-container-highest text-on-surface-variant hover:text-primary transition-all"
-				>
-					<ArrowLeftRight size={16} aria-hidden="true" />
-					Comparer
-				</Link>
 			</div>
 
 			{/* Character Sheet - Game-style UI with level toggle */}
