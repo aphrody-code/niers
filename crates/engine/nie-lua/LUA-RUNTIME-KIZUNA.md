@@ -78,10 +78,11 @@ non prouvé.
 
 ```text
 cargo test -p nie-lua --lib
-85 passed, 0 failed, 1 ignored
+91 passed, 0 failed, 1 ignored
 
-cargo clippy -p nie-lua -p nie-game --lib --bins --tests -- -D warnings
-success, 0 warning
+cargo clippy -p nie-lua --lib --tests -- -D warnings
+cargo clippy -p nie-game --bins --tests -- -D warnings
+success, 0 warning sur les deux cibles
 ```
 
 Les audits ont été lancés avec `NIE_GAME_DIR`/`--game-dir` vers l’installation
@@ -121,3 +122,18 @@ injecter concernent le contexte de données fourni aux scripts.
 
 Un build workspace complet n’a pas été lancé, conformément à la règle du dépôt
 qui le déconseille lorsque l’espace disque est contraint.
+
+## Clôture de session — 2026-09-06
+
+Le lot de reproduction Lua/Kizuna est versionné et poussé sur `main` jusqu’à
+`dc40e1f` (`feat: include decode metrics in runtime export`). Il couvre le
+décodeur Lua 5.2, l’index VFS à versions numériques, les includes persistants,
+le pilotage live du menu, les hôtes Kizuna, les métriques d’audit et leur
+provenance.
+
+Les modifications concurrentes de formatage présentes dans l’arbre de travail
+ne sont pas incluses dans ce lot et restent à arbitrer par leur auteur. Aucun
+chemin machine, secret ou dump hors périmètre n’a été ajouté. La prochaine
+étape RE clairement identifiée est l’injection documentée du contexte natif
+des 13 lectures résiduelles ; elle est distincte de la couverture Kizuna déjà
+validée et ne doit pas être remplacée par des valeurs inventées.
