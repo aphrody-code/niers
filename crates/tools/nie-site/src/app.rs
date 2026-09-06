@@ -222,6 +222,12 @@ declarer_routes! {
     "/api/v1/icons/{name}" => crate::routes::screens::icon,
     "/api/v1/modes" => crate::routes::screens::modes,
     "/api/v1/modes/{slug}" => crate::routes::screens::mode,
+    // La couverture des ECRANS — condition 4 du § 8 du cap. Le total est mesure sur le VFS,
+    // jamais cite : le plan a deja ecrit 440 la ou la mesure en rend 475. Un ecran n'est
+    // `served` que si TOUS ses calques resolvent vers un `.objbin` present, definition choisie
+    // pour pouvoir echouer. Cf. `routes::screens`.
+    "/api/v1/screens" => crate::routes::screens::screens,
+    "/api/v1/screens/{screen}" => crate::routes::screens::screen,
     // Le texte localise du jeu, adresse par LANGUE et par FAMILLE. `/api/v1/donnees/{chemin}`
     // le sert deja, mais seulement a qui connait le chemin VFS exact AVEC son numero de version
     // (`menu_text_1.03.98.00.cfg.bin`) : inutilisable pour un consommateur. Neuf langues,
@@ -451,7 +457,7 @@ mod tests {
     #[test]
     fn contrat_de_routes() {
         let routes = chemins();
-        assert_eq!(routes.len(), 77, "77 routes montees");
+        assert_eq!(routes.len(), 79, "79 routes montees");
         for r in &routes {
             assert!(r.starts_with('/'), "{r}");
             // Syntaxe axum 0.7 (`:id`, `*path`) : elle PANIQUE au `route()`, elle ne degrade

@@ -91,7 +91,7 @@ fn json(corps: &[u8]) -> serde_json::Value {
 async fn toutes_les_routes_declarees_repondent() {
     let etat = etat();
     // Une instance concrète par route déclarée, dans le même ordre que `app::chemins()`.
-    let instances: [(&str, &[u16]); 78] = [
+    let instances: [(&str, &[u16]); 80] = [
         ("/healthz", &[200]),
         ("/robots.txt", &[200]),
         ("/.well-known/security.txt", &[200]),
@@ -205,6 +205,11 @@ async fn toutes_les_routes_declarees_repondent() {
         ("/api/v1/icons/inconnue", &[404, 503]),
         ("/api/v1/modes", &[200]),
         ("/api/v1/modes/victory-road", &[503]),
+        // La couverture des ecrans : elle lit les 479 `_setting.cfg.bin` du VFS, donc 503 sans
+        // montage. Un ecran inconnu est un 404 — jamais un objet vide qu'on prendrait pour un
+        // ecran sans contenu.
+        ("/api/v1/screens", &[503]),
+        ("/api/v1/screens/mainmenu01", &[404, 503]),
         // La traduction s'appuie sur le catalogue de texte : sans `q`, 400 ; sans VFS, 503.
         ("/api/v1/text/translate", &[400, 503]),
         // Les deux contrats des routes de calcul. Leur `GET` ne touche ni VFS ni miroir : il
@@ -220,7 +225,7 @@ async fn toutes_les_routes_declarees_repondent() {
     ];
 
     let declarees = nie_site::app::chemins();
-    assert_eq!(declarees.len(), 77, "le routeur monte 77 routes");
+    assert_eq!(declarees.len(), 79, "le routeur monte 79 routes");
     assert!(
         instances.len() >= declarees.len(),
         "au moins une instance par route declaree"
@@ -252,7 +257,7 @@ async fn toutes_les_routes_declarees_repondent() {
         );
         vus += 1;
     }
-    assert_eq!(vus, 78, "78 instances interrogees pour 77 routes");
+    assert_eq!(vus, 80, "80 instances interrogees pour 79 routes");
 }
 
 /// Vrai quand `uri` est une instance du motif de route `motif` (syntaxe axum 0.8).

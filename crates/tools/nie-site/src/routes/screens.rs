@@ -1526,6 +1526,511 @@ pub async fn mode(
     }))
 }
 
+// ═══ Couverture des écrans ═══════════════════════════════════════════════════
+
+/// Le canvas de référence des menus d'IEVR.
+const CANVAS: (u32, u32) = (1280, 720);
+
+/// La locale par défaut pour résoudre les chemins de texture porteurs de `<LG>`.
+const SCREEN_LOCALE: &str = "fr";
+
+/// Un écran, avec ce que le site sait en produire.
+///
+/// Le champ qui décide de la couverture est [`Self::served`], et sa définition est **choisie
+/// pour pouvoir échouer** : un écran n'est `served` que si **tous** ses calques déclarés
+/// résolvent vers un `.objbin` réellement présent dans ce montage. Compter `served` tout écran
+/// dont le `_setting.cfg.bin` se lit aurait rendu 479/479 par construction — exactement le
+/// défaut que le § 9 bis du cap a payé sur le VFS.
+#[derive(Debug, Clone, Serialize)]
+pub struct ScreenEntry {
+    /// Le nom de l'écran — le stem, sans `_setting.cfg.bin`.
+    pub screen: String,
+    /// Le chemin VFS de son conteneur.
+    pub cfg: String,
+    /// Sa taille, en octets.
+    pub bytes: usize,
+    /// Le nombre de calques déclarés.
+    pub layers: usize,
+    /// Combien de ces calques ont leur `.objbin` dans ce montage.
+    pub layers_resolved: usize,
+    /// Ceux qui manquent, **nommés** — un calque perdu en silence est un écran qu'on croit
+    /// complet.
+    pub layers_missing: Vec<String>,
+    /// Le nombre d'éléments focusables déclarés.
+    pub focus: usize,
+    /// `true` quand la route sait produire les trois nombres de cet écran.
+    pub served: bool,
+}
+
+/// Le catalogue des écrans, construit une fois.
+#[derive(Debug, Default)]
+struct ScreenIndex {
+    /// Les écrans, par nom croissant.
+    entries: Vec<ScreenEntry>,
+    /// Combien de conteneurs n'ont pas pu être lus.
+    unreadable: usize,
+    /// Durée de la construction, en millisecondes.
+    elapsed_ms: u128,
+}
+
+/// Le catalogue, calculé à la première demande.
+static SCREENS: OnceLock<ScreenIndex> = OnceLock::new();
+
+/// Lit les calques et les focusables d'un `_setting.cfg.bin`.
+///
+/// Même lecture que [`collect`], isolée pour que la couverture ne dépende pas d'un mode.
+fn read_screen(bytes: &[u8]) -> Option<(Vec<String>, usize)> {
+    let file = cfgbin::parse_t2b(bytes).ok()?;
+    let (mut layers, mut focus) = (Vec::new(), 0usize);
+    walk(&file.entries, &mut |e: &CfgEntry| {
+        if e.name.contains("LIST_BEG") || e.name.contains("LIST_END") {
+            return;
+        }
+        if e.name.starts_with("MENU_LAYER_INFO") {
+            if let Some(n) = first_string(e) {
+                layers.push(n.to_owned());
+            }
+        } else if e.name.starts_with("MENU_FOCUS_BASE_INFO") {
+            focus += 1;
+        }
+    });
+    Some((layers, focus))
+}
+
+/// Décide de la couverture d'un écran : combien de calques résolvent, lesquels manquent.
+///
+/// **Fonction pure**, extraite de [`build_screens`] pour être prouvée sans VFS. Un écran sans
+/// aucun calque n'est PAS `served` : il n'a rien à mesurer, et le compter servi ferait monter
+/// le ratio sans qu'un objet de plus soit atteignable.
+fn layer_status(
+    layers: &[String],
+    objects: &BTreeMap<String, String>,
+) -> (usize, Vec<String>, bool) {
+    let missing: Vec<String> = layers
+        .iter()
+        .filter(|l| !objects.contains_key(*l))
+        .cloned()
+        .collect();
+    let served = missing.is_empty() && !layers.is_empty();
+    (layers.len() - missing.len(), missing, served)
+}
+
+/// Dit si un objet de menu est **muet** : ni texture, ni slot de texte.
+///
+/// **Fonction pure.** Un objet qui porte l'un des deux affiche quelque chose qu'on sait
+/// nommer ; un objet qui n'a ni l'un ni l'autre est un conteneur, une collision ou une ancre —
+/// c'est ce que le § 3 du cap appelle un « objet muet ».
+fn is_mute(obj: &objbin::MenuObject) -> bool {
+    let a_du_texte = obj.components.iter().any(|c| match c {
+        objbin::MenuComponent::Text(t) => !t.entries.is_empty(),
+        _ => false,
+    });
+    obj.g4tx_path.is_none() && !a_du_texte
+}
+
+/// Le ratio de couverture, en pourcentage arrondi au centième. `0` sur un total nul.
+#[allow(clippy::cast_precision_loss)]
+fn coverage_pct(served: usize, total: usize) -> f64 {
+    if total == 0 {
+        return 0.0;
+    }
+    (served as f64 / total as f64 * 10_000.0).round() / 100.0
+}
+
+/// Construit le catalogue des écrans.
+///
+/// Ne lit **que** les `_setting.cfg.bin` (479 fichiers, quelques kilo-octets chacun) : la
+/// résolution d'un calque est une consultation de [`MenuPaths::objects`], déjà en mémoire.
+/// Les `.objbin` et leurs compagnons ne sont lus qu'à la demande d'un écran précis — un
+/// balayage complet coûterait des milliers de lectures VFS pour une page de catalogue.
+fn build_screens(vfs: &Vfs, paths: &MenuPaths) -> ScreenIndex {
+    let start = std::time::Instant::now();
+    let mut out = ScreenIndex::default();
+    for path in &paths.screens {
+        let Some(name) = stem(path, SCREEN_SUFFIX) else {
+            continue;
+        };
+        let Ok(bytes) = vfs.read(path) else {
+            out.unreadable += 1;
+            continue;
+        };
+        let Some((layers, focus)) = read_screen(&bytes) else {
+            out.unreadable += 1;
+            continue;
+        };
+        let (resolved, missing, served) = layer_status(&layers, &paths.objects);
+        out.entries.push(ScreenEntry {
+            screen: name,
+            cfg: path.clone(),
+            bytes: bytes.len(),
+            layers: layers.len(),
+            layers_resolved: resolved,
+            served,
+            layers_missing: missing,
+            focus,
+        });
+    }
+    out.entries.sort_by(|a, b| a.screen.cmp(&b.screen));
+    out.elapsed_ms = start.elapsed().as_millis();
+    tracing::info!(
+        ecrans = out.entries.len(),
+        servis = out.entries.iter().filter(|e| e.served).count(),
+        ms = out.elapsed_ms,
+        "catalogue des ecrans construit"
+    );
+    out
+}
+
+/// Rend le catalogue des écrans, en le construisant à la première demande.
+async fn screen_index(state: &EtatSite) -> Result<&'static ScreenIndex, ErreurSite> {
+    if let Some(s) = SCREENS.get() {
+        return Ok(s);
+    }
+    let paths = menu_paths(state).await?;
+    let vfs = state.vfs()?;
+    let built = tokio::task::spawn_blocking(move || {
+        SCREENS.get_or_init(|| build_screens(&vfs, paths))
+    })
+    .await?;
+    Ok(built)
+}
+
+/// Ce que `GET /api/v1/screens` publie.
+#[derive(Debug, Clone, Serialize)]
+pub struct ScreenCoverage {
+    /// Le nombre d'écrans trouvés dans le VFS.
+    pub total: usize,
+    /// Combien dont la route sait produire les trois nombres.
+    pub served: usize,
+    /// Combien à qui il manque au moins un calque.
+    pub partial: usize,
+    /// Le ratio, en pourcentage, arrondi au centième.
+    pub coverage_pct: f64,
+    /// Combien de conteneurs n'ont pas pu être lus sur ce montage.
+    pub unreadable: usize,
+    /// Les trois nombres que porte chaque écran **servi**, quand on le demande.
+    pub per_screen: &'static [&'static str],
+    /// La route qui rend ces trois nombres.
+    pub screen_route: &'static str,
+    /// Durée de la construction du catalogue, mesurée.
+    pub build_ms: u128,
+    /// La page d'écrans.
+    pub results: Page<ScreenEntry>,
+}
+
+/// `GET /api/v1/screens` — la couverture des écrans du jeu.
+///
+/// C'est la condition 4 du § 8 de `docs/PLAN-SITE-ULTIME.md` : publier `écrans servis / total`,
+/// et pour chaque écran couvert ses trois nombres — objets, objets positionnés, objets muets.
+/// Le total est **mesuré** sur le VFS, jamais cité : le plan a déjà écrit 440 là où la mesure
+/// en rend 475.
+///
+/// `?q=` filtre sur le nom, et il est **appliqué** — le total republié est celui des retenus.
+///
+/// # Errors
+///
+/// `503` tant que le VFS n'est pas monté.
+pub async fn screens(
+    State(state): State<EtatSite>,
+    Query(demande): Query<DemandePage>,
+) -> Result<Json<ScreenCoverage>, ErreurSite> {
+    let idx = screen_index(&state).await?;
+    let motif = clean(demande.q.as_deref()).map(|q| q.to_lowercase());
+    let retenus: Vec<&ScreenEntry> = idx
+        .entries
+        .iter()
+        .filter(|e| {
+            motif
+                .as_ref()
+                .is_none_or(|m| e.screen.to_lowercase().contains(m))
+        })
+        .collect();
+    let total = retenus.len();
+    let served = retenus.iter().filter(|e| e.served).count();
+    let bornes = demande.bornee();
+    let elements: Vec<ScreenEntry> = retenus
+        .iter()
+        .skip(bornes.offset())
+        .take(bornes.per_page as usize)
+        .map(|e| (*e).clone())
+        .collect();
+    Ok(Json(ScreenCoverage {
+        total,
+        served,
+        partial: total - served,
+        coverage_pct: coverage_pct(served, total),
+        unreadable: idx.unreadable,
+        per_screen: &["objects", "positioned", "mute"],
+        screen_route: "/api/v1/screens/{screen}",
+        build_ms: idx.elapsed_ms,
+        results: Page::nouvelle(elements, bornes, total),
+    }))
+}
+
+/// Un objet de menu d'un écran, réduit à ce qui décide des trois nombres.
+#[derive(Debug, Clone, Serialize)]
+pub struct ScreenObject {
+    /// Le nom du calque, tel que le `_setting.cfg.bin` le déclare.
+    pub layer: String,
+    /// Le chemin VFS de son `.objbin`, ou `null` s'il manque à ce montage.
+    pub objbin: Option<String>,
+    /// Le nom de l'objet, tel que `OBJ_BGN` le porte.
+    pub name: Option<String>,
+    /// Sa priorité de dessin.
+    pub draw_priority: Option<i32>,
+    /// Sa position sur le canvas 1280×720, `null` quand aucune pose ne la donne.
+    pub position: Option<[f32; 2]>,
+    /// `true` quand un `.g4pkm` a fourni une pose.
+    pub positioned: bool,
+    /// `true` quand l'objet ne porte **ni** texture **ni** slot de texte : il n'affiche rien
+    /// qu'on sache nommer.
+    pub mute: bool,
+    /// Pourquoi l'objet n'est pas positionné, quand il ne l'est pas.
+    pub reason: Option<&'static str>,
+}
+
+/// Les trois nombres d'un écran, et le détail qui les produit.
+#[derive(Debug, Clone, Serialize)]
+pub struct ScreenDetail {
+    /// Le nom de l'écran.
+    pub screen: String,
+    /// Le chemin VFS de son conteneur.
+    pub cfg: String,
+    /// Le canvas de référence.
+    pub canvas: [u32; 2],
+    /// **Objets** — le premier des trois nombres.
+    pub objects: usize,
+    /// **Objets positionnés** — le deuxième.
+    pub positioned: usize,
+    /// **Objets muets** — le troisième.
+    pub mute: usize,
+    /// Les calques déclarés dont l'`.objbin` manque à ce montage.
+    pub layers_missing: Vec<String>,
+    /// Le nombre d'éléments focusables déclarés.
+    pub focus: usize,
+    /// Le détail, objet par objet, dans l'ordre du fichier.
+    pub items: Vec<ScreenObject>,
+    /// Ce que ces nombres ne disent pas.
+    pub caveat: &'static str,
+    /// Durée de l'agrégation, mesurée à chaque appel.
+    pub elapsed_ms: u128,
+}
+
+/// `GET /api/v1/screens/{screen}` — les trois nombres d'un écran, et leur détail.
+///
+/// # Les trois nomenclatures d'écran
+///
+/// Le § 9.4 du cap l'écrit : le nom du **calque** (`mainmenu01`), celui du **script**
+/// (`kizuna_town_mainmenu`) et le **stem du `_setting.cfg.bin`** sont trois choses. C'est le
+/// troisième qui est attendu ici, et un nom inconnu rend un `404` qui le dit — pas un objet
+/// vide qu'on prendrait pour un écran sans contenu.
+///
+/// # Errors
+///
+/// `404` sur un écran inconnu, `503` sans VFS.
+pub async fn screen(
+    State(state): State<EtatSite>,
+    Path(name): Path<String>,
+) -> Result<Json<ScreenDetail>, ErreurSite> {
+    let start = std::time::Instant::now();
+    let idx = screen_index(&state).await?;
+    let entry = idx
+        .entries
+        .iter()
+        .find(|e| e.screen == name)
+        .ok_or_else(|| {
+            ErreurSite::Introuvable(format!(
+                "aucun ecran `{name}` dans ce jeu ; le catalogue est sur /api/v1/screens. \
+                 Attention : c'est le stem du `_setting.cfg.bin` qui est attendu, pas le nom \
+                 d'un calque ni celui d'un script"
+            ))
+        })?;
+
+    let paths = menu_paths(&state).await?;
+    let vfs = state.vfs()?;
+    let cfg = entry.cfg.clone();
+    let index = state.index()?;
+
+    let items = tokio::task::spawn_blocking(move || {
+        let Ok(bytes) = vfs.read(&cfg) else {
+            return Vec::new();
+        };
+        let Some((layers, _)) = read_screen(&bytes) else {
+            return Vec::new();
+        };
+        layers
+            .into_iter()
+            .map(|layer| inspect_layer(&vfs, &index, paths, &layer))
+            .collect::<Vec<_>>()
+    })
+    .await?;
+
+    let objects = items.iter().filter(|i| i.objbin.is_some()).count();
+    let positioned = items.iter().filter(|i| i.positioned).count();
+    let mute = items.iter().filter(|i| i.mute).count();
+    Ok(Json(ScreenDetail {
+        screen: entry.screen.clone(),
+        cfg: entry.cfg.clone(),
+        canvas: [CANVAS.0, CANVAS.1],
+        objects,
+        positioned,
+        mute,
+        layers_missing: entry.layers_missing.clone(),
+        focus: entry.focus,
+        items,
+        caveat: "`positioned` compte les objets dont un `.g4pkm` fournit une pose ; un objet \
+                 non positionne est un MANQUE DE L'EXPORT, pas un detail de rendu. `mute` \
+                 compte ceux qui ne portent ni texture ni slot de texte : ils n'affichent rien \
+                 qu'on sache nommer. Aucun de ces trois nombres n'est une SSIM — la \
+                 conformite pixel se mesure ailleurs, et elle n'est pas mesuree ici",
+        elapsed_ms: start.elapsed().as_millis(),
+    }))
+}
+
+/// Examine un calque : son `.objbin`, sa pose, et s'il affiche quelque chose.
+fn inspect_layer(
+    vfs: &Vfs,
+    index: &IndexVfs,
+    paths: &MenuPaths,
+    layer: &str,
+) -> ScreenObject {
+    let vide = |reason: &'static str| ScreenObject {
+        layer: layer.to_owned(),
+        objbin: None,
+        name: None,
+        draw_priority: None,
+        position: None,
+        positioned: false,
+        mute: false,
+        reason: Some(reason),
+    };
+    let Some(objbin_path) = paths.objects.get(layer) else {
+        return vide("aucun .objbin de ce nom dans ce montage du VFS");
+    };
+    let Ok(bytes) = vfs.read(objbin_path) else {
+        return vide("objbin indexe mais illisible sur ce montage");
+    };
+    let Ok(obj) = objbin::parse(&bytes) else {
+        return vide("objbin present mais illisible par objbin::parse");
+    };
+
+    let draw_priority = obj.components.iter().find_map(|c| match c {
+        objbin::MenuComponent::Render(r) => Some(r.draw_priority),
+        _ => None,
+    });
+    let mute = is_mute(&obj);
+
+    // La pose. Le sprite entre dans l'appariement d'os, mais son ABSENCE ne doit pas empêcher
+    // de placer : on place alors avec un sprite de 0×0, comme `routes::inspect`.
+    let (mut position, mut positioned, mut reason) = (None, false, None);
+    match obj.g4pkm_path.as_deref() {
+        None => reason = Some("l'objet ne declare aucun SkeletonAnime"),
+        Some(logique) => {
+            match super::inspect::resolve_companion(index, logique, SCREEN_LOCALE) {
+                None => reason = Some("chemin de squelette declare mais absent de ce montage"),
+                Some(p) => match vfs.read(&p).ok().and_then(|d| {
+                    nie_formats::g4pkm::parse(&d).ok()
+                }) {
+                    None => reason = Some("squelette lu mais illisible par g4pkm::parse"),
+                    Some(layout) => {
+                        let t = nie_formats::menu::assemble_object(&obj, &layout, 0, 0).transform;
+                        position = Some([t.x_px, t.y_px]);
+                        positioned = true;
+                    }
+                },
+            }
+        }
+    }
+
+    ScreenObject {
+        layer: layer.to_owned(),
+        objbin: Some(objbin_path.clone()),
+        name: Some(obj.name),
+        draw_priority,
+        position,
+        positioned,
+        mute,
+        reason,
+    }
+}
+
+#[cfg(test)]
+mod tests_screens {
+    use super::*;
+
+    fn objets(noms: &[&str]) -> BTreeMap<String, String> {
+        noms.iter()
+            .map(|n| ((*n).to_owned(), format!("data/x/{n}.objbin")))
+            .collect()
+    }
+
+    fn calques(noms: &[&str]) -> Vec<String> {
+        noms.iter().map(|n| (*n).to_owned()).collect()
+    }
+
+    #[test]
+    fn un_ecran_n_est_servi_que_si_tous_ses_calques_resolvent() {
+        // La garde qui empeche la gate d'etre vraie par construction. La moitie positive
+        // seule passerait sur un `served` cable a `true` — c'est exactement le defaut que le
+        // § 9 bis du cap a paye sur le VFS.
+        let dispo = objets(&["a", "b"]);
+        let (n, manquants, servi) = layer_status(&calques(&["a", "b"]), &dispo);
+        assert_eq!((n, servi), (2, true));
+        assert!(manquants.is_empty());
+
+        let (n, manquants, servi) = layer_status(&calques(&["a", "b", "c"]), &dispo);
+        assert_eq!((n, servi), (2, false), "un calque absent suffit a retirer `served`");
+        assert_eq!(manquants, vec!["c".to_owned()], "et il est NOMME");
+    }
+
+    #[test]
+    fn un_ecran_sans_calque_n_est_pas_servi() {
+        // Sinon le ratio monterait sans qu'un objet de plus soit atteignable.
+        let (n, manquants, servi) = layer_status(&[], &objets(&["a"]));
+        assert_eq!((n, servi), (0, false));
+        assert!(manquants.is_empty());
+    }
+
+    #[test]
+    fn le_ratio_est_arrondi_au_centieme_et_ne_divise_pas_par_zero() {
+        assert!((coverage_pct(171, 475) - 36.0).abs() < f64::EPSILON);
+        assert!((coverage_pct(1, 3) - 33.33).abs() < f64::EPSILON);
+        assert!((coverage_pct(0, 0) - 0.0).abs() < f64::EPSILON);
+        assert!((coverage_pct(475, 475) - 100.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn un_objet_est_muet_quand_il_ne_porte_ni_texture_ni_texte() {
+        let nu = objbin::MenuObject {
+            name: "x".to_owned(),
+            engine_type: "gmdMenuObj".to_owned(),
+            g4pkm_path: None,
+            g4tx_path: None,
+            skeleton_path: None,
+            anime_path: None,
+            components: Vec::new(),
+        };
+        assert!(is_mute(&nu), "ni texture ni texte : muet");
+
+        // Preuve par falsification : une texture suffit a le rendre non muet. Sans cette
+        // moitie, un `is_mute` cable a `true` passerait le test precedent.
+        let avec_texture = objbin::MenuObject {
+            g4tx_path: Some("menu/x.g4tx".to_owned()),
+            ..nu.clone()
+        };
+        assert!(!is_mute(&avec_texture));
+    }
+
+    #[test]
+    fn le_stem_d_un_ecran_n_est_pas_le_nom_d_un_calque() {
+        // Le piege du § 9.4 du cap : trois nomenclatures. `mainmenu01` est un CALQUE ; le
+        // stem attendu par la route est celui du `_setting.cfg.bin`. Mesure du 2026-09-06 :
+        // /api/v1/screens/mainmenu01 rend 404, et c'est correct.
+        assert_eq!(stem("a/b/mainmenu01_setting.cfg.bin", SCREEN_SUFFIX).as_deref(), Some("mainmenu01"));
+        assert_eq!(stem("a/b/mainmenu01_00_background.objbin", SCREEN_SUFFIX), None);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

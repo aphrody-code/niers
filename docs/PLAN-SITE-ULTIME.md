@@ -937,6 +937,15 @@ arithmétique ne la trouve.
    seul ne prouve rien : `/chara` a rendu 200 en 87 ms avec **0 lien** pendant une journée.
 4. **`écrans servis / 475`** est publié, et chaque écran couvert porte ses trois nombres —
    objets, objets positionnés, objets muets — plus, quand elle existe, sa SSIM.
+   **Publié depuis le 2026-09-06** : `GET /api/v1/screens` rend
+   **475 écrans, 171 servis, 304 partiels — 36,00 %**, catalogue construit en 6,1 s ;
+   `GET /api/v1/screens/{screen}` rend les trois nombres d'un écran
+   (`ability_learning_report_menu` : **7 objets, 7 positionnés, 1 muet**, 140 ms ;
+   `kizuna_town_mainmenu` : **13 / 13 / 4**, 203 ms). Le total **475 retombe exactement** sur
+   celui de `/menu-tree.json`, par un chemin entièrement indépendant. La SSIM, elle, n'est
+   **pas** mesurée là : la route le dit dans son champ `caveat` au lieu de le laisser croire.
+   Un écran n'est `servi` que si **tous** ses calques résolvent vers un `.objbin` présent —
+   définition choisie pour pouvoir échouer, et qui échoue sur 304 des 475.
 5. Le sas `legacy/` est vide.
 6. **Le site tourne** — vérifié en le lançant, pas en relisant le diff.
 
