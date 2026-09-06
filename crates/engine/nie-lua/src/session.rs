@@ -352,6 +352,16 @@ impl LuaSession {
                 "LuaSession: with_menu_host=false, impossible de piloter un menu".to_string(),
             )));
         }
+        // `item_counts` est la donnée de scène explicitement fournie au driver. Si le caller n'a
+        // pas déjà injecté le même attribut détaillé, le rendre disponible ici garantit que
+        // `GetObjectAttr`/`GetItemButtonNum` voient le compte attendu pendant `OnInit`, comme dans
+        // le manager natif. Une valeur plus précise déjà injectée par le caller reste prioritaire.
+        if let Some(state) = &self.menu_state {
+            let mut state = state.borrow_mut();
+            for (&object_id, &count) in item_counts {
+                state.object_attr.entry(object_id).or_insert(count);
+            }
+        }
         crate::menu_host::drive_menu_for_frames(
             &self.lua,
             script_bytes,
@@ -831,6 +841,25 @@ mod tests {
                 .layers
                 .is_empty()
         );
+    }
+
+    #[test]
+    fn le_driver_session_injecte_les_comptes_de_scene_absents() {
+        let s = LuaSession::standard(true).expect("session menu");
+        let lua = s.lua();
+        let bytes = lua
+            .load(
+                r#"function OnInit()
+                    observed_count = funcLuaMenuCommand(0x4612788B, 0x1234)
+                end"#,
+            )
+            .into_function()
+            .expect("compilation menu")
+            .dump(false);
+        let counts = std::collections::BTreeMap::from([(0x1234_u32, 7_i32)]);
+        s.drive_menu_for_frames(&bytes, "scene-count", &[], &counts, 0)
+            .expect("driver");
+        assert_eq!(s.eval("observed_count").unwrap(), "7");
     }
 
     #[test]

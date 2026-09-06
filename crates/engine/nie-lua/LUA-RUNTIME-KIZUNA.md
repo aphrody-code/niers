@@ -76,6 +76,9 @@ natif, ainsi que leur arité Lua observable.
 `DriveReport` expose désormais `frames_requested`, `frames_executed` et le
 compteur par callback ; l’ordre et la couverture de la boucle de frames sont
 ainsi vérifiables sans déduire le résultat de l’état final seul.
+`LuaSession::drive_menu_for_frames` injecte automatiquement les comptes de scène absents dans
+`MenuState.object_attr` (sans écraser une valeur déjà fournie), de sorte que
+`GetObjectAttr`/`GetItemButtonNum` fonctionne aussi pour un appelant VFS brut minimal.
 
 `execute_with_script_paths` centralise désormais le chemin brut VFS → index des
 scripts → résolution logique/versionnée → VM. `lua-run` et `lua-audit` l’utilisent
