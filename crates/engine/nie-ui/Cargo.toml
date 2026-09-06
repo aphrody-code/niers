@@ -33,3 +33,10 @@ nie-formats.workspace = true
 # nie-aphrody (sa chaîne image → SVG → raster, sans rapport avec la lecture d'un jeton) ne
 # retombe JAMAIS sur un consommateur de la bibliothèque (nie-render3d, nie-game, nie-core).
 nie-aphrody = { workspace = true }
+# Lecture de `data/menu/manifest.json` dans les tests de `screens` UNIQUEMENT : la bibliothèque
+# publiée n'a pas besoin de parser du JSON, elle porte l'inventaire en constantes.
+serde_json.workspace = true
+
+[[bin]]
+name = "game_screens_css"
+path = "src/bin/game_screens_css.rs"

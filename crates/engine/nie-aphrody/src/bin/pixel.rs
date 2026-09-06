@@ -5,8 +5,8 @@
 //! six sous-commandes ne le justifient pas.
 
 use nie_aphrody::pixel::{
-    Boite, Comparaison, Image, Masque, Mesure, Reglages, ReglagesVecteur, comparer, mesurer,
-    planche, rasteriser_svg, tokens_css, vectoriser,
+    Boite, Comparaison, Crop, Image, Masque, Mesure, Reglages, ReglagesVecteur, comparer,
+    mesurer, palette_crop, planche, rasteriser_svg, tokens_css, vectoriser,
 };
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -14,8 +14,10 @@ use std::process::ExitCode;
 const AIDE: &str = "\
 pixel — mesure et reproduction au pixel près
 
-  pixel mesurer <IMG> [--boite X0 Y0 X1 Y1] [--k N] [--alpha S|--sombre S|--teinte MIN MAX SAT]
-        [--json]
+  pixel mesurer <IMG> [--boite X0 Y0 X1 Y1 | --crop X,Y,W,H] [--k N]
+        [--alpha S|--sombre S|--teinte MIN MAX SAT] [--json]
+  pixel capture <PNG> --crop X,Y,W,H [--k N] [--json]
+        → les couleurs dominantes d'une region d'une capture d'ecran (data/menu/*.png), en oklch
   pixel planche <IMG...> -o <BASE> [--colonnes N] [--nom NOM]
         → BASE.png + BASE.css + BASE.svg + BASE.json (feuille de sprites du depot)
   pixel comparer <A> <B> [--tolerance N] [--json]
@@ -86,6 +88,7 @@ fn executer(args: &[String]) -> Result<(), String> {
     let mut reste: Vec<String> = args[1..].to_vec();
     match commande.as_str() {
         "mesurer" => cmd_mesurer(&mut reste),
+        "capture" => cmd_capture(&mut reste),
         "comparer" => cmd_comparer(&mut reste),
         "vectoriser" => cmd_vectoriser(&mut reste),
         "planche" => cmd_planche(&mut reste),
@@ -120,7 +123,7 @@ fn cmd_mesurer(args: &mut Vec<String>) -> Result<(), String> {
     let k = option(args, "--k", 1)?
         .map(|v| nombre::<usize>(&v[0], "--k"))
         .transpose()?;
-    let boite = option(args, "--boite", 4)?
+    let mut boite = option(args, "--boite", 4)?
         .map(|v| -> Result<Boite, String> {
             Ok(Boite {
                 x0: nombre(&v[0], "--boite x0")?,
@@ -130,6 +133,10 @@ fn cmd_mesurer(args: &mut Vec<String>) -> Result<(), String> {
             })
         })
         .transpose()?;
+    // `--crop X,Y,W,H` : la même boîte, sous la forme origine + taille des captures d'écran.
+    if let Some(v) = option(args, "--crop", 1)? {
+        boite = Some(Crop::parse(&v[0]).map_err(|e| e.to_string())?.boite());
+    }
     let chemin = positionnel(args, "<IMG>")?;
 
     let mut reglages = Reglages {
@@ -155,6 +162,47 @@ fn cmd_mesurer(args: &mut Vec<String>) -> Result<(), String> {
         );
     } else {
         imprimer_mesure(&m);
+    }
+    Ok(())
+}
+
+/// `pixel capture <PNG> --crop X,Y,W,H [--k N] [--json]` — les couleurs dominantes d'une région
+/// d'une capture d'écran, en Oklch. C'est la commande citée dans chaque constante `--screen-*`
+/// de `nie-ui::surfaces` : la rejouer doit rendre la même classe dominante.
+fn cmd_capture(args: &mut Vec<String>) -> Result<(), String> {
+    let json = drapeau(args, "--json");
+    let k = option(args, "--k", 1)?
+        .map(|v| nombre::<usize>(&v[0], "--k"))
+        .transpose()?
+        .unwrap_or(4);
+    let crop = option(args, "--crop", 1)?
+        .map(|v| Crop::parse(&v[0]).map_err(|e| e.to_string()))
+        .transpose()?
+        .ok_or_else(|| format!("capture exige --crop X,Y,W,H
+
+{AIDE}"))?;
+    let chemin = positionnel(args, "<PNG>")?;
+    let palette = palette_crop(&charger(&chemin)?, crop, k).map_err(|e| e.to_string())?;
+    if json {
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&palette).map_err(|e| e.to_string())?
+        );
+        return Ok(());
+    }
+    println!(
+        "{}  crop {},{},{},{}  k={k}",
+        chemin.display(),
+        crop.x,
+        crop.y,
+        crop.w,
+        crop.h
+    );
+    for c in &palette {
+        println!(
+            "  {:>6.2} %  {}  oklch({:.4} {:.4} {:.2})",
+            c.part_pct, c.hex, c.oklch[0], c.oklch[1], c.oklch[2]
+        );
     }
     Ok(())
 }

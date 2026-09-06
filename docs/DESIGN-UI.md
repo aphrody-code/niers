@@ -119,3 +119,107 @@ prochaine session.
   et l'hexadécimal tel que commenté à côté — aucune bibliothèque de couleur n'était nécessaire
   pour ça, et `nie-aphrody` (qui, elle, calcule cette conversion pour dériver la palette) reste la
   seule à en dépendre.
+
+## Captures de référence — `data/menu` → `nie-ui` → `game-screens.css` (2026-09-06)
+
+`data/menu/` (local, © LEVEL-5, jamais poussé) porte **33 captures** 2560×1440 des menus réels
+et un `manifest.json` (schema 1). Le pipeline décidé : `data/menu` → `nie-ui` (source typée) →
+`packages/inacord-ui/src/shell/game-screens.css` (contrat CSS) → composants
+`inacord-ui/src/components/game/**` et `apps/nie-web`. Cette crate possède le contrat CSS ; les
+composants appartiennent à d'autres batches.
+
+### Ce qui est mesuré, et avec quoi
+
+L'instrument est celui du dépôt, étendu de deux choses dans `nie-aphrody` : `pixel::Crop` +
+`pixel::palette_crop()` (une région `x,y,w,h` d'une capture opaque → classes k-means Oklab,
+déterministes) et la sous-commande `pixel capture` (plus `--crop` sur `mesurer`) :
+
+```sh
+cargo run -p nie-aphrody --bin pixel -- capture data/menu/<png> --crop X,Y,W,H --k N [--json]
+```
+
+**45 couleurs `--screen-*`** (`crates/engine/nie-ui/src/surfaces.rs`), chacune avec capture,
+recadrage, `--k` et part de classe dans son doc-comment ET dans le commentaire CSS. Les ancres :
+
+| Rôle | Commande (`pixel capture data/menu/…`) | Classe retenue |
+|---|---|---|
+| Barre de titre | `options.png --crop 700,40,1701,81 --k 3` | #0874FF (35.61 %), rayures #0663F8 (34.21 %) |
+| Onglet actif / bandeau / touche | `options.png --crop 1065,265,111,56` / `900,265,141,56` / `700,265,161,56` | #0149FF (83.17 %) / #6CA8F0 (100 %) / #4E4E4E (95.42 %) |
+| Ligne focalisée | `options.png --crop 600,415,501,11` et `600,460,501,11` | #0078FF (98.93 % / 99.9 %) — **plat**, pas de dégradé vertical |
+| Ligne au repos / libellé | `options.png --crop 520,515,881,51 --k 3` | #FEFFFF (88.23 %) / #79797A (8.59 %) |
+| Colonne de valeur (repos / focus) | `controls.png --crop 1380,420,381,51` / `1380,1010,381,51 --k 4` | #A7DDFF (92.60 %) / #08B5FF (94.39 %) |
+| Panneau FILTRES haut / bas / corps / filigrane | `filters_elements.png --crop 900,160,1151,26` / `512,1262,1537,26` / `540,705,741,321 --k 4` | #0048B9 (84.62 %) / #002496 (82.54 %) / #001E73 (68.85 %) / #163181 (29.60 %) |
+| Coche / case | `filters_elements.png --crop 636,386,52,50 --k 4` | #45FFF8 (38.00 %) / #012075 (32.58 %) |
+| Pastilles Vent / Feu / Forêt / Montagne | `723,476,65,63` / `723,570,65,62` / `1459,476,65,63` / `1459,570,65,62` | #8ED5FF / #FF7155 / #ABFF38 / #FFB936 (69–73 %) |
+| Boutons Confirmer / Réinitialiser | `filters_elements.png --crop 1400,1170,101,71` / `850,1190,31,41` | #009DFF (42.57 %) / #3672E5 (100 %) |
+| Curseur | `options.png --crop 455,405,71,76 --k 6` | #B5FF6B (29.19 %), #00CE87 (26.30 %), #CDF9FF (9.17 %) |
+| Tuile du menu | `main_menu.png --crop 1062,768,245,167 --k 6` | #09316B (27.12 %), #245293, #4077C0 |
+| Barre de description / touche / compteur | `options.png --crop 100,1235,401,71` / `915,1350,41,41` ; `filters_elements.png --crop 1780,1200,51,41` | #616E7D (66.94 %) / #4A4949 (47.83 %) / #545454 (79.29 %) |
+
+**L'angle du parallélogramme** (`--game-skew`) est mesuré par l'ajustement de bord de
+`pixel mesurer --sombre S` (R² exigé ≥ 0,95) :
+
+```
+pixel mesurer data/menu/options.png  --boite 1050 262 1190 326 --sombre 100  → gauche -10.70°, droit -10.64°, R² 0.992
+pixel mesurer data/menu/controls.png --boite 300 1000 420 1085  --sombre 120  → gauche  -9.41°,             R² 0.992
+pixel mesurer data/menu/controls.png --boite 2200 1000 2330 1085 --sombre 120 → droit   -9.34°,             R² 0.988
+```
+
+Moyenne des quatre bords −10,02° → `--game-skew: -10deg`. Les **tuiles** de `main_menu.png`
+(fond photo) ne donnent pas de bord ajustable (R² 0,60 / 0,01 avec `--sombre 150`) : elles
+reprennent cet angle, et le commentaire le dit. Cinq longueurs sont aussi mesurées (barre 160 px,
+onglet 63 px, ligne 79 px, touche 41 px, tuile 167 px à 1440, ÷ 2 pour le canevas 1280×720).
+
+### Le contrat de classes (`game-screens.css`, 515 lignes, 21 595 octets)
+
+`.game-skew` (+ `--game-skew`) · `.game-header-bar{,__icon,__title}` · `.game-tab-strip{,__key}`,
+`.game-tab{,--active}` · `.game-panel{,__title,__body,__footer,__watermark}` ·
+`.game-check{,__box,__label,--checked}` · `.game-icon-chip` ·
+`.game-setting-list{,__scrollbar}`, `.game-setting-row{,--focused,__label,__value,__arrow,__more}` ·
+`.game-button-primary`, `.game-button-secondary` · `.game-key-cap`, `.game-key-hint`,
+`.game-hint-bar` · `.game-cursor` · `.game-tile-row`, `.game-tile{,__icon,--active}` ·
+`.game-search-bar{,__input,__key}` · `.game-description-bar` · `.game-count-badge` ·
+`.game-info-window{,__title}`. Toute couleur est `var(--screen-*)` (déclaré dans le `:root` du
+fichier) ou `var(--jeu-*)` (déjà servi par `game-tokens.css`) — un test refuse tout hex nu hors
+commentaire et toute `var(--screen-*)` non déclarée.
+
+### Les comptes (2026-09-06)
+
+| Mesure | Commande | Résultat |
+|---|---|---|
+| Captures typées | `nie_ui::screens::CAPTURES` | 33 ; 14 écrans canoniques (le manifeste en a 14, pas 13 : `jq -r '[.entries[].canonical_screen]|unique|length'`) |
+| Parité manifeste | `cargo test -p nie-ui screens::tests::le_manifeste_local_est_identique_aux_captures_typees` | 33/33 entrées identiques |
+| Dimensions PNG | `cargo test -p nie-ui screens::tests::chaque_png_existe_en_2560x1440` | 33/33 IHDR = 2560×1440 (parsé à la main, 24 octets) |
+| Familles documentées | `screens::tests::chaque_ecran_canonique_est_documente_par_le_manifeste` | 14/14 dans `lua_analysis.documented_roots` ∪ `runtime_matrix.results[].screen` |
+| Golden CSS | `cargo run -p nie-ui --bin game_screens_css -- --verify` | exit 0, 21 595 octets conformes |
+| Ancres re-mesurées | `surfaces::tests::les_ancres_suivent_la_mesure_reelle_de_nie_aphrody` | 3/3 (corps du panneau, ligne focalisée, tuile) à ΔE < 0,02 et part à ±0,5 % |
+| Suite nie-ui | `cargo test -p nie-ui` | **35 passed, 0 failed** (20 avant ce batch) |
+| Suite nie-aphrody | `cargo test -p nie-aphrody --lib` | 39 passed, **1 failed** — `design::tests::le_css_livre_est_celui_qu_on_produit`, échec PRÉEXISTANT (déjà noté dans le manifeste : `game-tokens.css` diverge du générateur ; fichier interdit d'édition dans ce batch) ; +2 tests `pixel::tests` ajoutés |
+| Gate clippy | `cargo clippy -p nie-ui --lib --tests --bins` et `-p nie-aphrody --lib --tests --bins` | 0 warning |
+
+### Falsification (rejouée, transcrite)
+
+```
+$ cp crates/engine/nie-ui/src/surfaces.rs /tmp/surfaces.rs.sauv         # sha 8a179c8116ce5c52
+# PANEL_BODY : L 0.2896 → 0.9896 (le corps navy devient presque blanc)
+$ cargo test -p nie-ui --lib -- css::tests::game_screens_css_est_identique surfaces::tests::les_ancres
+test css::tests::game_screens_css_est_identique_au_fichier_livre ... FAILED
+  livre  : --screen-panel-body: oklch(0.2896 0.1484 263.16);  /* #001E73 - filters_elements.png crop 540,705,741,321 k=4 (68.85 %) … */
+  genere : --screen-panel-body: oklch(0.9896 0.1484 263.16);  /* … */
+test surfaces::tests::les_ancres_suivent_la_mesure_reelle_de_nie_aphrody ... FAILED
+  screen-panel-body : ΔE 0.7000 entre la mesure et la constante
+test result: FAILED. 0 passed; 2 failed
+$ cp /tmp/surfaces.rs.sauv crates/engine/nie-ui/src/surfaces.rs          # sha 8a179c8116ce5c52, jamais git checkout
+test result: ok. 2 passed; 0 failed
+```
+
+### Ce qui n'est pas fait
+
+- Le dégradé « haut/bas » de la ligne focalisée demandé par le cahier n'existe pas sur la
+  capture (deux bandes à 45 px d'écart rendent le même #0078FF) : la classe pose un aplat, pas un
+  dégradé inventé.
+- L'angle des tuiles du menu principal n'est pas mesuré sur les tuiles elles-mêmes (fond photo,
+  R² < 0,95) — il est repris des onglets et des lignes, et signalé comme tel.
+- `data/menu/manifest.json` est mis à jour localement (`crate_coverage`, `consumers`,
+  `validation.nie_ui_unit_tests`) mais **jamais commité** — le dossier est suivi par git depuis
+  `a0d464d6` malgré la règle « `data/` gitignoré » : la modification reste dans l'arbre de travail.

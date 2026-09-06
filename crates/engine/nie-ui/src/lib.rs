@@ -34,6 +34,11 @@
 //!   jetons qui portent déjà ce rôle — rien n'y est inventé.
 //! - [`icons`] : le pont entre un atlas `.g4tx` d'interface (`nie_formats::sprite_sheet`) et les
 //!   jetons de cette crate.
+//! - [`screens`] : l'inventaire typé des 33 captures de référence de `data/menu/` (transposition
+//!   de `manifest.json`, prouvée entrée par entrée quand le dossier est là).
+//! - [`surfaces`] : les 45 couleurs `--screen-*` MESURÉES sur ces captures (`pixel capture`),
+//!   l'angle du parallélogramme, et les règles de `game-screens.css` — engendré par
+//!   [`css::screens_block`] et `cargo run -p nie-ui --bin game_screens_css -- --write`.
 //!
 //! Voir `docs/DESIGN-UI.md` pour l'état, la commande de preuve, et ce qui reste à faire —
 //! notamment le texte et les polices du jeu, hors périmètre ici (cf. `docs/DESIGN.md`).
@@ -46,6 +51,8 @@ pub mod compose;
 pub mod css;
 pub mod icons;
 pub mod roles;
+pub mod screens;
+pub mod surfaces;
 pub mod tokens;
 
 pub use color::{ColorToken, Oklch};

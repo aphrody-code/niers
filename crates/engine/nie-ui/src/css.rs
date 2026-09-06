@@ -111,9 +111,149 @@ pub fn extract_root_block(css: &str) -> Option<String> {
     Some(lines[start..=end].join("\n") + "\n")
 }
 
+/// Le chemin de `game-screens.css`, résolu comme [`game_tokens_css_path`].
+#[must_use]
+pub fn game_screens_css_path() -> std::path::PathBuf {
+    std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .ancestors()
+        .nth(3)
+        .unwrap_or_else(|| std::path::Path::new("."))
+        .join("packages/inacord-ui/src/shell/game-screens.css")
+}
+
+/// Le texte ENTIER de `packages/inacord-ui/src/shell/game-screens.css` : l'en-tête de
+/// provenance, le bloc `:root` des `--screen-*` mesurés ([`crate::surfaces::SCREEN_COLORS`]),
+/// `--game-skew` et les longueurs, puis les règles de classes ([`crate::surfaces::RULES`]).
+///
+/// Écrit par `cargo run -p nie-ui --bin game_screens_css -- --write`, prouvé octet à octet par
+/// [`tests::game_screens_css_est_identique_au_fichier_livre`].
+#[must_use]
+pub fn screens_block() -> String {
+    use crate::surfaces::{RULES, SCREEN_COLORS, SCREEN_LENGTHS, SCREEN_SECTIONS, SKEW_CSS, SLANT_SAMPLES};
+    let mut s = String::from(
+        "/*\n\
+         \x20* game-screens.css — les surfaces des ecrans du jeu, MESUREES sur les captures de data/menu.\n\
+         \x20*\n\
+         \x20* FICHIER ENGENDRE — ne pas retoucher a la main.\n\
+         \x20*   Regenerer :  cargo run -p nie-ui --bin game_screens_css -- --write\n\
+         \x20*   Verifier   :  cargo run -p nie-ui --bin game_screens_css -- --verify\n\
+         \x20*   Source     :  crates/engine/nie-ui/src/surfaces.rs (constantes) + css.rs (assemblage)\n\
+         \x20*   Instrument :  cargo run -p nie-aphrody --bin pixel -- capture data/menu/<png> --crop X,Y,W,H --k N\n\
+         \x20*\n\
+         \x20* Chaque --screen-* cite la capture (2560x1440), le recadrage --crop, le --k et la part de la\n\
+         \x20* classe k-means Oklab retenue. Les roles deja servis par game-tokens.css (typographie, rythme,\n\
+         \x20* ombres, texte) sont repris par var(--jeu-*) : cette feuille la complete, elle ne la remplace pas.\n\
+         \x20* Consommateurs : packages/inacord-ui/src/components/game/** et apps/nie-web.\n\
+         \x20*/\n\n:root {\n",
+    );
+    for (i, (start, title)) in SCREEN_SECTIONS.iter().enumerate() {
+        if i > 0 {
+            s.push('\n');
+        }
+        let _ = writeln!(s, "\t/* --- {title} --- */");
+        let end = SCREEN_SECTIONS.get(i + 1).map_or(SCREEN_COLORS.len(), |(next, _)| *next);
+        for c in &SCREEN_COLORS[*start..end] {
+            s.push_str(&c.css_line());
+            s.push('\n');
+        }
+    }
+    s.push_str("\n\t/* --- Geometrie mesuree --- */\n");
+    for sample in &SLANT_SAMPLES {
+        let _ = writeln!(
+            s,
+            "\t/* {} : bord gauche {:.2} deg, bord droit {:.2} deg, R2 {:.3} — {} */",
+            sample.capture, sample.left_deg, sample.right_deg, sample.r2, sample.command
+        );
+    }
+    let _ = writeln!(s, "\t--game-skew: {SKEW_CSS};  /* moyenne des quatre bords ajustes : -10.02 deg */");
+    for (name, value, provenance) in &SCREEN_LENGTHS {
+        let _ = writeln!(s, "\t--{name}: {value};  /* {provenance} */");
+    }
+    s.push_str("}\n");
+    s.push_str(RULES);
+    s
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{extract_root_block, game_tokens_css_path, root_block};
+    use super::{extract_root_block, game_screens_css_path, game_tokens_css_path, root_block, screens_block};
+
+    #[test]
+    fn screens_block_porte_les_45_couleurs_le_skew_et_les_classes_du_contrat() {
+        let css = screens_block();
+        let screen_props = css.lines().filter(|l| l.trim_start().starts_with("--screen-")).count();
+        // 45 couleurs + 5 longueurs.
+        assert_eq!(screen_props, 50, "le compte de propriétés --screen-* a changé");
+        assert!(css.contains("\t--game-skew: -10deg;"));
+        for classe in [
+            ".game-header-bar", ".game-header-bar__icon", ".game-header-bar__title",
+            ".game-tab-strip", ".game-tab", ".game-tab--active", ".game-tab-strip__key",
+            ".game-panel", ".game-panel__title", ".game-panel__body", ".game-panel__footer", ".game-panel__watermark",
+            ".game-check", ".game-check__box", ".game-check__label", ".game-check--checked",
+            ".game-icon-chip",
+            ".game-setting-row", ".game-setting-row--focused", ".game-setting-row__label",
+            ".game-setting-row__value", ".game-setting-row__arrow", ".game-setting-row__more",
+            ".game-setting-list", ".game-setting-list__scrollbar",
+            ".game-button-primary", ".game-button-secondary",
+            ".game-key-cap", ".game-key-hint", ".game-hint-bar",
+            ".game-cursor",
+            ".game-tile-row", ".game-tile", ".game-tile__icon", ".game-tile--active",
+            ".game-search-bar", ".game-search-bar__input", ".game-search-bar__key",
+            ".game-description-bar", ".game-count-badge",
+            ".game-info-window", ".game-info-window__title", ".game-skew",
+        ] {
+            assert!(
+                css.contains(&format!("{classe} {{")) || css.contains(&format!("{classe},")) || css.contains(&format!("{classe} .")),
+                "classe absente du contrat : {classe}"
+            );
+        }
+        // Chaque var(--screen-*) employée par une règle est déclarée dans le :root.
+        for var in css.split("var(--screen-").skip(1) {
+            let nom = var.split([')', ',']).next().unwrap_or("");
+            assert!(css.contains(&format!("\t--screen-{nom}:")), "var(--screen-{nom}) non déclarée");
+        }
+        // Aucune couleur hexadécimale nue hors commentaire : tout passe par var().
+        for ligne in css.lines().filter(|l| !l.trim_start().starts_with("/*") && !l.trim_start().starts_with('*')) {
+            let code = ligne.split("/*").next().unwrap_or("");
+            assert!(!code.contains('#'), "couleur nue hors var() : {ligne}");
+        }
+    }
+
+    /// Golden : le fichier livré est identique, octet pour octet, à `screens_block()`.
+    /// Falsification documentée dans `docs/DESIGN-UI.md` (casser une constante de `surfaces`,
+    /// rouge ; restaurer par copie, vert).
+    #[test]
+    fn game_screens_css_est_identique_au_fichier_livre() {
+        let chemin = game_screens_css_path();
+        let Ok(livre) = std::fs::read(&chemin) else {
+            let message = format!(
+                "GOLDEN SAUTE — {} est introuvable. Le régénérer par\n  \
+                 cargo run -p nie-ui --bin game_screens_css -- --write",
+                chemin.display()
+            );
+            eprintln!("{message}");
+            println!("{message}");
+            return;
+        };
+        let genere = screens_block();
+        if livre != genere.as_bytes() {
+            let livre_txt = String::from_utf8_lossy(&livre);
+            let ecart = livre_txt
+                .lines()
+                .zip(genere.lines())
+                .enumerate()
+                .find(|(_, (a, b))| a != b)
+                .map_or_else(
+                    || format!("longueurs différentes : {} octets livrés, {} générés", livre.len(), genere.len()),
+                    |(n, (a, b))| format!("ligne {} :\n  livre  : {a}\n  genere : {b}", n + 1),
+                );
+            panic!(
+                "{} : game-screens.css ne correspond plus à nie_ui::css::screens_block().\n{ecart}\n\
+                 Régénérer par `cargo run -p nie-ui --bin game_screens_css -- --write`.",
+                chemin.display()
+            );
+        }
+    }
 
     #[test]
     fn extract_root_block_isole_le_bon_bloc() {

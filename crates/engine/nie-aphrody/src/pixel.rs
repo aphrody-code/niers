@@ -1042,9 +1042,106 @@ pub fn tokens_css(mesure: &Mesure, prefixe: &str) -> String {
     css
 }
 
+/// Un recadrage `x,y,w,h` — la forme sous laquelle une région d'une CAPTURE D'ÉCRAN se cite
+/// (origine + taille), plus lisible qu'une [`Boite`] à bornes incluses quand on recopie la
+/// commande dans un commentaire de provenance.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
+pub struct Crop {
+    /// Abscisse du coin haut-gauche.
+    pub x: u32,
+    /// Ordonnée du coin haut-gauche.
+    pub y: u32,
+    /// Largeur, en pixels (≥ 1).
+    pub w: u32,
+    /// Hauteur, en pixels (≥ 1).
+    pub h: u32,
+}
+
+impl Crop {
+    /// Parse la forme `X,Y,W,H` de la ligne de commande.
+    ///
+    /// # Erreurs
+    /// Si la forme n'a pas quatre entiers, ou si `w`/`h` vaut 0.
+    pub fn parse(s: &str) -> Result<Self, Error> {
+        let parts: Vec<u32> = s
+            .split(',')
+            .map(|p| p.trim().parse::<u32>())
+            .collect::<Result<_, _>>()
+            .map_err(|e| Error::Invalid(format!("--crop « {s} » : {e}")))?;
+        let [x, y, w, h] = parts[..] else {
+            return Err(Error::Invalid(format!("--crop « {s} » : attendu X,Y,W,H")));
+        };
+        if w == 0 || h == 0 {
+            return Err(Error::Invalid(format!("--crop « {s} » : largeur et hauteur ≥ 1")));
+        }
+        Ok(Self { x, y, w, h })
+    }
+
+    /// La [`Boite`] équivalente (bornes incluses).
+    #[must_use]
+    pub const fn boite(self) -> Boite {
+        Boite {
+            x0: self.x,
+            y0: self.y,
+            x1: self.x + self.w - 1,
+            y1: self.y + self.h - 1,
+        }
+    }
+}
+
+/// Les couleurs dominantes d'une région d'une capture d'écran opaque, en Oklch — k-means Oklab,
+/// déterministe, triées par part décroissante.
+///
+/// C'est **l'instrument de `data/menu`** : chaque constante `--screen-*` de `nie-ui::surfaces`
+/// cite la capture, le recadrage et la part de la classe retenue qui sortent d'ici, et le test
+/// de `nie-ui` rappelle cette fonction sur les mêmes recadrages pour prouver que la transposition
+/// n'a pas dérivé. Une capture est opaque : le masque alpha par défaut retient tous les pixels.
+///
+/// # Erreurs
+/// Si le recadrage sort de l'image.
+pub fn palette_crop(img: &Image, crop: Crop, k: usize) -> Result<Vec<Couleur>, Error> {
+    let mesure = mesurer(
+        img,
+        Reglages {
+            boite: Some(crop.boite()),
+            k,
+            ..Reglages::default()
+        },
+    )?;
+    Ok(mesure.palette)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn crop_parse_accepte_la_forme_x_y_w_h_et_refuse_le_reste() {
+        let c = Crop::parse("10, 20,30,40").expect("forme valide");
+        assert_eq!(c, Crop { x: 10, y: 20, w: 30, h: 40 });
+        assert_eq!(c.boite().x1, 39);
+        assert_eq!(c.boite().y1, 59);
+        assert!(Crop::parse("1,2,3").is_err());
+        assert!(Crop::parse("1,2,0,4").is_err());
+        assert!(Crop::parse("a,b,c,d").is_err());
+    }
+
+    #[test]
+    fn palette_crop_ne_voit_que_la_region_demandee() {
+        // Image 4x4 : moitié gauche rouge, moitié droite bleue, opaque.
+        let mut rgba = Vec::new();
+        for _y in 0..4 {
+            for x in 0..4 {
+                rgba.extend_from_slice(if x < 2 { &[255, 0, 0, 255] } else { &[0, 0, 255, 255] });
+            }
+        }
+        let img = Image::nouvelle(4, 4, rgba).expect("tampon");
+        let droite = palette_crop(&img, Crop { x: 2, y: 0, w: 2, h: 4 }, 3).expect("mesure");
+        assert_eq!(droite.len(), 1, "une seule classe attendue : {droite:?}");
+        assert_eq!(droite[0].hex, "#0000FF");
+        assert!((droite[0].part_pct - 100.0).abs() < 1e-9);
+        assert!(palette_crop(&img, Crop { x: 3, y: 0, w: 2, h: 4 }, 3).is_err(), "hors image");
+    }
 
     /// Un disque plein sur fond transparent : les grandeurs mesurées doivent être celles de la
     /// géométrie, pas des valeurs plausibles. C'est le test qui empêche la mesure de dériver.
