@@ -590,6 +590,18 @@ enum ModeOp {
         #[arg(long)]
         game_dir: Option<PathBuf>,
     },
+    /// Vérifie le rattachement de chaque écran `*_menu_setting` aux modes curatés.
+    Coverage {
+        /// Racine du jeu (défaut : résolution automatique).
+        #[arg(long)]
+        game_dir: Option<PathBuf>,
+        /// Fichier de sortie ; `-` ou absent = stdout.
+        #[arg(long, short = 'o')]
+        out: Option<PathBuf>,
+        /// Échoue si un écran est recouvert par plusieurs modes ou si des stems sont dupliqués.
+        #[arg(long)]
+        strict: bool,
+    },
     /// Exporte le catalogue en JSON (destiné à azalée).
     Export {
         #[arg(long, default_value = "var/niers.sqlite")]
@@ -2163,6 +2175,64 @@ fn run() -> anyhow::Result<()> {
                     .with_context(|| format!("ouverture {}", db.display()))?;
                 let (m, s, a, t) = mode_index::index(&database, &vfs)?;
                 println!("mode index : {m} modes, {s} écrans, {a} assets, {t} textes");
+                Ok(())
+            }
+            ModeOp::Coverage {
+                game_dir,
+                out,
+                strict,
+            } => {
+                let vfs = open_vfs(game_dir)?;
+                let json = mode_index::menu_coverage_json(&vfs);
+                let settings = json
+                    .get("settings")
+                    .and_then(serde_json::Value::as_object)
+                    .context("sortie coverage sans settings")?;
+                let unique = settings
+                    .get("unique")
+                    .and_then(serde_json::Value::as_u64)
+                    .context("coverage.settings.unique absent")?;
+                let classified = settings
+                    .get("classified")
+                    .and_then(serde_json::Value::as_u64)
+                    .context("coverage.settings.classified absent")?;
+                let unclassified = settings
+                    .get("unclassified")
+                    .and_then(serde_json::Value::as_u64)
+                    .context("coverage.settings.unclassified absent")?;
+                let overlapping = settings
+                    .get("overlapping")
+                    .and_then(serde_json::Value::as_u64)
+                    .context("coverage.settings.overlapping absent")?;
+                let duplicates = settings
+                    .get("duplicateStems")
+                    .and_then(serde_json::Value::as_u64)
+                    .context("coverage.settings.duplicateStems absent")?;
+                let txt = serde_json::to_string_pretty(&json)?;
+                match out {
+                    Some(path) if path.as_os_str() != "-" => {
+                        if let Some(parent) = path.parent()
+                            && !parent.as_os_str().is_empty()
+                        {
+                            std::fs::create_dir_all(parent)?;
+                        }
+                        std::fs::write(&path, txt.as_bytes())
+                            .with_context(|| format!("écriture {}", path.display()))?;
+                        println!(
+                            "mode coverage -> {} ({} écrans, {} classés, {} non classés)",
+                            path.display(),
+                            unique,
+                            classified,
+                            unclassified
+                        );
+                    }
+                    _ => println!("{txt}"),
+                }
+                if strict && (overlapping != 0 || duplicates != 0) {
+                    anyhow::bail!(
+                        "coverage incohérente : {overlapping} recouvrements, {duplicates} stems dupliqués"
+                    );
+                }
                 Ok(())
             }
             ModeOp::Export { db, out } => {

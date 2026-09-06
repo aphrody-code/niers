@@ -218,6 +218,109 @@ pub const MODES: &[ModeDef] = &[
     },
 ];
 
+/// Retourne les modes auxquels un écran est rattaché par ses préfixes réels.
+///
+/// Une liste vide est un résultat utile : le catalogue contient aussi des écrans communs ou
+/// utilitaires qui ne sont pas des tuiles de mode. Plusieurs résultats signalent au contraire
+/// un recouvrement éditorial qui doit rester visible dans l'audit.
+fn classify_screen(stem: &str) -> Vec<&'static str> {
+    MODES
+        .iter()
+        .filter(|def| matches(def, stem))
+        .map(|def| def.slug)
+        .collect()
+}
+
+/// Audite le rattachement de chaque définition `*_menu_setting.cfg.bin` du VFS aux modes.
+///
+/// Le rendu et `mode index` consomment les mêmes fichiers, mais leurs anciennes sorties ne
+/// permettaient pas de vérifier leur couverture ensemble. Cette sortie est volontairement
+/// indépendante de SQLite : elle peut être comparée directement au JSON `--menu-matrix` de
+/// `nie-game` sans recréer un catalogue intermédiaire.
+pub fn menu_coverage_json(vfs: &Vfs) -> Json {
+    let mut screens: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    for (path, _) in vfs.iter() {
+        if !path.starts_with("data/common/gamedata/menu/cfg/")
+            || !path.ends_with("_setting.cfg.bin")
+        {
+            continue;
+        }
+        let Some(stem) = path
+            .rsplit('/')
+            .next()
+            .and_then(|file| file.strip_suffix("_setting.cfg.bin"))
+        else {
+            continue;
+        };
+        screens
+            .entry(stem.to_string())
+            .or_default()
+            .push(path.to_string());
+    }
+
+    let mut mode_counts: BTreeMap<&str, usize> = MODES.iter().map(|def| (def.slug, 0)).collect();
+    let mut classified = 0usize;
+    let mut overlapping = Vec::new();
+    let mut unclassified = Vec::new();
+    let mut duplicates = Vec::new();
+
+    for (screen, paths) in &screens {
+        if paths.len() > 1 {
+            duplicates.push(serde_json::json!({
+                "screen": screen,
+                "paths": paths,
+            }));
+        }
+        let modes = classify_screen(screen);
+        if modes.is_empty() {
+            unclassified.push(serde_json::json!({
+                "screen": screen,
+                "paths": paths,
+            }));
+        } else {
+            classified += 1;
+            for mode in &modes {
+                *mode_counts
+                    .get_mut(mode)
+                    .expect("classify_screen only returns MODES slugs") += 1;
+            }
+            if modes.len() > 1 {
+                overlapping.push(serde_json::json!({
+                    "screen": screen,
+                    "modes": modes,
+                    "paths": paths,
+                }));
+            }
+        }
+    }
+
+    let modes = MODES
+        .iter()
+        .map(|def| {
+            serde_json::json!({
+                "slug": def.slug,
+                "official": def.official,
+                "screens": mode_counts[def.slug],
+            })
+        })
+        .collect::<Vec<_>>();
+
+    serde_json::json!({
+        "schema": "niers.menu.coverage/v1",
+        "settings": {
+            "unique": screens.len(),
+            "classified": classified,
+            "unclassified": unclassified.len(),
+            "overlapping": overlapping.len(),
+            "duplicateStems": duplicates.len(),
+        },
+        "modes": modes,
+        "unclassifiedScreens": unclassified,
+        "overlappingScreens": overlapping,
+        "duplicateScreens": duplicates,
+    })
+}
+
 /// Locales dont on résout le libellé officiel.
 const LOCALES: [&str; 3] = ["fr", "en", "ja"];
 
@@ -1099,4 +1202,27 @@ pub fn export_json(db: &nie_index::Db) -> Result<serde_json::Value> {
         }));
     }
     Ok(serde_json::json!({ "modes": modes }))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{MODES, classify_screen};
+
+    #[test]
+    fn coverage_keeps_empty_prefix_modes_unassigned() {
+        assert!(
+            classify_screen("competition").is_empty(),
+            "un mode sans préfixe ne doit pas capturer un stem"
+        );
+    }
+
+    #[test]
+    fn coverage_uses_the_same_prefixes_as_mode_index() {
+        assert_eq!(classify_screen("chara_edit_top"), vec!["chara-edit"]);
+        assert_eq!(
+            classify_screen("victory_road_top_menu"),
+            vec!["victory-road"]
+        );
+        assert_eq!(MODES.iter().filter(|def| def.official).count(), 5);
+    }
 }
