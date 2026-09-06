@@ -24,6 +24,12 @@ pub enum ErreurSite {
     #[error("{0}")]
     Indisponible(String),
 
+    /// Le client a dépassé la borne de débit posée par [`crate::debit`]. La réponse porte un
+    /// `Retry-After` : le limiteur sait exactement quand le prochain jeton revient, et le taire
+    /// forcerait le client à réessayer au hasard — c'est-à-dire trop tôt.
+    #[error("{0}")]
+    TropDeRequetes(String),
+
     /// L'amont (`nie-model-serve`) n'a pas répondu dans le délai imparti.
     #[error("{0}")]
     Delai(String),
@@ -45,6 +51,7 @@ impl ErreurSite {
             Self::Introuvable(_) => StatusCode::NOT_FOUND,
             Self::Demande(_) => StatusCode::BAD_REQUEST,
             Self::Indisponible(_) => StatusCode::SERVICE_UNAVAILABLE,
+            Self::TropDeRequetes(_) => StatusCode::TOO_MANY_REQUESTS,
             Self::Delai(_) => StatusCode::GATEWAY_TIMEOUT,
             Self::Amont(_) => StatusCode::BAD_GATEWAY,
             Self::Interne(_) => StatusCode::INTERNAL_SERVER_ERROR,
@@ -58,6 +65,7 @@ impl ErreurSite {
             Self::Introuvable(_) => "introuvable",
             Self::Demande(_) => "demande_invalide",
             Self::Indisponible(_) => "indisponible",
+            Self::TropDeRequetes(_) => "trop_de_requetes",
             Self::Delai(_) => "delai_amont",
             Self::Amont(_) => "amont",
             Self::Interne(_) => "interne",
@@ -113,11 +121,12 @@ mod tests {
             (ErreurSite::Introuvable("x".into()), 404, "introuvable"),
             (ErreurSite::Demande("x".into()), 400, "demande_invalide"),
             (ErreurSite::Indisponible("x".into()), 503, "indisponible"),
+            (ErreurSite::TropDeRequetes("x".into()), 429, "trop_de_requetes"),
             (ErreurSite::Delai("x".into()), 504, "delai_amont"),
             (ErreurSite::Amont("x".into()), 502, "amont"),
             (ErreurSite::Interne("x".into()), 500, "interne"),
         ];
-        assert_eq!(cas.len(), 6, "six genres d'erreur, pas un de plus");
+        assert_eq!(cas.len(), 7, "sept genres d'erreur, pas un de plus");
         for (e, code, genre) in cas {
             assert_eq!(e.statut().as_u16(), code);
             assert_eq!(e.genre(), genre);

@@ -77,14 +77,18 @@ fn json(corps: &[u8]) -> serde_json::Value {
 }
 
 #[tokio::test]
-async fn les_dix_huit_routes_repondent() {
+async fn les_dix_neuf_routes_repondent() {
     let etat = etat();
     // Une instance concrète par route déclarée, dans le même ordre que `ROUTES`.
-    let instances: [(&str, &[u16]); 18] = [
+    let instances: [(&str, &[u16]); 19] = [
         ("/healthz", &[200]),
         ("/robots.txt", &[200]),
         ("/.well-known/security.txt", &[200]),
         ("/sitemap.xml", &[200]),
+        // Le flux Atom lit le MEME catalogue que `/api/v1/episodes` : absent dans l'etat de
+        // test, il le dit en 503 plutot que de rendre un flux vide qu'un lecteur prendrait
+        // pour « rien de neuf ».
+        ("/feed.atom", &[503]),
         ("/api/v1/health", &[200]),
         ("/api/v1/chara", &[503]), // miroir absent : capacité dégradée, pas une panne
         ("/llms.txt", &[200]),
@@ -103,7 +107,7 @@ async fn les_dix_huit_routes_repondent() {
         ("/api/v1/episodes", &[503]),
         ("/", &[200]),
     ];
-    assert_eq!(ROUTES.len(), 18);
+    assert_eq!(ROUTES.len(), 19);
     assert_eq!(instances.len(), ROUTES.len(), "une instance par route declaree");
     let mut vus = 0;
     for (uri, attendus) in instances {
@@ -115,7 +119,7 @@ async fn les_dix_huit_routes_repondent() {
         );
         vus += 1;
     }
-    assert_eq!(vus, 18);
+    assert_eq!(vus, 19);
 }
 
 #[tokio::test]
@@ -495,8 +499,18 @@ async fn la_coquille_porte_les_balises_og_de_la_route() {
             html.contains(&format!("rel=\"canonical\" href=\"https://aphrody.com{chemin}\"")),
             "{chemin} : canonical"
         );
-        assert_eq!(html.matches("rel=\"alternate\"").count(), 4, "{chemin} : hreflang");
+        // `rel="alternate" hreflang=` et non `rel="alternate"` seul : le `<head>` porte aussi
+        // le lien du flux Atom, qui est un `rel="alternate"` sans `hreflang`.
+        assert_eq!(
+            html.matches("rel=\"alternate\" hreflang=").count(),
+            4,
+            "{chemin} : hreflang"
+        );
         assert!(html.contains("hreflang=\"x-default\""), "{chemin} : x-default");
+        assert!(
+            html.contains(r#"type="application/atom+xml" title="Aphrody — épisodes" href="/feed.atom""#),
+            "{chemin} : le flux doit etre decouvrable depuis le <head>"
+        );
     }
 
     // `/fr/...` est compris mais renvoye vers la forme canonique, sans prefixe.
@@ -624,4 +638,282 @@ async fn coquille_charge_le_bundle() {
     for segment in ["textures", "modeles", "sons", "videos"] {
         assert!(html.contains(&format!("href=\"/{segment}\"")), "lien /{segment} absent");
     }
+}
+
+/// Un catalogue d'épisodes de test, aux **vrais** noms de colonnes.
+///
+/// Les noms viennent de `PRAGMA table_info(episodes)` sur `data/anime/episodes.db`, pas d'une
+/// mémoire : `videoId`, `titleJp`, `publishDate`, `createdAt` sont en casse mixte, et une
+/// colonne mal nommée compile et rend `null` en silence.
+fn catalogue_episodes(chemin: &std::path::Path, wal: bool) {
+    let c = rusqlite::Connection::open(chemin).unwrap();
+    if wal {
+        // Le mode réel de la base de production, et la cause du 500 mesuré le 2026-09-05.
+        c.pragma_update(None, "journal_mode", "WAL").unwrap();
+    }
+    c.execute_batch(
+        "CREATE TABLE episodes (id INTEGER PRIMARY KEY, channel_id INTEGER, season INTEGER, \
+         episode INTEGER, videoId TEXT, title TEXT, url TEXT, description TEXT, thumbnail TEXT, \
+         titleJp TEXT, romaji TEXT, publishDate TEXT, viewCount TEXT, language TEXT, \
+         duration INTEGER, quality TEXT, createdAt INTEGER);",
+    )
+    .unwrap();
+    // Trois lignes, chacune éprouvant un cas distinct du flux : un titre qui porte les cinq
+    // caractères que XML réserve, une date nue à compléter, une date déjà en RFC 3339, une
+    // ligne sans titre ni URL exploitable.
+    let lignes = [
+        Ligne { id: 1, saison: 1, episode: 1, titre: "Fussball & <Freunde> \"Kapitel\"", url: "https://exemple.test/v/1", publie: "2008-10-05", langue: "de", cree: 1_700_000_000_000 },
+        Ligne { id: 2, saison: 1, episode: 2, titre: "Deuxième", url: "https://exemple.test/v/2", publie: "2026-04-23T16:00:06Z", langue: "vf", cree: 1_700_000_001_000 },
+        Ligne { id: 3, saison: 2, episode: 7, titre: "", url: "pas-une-url", publie: "hier", langue: "vo", cree: 1_700_000_002_000 },
+    ];
+    for l in lignes {
+        c.execute(
+            "INSERT INTO episodes (id, season, episode, title, url, publishDate, language, createdAt) \
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            rusqlite::params![l.id, l.saison, l.episode, l.titre, l.url, l.publie, l.langue, l.cree],
+        )
+        .unwrap();
+    }
+}
+
+/// Une ligne du catalogue de test, nommée champ par champ : un octuplet anonyme se relit mal
+/// et se remplit encore plus mal dans le désordre.
+struct Ligne {
+    id: i64,
+    saison: i64,
+    episode: i64,
+    titre: &'static str,
+    url: &'static str,
+    publie: &'static str,
+    langue: &'static str,
+    cree: i64,
+}
+
+#[tokio::test]
+async fn le_flux_atom_publie_les_episodes_moissonnes() {
+    let dir = tempfile::tempdir().unwrap();
+    let db = dir.path().join("episodes.db");
+    catalogue_episodes(&db, false);
+    let etat = etat_avec(|c| c.episodes = db.clone());
+
+    let (statut, entetes, corps) = reponse(&etat, "/feed.atom").await;
+    assert_eq!(statut, StatusCode::OK);
+    assert_eq!(
+        entetes[header::CONTENT_TYPE].to_str().unwrap(),
+        nie_site::routes::feed::TYPE_CONTENU
+    );
+    let xml = String::from_utf8(corps).unwrap();
+
+    // Trois lignes, trois entrées : le flux ne filtre rien qu'il ne dise filtrer.
+    assert_eq!(xml.matches("<entry>").count(), 3);
+    assert_eq!(xml.matches("</entry>").count(), 3);
+    // Le flux est ordonné du plus récemment moissonné au plus ancien, donc l'id 3 d'abord.
+    let rang = |id: i64| xml.find(&format!("/api/v1/episodes#{id}</id>")).expect("id present");
+    assert!(rang(3) < rang(2) && rang(2) < rang(1), "du plus recent au plus ancien");
+
+    // Le `<updated>` du flux est celui de son entrée la plus récente — 1 700 000 002 s.
+    assert!(
+        xml.contains("<updated>2023-11-14T22:13:22Z</updated>"),
+        "la date du flux est celle de sa premiere entree, pas maintenant()"
+    );
+
+    // Les caractères réservés de XML sont échappés — sans quoi le document entier est rejeté.
+    assert!(xml.contains("Fussball &#38; &#60;Freunde&#62; &#34;Kapitel&#34;"));
+    assert!(!xml.contains("& <Freunde>"), "aucun caractere brut");
+
+    // Deux `<published>` seulement : la troisième date (`hier`) n'est pas du RFC 3339 et
+    // l'omettre vaut mieux que rendre une entrée qu'un lecteur strict jettera.
+    assert_eq!(xml.matches("<published>").count(), 2);
+    assert!(xml.contains("<published>2008-10-05T00:00:00Z</published>"), "date nue completee");
+    assert!(xml.contains("<published>2026-04-23T16:00:06Z</published>"), "date deja complete");
+
+    // Deux liens d'entrée seulement : `pas-une-url` n'en devient pas un.
+    assert_eq!(xml.matches(r#"<link rel="alternate" type="text/html""#).count(), 3, "2 entrees + le flux");
+    assert!(!xml.contains("pas-une-url"), "une url relative n'entre pas dans un flux");
+
+    // Titre de repli pour la ligne sans titre, et numérotation sur celles qui en ont une.
+    assert!(xml.contains("<title>S01E01 — Fussball"), "numero + titre");
+    assert!(xml.contains("<title>S02E07</title>"), "sans titre : le numero seul");
+    assert!(!xml.contains("<title></title>"), "jamais de titre vide");
+
+    // Sans catalogue, le flux le DIT — un flux vide se lirait « rien de neuf ».
+    let etat = etat_avec(|c| c.episodes = "/nonexistent/episodes.db".into());
+    let (statut, _, corps) = reponse(&etat, "/feed.atom").await;
+    assert_eq!(statut, StatusCode::SERVICE_UNAVAILABLE);
+    assert_eq!(json(&corps)["genre"], "indisponible");
+}
+
+// `PermissionsExt` n'existe que sur Unix, et un répertoire Windows ne se ferme pas par un
+// `chmod`. Le service, lui, ne tourne que sous systemd : la reproduction est donc au bon
+// endroit, et le test s'annonce absent ailleurs plutôt que d'y mentir en vert.
+#[cfg(unix)]
+#[tokio::test]
+async fn un_catalogue_wal_reste_lisible_dans_un_repertoire_non_inscriptible() {
+    // Reproduction du 500 de production du 2026-09-05 : `/api/v1/episodes` rendait
+    // « unable to open database file » sur une base WAL présente et lisible, parce que
+    // `ProtectSystem=strict` + `ReadOnlyPaths=/home/ubuntu/niers` empêchent SQLite de créer le
+    // fichier `-shm` qu'un WAL exige, même en lecture seule.
+    let dir = tempfile::tempdir().unwrap();
+    let db = dir.path().join("episodes.db");
+    catalogue_episodes(&db, true);
+    {
+        let c = rusqlite::Connection::open(&db).unwrap();
+        let mode: String = c.query_row("PRAGMA journal_mode", [], |l| l.get(0)).unwrap();
+        assert_eq!(mode, "wal", "la reproduction n'a de sens que sur un WAL");
+    }
+    // Les fichiers auxiliaires sont fermés ; on ferme le répertoire en écriture.
+    let mut droits = std::fs::metadata(dir.path()).unwrap().permissions();
+    std::os::unix::fs::PermissionsExt::set_mode(&mut droits, 0o555);
+    std::fs::set_permissions(dir.path(), droits).unwrap();
+
+    let etat = etat_avec(|c| c.episodes = db.clone());
+    let (statut, _, corps) = reponse(&etat, "/api/v1/episodes").await;
+    // Le test ne peut rien prouver si le processus contourne les droits (root en conteneur) :
+    // il le dit alors, plutôt que de s'annoncer vert sans avoir rien éprouvé.
+    let contourne = std::fs::write(dir.path().join("temoin"), b"x").is_ok();
+    assert!(!contourne, "ce processus ecrit dans un repertoire 0555 : reproduction impossible");
+    assert_eq!(statut, StatusCode::OK, "un WAL en repertoire ferme doit rester lisible");
+    assert_eq!(json(&corps)["total"], 3);
+
+    // Le flux lit la même base par le même chemin : il doit tenir la même promesse.
+    let (statut, _, corps) = reponse(&etat, "/feed.atom").await;
+    assert_eq!(statut, StatusCode::OK);
+    assert_eq!(String::from_utf8(corps).unwrap().matches("<entry>").count(), 3);
+
+    // `tempfile` doit pouvoir nettoyer : on rend le répertoire inscriptible.
+    let mut droits = std::fs::metadata(dir.path()).unwrap().permissions();
+    std::os::unix::fs::PermissionsExt::set_mode(&mut droits, 0o755);
+    std::fs::set_permissions(dir.path(), droits).unwrap();
+}
+
+#[tokio::test]
+async fn les_reponses_generees_portent_un_etag_et_rendent_304() {
+    let etat = etat();
+    // Les sept réponses relevées SANS ETag en production le 2026-09-05. Chacune doit en
+    // porter un maintenant, et chacune doit savoir rendre un 304.
+    let generees = [
+        "/healthz",
+        "/api/v1/health",
+        "/api/v1/textures",
+        "/b/data/dx11/menu",
+        "/robots.txt",
+        "/llms-full.txt",
+        "/sitemap.xml",
+        "/manifest.webmanifest",
+        "/",
+    ];
+    let mut economise = 0usize;
+    for uri in generees {
+        let (statut, entetes, corps) = reponse(&etat, uri).await;
+        assert_eq!(statut, StatusCode::OK, "{uri}");
+        let etag = entetes
+            .get(header::ETAG)
+            .unwrap_or_else(|| panic!("{uri} sans ETag"))
+            .to_str()
+            .unwrap()
+            .to_owned();
+        // `blake3` en hexadécimal, entre guillemets : la même forme que `/f` et le bundle.
+        assert_eq!(etag.len(), 66, "{uri} : forme de l'etiquette");
+        assert!(!corps.is_empty(), "{uri} : corps non vide");
+
+        let (statut, entetes, corps304) = reponse_avec(
+            &etat,
+            Request::builder().uri(uri).header(header::IF_NONE_MATCH, &etag),
+        )
+        .await;
+        assert_eq!(statut, StatusCode::NOT_MODIFIED, "{uri} : 304 attendu");
+        assert!(corps304.is_empty(), "{uri} : un 304 ne porte pas de corps");
+        assert_eq!(entetes[header::ETAG].to_str().unwrap(), etag, "{uri} : etiquette rappelee");
+        // Les en-têtes de sécurité restent posés sur un 304 : la couche qui les pose est
+        // au-dessus de celle qui répond.
+        for (nom, _) in entetes_securite_liste() {
+            assert!(entetes.contains_key(&nom), "{uri} : {nom} absent du 304");
+        }
+        economise += corps.len();
+    }
+    // Ce que la couche évite de renvoyer sur une revalidation complète du site.
+    assert!(economise > 10_000, "les neuf reponses pesent {economise} octets, pas moins");
+
+    // Une etiquette perimee ne fait rien economiser : le corps repart en entier.
+    let (statut, _, corps) = reponse_avec(
+        &etat,
+        Request::builder().uri("/healthz").header(header::IF_NONE_MATCH, "\"perimee\""),
+    )
+    .await;
+    assert_eq!(statut, StatusCode::OK);
+    assert!(!corps.is_empty());
+
+    // Une erreur ne recoit jamais d'ETag : elle serait cachee comme une reponse valide.
+    let (statut, entetes, _) = reponse(&etat, "/api/v1/inconnu").await;
+    assert_eq!(statut, StatusCode::NOT_FOUND);
+    assert!(!entetes.contains_key(header::ETAG), "aucun ETag sur un 404");
+}
+
+#[tokio::test]
+async fn la_borne_de_debit_compte_par_ip_et_annonce_son_retour() {
+    // Rafale de 3 et remplissage lent : la borne est atteignable dans un test sans attendre.
+    let etat = etat_avec(|c| c.debit = nie_site::debit::Reglage { par_seconde: 1.0, rafale: 3.0 });
+    let appel = async |uri: &str, ip: &str| {
+        reponse_avec(&etat, Request::builder().uri(uri).header("x-real-ip", ip)).await
+    };
+
+    let mut passes = 0;
+    for _ in 0..3 {
+        let (statut, _, _) = appel("/api/v1/health", "203.0.113.10").await;
+        assert_eq!(statut, StatusCode::OK);
+        passes += 1;
+    }
+    assert_eq!(passes, 3, "la rafale entiere passe");
+
+    // La quatrième est refusée, avec le code, le genre et le délai de retour.
+    let (statut, entetes, corps) = appel("/api/v1/health", "203.0.113.10").await;
+    assert_eq!(statut, StatusCode::TOO_MANY_REQUESTS);
+    assert_eq!(json(&corps)["genre"], "trop_de_requetes");
+    // À 1 requête par seconde, un jeton revient en 1 s — et jamais « dans 0 s ».
+    assert_eq!(entetes[header::RETRY_AFTER].to_str().unwrap(), "1");
+    // Un client refusé reçoit quand même les cinq en-têtes de sécurité.
+    assert_eq!(
+        entetes_securite_liste()
+            .iter()
+            .filter(|(nom, _)| entetes.contains_key(nom))
+            .count(),
+        NB_ENTETES_SECURITE
+    );
+
+    // Le voisin n'a rien consommé : son seau est intact.
+    let (statut, _, _) = appel("/api/v1/health", "203.0.113.11").await;
+    assert_eq!(statut, StatusCode::OK, "chaque IP a son propre seau");
+
+    // `/healthz` n'est jamais limité : une sonde de santé qu'on étrangle est une sonde qui ment.
+    for _ in 0..10 {
+        let (statut, _, _) = appel("/healthz", "203.0.113.10").await;
+        assert_eq!(statut, StatusCode::OK, "la sonde de sante reste hors borne");
+    }
+
+    // Sans `X-Real-IP`, rien n'est compté : nginx ne nomme pas le client sur ces chemins-là,
+    // et il y pose déjà son propre `limit_req`.
+    for _ in 0..10 {
+        let (statut, _, _) = reponse(&etat, "/api/v1/health").await;
+        assert_eq!(statut, StatusCode::OK, "sans IP nommee, pas de seau commun");
+    }
+
+    // Et un `X-Forwarded-For` ne sert JAMAIS de clé : nginx le préfixe de ce que le client a
+    // envoyé, donc l'attaquant le contrôle. Le seau de `.10` reste vide malgré l'en-tête.
+    let (statut, _, _) =
+        reponse_avec(&etat, Request::builder().uri("/api/v1/health").header("x-forwarded-for", "203.0.113.10"))
+            .await;
+    assert_eq!(statut, StatusCode::OK, "x-forwarded-for n'ouvre ni ne ferme aucun seau");
+
+    // Borne éteinte : mille requêtes de la même IP passent toutes.
+    let libre = etat_avec(|c| c.debit.par_seconde = 0.0);
+    for _ in 0..20 {
+        let (statut, _, _) = reponse_avec(
+            &libre,
+            Request::builder().uri("/api/v1/health").header("x-real-ip", "203.0.113.10"),
+        )
+        .await;
+        assert_eq!(statut, StatusCode::OK, "reglage a zero : aucune borne");
+    }
+    assert!(libre.limiteur.is_none(), "un reglage nul ne construit aucun limiteur");
+    assert!(etat.limiteur.is_some());
 }

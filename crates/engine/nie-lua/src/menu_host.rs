@@ -114,6 +114,12 @@ pub struct MenuObjectState {
     /// (2ᵉ argument de `SetObjectVisible`, `SetPartVisible`), jusqu'ici ignoré. On le retient ici ;
     /// [`Self::visible`] reste le défaut, pour les instances qu'aucune commande ne nomme.
     pub visible_par_index: BTreeMap<i32, bool>,
+    /// Visibilité d'une part/enfant adressée par son hash (handler Kizuna `0x140CCC930`).
+    /// Distincte de `visible_par_index` : le natif résout ici un sous-élément par identifiant.
+    pub part_visible: BTreeMap<u32, bool>,
+    /// Couleur flottante RGBA d'une part/enfant adressée par son hash (handler Kizuna
+    /// `0x140CDF9F0`). Les quatre canaux restent en `f32`, comme le vecteur transmis au moteur.
+    pub part_color_rgba: BTreeMap<u32, [f32; 4]>,
 }
 
 impl MenuObjectState {
@@ -138,6 +144,8 @@ impl MenuObjectState {
             progress: None,
             sub_items: BTreeMap::new(),
             visible_par_index: BTreeMap::new(),
+            part_visible: BTreeMap::new(),
+            part_color_rgba: BTreeMap::new(),
         }
     }
 
@@ -213,6 +221,14 @@ pub struct MenuState {
     pub list_counts: BTreeMap<u32, (i32, bool)>,
     /// IDs de ressources disponibles pour le prédicat général du moteur.
     pub resource_ids: BTreeSet<u32>,
+    /// Valeur entière écrite par `funcLuaCommand(0x449E298B, value)`.
+    ///
+    /// Le handler de `nie.exe` stocke cette valeur dans le slot moteur global
+    /// `context+0x2728` et renvoie `true` dès qu'un paramètre est présent. Le
+    /// consommateur natif de ce slot n'appartient pas à l'état de menu, mais
+    /// conserver la dernière écriture permet aux couches supérieures de
+    /// l'injecter ou de l'inspecter sans perdre l'effet observable du script.
+    pub engine_int_2728: Option<i32>,
     /// Visibilité par groupe (`SetGroupVisible`).
     pub groups: BTreeMap<u32, bool>,
     /// Journal des appels `funcLuaMenuCommand` non reconnus :
@@ -265,6 +281,12 @@ impl MenuState {
             self.resource_ids.remove(&id);
         }
     }
+
+    /// Injecte directement la valeur du slot entier moteur observé par le
+    /// handler `0x449E298B`.
+    pub fn set_engine_int_2728(&mut self, value: i32) {
+        self.engine_int_2728 = Some(value);
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -290,6 +312,45 @@ const CMD_GENERAL_RESOURCE_AVAILABLE: u32 = 0xAFB0_FE77; // (resourceId) -> bool
 // Handler courant 0x140C90300 : configure une ressource/UI et renvoie AL=1 si un paramètre est
 // présent (AL=0 pour l'arité vide). L'effet graphique interne reste hors MenuState.
 const CMD_GENERAL_APPLY_UI_EFFECT: u32 = 0x724F_633E;
+// Handler courant 0x140CA35F0 : lit un identifiant et pose une valeur d'état moteur, puis
+// pousse true ; l'arité vide est rejetée (false). La table d'état C++ n'est pas dans MenuState.
+const CMD_GENERAL_APPLY_STATE: u32 = 0x1319_3DE3;
+// Handler courant 0x140BFC910 : sans argument renvoie AL=0 ; sinon convertit le premier
+// paramètre numérique, l'écrit dans `[0x1421F6258]+0x2728`, puis renvoie AL=1. Le consommateur
+// natif du slot est hors du MenuState, mais la dernière valeur reste observable ici.
+const CMD_GENERAL_SET_GLOBAL_INT: u32 = 0x449E_298B;
+// Handlers généraux Kizuna du build courant :
+// 0x140CA3950 lit un identifiant et renvoie le booléen produit par le registre moteur ;
+// 0x140C6EEE0 résout un état/index et renvoie un booléen ;
+// 0x140C60370 renvoie le couple (succès, valeur) après consultation du registre ;
+// 0x140C42B90 applique l'état courant et renvoie true sur tous ses chemins.
+const CMD_GENERAL_QUERY_BOOL_A: u32 = 0x0FC9_E076;
+const CMD_GENERAL_QUERY_BOOL_B: u32 = 0x2A2B_AD8F;
+const CMD_GENERAL_QUERY_STATE: u32 = 0x36AA_3F1B;
+const CMD_GENERAL_APPLY_CURRENT_STATE: u32 = 0xD5BE_A3D4;
+// Ces handlers sont atteints après l'activation du mode Kizuna :
+// AD0AA37E -> bool de configuration courante, B8F922E7 -> chaîne courante,
+// DCBE6334 -> entier d'état courant. Les valeurs de save/configuration sont injectables
+// ultérieurement ; les types et défauts neutres du moteur sont conservés ici.
+const CMD_GENERAL_QUERY_CONFIG_BOOL: u32 = 0xAD0A_A37E;
+const CMD_GENERAL_GET_CURRENT_TEXT: u32 = 0xB8F9_22E7;
+const CMD_GENERAL_GET_CURRENT_INT: u32 = 0xDCBE_6334;
+// Handler 0x140CBFCF0 (chaîné avec 0x140CBFD10) : remet le slot moteur global
+// `0x142294600` à zéro puis renvoie AL=1. `kizuna_town_mainmenu` l'appelle sans
+// paramètre pendant `OnInit`; le slot est hors MenuState, mais le retour doit
+// être fidèle pour que la branche Lua de démarrage soit prise.
+const CMD_KIZUNA_TOWN_RESET: u32 = 0xA143_C0FC;
+// Handlers Kizuna extraits de la table du build courant :
+// 0x140CCC930 résout (objet, part) puis écrit le flag visible de la part ;
+// 0x140CDF9F0 résout (objet, index, part) puis écrit le vecteur couleur RGBA.
+const CMD_KIZUNA_SET_PART_VISIBLE: u32 = 0x2E9B_F339;
+const CMD_KIZUNA_SET_PART_COLOR: u32 = 0xDB1F_D4EB;
+// Appels UI déclenchés par les nouvelles branches de Kizuna après le chargement de l'état :
+// les handlers ont une garde d'arité puis retournent `true`; leur mutation est dans le manager
+// natif hors MenuState, mais le protocole de retour doit rester fidèle.
+const CMD_KIZUNA_APPLY_PART_FLAGS: u32 = 0x510B_8B99;
+const CMD_KIZUNA_SET_PART_PARAM: u32 = 0x894E_7710;
+const CMD_KIZUNA_SET_PART_TEXTURE: u32 = 0xF6F4_D7E9;
 const CMD_SET_SPRITE: u32 = 0xE15F_D945; // (objId, index, cellId, frame, color, [layerId])
 const CMD_SET_TEXT: u32 = 0x4096_E67E; // (objId, index, textHash|string, …, [layerId])
 const CMD_SET_COLOR: u32 = 0x1401_6F35; // (objId, part, colorId, [cellIndex])
@@ -725,6 +786,12 @@ pub fn command_name(cmd_id: u32) -> Option<&'static str> {
         CMD_GET_GLOBAL_STATE_B => "GetGlobalStateB",
         CMD_GET_GLOBAL_STATE_A => "GetGlobalStateA",
         CMD_GET_OBJECT_ACTIVE => "GetObjectActive",
+        CMD_KIZUNA_TOWN_RESET => "KizunaTownReset(=>1)",
+        CMD_KIZUNA_SET_PART_VISIBLE => "KizunaSetPartVisible",
+        CMD_KIZUNA_SET_PART_COLOR => "KizunaSetPartColorRGBA",
+        CMD_KIZUNA_APPLY_PART_FLAGS => "KizunaApplyPartFlags(=>true)",
+        CMD_KIZUNA_SET_PART_PARAM => "KizunaSetPartParam(=>true)",
+        CMD_KIZUNA_SET_PART_TEXTURE => "KizunaSetPartTexture(=>true)",
         CMD_APPLY_GLOBAL_CONFIG_TRUE => "ApplyGlobalConfig(=>true)",
         CMD_APPLY_QUERY_TRUE => "ApplyQuery(=>true)",
         CMD_SET_GLOBAL_FLAG_TRUE => "SetGlobalFlag(=>1)",
@@ -785,6 +852,14 @@ fn lua_to_i32(v: Option<&Value>) -> i32 {
         Some(Value::Number(n)) => *n as i64 as i32,
         Some(Value::Integer(i)) => *i as i32,
         _ => 0,
+    }
+}
+
+fn lua_to_f32(v: Option<&Value>) -> f32 {
+    match v {
+        Some(Value::Number(n)) => *n as f32,
+        Some(Value::Integer(i)) => *i as f32,
+        _ => 0.0,
     }
 }
 
@@ -885,10 +960,89 @@ pub fn install_menu_host(lua: &Lua) -> mlua::Result<Rc<RefCell<MenuState>>> {
     // touchés restent inspectables via `_HOST_MISSING_PATHS`.
     crate::runtime::install_host_stubs(lua)?;
 
+    // Ces namespaces sont fournis par les includes natifs du jeu, pas par les chunks Lua.
+    // Les scripts Kizuna les utilisent dès les callbacks réseau/visiteur : laisser le proxy
+    // global les fabriquer à la demande marquait à tort tout le module comme absent. Les deux
+    // méthodes observées sont des réservations UI (sans valeur de retour utile) ; les méthodes
+    // encore inconnues restent traçables au niveau `NAMESPACE.Method()`.
+    lua.load(
+        r#"
+        local function known_namespace(name)
+            local ns = {}
+            setmetatable(ns, {
+                __index = function(_, key)
+                    local path = name .. "." .. tostring(key)
+                    _HOST_MISSING_PATHS[path] = true
+                    return function(...)
+                        _HOST_MISSING_PATHS[path .. "()"] = true
+                        return false
+                    end
+                end,
+            })
+            return ns
+        end
+        GENERAL_WINDOW = known_namespace("GENERAL_WINDOW")
+        GENERAL_WINDOW.ReserveGeneralWindow = function(...) return true end
+        GENERAL_WINDOW.CustomGeneralWindowBtn = function(...) return true end
+        NETWORK_MENU = known_namespace("NETWORK_MENU")
+        CHARA_EDIT_MENU = known_namespace("CHARA_EDIT_MENU")
+        DETAIL_WINDOW = known_namespace("DETAIL_WINDOW")
+        LISTVIEW = known_namespace("LISTVIEW")
+        MAIN_MENU = known_namespace("MAIN_MENU")
+        CHARA_FILTER_MENU = known_namespace("CHARA_FILTER_MENU")
+        SPIRIT_FILTER_MENU = known_namespace("SPIRIT_FILTER_MENU")
+        SOCCER_RESULT_MENU = known_namespace("SOCCER_RESULT_MENU")
+        VICTORY_TOP_INC = known_namespace("VICTORY_TOP_INC")
+        "#,
+    )
+    .exec()?;
+
     // Global moteur utilisé par de nombreux includes pour reconstruire les IDs de ressources.
     let crc32 =
         lua.create_function(|_, value: String| Ok(f64::from(crate::crc32(value.as_bytes()))))?;
     lua.globals().set("CRC32", crc32)?;
+
+    // Constantes globales fournies par les includes natifs du jeu. Leurs valeurs sont les CRC32
+    // retrouvés dans `data/re/menu-crc32-dictionary.json` du build courant ; les injecter évite
+    // que la métatable de découverte les transforme en tables/stubs truthy, ce qui peut activer
+    // ou désactiver des branches Lua de façon différente de `nie.exe`.
+    let known_constants: &[(&str, u32)] = &[
+        ("CHARA_EDIT_RECIPE_TYPE_FASHION", 0x6A09_9FEC),
+        ("CHARA_EDIT_RECIPE_TYPE_IDEAL_PLAYER_IMAGE", 0x2067_0838),
+        ("CHARA_EDIT_RECIPE_TYPE_PLAY_STYLE", 0x8258_E5CE),
+        ("CHARA_EDIT_RECIPE_TYPE_SKILL_1", 0xD7F5_AB80),
+        ("CHARA_EDIT_RECIPE_TYPE_SKILL_2", 0x4EFC_FA3A),
+        ("CmdStateTypeNone", 0x27C6_9A90),
+        ("EVEN_BONE_L21", 0xDCED_D4F1),
+        ("EVEN_BONE_L22", 0x45E4_854B),
+        ("EVEN_BONE_L23", 0x32E3_B5DD),
+        ("EVEN_BONE_L24", 0xAC87_207E),
+        ("EVEN_BONE_R21", 0xCA55_5A8B),
+        ("EVEN_BONE_R22", 0x535C_0B31),
+        ("EVEN_BONE_R23", 0x245B_3BA7),
+        ("EVEN_BONE_R24", 0xBA3F_AE04),
+        ("MAINMENU_TAB_TYPE_INVALID", 0x5AC0_6AC7),
+        ("SOCCER_TUTORIAL_TYPE_CHANGE_CHARA", 0xCED9_5A6A),
+        ("TEXTURE_NAME_CRC_EQUIP_ICON_MISANGA", 0x3D7C_B7C2),
+        ("TEXTURE_NAME_CRC_EQUIP_ICON_PENDANT", 0x545A_3129),
+        ("TEXTURE_NAME_CRC_EQUIP_ICON_SHOES", 0xE308_9601),
+        ("TEXTURE_NAME_CRC_EQUIP_TYPE_MISANGA", 0xB762_8327),
+        ("TEXTURE_NAME_CRC_EQUIP_TYPE_PENDANT", 0xDE44_05CC),
+        ("TEXTURE_NAME_CRC_EQUIP_TYPE_SHOES", 0xAF2A_23CB),
+        ("TEXTURE_NAME_CRC_EQUIP_TYPE_SPECIAL", 0xCC57_50F0),
+        ("TEXTURE_NAME_RECIPE_TITLE_ICON16", 0x62E5_BAC1),
+        ("TEXTURE_PATH_NAME_CRC_ICON_MISANGA", 0x8DD0_0905),
+        ("TEXTURE_PATH_NAME_CRC_ICON_PENDANT", 0xE4F6_8FEE),
+        ("TEXTURE_PATH_NAME_CRC_ICON_SHOES", 0x1902_5BCF),
+        ("TEXT_NAME_CRC_DIFFICULTY_EXPLANATION_01", 0x9E9F_ABE8),
+        ("TEXT_NAME_CRC_DIFFICULTY_EXPLANATION_02", 0x0796_FA52),
+        ("TEXT_NAME_CRC_DIFFICULTY_EXPLANATION_03", 0x7091_CAC4),
+        ("TEXT_NAME_CRC_DIFFICULTY_EXPLANATION_04", 0xEEF5_5F67),
+        ("TYPE_INAZUMA_POST", 0x345D_5DB8),
+    ];
+    for &(name, value) in known_constants {
+        lua.globals().set(name, f64::from(value))?;
+    }
 
     // ── funcLuaMenuCommand(cmdId, layerId, …args) ─────────────────────────────
     {
@@ -987,13 +1141,118 @@ pub fn install_menu_host(lua: &Lua) -> mlua::Result<Rc<RefCell<MenuState>>> {
             }
             if cmd_id == CMD_GENERAL_APPLY_UI_EFFECT {
                 let layer = state.borrow().current_layer;
-                state.borrow_mut().known_cmd_log.push((
-                    "ApplyUiEffect".to_string(),
-                    layer,
-                ));
-                return Ok(MultiValue::from_vec(vec![Value::Number(
-                    f64::from(u8::from(args.len() > 1)),
+                state
+                    .borrow_mut()
+                    .known_cmd_log
+                    .push(("ApplyUiEffect".to_string(), layer));
+                return Ok(MultiValue::from_vec(vec![Value::Number(f64::from(
+                    u8::from(args.len() > 1),
+                ))]));
+            }
+            if cmd_id == CMD_GENERAL_APPLY_STATE {
+                let layer = state.borrow().current_layer;
+                state
+                    .borrow_mut()
+                    .known_cmd_log
+                    .push(("ApplyState".to_string(), layer));
+                return Ok(MultiValue::from_vec(vec![Value::Number(f64::from(
+                    u8::from(args.len() > 1),
+                ))]));
+            }
+            if cmd_id == CMD_GENERAL_SET_GLOBAL_INT {
+                let layer = state.borrow().current_layer;
+                if args.len() <= 1 {
+                    return Ok(MultiValue::from_vec(vec![Value::Number(0.0)]));
+                }
+                state
+                    .borrow_mut()
+                    .set_engine_int_2728(lua_to_i32(args.get(1)));
+                state
+                    .borrow_mut()
+                    .known_cmd_log
+                    .push(("SetGlobalInt".to_string(), layer));
+                return Ok(MultiValue::from_vec(vec![Value::Number(1.0)]));
+            }
+            if cmd_id == CMD_GENERAL_QUERY_BOOL_A {
+                let key = lua_to_u32(args.get(1));
+                let active = state
+                    .borrow()
+                    .condition_flags
+                    .get(&key)
+                    .copied()
+                    .unwrap_or(false);
+                let layer = state.borrow().current_layer;
+                state
+                    .borrow_mut()
+                    .known_cmd_log
+                    .push(("GeneralQueryBoolA".to_string(), layer));
+                return Ok(MultiValue::from_vec(vec![Value::Boolean(active)]));
+            }
+            if cmd_id == CMD_GENERAL_QUERY_BOOL_B {
+                let key = lua_to_u32(args.get(1));
+                let active = state
+                    .borrow()
+                    .condition_flags
+                    .get(&key)
+                    .copied()
+                    .unwrap_or(false);
+                let layer = state.borrow().current_layer;
+                state
+                    .borrow_mut()
+                    .known_cmd_log
+                    .push(("GeneralQueryBoolB".to_string(), layer));
+                return Ok(MultiValue::from_vec(vec![Value::Boolean(active)]));
+            }
+            if cmd_id == CMD_GENERAL_QUERY_STATE {
+                if args.len() < 2 {
+                    return Ok(MultiValue::from_vec(vec![Value::Boolean(false)]));
+                }
+                let layer = state.borrow().current_layer;
+                state
+                    .borrow_mut()
+                    .known_cmd_log
+                    .push(("GeneralQueryState".to_string(), layer));
+                // Le handler natif pousse d'abord le drapeau de succès, puis une valeur d'état.
+                // Le registre d'état n'est pas encore alimenté par le save-data : 0 est donc le
+                // défaut observable, mais le protocole de retour (bool, entier) est conservé.
+                return Ok(MultiValue::from_vec(vec![
+                    Value::Boolean(true),
+                    Value::Number(0.0),
+                ]));
+            }
+            if cmd_id == CMD_GENERAL_APPLY_CURRENT_STATE {
+                let layer = state.borrow().current_layer;
+                state
+                    .borrow_mut()
+                    .known_cmd_log
+                    .push(("GeneralApplyCurrentState".to_string(), layer));
+                return Ok(MultiValue::from_vec(vec![Value::Boolean(true)]));
+            }
+            if cmd_id == CMD_GENERAL_QUERY_CONFIG_BOOL {
+                let layer = state.borrow().current_layer;
+                state
+                    .borrow_mut()
+                    .known_cmd_log
+                    .push(("GeneralQueryConfigBool".to_string(), layer));
+                return Ok(MultiValue::from_vec(vec![Value::Boolean(false)]));
+            }
+            if cmd_id == CMD_GENERAL_GET_CURRENT_TEXT {
+                let layer = state.borrow().current_layer;
+                state
+                    .borrow_mut()
+                    .known_cmd_log
+                    .push(("GeneralGetCurrentText".to_string(), layer));
+                return Ok(MultiValue::from_vec(vec![Value::String(
+                    lua.create_string("")?,
                 )]));
+            }
+            if cmd_id == CMD_GENERAL_GET_CURRENT_INT {
+                let layer = state.borrow().current_layer;
+                state
+                    .borrow_mut()
+                    .known_cmd_log
+                    .push(("GeneralGetCurrentInt".to_string(), layer));
+                return Ok(MultiValue::from_vec(vec![Value::Number(0.0)]));
             }
             let layer = state.borrow().current_layer;
             state
@@ -1075,6 +1334,17 @@ fn dispatch_menu_command(state: &mut MenuState, cmd_id: u32, args: &[Value]) -> 
     /// Layer cible d'une commande d'objet : arg explicite à `idx` sinon le layer courant.
     fn target_layer(state: &MenuState, args: &[Value], idx: usize) -> u32 {
         lua_to_u32_or_none(args.get(idx)).unwrap_or(state.current_layer)
+    }
+
+    // `kizuna_town_mainmenu` appelle ce reset sans argument pendant `OnInit`.
+    // Le handler natif remet `[0x142294600]` à zéro puis renvoie AL=1 ; le
+    // slot moteur ne fait pas partie de MenuState, mais le retour débloque
+    // la branche Lua de démarrage.
+    if cmd_id == CMD_KIZUNA_TOWN_RESET {
+        state
+            .known_cmd_log
+            .push(("KizunaTownReset".to_string(), state.current_layer));
+        return 1.0;
     }
 
     match cmd_id {
@@ -1163,6 +1433,56 @@ fn dispatch_menu_command(state: &mut MenuState, cmd_id: u32, args: &[Value]) -> 
             let o = state.layer(layer).obj(obj_id);
             o.visible = enabled;
             o.visible_par_index.insert(index, enabled);
+        }
+
+        // KizunaSetPartVisible (0x140CCC930) : (objId, partId, visible).
+        // Le handler natif résout l'objet puis la part par hash et marque la part dirty. Le
+        // modèle conserve cette mutation séparément de la visibilité d'une instance d'objet.
+        CMD_KIZUNA_SET_PART_VISIBLE => {
+            if args.len() < 3 {
+                return 0.0;
+            }
+            let obj_id = lua_to_u32(args.first());
+            let part_id = lua_to_u32(args.get(1));
+            let visible = lua_to_bool(args.get(2), true);
+            let layer = state.current_layer;
+            state
+                .known_cmd_log
+                .push(("KizunaSetPartVisible".to_string(), layer));
+            state
+                .layer(layer)
+                .obj(obj_id)
+                .part_visible
+                .insert(part_id, visible);
+            return 1.0;
+        }
+
+        // KizunaSetPartColorRGBA (0x140CDF9F0) : (objId, partIndex, partId, r, g, b, a).
+        // Le septième argument est optionnel dans le natif (alpha = 0 si absent), mais les
+        // appels Kizuna réels fournissent bien les quatre canaux. On garde les floats, sans
+        // quantification prématurée, afin que le rendu puisse appliquer le même vecteur.
+        CMD_KIZUNA_SET_PART_COLOR => {
+            if args.len() < 6 {
+                return 0.0;
+            }
+            let obj_id = lua_to_u32(args.first());
+            let part_id = lua_to_u32(args.get(2));
+            let rgba = [
+                lua_to_f32(args.get(3)),
+                lua_to_f32(args.get(4)),
+                lua_to_f32(args.get(5)),
+                lua_to_f32(args.get(6)),
+            ];
+            let layer = state.current_layer;
+            state
+                .known_cmd_log
+                .push(("KizunaSetPartColorRGBA".to_string(), layer));
+            state
+                .layer(layer)
+                .obj(obj_id)
+                .part_color_rgba
+                .insert(part_id, rgba);
+            return 1.0;
         }
 
         // ── SetIconSprite(objId, h1, h2, h3, n4, [idx], [enable], [layerId]) ──
@@ -1550,6 +1870,19 @@ fn dispatch_menu_command(state: &mut MenuState, cmd_id: u32, args: &[Value]) -> 
             return 1.0;
         }
 
+        // Appels UI Kizuna à garde d'arité : les handlers 0x140CB28E0, 0x140CB3570 et
+        // 0x140CB35C0 poussent une réussite après leur mutation dans le manager natif. Cette
+        // mutation n'est pas représentable dans MenuState, mais retourner 0 interromprait les
+        // branches Lua alors que le jeu retourne 1 avec les arités réellement utilisées.
+        CMD_KIZUNA_APPLY_PART_FLAGS | CMD_KIZUNA_SET_PART_PARAM | CMD_KIZUNA_SET_PART_TEXTURE => {
+            if let Some(name) = command_name(cmd_id) {
+                state
+                    .known_cmd_log
+                    .push((name.to_string(), state.current_layer));
+            }
+            return 1.0;
+        }
+
         // ── RegisterItemListCount (0x16C1C4C0) : handler 0x140CD8E30 reversé ──
         // Enregistre `object_attr[objId] = count` (arg3) dans le manager d'items que GetObjectAttr
         // relit → GetItemButtonNum renvoie le count fourni par le SCRIPT. Renvoie 1 (al=1) si ≥4 args.
@@ -1832,12 +2165,12 @@ pub fn drive_menu_for_frames(
     }
 
     // Step() — avance la même VM sur plusieurs frames : les scripts du jeu utilisent des
-    // coroutines et conservent leur état entre deux callbacks. `max(1)` préserve le contrat
-    // historique du driver, même si l'appelant demande zéro frame.
+    // coroutines et conservent leur état entre deux callbacks. Zéro signifie réellement zéro
+    // frame ; `drive_menu()` demande explicitement une frame pour conserver son contrat court.
     let pre_step = g.raw_get::<Value>("PreStep").ok();
     let step = g.raw_get::<Value>("Step").ok();
     let post_step = g.raw_get::<Value>("PostStep").ok();
-    for _ in 0..frames.max(1) {
+    for _ in 0..frames {
         if let Some(Value::Function(f)) = &pre_step
             && let Err(e) = f.call::<MultiValue>(())
         {
@@ -2267,6 +2600,40 @@ mod dispatch_tests {
             objs.get(&0x222).unwrap().visible,
             "part réactivée -> visible"
         );
+    }
+
+    #[test]
+    fn kizuna_part_commands_conservent_visibilite_et_rgba_flottant() {
+        let (lua, state) = host();
+        let f = menu_cmd(&lua);
+        assert_eq!(
+            f.call::<f64>((
+                f64::from(CMD_KIZUNA_SET_PART_VISIBLE),
+                f64::from(0x111_u32),
+                f64::from(0x222_u32),
+                false,
+            ))
+            .unwrap(),
+            1.0
+        );
+        assert_eq!(
+            f.call::<f64>((
+                f64::from(CMD_KIZUNA_SET_PART_COLOR),
+                f64::from(0x111_u32),
+                3.0_f64,
+                f64::from(0x222_u32),
+                0.1_f64,
+                0.2_f64,
+                0.3_f64,
+                0.4_f64,
+            ))
+            .unwrap(),
+            1.0
+        );
+        let object = &state.borrow().layers[&0].objects[&0x111];
+        assert_eq!(object.part_visible.get(&0x222), Some(&false));
+        assert_eq!(object.part_color_rgba[&0x222], [0.1, 0.2, 0.3, 0.4]);
+        assert!(state.borrow().unknown_cmd_log.is_empty());
     }
 
     /// SetObjectActive(objId, active) — écrit le champ `active`. Layout vérifié sur
@@ -2861,6 +3228,22 @@ mod dispatch_tests {
             .call(f64::from(CMD_GENERAL_APPLY_UI_EFFECT))
             .unwrap();
         assert_eq!(empty_effect, 0.0);
+        let apply_state: f64 = command
+            .call((f64::from(CMD_GENERAL_APPLY_STATE), 0xCAFE_u32))
+            .unwrap();
+        assert_eq!(apply_state, 1.0);
+
+        let set_global_int: f64 = command
+            .call((f64::from(CMD_GENERAL_SET_GLOBAL_INT), 7_i32))
+            .unwrap();
+        assert_eq!(set_global_int, 1.0);
+        assert_eq!(state.borrow().engine_int_2728, Some(7));
+        let empty_global_int: f64 = command.call(f64::from(CMD_GENERAL_SET_GLOBAL_INT)).unwrap();
+        assert_eq!(empty_global_int, 0.0);
+
+        let menu_command: Function = lua.globals().get("funcLuaMenuCommand").unwrap();
+        let kizuna_reset: f64 = menu_command.call(f64::from(CMD_KIZUNA_TOWN_RESET)).unwrap();
+        assert_eq!(kizuna_reset, 1.0);
 
         let unknown: f64 = command.call((1.0_f64,)).unwrap();
         assert_eq!(unknown, 0.0);
@@ -2875,6 +3258,37 @@ mod dispatch_tests {
     }
 
     #[test]
+    fn general_kizuna_handlers_reproduisent_leurs_retours_re() {
+        let (lua, state) = host();
+        state.borrow_mut().set_condition(0x0BAD, true);
+        let command: Function = lua.globals().get("funcLuaCommand").unwrap();
+
+        let a: bool = command
+            .call((f64::from(CMD_GENERAL_QUERY_BOOL_A), f64::from(0x0BAD_u32)))
+            .unwrap();
+        assert!(a);
+        let b: bool = command
+            .call((
+                f64::from(CMD_GENERAL_QUERY_BOOL_B),
+                f64::from(0x0BAD_u32),
+                0_i32,
+                0_i32,
+            ))
+            .unwrap();
+        assert!(b);
+        let (ok, value): (bool, i64) = command
+            .call((f64::from(CMD_GENERAL_QUERY_STATE), 1_i32, 0_i32, 13_i32))
+            .unwrap();
+        assert!(ok);
+        assert_eq!(value, 0);
+        let applied: bool = command
+            .call(f64::from(CMD_GENERAL_APPLY_CURRENT_STATE))
+            .unwrap();
+        assert!(applied);
+        assert_eq!(state.borrow().unknown_general_cmd_log.len(), 0);
+    }
+
+    #[test]
     fn drive_menu_for_frames_keeps_the_same_lua_vm() {
         let lua = new_vm();
         let bytes = lua
@@ -2886,6 +3300,18 @@ mod dispatch_tests {
         let report = drive_menu_for_frames(&lua, &bytes, "frames", &[], &item_counts, 3).unwrap();
         assert!(report.top_level_ok);
         assert_eq!(lua.globals().get::<i64>("frames").unwrap(), 3);
+    }
+
+    #[test]
+    fn drive_menu_for_frames_zero_navance_pas_le_cycle() {
+        let lua = new_vm();
+        let bytes = lua
+            .load("frames = 0; function Step() frames = frames + 1 end")
+            .into_function()
+            .unwrap()
+            .dump(false);
+        drive_menu_for_frames(&lua, &bytes, "zero-frames", &[], &BTreeMap::new(), 0).unwrap();
+        assert_eq!(lua.globals().get::<i64>("frames").unwrap(), 0);
     }
 
     #[test]
@@ -2928,7 +3354,7 @@ mod dispatch_tests {
     }
 
     #[test]
-    fn drive_menu_for_frames_trace_les_globals_moteur_absents() {
+    fn drive_menu_for_frames_trace_les_methodes_moteur_non_portees() {
         let lua = new_vm();
         let _state = install_menu_host(&lua).unwrap();
         let bytes = lua
@@ -2942,7 +3368,11 @@ mod dispatch_tests {
             .dump(false);
         let report =
             drive_menu_for_frames(&lua, &bytes, "host-paths", &[], &BTreeMap::new(), 0).unwrap();
-        assert!(report.missing_host_calls.contains(&"GENERAL_WINDOW".to_string()));
+        assert!(
+            !report
+                .missing_host_calls
+                .contains(&"GENERAL_WINDOW".to_string())
+        );
         assert!(
             report
                 .missing_host_paths

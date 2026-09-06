@@ -58,7 +58,7 @@ pub const DELAI_REQUETE: Duration = Duration::from_secs(15);
 
 /// Les routes exposées, dans l'ordre où elles sont déclarées. Sert de contrat vérifiable : les
 /// tests comptent cette liste et interrogent chacune de ses entrées.
-pub const ROUTES: [&str; 18] = [
+pub const ROUTES: [&str; 19] = [
     "/healthz",
     "/robots.txt",
     "/llms.txt",
@@ -68,6 +68,7 @@ pub const ROUTES: [&str; 18] = [
     "/ja/manifest.webmanifest",
     "/.well-known/security.txt",
     "/sitemap.xml",
+    "/feed.atom",
     "/api/v1/health",
     "/api/v1/chara",
     "/api/v1/{vue}",
@@ -97,6 +98,7 @@ pub fn routeur(etat: EtatSite) -> Router {
         .route("/ja/manifest.webmanifest", get(crate::routes::well_known::manifeste))
         .route("/.well-known/security.txt", get(crate::routes::well_known::security))
         .route("/sitemap.xml", get(crate::routes::well_known::sitemap))
+        .route("/feed.atom", get(crate::routes::feed::atom))
         .route("/api/v1/health", get(crate::routes::api_v1::health))
         .route("/api/v1/chara", get(crate::routes::api_v1::chara))
         .route("/api/v1/{vue}", get(crate::routes::api_v1::vue))
@@ -107,6 +109,18 @@ pub fn routeur(etat: EtatSite) -> Router {
         .route("/assets/{*chemin}", get(crate::routes::assets::assets))
         .route("/", get(crate::routes::pages::coquille))
         .fallback(crate::routes::static_files::statique)
+        // Les couches s'empilent de la plus INTERNE à la plus externe, et l'ordre est ici un
+        // choix, pas une habitude :
+        //
+        // - l'ETag est au plus près des routes, seul endroit d'où l'on voie le corps final ;
+        // - la borne de débit est AU-DESSUS, pour qu'un client refusé ne fasse ni requête SQL
+        //   ni condensé — un limiteur qui laisse d'abord travailler ne limite que la bande
+        //   passante ;
+        // - les en-têtes de sécurité l'enveloppent, pour qu'un `429` les porte aussi ;
+        // - le délai maximal et la trace restent les plus externes, faute de quoi ils ne
+        //   verraient ni les réponses des couches ci-dessus ni leur latence.
+        .layer(axum::middleware::from_fn(crate::etag::conditionnel))
+        .layer(axum::middleware::from_fn_with_state(etat.clone(), crate::debit::limiter))
         .layer(axum::middleware::from_fn(entetes_securite))
         .layer(TimeoutLayer::with_status_code(StatusCode::GATEWAY_TIMEOUT, DELAI_REQUETE))
         .layer(TraceLayer::new_for_http())
@@ -153,7 +167,7 @@ mod tests {
 
     #[test]
     fn contrat_de_routes() {
-        assert_eq!(ROUTES.len(), 18);
+        assert_eq!(ROUTES.len(), 19);
         for r in ROUTES {
             assert!(r.starts_with('/'), "{r}");
             assert!(!r.contains(":{"), "syntaxe axum 0.7 interdite: {r}");

@@ -32,15 +32,20 @@ ExecStart=/home/ubuntu/niers/target/release/nie-model-serve \
     --asset-cross-ref /home/ubuntu/niers/data/asset-cross-reference.json \
     --menu-cfg-dir /home/ubuntu/niers/data/common/gamedata/menu/cfg \
     --db /home/ubuntu/niers/var/mirror.sqlite \
-    --port 8790 --threads 6 --http-threads 16 --http-queue 256 --memory-cache-mib 1024
+    --port 8790 --threads 10 --http-threads 24 --http-queue 512 --memory-cache-mib 2048
 Environment=RUST_LOG=info
+# Dimensionne pour la machine APRES la bascule d'Azalee sur Vercel : `azalee-web` (4,9 Gio
+# reels, 12 G de plafond) et `website-web` (1,3 Gio, 4 G) quittent alors le VPS et rendent
+# 6,2 Gio reels. Tant qu'ils tournent, ces plafonds restent des LIMITES et non des
+# reservations — le service vit a 861 Mio — mais la marge reelle vient de leur arret.
+#
 # Le budget du cache CPK doit rester SOUS `MemoryHigh`, avec de la marge pour le reste du
 # processus. Il valait 8 GiB pour un `MemoryHigh` de 7 GiB : le cache remplissait jusqu'a un
 # plafond que le service n'avait pas le droit d'atteindre, le cgroup le mettait en reclaim
 # permanent, et 4 threads sur 9 restaient bloques dans `__mem_cgroup_handle_over_high`.
 # Mesure du 2026-09-05 : RssAnon 7,17 GiB, 67 % de CPU, /health sans reponse en 30 s — sans
 # la moindre requete entrante. Le service se saturait lui-meme.
-Environment=NIE_CPK_CACHE_BUDGET_GIB=8
+Environment=NIE_CPK_CACHE_BUDGET_GIB=12
 Restart=always
 RestartSec=5s
 
@@ -76,8 +81,8 @@ TasksMax=1024
 # Le preload global de 6 387 modèles créait un cache disque de 14 Gio et une
 # pointe de plusieurs Gio au démarrage. Les modèles sont désormais chargés à la
 # demande ; le cache disque reste borné séparément par scripts/ops/prune-runtime.ts.
-MemoryHigh=11G
-MemoryMax=13G
+MemoryHigh=16G
+MemoryMax=20G
 MemorySwapMax=1G
 CPUWeight=80
 IOWeight=100

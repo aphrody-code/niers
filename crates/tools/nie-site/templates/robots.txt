@@ -7,6 +7,7 @@ User-agent: *
 Allow: /$
 {% for c in chemins %}Allow: {{ c }}
 {% endfor %}Allow: /llms.txt
+Allow: /feed.atom
 Disallow: /api/
 Disallow: /assets/
 Disallow: /f/
@@ -20,6 +21,7 @@ Disallow: /healthz
 {% endfor %}Allow: /
 Allow: /llms.txt
 Allow: /llms-full.txt
+Allow: /feed.atom
 Allow: /api/v1/
 Disallow: /assets/
 Disallow: /f/

@@ -26,8 +26,8 @@
 
 use std::fmt::Write as _;
 
-use thiserror::Error;
 use serde::Serialize;
+use thiserror::Error;
 
 /// Erreurs de décodage du conteneur bytecode.
 #[derive(Debug, Error)]
@@ -163,7 +163,12 @@ impl Prototype {
     /// Nombre total d'instructions, prototypes imbriqués compris.
     #[must_use]
     pub fn total_instructions(&self) -> usize {
-        self.code.len() + self.protos.iter().map(Self::total_instructions).sum::<usize>()
+        self.code.len()
+            + self
+                .protos
+                .iter()
+                .map(Self::total_instructions)
+                .sum::<usize>()
     }
 
     /// Nombre total de prototypes imbriqués (récursif).
@@ -283,7 +288,16 @@ pub fn decode_instruction(raw: u32) -> Instruction {
     // `sBx` est un `Bx` biaisé de `MAXARG_sBx` = (2^18-1)/2.
     let sbx = bx as i32 - 131_071;
     let ax = (raw >> 6) & 0x3FF_FFFF;
-    Instruction { raw, opcode, a, b, c, bx, sbx, ax }
+    Instruction {
+        raw,
+        opcode,
+        a,
+        b,
+        c,
+        bx,
+        sbx,
+        ax,
+    }
 }
 
 impl Instruction {
@@ -298,7 +312,10 @@ impl Instruction {
     /// Mode d'encodage, `ABC` par défaut pour un opcode inconnu.
     #[must_use]
     pub fn mode(&self) -> OpMode {
-        OP_MODES.get(self.opcode as usize).copied().unwrap_or(OpMode::ABC)
+        OP_MODES
+            .get(self.opcode as usize)
+            .copied()
+            .unwrap_or(OpMode::ABC)
     }
 }
 
@@ -308,9 +325,10 @@ fn rk(operand: u32, constants: &[Constant]) -> String {
     const BITRK: u32 = 1 << 8;
     if operand & BITRK != 0 {
         let idx = (operand & !BITRK) as usize;
-        constants
-            .get(idx)
-            .map_or_else(|| format!("K{idx}?"), |k| format!("K{idx}({})", k.display()))
+        constants.get(idx).map_or_else(
+            || format!("K{idx}?"),
+            |k| format!("K{idx}({})", k.display()),
+        )
     } else {
         format!("R{operand}")
     }
@@ -343,7 +361,11 @@ impl<'a> Reader<'a> {
     fn u32(&mut self) -> Result<u32, BytecodeError> {
         let b = self.take(4)?;
         let arr = [b[0], b[1], b[2], b[3]];
-        Ok(if self.little_endian { u32::from_le_bytes(arr) } else { u32::from_be_bytes(arr) })
+        Ok(if self.little_endian {
+            u32::from_le_bytes(arr)
+        } else {
+            u32::from_be_bytes(arr)
+        })
     }
 
     /// Lit un `int` C dont la taille vient de l'en-tête.
@@ -354,7 +376,9 @@ impl<'a> Reader<'a> {
                 let v = self.size_t()?;
                 Ok(v as u32)
             }
-            n => Err(BytecodeError::UnsupportedHeader(format!("sizeof(int) = {n}"))),
+            n => Err(BytecodeError::UnsupportedHeader(format!(
+                "sizeof(int) = {n}"
+            ))),
         }
     }
 
@@ -377,7 +401,11 @@ impl<'a> Reader<'a> {
     fn number(&mut self) -> Result<f64, BytecodeError> {
         let b = self.take(8)?;
         let arr = [b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]];
-        Ok(if self.little_endian { f64::from_le_bytes(arr) } else { f64::from_be_bytes(arr) })
+        Ok(if self.little_endian {
+            f64::from_le_bytes(arr)
+        } else {
+            f64::from_be_bytes(arr)
+        })
     }
 
     /// Chaîne Lua : `size_t` de longueur (0 = NULL), octets **terminaison `\0` comprise**.
@@ -509,7 +537,11 @@ fn read_prototype(r: &mut Reader<'_>) -> Result<Prototype, BytecodeError> {
         let name = r.string()?;
         let start_pc = r.int()?;
         let end_pc = r.int()?;
-        loc_vars.push(LocVar { name, start_pc, end_pc });
+        loc_vars.push(LocVar {
+            name,
+            start_pc,
+            end_pc,
+        });
     }
 
     let upname_count = r.int()? as usize;
@@ -548,7 +580,11 @@ pub fn disassemble(chunk: &Chunk) -> String {
         out,
         "; Lua {:#04x} — {}-boutiste, int {} o, size_t {} o, number {} o",
         chunk.header.version,
-        if chunk.header.little_endian { "petit" } else { "gros" },
+        if chunk.header.little_endian {
+            "petit"
+        } else {
+            "gros"
+        },
         chunk.header.size_int,
         chunk.header.size_size_t,
         chunk.header.size_number
@@ -574,7 +610,10 @@ fn disassemble_proto(p: &Prototype, label: &str, depth: usize, out: &mut String)
 
     for (pc, raw) in p.code.iter().enumerate() {
         let ins = decode_instruction(*raw);
-        let line = p.line_info.get(pc).map_or_else(String::new, |l| format!("[{l}]"));
+        let line = p
+            .line_info
+            .get(pc)
+            .map_or_else(String::new, |l| format!("[{l}]"));
         let operands = format_operands(&ins, p);
         let _ = writeln!(
             out,
@@ -584,7 +623,15 @@ fn disassemble_proto(p: &Prototype, label: &str, depth: usize, out: &mut String)
     }
 
     if !p.loc_vars.is_empty() {
-        let _ = writeln!(out, "{pad}  ; locales : {}", p.loc_vars.iter().map(|v| v.name.as_str()).collect::<Vec<_>>().join(", "));
+        let _ = writeln!(
+            out,
+            "{pad}  ; locales : {}",
+            p.loc_vars
+                .iter()
+                .map(|v| v.name.as_str())
+                .collect::<Vec<_>>()
+                .join(", ")
+        );
     }
     if !p.upvalue_names.is_empty() {
         let _ = writeln!(out, "{pad}  ; upvalues : {}", p.upvalue_names.join(", "));
@@ -605,7 +652,9 @@ fn format_operands(ins: &Instruction, p: &Prototype) -> String {
             if name == "CLOSURE" {
                 format!("R{} := closure #{}", ins.a, ins.bx)
             } else {
-                let value = k.get(ins.bx as usize).map_or_else(|| "?".to_string(), Constant::display);
+                let value = k
+                    .get(ins.bx as usize)
+                    .map_or_else(|| "?".to_string(), Constant::display);
                 format!("R{} := K{}({value})", ins.a, ins.bx)
             }
         }
@@ -616,12 +665,7 @@ fn format_operands(ins: &Instruction, p: &Prototype) -> String {
             match name.as_str() {
                 // Les accès de table par upvalue portent le nom du global dans C : c'est la forme
                 // la plus fréquente et la plus parlante d'un script de menu (`GETTABUP 0 _ENV "X"`).
-                "GETTABUP" => format!(
-                    "R{} := Up{}[{}]",
-                    ins.a,
-                    ins.b,
-                    rk(ins.c, k)
-                ),
+                "GETTABUP" => format!("R{} := Up{}[{}]", ins.a, ins.b, rk(ins.c, k)),
                 "SETTABUP" => format!("Up{}[{}] := {}", ins.a, rk(ins.b, k), rk(ins.c, k)),
                 "GETTABLE" => format!("R{} := R{}[{}]", ins.a, ins.b, rk(ins.c, k)),
                 "SETTABLE" => format!("R{}[{}] := {}", ins.a, rk(ins.b, k), rk(ins.c, k)),
@@ -658,14 +702,25 @@ mod tests {
         assert_eq!(chunk.header.size_instruction, 4);
 
         // Une fonction imbriquée (`f`) doit apparaître dans les prototypes du chunk principal.
-        assert_eq!(chunk.main.protos.len(), 1, "la fonction locale doit être un prototype imbriqué");
+        assert_eq!(
+            chunk.main.protos.len(),
+            1,
+            "la fonction locale doit être un prototype imbriqué"
+        );
         let f = &chunk.main.protos[0];
         assert_eq!(f.num_params, 2, "f prend deux paramètres");
 
         // Le corps de `f` doit contenir une addition puis un retour.
-        let ops: Vec<String> = f.code.iter().map(|c| decode_instruction(*c).name()).collect();
+        let ops: Vec<String> = f
+            .code
+            .iter()
+            .map(|c| decode_instruction(*c).name())
+            .collect();
         assert!(ops.contains(&"ADD".to_string()), "opcodes de f : {ops:?}");
-        assert!(ops.contains(&"RETURN".to_string()), "opcodes de f : {ops:?}");
+        assert!(
+            ops.contains(&"RETURN".to_string()),
+            "opcodes de f : {ops:?}"
+        );
 
         // Le listing doit être non vide et nommer les opcodes.
         let listing = disassemble(&chunk);
@@ -690,7 +745,10 @@ mod tests {
     fn decode_les_vrais_scripts_du_jeu() {
         let dir = nie_formats::vfs::resolve_game_dir().join("data/lua_scripts");
         if !dir.is_dir() {
-            eprintln!("skip : {} introuvable (définir NIE_GAME_DIR)", dir.display());
+            eprintln!(
+                "skip : {} introuvable (définir NIE_GAME_DIR)",
+                dir.display()
+            );
             return;
         }
         let entries: Vec<_> = std::fs::read_dir(&dir)

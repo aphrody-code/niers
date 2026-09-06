@@ -1,0 +1,60 @@
+# Couverture Lua runtime — Kizuna
+
+Date de clôture : 2026-09-06.
+
+## Résultat
+
+Le chemin Lua brut VFS → décodage → VM Lua 5.2 unsafe → hôte de menu → état de
+runtime est opérationnel pour le menu `kizuna_town_mainmenu`.
+
+- Scripts réels décodés : **1 143/1 143**, soit **985 971 instructions**.
+- Audit ciblé Kizuna : **25/25 scripts exécutés**, 0 erreur, 0 include manquant,
+  0 appel hôte manquant.
+- Audit VFS complet : **1 197/1 197 scripts exécutés**, 0 erreur, 0 include
+  manquant.
+- Runtime Kizuna : **102 commandes connues**, 0 commande menu inconnue,
+  0 commande générale inconnue.
+- Export runtime : 21 objets de layout, 8 objets Lua, 12 objets mutés,
+  10 masqués, 9 sprites et 9 textes mis à jour.
+
+## Travaux réalisés
+
+`LuaSession` conserve désormais le même état de menu lors de l’exécution et du
+rechargement de VM. `drive_menu_for_frames` permet d’exécuter plusieurs frames
+avec le même résolveur d’include et le même hôte.
+
+`menu_host` couvre les commandes Kizuna de visibilité, couleur RGBA, paramètres,
+texture et application de flags. Les commandes générales identifiées par le RE
+sont décodées avec leur protocole de retour ; les requêtes d’état sans donnée
+native disponible renvoient un neutre explicite et déterministe.
+
+Les espaces de noms et constantes observés dans les scripts sont injectés avec
+leurs valeurs CRC32 connues, notamment les recettes de Chara Edit, les os,
+les types de tutoriel, les types d’onglet et les constantes de texture/texte.
+L’état `partVisible` et `partColorRgba` est propagé jusqu’à l’export du layout.
+
+## Vérifications
+
+```text
+cargo test -p nie-lua --lib
+85 passed, 0 failed, 1 ignored
+
+cargo clippy -p nie-lua -p nie-game --lib --bins --tests -- -D warnings
+success, 0 warning
+```
+
+Les audits ont été lancés avec `NIE_GAME_DIR`/`--game-dir` vers l’installation
+locale du jeu, sans chemin machine écrit dans le code ou dans ce rapport.
+
+## Limites connues
+
+L’audit complet signale 13 paramètres non résolus dans un script d’effets
+générique (`x`, `y`, `layerIdx`, `pieceIdx`, `pieceType`, `effectIdx` et
+métadonnées associées). Ils ne provoquent aucune erreur d’exécution et ne
+concernent pas le chemin Kizuna ciblé. Les effets natifs dont le binaire ne
+fournit pas encore de sortie observable restent modélisés par un état neutre
+documenté ; cela ne constitue pas une preuve d’identité pixel-perfect du jeu
+complet.
+
+Un build workspace complet n’a pas été lancé, conformément à la règle du dépôt
+qui le déconseille lorsque l’espace disque est contraint.

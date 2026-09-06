@@ -88,7 +88,10 @@ pub fn preference_puissance() -> wgpu::PowerPreference {
 /// rasteriseur logiciel ne dépend pas du vendeur du pilote.
 #[must_use]
 pub fn fallback_impose() -> bool {
-    matches!(std::env::var("NIE_WGPU_FORCE_FALLBACK").as_deref(), Ok("1" | "true"))
+    matches!(
+        std::env::var("NIE_WGPU_FORCE_FALLBACK").as_deref(),
+        Ok("1" | "true")
+    )
 }
 
 /// Instance wgpu sur un backend donné.
@@ -140,7 +143,10 @@ pub fn decrire(adapter: &wgpu::Adapter) -> String {
         wgpu::DeviceType::Cpu => "logiciel (CPU)",
         wgpu::DeviceType::Other => "type inconnu",
     };
-    format!("{} — {genre}, backend {:?}, pilote « {} »", info.name, info.backend, info.driver_info)
+    format!(
+        "{} — {genre}, backend {:?}, pilote « {} »",
+        info.name, info.backend, info.driver_info
+    )
 }
 
 #[cfg(test)]
@@ -171,6 +177,9 @@ mod tests {
     /// son iGPU sans que rien ne le signale.
     #[test]
     fn preference_vise_le_gpu_discret() {
-        assert_eq!(preference_puissance(), wgpu::PowerPreference::HighPerformance);
+        assert_eq!(
+            preference_puissance(),
+            wgpu::PowerPreference::HighPerformance
+        );
     }
 }

@@ -688,22 +688,73 @@ fn messages_du_mode(vfs: &Vfs, motif: &str, exe: Option<&std::path::Path>) -> Js
         return serde_json::json!({});
     };
 
-    // Chaînes ASCII imprimables du binaire, filtrées sur le motif du mode.
+    // Chaînes ASCII et UTF-16LE imprimables du binaire, filtrées sur le motif du mode.
+    // Les noms des classes/menus Kizuna sont stockés en UTF-16 dans nie.exe ; se limiter à
+    // l'ASCII produisait un catalogue de messages vide, alors que les CRC étaient bien présents.
     let mut cles: BTreeSet<String> = BTreeSet::new();
-    let mut courante = Vec::new();
+    let mut collect = |s: &str| {
+        if s.len() >= 4
+            && s.contains(motif)
+            && !s.contains('/')
+            && !s.contains('.')
+            && s.bytes().all(|b| b.is_ascii_graphic() || b == b'_')
+        {
+            cles.insert(s.to_string());
+        }
+    };
+
+    let mut ascii = Vec::new();
     for &b in &bin {
         if b.is_ascii_graphic() || b == b'_' {
-            courante.push(b);
+            ascii.push(b);
         } else {
-            if courante.len() >= 4
-                && let Ok(s) = core::str::from_utf8(&courante)
-                && s.contains(motif)
-                && !s.contains('/')
-                && !s.contains('.')
-            {
-                cles.insert(s.to_string());
+            if ascii.len() >= 4 && let Ok(s) = core::str::from_utf8(&ascii) {
+                collect(s);
             }
-            courante.clear();
+            ascii.clear();
+        }
+    }
+    if ascii.len() >= 4 && let Ok(s) = core::str::from_utf8(&ascii) {
+        collect(s);
+    }
+
+    let mut wide = Vec::new();
+    for pair in bin.chunks_exact(2) {
+        let unit = u16::from_le_bytes([pair[0], pair[1]]);
+        if (0x20..=0x7e).contains(&unit) {
+            wide.push(unit);
+        } else {
+            if wide.len() >= 4 && let Ok(s) = String::from_utf16(&wide) {
+                collect(&s);
+            }
+            wide.clear();
+        }
+    }
+    if wide.len() >= 4 && let Ok(s) = String::from_utf16(&wide) {
+        collect(&s);
+    }
+
+    // Le dictionnaire de RE est la source de vérité lorsque l'exécutable ne conserve que le
+    // CRC (cas fréquent pour les tables de texte). Il permet notamment de relier les noms
+    // `TEXT_ID_*`, `*_message_*` et les identifiants Kizuna aux entrées localisées.
+    if let Ok(cwd) = std::env::current_dir() {
+        let mut courant = cwd.as_path();
+        'cherche_dico: loop {
+            let chemin = courant.join("data/re/menu-crc32-dictionary.json");
+            if chemin.is_file() {
+                if let Ok(texte) = std::fs::read_to_string(chemin)
+                    && let Ok(dico) = serde_json::from_str::<BTreeMap<String, String>>(&texte)
+                {
+                    for nom in dico.values().filter(|nom| nom.contains(motif)) {
+                        collect(nom);
+                    }
+                }
+                break 'cherche_dico;
+            }
+            match courant.parent() {
+                Some(parent) => courant = parent,
+                None => break 'cherche_dico,
+            }
         }
     }
 
@@ -885,6 +936,16 @@ pub fn index(db: &nie_index::Db, vfs: &Vfs) -> Result<(usize, usize, usize, usiz
             conn.query_row("SELECT id FROM mode WHERE slug=?1", [def.slug], |r| {
                 r.get(0)
             })?;
+
+        // Réindexation exacte : les ensembles d'un écran peuvent diminuer après une mise à
+        // jour du VFS. `INSERT OR IGNORE` seul conservait alors des assets fantômes dans SQLite,
+        // ce qui rendait l'API différente de l'export JSON courant.
+        for table in ["mode_screen", "mode_asset", "mode_text"] {
+            conn.execute(
+                &format!("DELETE FROM {table} WHERE mode_id=?1"),
+                [mode_id],
+            )?;
+        }
 
         for (stem, path) in &f.screens {
             conn.execute(

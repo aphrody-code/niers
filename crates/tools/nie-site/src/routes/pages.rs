@@ -818,7 +818,16 @@ mod tests {
             ] {
                 assert!(html.contains(attendu), "en {langue}, absent : {attendu}");
             }
-            assert_eq!(html.matches("rel=\"alternate\"").count(), 4);
+            // Compté sur `rel="alternate" hreflang=` et non sur `rel="alternate"` seul : le
+            // `<head>` porte aussi le lien du flux Atom, qui est un `rel="alternate"` sans
+            // `hreflang`. Compter le premier mesurait l'intention ; compter le second
+            // confondait deux mécanismes qui n'ont en commun que le mot.
+            assert_eq!(html.matches("rel=\"alternate\" hreflang=").count(), 4);
+            assert_eq!(
+                html.matches(r#"<link rel="alternate" type="application/atom+xml""#).count(),
+                1,
+                "un flux, et un seul : c'est ce lien qui le rend decouvrable"
+            );
         }
     }
 

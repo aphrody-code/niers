@@ -20,6 +20,7 @@
  * binaire. Le dire ici evite qu'un lecteur prenne la seconde pour la premiere.
  */
 import type { CSSProperties, ReactNode } from "react";
+import { biseau, BOITES, LARGEUR_TUILE, PENTE_PANNEAU } from "./geometrie-mainmenu";
 
 /** Fusionne des classes en ignorant les vides. */
 function cx(...parties: (string | false | null | undefined)[]): string {
@@ -78,12 +79,33 @@ export function CanvasItem({
 	);
 }
 
-/** Le biseau du menu, en `clip-path`. `penche` regle la coupe, en pixels. */
-function coupe(penche: number, inverse = false): CSSProperties {
+/**
+ * Le parallelogramme du menu, en `clip-path`.
+ *
+ * Le HAUT est decale vers la droite : la pente mesuree vaut `dx/dy = -0,4` (§
+ * [`PENTE_TUILE`]), c'est-a-dire qu'un bord part vers la gauche en descendant. La premiere
+ * version de ce fichier penchait dans l'autre sens — un ecart qu'on ne voit pas en lisant le
+ * code, seulement en posant le rendu a cote de la capture.
+ */
+function coupe(penche: number): CSSProperties {
 	return {
-		clipPath: inverse
-			? `polygon(${penche}px 0, 100% 0, calc(100% - ${penche}px) 100%, 0 100%)`
-			: `polygon(0 0, calc(100% - ${penche}px) 0, 100% 100%, ${penche}px 100%)`,
+		clipPath: `polygon(${penche}px 0, 100% 0, calc(100% - ${penche}px) 100%, 0 100%)`,
+	};
+}
+
+/**
+ * Un panneau lateral : UN seul bord est biseaute, l'autre longe le bord de l'ecran.
+ *
+ * Les deux panneaux du menu ne sont pas des parallelogrammes complets — leur bord exterieur est
+ * vertical, colle au bord de l'ecran, et seul le bord interieur penche (vers l'exterieur en
+ * descendant, `PENTE_PANNEAU`, l'inverse des tuiles).
+ */
+function coupePanneau(penche: number, cote: "gauche" | "droite"): CSSProperties {
+	return {
+		clipPath:
+			cote === "gauche"
+				? `polygon(0 0, calc(100% - ${penche}px) 0, 100% 100%, 0 100%)`
+				: `polygon(${penche}px 0, 100% 0, 100% 100%, 0 100%)`,
 	};
 }
 
@@ -101,9 +123,9 @@ export function IconTile({
 	actif = false,
 	sourdine = false,
 	onClick,
-	largeur = 150,
-	hauteur = 96,
-	penche = 18,
+	largeur = LARGEUR_TUILE,
+	hauteur = BOITES.rangee.h,
+	penche = biseau(BOITES.rangee.h),
 	className,
 }: {
 	icone: ReactNode;
@@ -187,13 +209,16 @@ export function HeroPanel({
 	cote,
 	children,
 	onClick,
-	hauteur = 205,
+	hauteur = BOITES.panneaux.h,
+	penche = Math.round(PENTE_PANNEAU * BOITES.panneaux.h),
 }: {
 	titre: string;
 	cote: "gauche" | "droite";
 	children?: ReactNode;
 	onClick?: () => void;
 	hauteur?: number;
+	/** Le decalage du bord interieur entre le haut et le bas, en pixels du canevas. */
+	penche?: number;
 }) {
 	const gauche = cote === "gauche";
 	const Balise = onClick ? "button" : "div";
@@ -202,7 +227,7 @@ export function HeroPanel({
 			type={onClick ? "button" : undefined}
 			onClick={onClick}
 			style={{
-				...coupe(64, !gauche),
+				...coupePanneau(penche, cote),
 				position: "relative",
 				display: "block",
 				width: "100%",
@@ -210,25 +235,32 @@ export function HeroPanel({
 				border: 0,
 				padding: 0,
 				textAlign: gauche ? "left" : "right",
+				// Le degrade va du clair (bord EXTERIEUR) au bleu (bord INTERIEUR), et non
+				// l'inverse : termine sur `--jeu-ciel-clair` (#f9fcfc), le panneau finissait a la
+				// couleur exacte du fond de l'ecran (#f9fdf9) et son bord biseaute devenait
+				// invisible. On voyait alors un degrade qui s'eteignait, pas un parallelogramme —
+				// et l'ecart avec la capture etait impossible a situer.
 				background: gauche
-					? "linear-gradient(100deg, var(--jeu-surface-brume), var(--jeu-ciel-clair))"
-					: "linear-gradient(260deg, var(--jeu-surface-brume), var(--jeu-ciel-clair))",
+					? "linear-gradient(100deg, var(--jeu-ciel-clair) 0%, var(--jeu-ciel-brume) 100%)"
+					: "linear-gradient(260deg, var(--jeu-ciel-clair) 0%, var(--jeu-ciel-brume) 100%)",
 				color: "var(--jeu-nuit-profonde)",
 				font: "inherit",
 				cursor: onClick ? "pointer" : "default",
 				boxShadow: "var(--jeu-ombre-tuile)",
 			}}
 		>
-			{/* Le titre est rentre de 84 px, soit plus que la coupe de 64 : pose plus pres du bord,
-			    il tomberait DANS le biseau et se ferait rogner par le `clip-path` du panneau
-			    lui-meme — un rognage que rien ne signale, puisque le texte est bien la. */}
+			{/* Le titre longe le bord EXTERIEUR — celui qui est vertical — donc rien ne le rogne :
+			    28 px suffisent, et c'est la marge mesuree sur la capture (« AVATAR » commence a
+			    x = 28 du canevas, « VOTRE EQUIPE » finit a 26 du bord droit). Le poser du cote
+			    interieur le ferait tomber dans le biseau de 98 px, sans qu'aucun message ne le
+			    signale : le texte serait toujours la, simplement coupe. */}
 			<span
 				style={{
 					position: "absolute",
-					bottom: 14,
-					left: gauche ? 84 : undefined,
-					right: gauche ? undefined : 84,
-					fontSize: 34,
+					bottom: 8,
+					left: gauche ? 28 : undefined,
+					right: gauche ? undefined : 28,
+					fontSize: 38,
 					fontWeight: 800,
 					letterSpacing: "0.12em",
 					textTransform: "uppercase",
@@ -398,6 +430,54 @@ export function KeyCap({ children }: { children: ReactNode }) {
 		>
 			{children}
 		</span>
+	);
+}
+
+/**
+ * Une banniere penchee, comme la pile du coin bas-droit du menu.
+ *
+ * Le jeu y annonce ses DLC ; Aphrody y met des liens reels. La forme est la meme : bande
+ * penchee, texte clair sur fond sature, empilee vers le haut.
+ */
+export function Banniere({
+	children,
+	href,
+	teinte = "azur",
+}: {
+	children: ReactNode;
+	href?: string;
+	teinte?: "azur" | "nuit" | "ambre";
+}) {
+	const fonds: Record<string, string> = {
+		azur: "linear-gradient(180deg, var(--jeu-tuile-active-haut), var(--jeu-tuile-active-bas))",
+		nuit: "linear-gradient(180deg, #1c3f6e, var(--jeu-nuit-profonde))",
+		ambre: "linear-gradient(180deg, var(--jeu-accent-ambre), var(--jeu-lisere-or))",
+	};
+	const Balise = href ? "a" : "div";
+	return (
+		<Balise
+			href={href}
+			style={{
+				...coupe(10),
+				display: "flex",
+				alignItems: "center",
+				justifyContent: "flex-end",
+				gap: 8,
+				height: 28,
+				padding: "0 16px",
+				background: fonds[teinte],
+				color: teinte === "ambre" ? "var(--jeu-nuit-profonde)" : "var(--jeu-texte-vif)",
+				font: "inherit",
+				fontWeight: 800,
+				fontSize: 13,
+				letterSpacing: "0.02em",
+				textDecoration: "none",
+				textShadow: teinte === "ambre" ? "none" : "0 1px 2px rgb(10 47 102 / 85%)",
+				boxShadow: "var(--jeu-ombre-tuile)",
+			}}
+		>
+			{children}
+		</Balise>
 	);
 }
 

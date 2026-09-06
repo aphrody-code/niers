@@ -79,6 +79,12 @@ pub struct Capacites {
     pub gisement: bool,
     /// Racine du bundle statique servie, si elle existe.
     pub bundle: bool,
+    /// Débit maximal par IP, en requêtes par seconde, ou `None` quand la borne est éteinte.
+    ///
+    /// Rapportée parce qu'une borne invisible est une borne qu'on accuse à tort : devant un
+    /// `429`, la première question est « laquelle », et il faut pouvoir y répondre sans lire
+    /// l'unité systemd.
+    pub debit: Option<f64>,
 }
 
 /// État partagé, cloné par requête (tout est derrière un `Arc`).
@@ -96,6 +102,10 @@ pub struct EtatSite {
     pub client: reqwest::Client,
     /// Jetons de concurrence vers l'amont : au-delà, on attend plutôt que d'écrouler l'amont.
     pub jetons_amont: Arc<tokio::sync::Semaphore>,
+    /// Borne de débit par IP, ou `None` quand le réglage l'éteint. Le cache de seaux est
+    /// partagé par tous les clones de l'état — c'est ce qui fait qu'un `Limiteur` cloné à
+    /// chaque requête compte quand même les requêtes ensemble.
+    pub limiteur: Option<crate::debit::Limiteur>,
 }
 
 impl std::fmt::Debug for EtatSite {
@@ -104,6 +114,7 @@ impl std::fmt::Debug for EtatSite {
             .field("config", &self.config)
             .field("gisement", &self.gisement.chemin())
             .field("cache", &self.cache.entry_count())
+            .field("limiteur", &self.limiteur)
             .finish_non_exhaustive()
     }
 }
@@ -133,6 +144,7 @@ impl EtatSite {
             .build();
         let jetons_amont = Arc::new(tokio::sync::Semaphore::new(config.concurrence_amont));
         let gisement = Arc::new(Gisement::nouveau(config.db.clone()));
+        let limiteur = crate::debit::Limiteur::nouveau(config.debit);
         Self {
             config: Arc::new(config),
             vfs: Arc::new(RwLock::new(StatutVfs::EnCours)),
@@ -140,6 +152,7 @@ impl EtatSite {
             cache,
             client,
             jetons_amont,
+            limiteur,
         }
     }
 
@@ -237,6 +250,7 @@ impl EtatSite {
             vfs_contenu,
             gisement: self.gisement.present(),
             bundle: self.config.statique.is_dir(),
+            debit: self.limiteur.as_ref().map(|l| l.reglage().par_seconde),
         }
     }
 

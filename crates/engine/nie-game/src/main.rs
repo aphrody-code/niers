@@ -2970,6 +2970,10 @@ struct MergedObj {
     /// gabarit une fois par item ; sans cette carte, les exemplaires partagent un seul booléen et
     /// s'affichent ou disparaissent en bloc.
     visible_par_index: std::collections::BTreeMap<i32, bool>,
+    /// Visibilité des parts adressées par hash (commande Kizuna dédiée).
+    part_visible: std::collections::BTreeMap<u32, bool>,
+    /// Couleurs RGBA flottantes des parts adressées par hash (commande Kizuna dédiée).
+    part_color_rgba: std::collections::BTreeMap<u32, [f32; 4]>,
     /// Hash de texture/chemin g4tx du sprite (`SetSprite`/`SetIconSprite` arg1).
     sprite_hash: Option<u32>,
     /// Hash de la région/texture dans l'atlas (`SetIconSprite` arg2). Paire (chemin, région).
@@ -2985,6 +2989,8 @@ impl Default for MergedObj {
         Self {
             visible: true,
             visible_par_index: std::collections::BTreeMap::new(),
+            part_visible: std::collections::BTreeMap::new(),
+            part_color_rgba: std::collections::BTreeMap::new(),
             sprite_hash: None,
             sprite_region: None,
             text: None,
@@ -3254,6 +3260,12 @@ fn cmd_export_layout_runtime(
                 for (idx, v) in &o.visible_par_index {
                     m.visible_par_index.entry(*idx).or_insert(*v);
                 }
+                for (part, v) in &o.part_visible {
+                    m.part_visible.entry(*part).or_insert(*v);
+                }
+                for (part, rgba) in &o.part_color_rgba {
+                    m.part_color_rgba.entry(*part).or_insert(*rgba);
+                }
                 if m.sprite_hash.is_none() {
                     m.sprite_hash = o.sprite_texture_hash;
                     m.sprite_region = o.sprite_region_hash;
@@ -3388,6 +3400,28 @@ fn cmd_export_layout_runtime(
             // L'instance est nommée visible alors que l'objet ne l'est pas : l'instance gagne,
             // c'est la commande la plus précise des deux.
             o.visible = true;
+        }
+        if !m.part_visible.is_empty() {
+            rt.insert(
+                "partVisible".into(),
+                json!(
+                    m.part_visible
+                        .iter()
+                        .map(|(part, visible)| (format!("0x{part:08X}"), *visible))
+                        .collect::<std::collections::BTreeMap<_, _>>()
+                ),
+            );
+        }
+        if !m.part_color_rgba.is_empty() {
+            rt.insert(
+                "partColorRgba".into(),
+                json!(
+                    m.part_color_rgba
+                        .iter()
+                        .map(|(part, rgba)| (format!("0x{part:08X}"), *rgba))
+                        .collect::<std::collections::BTreeMap<_, _>>()
+                ),
+            );
         }
         if m.sprite_hash.is_some() {
             n_sprite_mut += 1;

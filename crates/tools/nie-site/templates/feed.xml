@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="fr">
+  <title>{{ titre }}</title>
+  <subtitle>{{ sous_titre }}</subtitle>
+  <id>{{ origine }}/feed.atom</id>
+  <link rel="self" type="application/atom+xml" href="{{ origine }}/feed.atom"/>
+  <link rel="alternate" type="text/html" href="{{ origine }}/"/>
+  <updated>{{ maj }}</updated>
+  <generator uri="{{ origine }}/" version="{{ version }}">nie-site</generator>
+{% for e in entrees %}  <entry>
+    <id>{{ e.id }}</id>
+    <title>{{ e.titre }}</title>
+    <updated>{{ e.maj }}</updated>
+{% if let Some(p) = e.publie %}    <published>{{ p }}</published>
+{% endif %}{% if let Some(l) = e.lien %}    <link rel="alternate" type="text/html" href="{{ l }}"/>
+{% endif %}    <summary type="text">{{ e.resume }}</summary>
+  </entry>
+{% endfor %}</feed>

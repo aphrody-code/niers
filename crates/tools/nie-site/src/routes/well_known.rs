@@ -295,7 +295,11 @@ fn expiration_dans_un_an() -> String {
 }
 
 /// Convertit un instant Unix en `AAAA-MM-JJTHH:MM:SSZ` (calendrier grégorien proleptique).
-fn iso8601_utc(secondes: u64) -> String {
+///
+/// Visible dans la crate parce que le flux Atom en a besoin mot pour mot : un flux exige du
+/// RFC 3339, le plan du site en tronque les dix premiers caractères, et les deux doivent venir
+/// du même calcul — deux implémentations d'un calendrier finissent toujours par diverger.
+pub(crate) fn iso8601_utc(secondes: u64) -> String {
     let jours = (secondes / 86_400) as i64;
     let reste = secondes % 86_400;
     // Algorithme civil_from_days de Howard Hinnant, domaine public.
@@ -375,9 +379,9 @@ mod tests {
         let r = Robots { origine: "https://aphrody.com", chemins, agents: &AGENTS_IA }
             .render()
             .unwrap();
-        // 20 : 14 chemins + `/$` + `/llms.txt` pour le regime general, puis les 4 du regime
-        // des agents (`/`, `/llms.txt`, `/llms-full.txt`, `/api/v1/`).
-        assert_eq!(r.matches("Allow: ").count(), 20, "les deux regimes, chemin par chemin");
+        // 22 : 14 chemins + `/$` + `/llms.txt` + `/feed.atom` pour le regime general, puis les
+        // 5 du regime des agents (`/`, `/llms.txt`, `/llms-full.txt`, `/feed.atom`, `/api/v1/`).
+        assert_eq!(r.matches("Allow: ").count(), 22, "les deux regimes, chemin par chemin");
         assert!(r.contains("Allow: /$"));
     }
 

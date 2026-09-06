@@ -36,7 +36,10 @@ use std::rc::Rc;
 use mlua::{Lua, MultiValue, Table, Value};
 
 use crate::host::{HostRegistry, LogEntry, LogSink};
-use crate::runtime::{GlobalEntry, install_host_stubs, install_print_capture, list_globals, value_to_string};
+use crate::menu_host::{DriveReport, MenuState};
+use crate::runtime::{
+    GlobalEntry, install_host_stubs, install_print_capture, list_globals, value_to_string,
+};
 use crate::{ChunkMode, LuaError, is_lua52_bytecode};
 
 /// Points d'entrée standard d'un comportement, dans l'ordre du cycle de vie d'Overload.
@@ -44,8 +47,17 @@ use crate::{ChunkMode, LuaError, is_lua52_bytecode};
 /// Les noms sont ceux d'Overload (`OnAwake`, `OnStart`, …) : c'est une convention d'outillage pour
 /// nos propres scripts, **pas** une prétention sur l'API de Level-5, dont les points d'entrée
 /// réels sont ceux du reverse (cf. [`crate::menu_host`]).
-pub const LIFECYCLE_CALLBACKS: [&str; 6] =
-    ["OnAwake", "OnStart", "OnEnable", "OnUpdate", "OnDisable", "OnDestroy"];
+pub const LIFECYCLE_CALLBACKS: [&str; 6] = [
+    "OnAwake",
+    "OnStart",
+    "OnEnable",
+    "OnUpdate",
+    "OnDisable",
+    "OnDestroy",
+];
+
+type IncludeResolver = Rc<dyn Fn(&str) -> Option<Vec<u8>>>;
+type BuiltVm = (Lua, Option<Rc<RefCell<MenuState>>>);
 
 /// Un script attaché, avec la table qu'il a renvoyée.
 ///
@@ -107,6 +119,11 @@ impl ApiReport {
 /// Une VM Lua persistante, ses binders et ses comportements attachés.
 pub struct LuaSession {
     lua: Lua,
+    /// État du host de menu installé dans cette VM, quand `with_menu_host` est actif.
+    ///
+    /// Le conserver est essentiel pour une session live : les callbacks Lua mutent cet état
+    /// entre deux appels, exactement comme le manager de menus natif conserve ses objets.
+    menu_state: Option<Rc<RefCell<MenuState>>>,
     registry: HostRegistry,
     logs: LogSink,
     stdout: Rc<RefCell<Vec<String>>>,
@@ -115,6 +132,10 @@ pub struct LuaSession {
     /// ré-attacher ce qui était en place.
     attached_sources: Vec<(String, Vec<u8>)>,
     with_menu_host: bool,
+    /// Résolveur persistant des `INCLUDE`, typiquement une fermeture adossée au VFS brut.
+    include_resolver: Option<IncludeResolver>,
+    /// Includes demandés mais absents depuis le dernier prélèvement.
+    missing_includes: Rc<RefCell<Vec<String>>>,
 }
 
 impl LuaSession {
@@ -127,17 +148,60 @@ impl LuaSession {
     ///
     /// # Errors
     /// [`LuaError`] si l'installation de l'hôte échoue.
-    pub fn new(registry: HostRegistry, logs: LogSink, with_menu_host: bool) -> Result<Self, LuaError> {
+    pub fn new(
+        registry: HostRegistry,
+        logs: LogSink,
+        with_menu_host: bool,
+    ) -> Result<Self, LuaError> {
+        Self::new_with_resolver(registry, logs, with_menu_host, None)
+    }
+
+    /// Crée une session dont `INCLUDE(name)` lit les chunks depuis le résolveur fourni.
+    ///
+    /// Le résolveur est conservé par la session : `reload()` reconstruit la VM et réinstalle
+    /// exactement le même accès au VFS, au lieu de retomber silencieusement sur une console sans
+    /// modules. Les chunks inclus sont exécutés dans la VM de la session, comme dans `nie.exe`.
+    ///
+    /// # Errors
+    /// [`LuaError`] si l'installation de l'hôte ou de `INCLUDE` échoue.
+    pub fn with_include<F>(
+        registry: HostRegistry,
+        logs: LogSink,
+        with_menu_host: bool,
+        resolver: F,
+    ) -> Result<Self, LuaError>
+    where
+        F: Fn(&str) -> Option<Vec<u8>> + 'static,
+    {
+        Self::new_with_resolver(registry, logs, with_menu_host, Some(Rc::new(resolver)))
+    }
+
+    fn new_with_resolver(
+        registry: HostRegistry,
+        logs: LogSink,
+        with_menu_host: bool,
+        include_resolver: Option<IncludeResolver>,
+    ) -> Result<Self, LuaError> {
         let stdout = Rc::new(RefCell::new(Vec::new()));
-        let lua = Self::build_vm(&registry, &stdout, with_menu_host)?;
+        let missing_includes = Rc::new(RefCell::new(Vec::new()));
+        let (lua, menu_state) = Self::build_vm(
+            &registry,
+            &stdout,
+            with_menu_host,
+            include_resolver.as_ref(),
+            &missing_includes,
+        )?;
         Ok(Self {
             lua,
+            menu_state,
             registry,
             logs,
             stdout,
             behaviours: Vec::new(),
             attached_sources: Vec::new(),
             with_menu_host,
+            include_resolver,
+            missing_includes,
         })
     }
 
@@ -158,17 +222,32 @@ impl LuaSession {
         registry: &HostRegistry,
         stdout: &Rc<RefCell<Vec<String>>>,
         with_menu_host: bool,
-    ) -> Result<Lua, LuaError> {
+        include_resolver: Option<&IncludeResolver>,
+        missing_includes: &Rc<RefCell<Vec<String>>>,
+    ) -> Result<BuiltVm, LuaError> {
         let lua = crate::new_vm();
         install_print_capture(&lua, Rc::clone(stdout))?;
         registry.bind_all(&lua)?;
-        if with_menu_host {
-            crate::install_menu_host(&lua)?;
+        let menu_state = if with_menu_host {
+            Some(crate::install_menu_host(&lua)?)
+        } else {
+            None
+        };
+        if let Some(resolver) = include_resolver {
+            let resolver = Rc::clone(resolver);
+            let missing = Rc::clone(missing_includes);
+            crate::install_include(&lua, move |name| match resolver(name) {
+                Some(bytes) => Some(bytes),
+                None => {
+                    missing.borrow_mut().push(name.to_string());
+                    None
+                }
+            })?;
         }
         // Les stubs viennent EN DERNIER : la métatable de `_G` ne doit intercepter que ce qu'aucun
         // binder n'a fourni, sinon tout serait déclaré « manquant ».
         install_host_stubs(&lua)?;
-        Ok(lua)
+        Ok((lua, menu_state))
     }
 
     /// Accès à la VM, pour les usages avancés (ex. installer un binder supplémentaire).
@@ -177,10 +256,57 @@ impl LuaSession {
         &self.lua
     }
 
+    /// État du menu partagé par la VM live, s’il a été demandé à la construction.
+    #[must_use]
+    pub fn menu_state(&self) -> Option<Rc<RefCell<MenuState>>> {
+        self.menu_state.as_ref().map(Rc::clone)
+    }
+
+    /// Exécute un menu dans la VM persistante, avec ses includes VFS et son `MenuState`.
+    ///
+    /// Cette méthode conserve les globals, coroutines et mutations déjà produits par les
+    /// évaluations précédentes. Elle est donc adaptée au pilotage « live » ; `reload()` reste
+    /// l’opération explicite qui recrée le contexte.
+    ///
+    /// # Errors
+    /// [`LuaError`] si le host menu n’a pas été activé ou si le bytecode est invalide.
+    pub fn drive_menu_for_frames(
+        &self,
+        script_bytes: &[u8],
+        name: &str,
+        layer_ids: &[u32],
+        item_counts: &std::collections::BTreeMap<u32, i32>,
+        frames: u32,
+    ) -> Result<DriveReport, LuaError> {
+        if self.menu_state.is_none() {
+            return Err(LuaError::Vm(mlua::Error::RuntimeError(
+                "LuaSession: with_menu_host=false, impossible de piloter un menu".to_string(),
+            )));
+        }
+        crate::menu_host::drive_menu_for_frames(
+            &self.lua,
+            script_bytes,
+            name,
+            layer_ids,
+            item_counts,
+            frames,
+        )
+    }
+
     /// Lignes de `print` accumulées depuis le dernier [`Self::take_output`].
     #[must_use]
     pub fn take_output(&self) -> Vec<String> {
         std::mem::take(&mut self.stdout.borrow_mut())
+    }
+
+    /// Includes VFS demandés mais absents depuis le dernier prélèvement, dédoublonnés et triés.
+    #[must_use]
+    pub fn take_missing_includes(&self) -> Vec<String> {
+        let mut journal = self.missing_includes.borrow_mut();
+        let mut missing = std::mem::take(&mut *journal);
+        missing.sort_unstable();
+        missing.dedup();
+        missing
     }
 
     /// Messages `Debug.*` accumulés depuis le dernier appel.
@@ -195,7 +321,11 @@ impl LuaSession {
     /// [`LuaError`] si le chunk échoue — ici l'erreur EST propagée : contrairement à une analyse,
     /// une exécution demandée explicitement doit dire qu'elle a raté.
     pub fn exec(&self, name: &str, data: &[u8]) -> Result<Vec<String>, LuaError> {
-        let mode = if is_lua52_bytecode(data) { ChunkMode::Binary } else { ChunkMode::Text };
+        let mode = if is_lua52_bytecode(data) {
+            ChunkMode::Binary
+        } else {
+            ChunkMode::Text
+        };
         let values: MultiValue = self
             .lua
             .load(data)
@@ -214,7 +344,11 @@ impl LuaSession {
     /// # Errors
     /// [`LuaError`] si le chunk échoue ou ne renvoie pas de table.
     pub fn attach(&mut self, name: &str, data: &[u8]) -> Result<&Behaviour, LuaError> {
-        let mode = if is_lua52_bytecode(data) { ChunkMode::Binary } else { ChunkMode::Text };
+        let mode = if is_lua52_bytecode(data) {
+            ChunkMode::Binary
+        } else {
+            ChunkMode::Text
+        };
         let value: Value = self
             .lua
             .load(data)
@@ -229,8 +363,12 @@ impl LuaSession {
             ))));
         };
 
-        self.behaviours.push(Behaviour { name: name.to_string(), table });
-        self.attached_sources.push((name.to_string(), data.to_vec()));
+        self.behaviours.push(Behaviour {
+            name: name.to_string(),
+            table,
+        });
+        self.attached_sources
+            .push((name.to_string(), data.to_vec()));
         Ok(self.behaviours.last().expect("vient d'être poussé"))
     }
 
@@ -268,7 +406,15 @@ impl LuaSession {
     /// # Errors
     /// [`LuaError`] si la reconstruction ou un ré-attachement échoue.
     pub fn reload(&mut self) -> Result<(), LuaError> {
-        self.lua = Self::build_vm(&self.registry, &self.stdout, self.with_menu_host)?;
+        let (lua, menu_state) = Self::build_vm(
+            &self.registry,
+            &self.stdout,
+            self.with_menu_host,
+            self.include_resolver.as_ref(),
+            &self.missing_includes,
+        )?;
+        self.lua = lua;
+        self.menu_state = menu_state;
         self.behaviours.clear();
 
         let sources = std::mem::take(&mut self.attached_sources);
@@ -314,12 +460,20 @@ impl LuaSession {
             .lua
             .globals()
             .get::<Table>("_HOST_MISSING")
-            .map(|t| t.pairs::<String, Value>().filter_map(Result::ok).map(|(k, _)| k).collect())
+            .map(|t| {
+                t.pairs::<String, Value>()
+                    .filter_map(Result::ok)
+                    .map(|(k, _)| k)
+                    .collect()
+            })
             .unwrap_or_default();
         missing.sort_unstable();
         missing.dedup();
 
-        ApiReport { missing, provided: self.registry.installed_names() }
+        ApiReport {
+            missing,
+            provided: self.registry.installed_names(),
+        }
     }
 }
 
@@ -341,6 +495,76 @@ mod tests {
     }
 
     #[test]
+    fn la_session_persistante_resout_include_dans_la_meme_vm() {
+        let logs: LogSink = Rc::new(RefCell::new(Vec::new()));
+        let registry = HostRegistry::standard(Rc::clone(&logs));
+        let module = br#"module_value = (rawget(_G, "module_value") or 0) + 1; return { value = module_value }"#
+            .to_vec();
+        let module_for_resolver = module.clone();
+        let mut s = LuaSession::with_include(registry, logs, false, move |name| {
+            (name == "LUA_TEST_MODULE").then(|| module_for_resolver.clone())
+        })
+        .expect("session avec include");
+
+        s.exec(
+            "main",
+            br#"INCLUDE("LUA_TEST_MODULE"); main_value = module_value"#,
+        )
+        .expect("premier include");
+        assert_eq!(s.eval("main_value").unwrap(), "1");
+        s.reload().expect("rechargement");
+        s.exec(
+            "main",
+            br#"INCLUDE("LUA_TEST_MODULE"); main_value = module_value"#,
+        )
+        .expect("include après rechargement");
+        assert_eq!(s.eval("main_value").unwrap(), "1");
+        s.exec("missing", br#"INCLUDE("LUA_MISSING"); missing_value = 1"#)
+            .expect("include absent toléré");
+        assert_eq!(s.take_missing_includes(), vec!["LUA_MISSING"]);
+        assert!(s.take_missing_includes().is_empty());
+    }
+
+    #[test]
+    fn la_session_menu_conserve_le_menu_state_de_la_vm_live() {
+        let mut s = LuaSession::standard(true).expect("session menu");
+        let bytes = s
+            .lua()
+            .load(
+                &br#"
+                function OnInit()
+                    funcLuaMenuCommand(0x2A64B198, 0x1234, 0, false)
+                end
+            "#[..],
+            )
+            .into_function()
+            .expect("compile menu")
+            .dump(false);
+
+        let report = s
+            .drive_menu_for_frames(
+                &bytes,
+                "live-menu",
+                &[],
+                &std::collections::BTreeMap::new(),
+                0,
+            )
+            .expect("drive menu");
+        assert_eq!(report.on_init, Some(true));
+        let state = s.menu_state().expect("MenuState conservé");
+        assert!(!state.borrow().layers[&0].objects[&0x1234].visible);
+
+        s.reload().expect("reload");
+        assert!(
+            s.menu_state()
+                .expect("MenuState après reload")
+                .borrow()
+                .layers
+                .is_empty()
+        );
+    }
+
+    #[test]
     fn attache_un_comportement_et_diffuse_les_callbacks() {
         let mut s = session();
         s.attach(
@@ -359,7 +583,10 @@ mod tests {
         let defined = b.defined_callbacks();
         assert!(defined.contains(&"OnStart"), "callbacks : {defined:?}");
         assert!(defined.contains(&"OnUpdate"), "callbacks : {defined:?}");
-        assert!(!defined.contains(&"OnDestroy"), "OnDestroy n'est pas défini : {defined:?}");
+        assert!(
+            !defined.contains(&"OnDestroy"),
+            "OnDestroy n'est pas défini : {defined:?}"
+        );
 
         assert_eq!(s.broadcast("OnStart").unwrap(), 1);
         assert_eq!(s.broadcast("OnUpdate").unwrap(), 1);
@@ -398,11 +625,16 @@ mod tests {
     #[test]
     fn le_rechargement_reattache_les_comportements() {
         let mut s = session();
-        s.attach("c", b"local M = {} function M.OnStart() end return M").expect("attachement");
+        s.attach("c", b"local M = {} function M.OnStart() end return M")
+            .expect("attachement");
         assert_eq!(s.behaviours().len(), 1);
 
         s.reload().expect("rechargement");
-        assert_eq!(s.behaviours().len(), 1, "le comportement doit être ré-attaché");
+        assert_eq!(
+            s.behaviours().len(),
+            1,
+            "le comportement doit être ré-attaché"
+        );
         assert_eq!(s.broadcast("OnStart").unwrap(), 1);
     }
 
@@ -410,12 +642,19 @@ mod tests {
     fn rapport_dapi_confronte_reclame_et_fourni() {
         let s = session();
         // `Debug` et `Math` sont fournis par les binders ; les deux autres non.
-        s.eval("Debug.Log('ok') MOTEUR_INCONNU() AUTRE_APPEL()").expect("eval");
+        s.eval("Debug.Log('ok') MOTEUR_INCONNU() AUTRE_APPEL()")
+            .expect("eval");
 
         let report = s.api_report();
         assert!(report.provided.contains(&"Debug".to_string()));
-        assert!(report.missing.contains(&"MOTEUR_INCONNU".to_string()), "{report:?}");
-        assert!(report.missing.contains(&"AUTRE_APPEL".to_string()), "{report:?}");
+        assert!(
+            report.missing.contains(&"MOTEUR_INCONNU".to_string()),
+            "{report:?}"
+        );
+        assert!(
+            report.missing.contains(&"AUTRE_APPEL".to_string()),
+            "{report:?}"
+        );
         assert!(
             !report.missing.contains(&"Debug".to_string()),
             "un global fourni par un binder ne doit jamais être compté manquant : {report:?}"
@@ -429,14 +668,16 @@ mod tests {
         s.set_global("pv", "250").expect("écriture");
         assert_eq!(s.eval("pv").unwrap(), "250");
 
-        s.set_global("table_test", "{a = 1, b = 2}").expect("écriture");
+        s.set_global("table_test", "{a = 1, b = 2}")
+            .expect("écriture");
         assert_eq!(s.eval("table_test.b").unwrap(), "2");
     }
 
     #[test]
     fn capture_la_sortie_et_les_journaux() {
         let s = session();
-        s.exec("t", b"print('sortie') Debug.LogWarning('attention')").expect("exec");
+        s.exec("t", b"print('sortie') Debug.LogWarning('attention')")
+            .expect("exec");
         assert_eq!(s.take_output(), vec!["sortie".to_string()]);
         let logs = s.take_logs();
         assert_eq!(logs.len(), 1);

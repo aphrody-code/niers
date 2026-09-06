@@ -56,6 +56,11 @@ pub struct Config {
     pub cache_ttl: Duration,
     /// Origine publique, utilisée par `sitemap.xml`, `robots.txt` et les balises `og:`.
     pub origine: String,
+    /// Borne de débit par IP réelle du client (cf. [`crate::debit`]).
+    ///
+    /// Elle ferme un trou mesuré : le vhost pose un `limit_req` sur `nie.` et sur `api.`, et
+    /// **aucun** sur `aphrody.com`. `par_seconde = 0` la désactive entièrement.
+    pub debit: crate::debit::Reglage,
 }
 
 impl Default for Config {
@@ -72,6 +77,7 @@ impl Default for Config {
             cache_octets: 256 * 1024 * 1024,
             cache_ttl: Duration::from_secs(300),
             origine: "https://aphrody.com".to_owned(),
+            debit: crate::debit::Reglage::defaut(),
         }
     }
 }
@@ -108,6 +114,12 @@ pub struct Options {
     /// Durée de vie d'une entrée du cache d'assets, en secondes (défaut 300).
     #[arg(long, env = "NIE_SITE_CACHE_TTL")]
     pub cache_ttl: Option<u64>,
+    /// Requêtes par seconde et par IP en régime établi (défaut 30, `0` désactive la borne).
+    #[arg(long, env = "NIE_SITE_DEBIT")]
+    pub debit: Option<f64>,
+    /// Requêtes qu'une rafale peut consommer d'un coup, par IP (défaut 120).
+    #[arg(long, env = "NIE_SITE_RAFALE")]
+    pub rafale: Option<f64>,
 }
 
 impl Options {
@@ -142,6 +154,15 @@ impl Options {
         }
         if let Some(t) = self.cache_ttl.filter(|t| *t > 0) {
             cfg.cache_ttl = Duration::from_secs(t);
+        }
+        // `0` est une valeur SIGNIFIANTE ici — elle éteint le limiteur — et c'est pourquoi ce
+        // champ n'a pas le `filter(> 0)` des autres : le refuser rendrait la désactivation
+        // impossible autrement qu'en recompilant.
+        if let Some(d) = self.debit.filter(|d| d.is_finite() && *d >= 0.0) {
+            cfg.debit.par_seconde = d;
+        }
+        if let Some(r) = self.rafale.filter(|r| r.is_finite() && *r >= 0.0) {
+            cfg.debit.rafale = r;
         }
         Ok(cfg)
     }

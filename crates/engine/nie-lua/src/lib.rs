@@ -238,6 +238,9 @@ where
             continue;
         };
         by_name
+            .entry(path.to_ascii_lowercase())
+            .or_insert_with(|| path.clone());
+        by_name
             .entry(base.to_ascii_lowercase())
             .or_insert_with(|| path.clone());
         by_logical
@@ -263,11 +266,15 @@ pub fn resolve_script_path<'a>(
     by_logical: &'a std::collections::HashMap<String, String>,
 ) -> Option<&'a String> {
     let lower = name.to_ascii_lowercase();
-    let exact = format!("{lower}.lua.bin");
+    let basename = lower.rsplit('/').next().unwrap_or(&lower);
+    let exact = format!("{basename}.lua.bin");
     by_name
-        .get(&exact)
-        .or_else(|| by_name.get(&lower))
-        .or_else(|| by_logical.get(&include_logical_base(name)))
+        .get(&lower)
+        .or_else(|| by_name.get(&exact))
+        .or_else(|| by_name.get(basename))
+        // Certains includes natifs portent un chemin relatif (`common/script/...`) : le
+        // VFS ajoute `data/`, mais la sélection de version se fait bien sur le basename.
+        .or_else(|| by_logical.get(&include_logical_base(basename)))
 }
 
 #[cfg(feature = "vm")]
@@ -394,6 +401,14 @@ mod tests {
         );
         assert_eq!(
             resolve_script_path("main_menu_inc_3.00.01.00.lua.bin", &by_name, &by_logical),
+            Some(&expected)
+        );
+        assert_eq!(
+            resolve_script_path(
+                "common/script/lua/menu/main_menu_inc_3.00.01.00.lua.bin",
+                &by_name,
+                &by_logical,
+            ),
             Some(&expected)
         );
         assert!(resolve_script_path("LUA_MISSING", &by_name, &by_logical).is_none());

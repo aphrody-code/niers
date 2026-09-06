@@ -32,6 +32,7 @@
 {% endif %}{% if let Some(suiv) = cat.suivant %}<link rel="next" href="{{ suiv }}">
 {% endif %}{% endif %}<meta name="theme-color" content="{{ couleur_theme }}">
 <link rel="manifest" href="{{ prefixe_langue }}/manifest.webmanifest">
+<link rel="alternate" type="application/atom+xml" title="Aphrody — épisodes" href="/feed.atom">
 <link rel="icon" href="/static/icone-192.png" sizes="192x192" type="image/png">
 {% if let Some(css) = feuille %}<link rel="stylesheet" href="{{ css }}">
 {% endif %}<script type="application/ld+json">{{ jsonld|safe }}</script>

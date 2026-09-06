@@ -104,7 +104,10 @@ impl DebugBinder {
     }
 
     fn join(args: &Variadic<Value>) -> String {
-        args.iter().map(crate::runtime::value_to_string).collect::<Vec<_>>().join("\t")
+        args.iter()
+            .map(crate::runtime::value_to_string)
+            .collect::<Vec<_>>()
+            .join("\t")
     }
 }
 
@@ -128,7 +131,10 @@ impl HostBinder for DebugBinder {
         ] {
             let sink = Rc::clone(&self.sink);
             let f = lua.create_function(move |_, args: Variadic<Value>| {
-                sink.borrow_mut().push(LogEntry { level, message: Self::join(&args) });
+                sink.borrow_mut().push(LogEntry {
+                    level,
+                    message: Self::join(&args),
+                });
                 Ok(())
             })?;
             table.set(key, f)?;
@@ -152,7 +158,9 @@ pub struct MathBinder {
 
 impl Default for MathBinder {
     fn default() -> Self {
-        Self { seed: 0x2545_F491_4F6C_DD1D }
+        Self {
+            seed: 0x2545_F491_4F6C_DD1D,
+        }
     }
 }
 
@@ -378,8 +386,9 @@ where
         table.set(
             "Read",
             lua.create_function(move |lua, (addr, len): (Value, i64)| {
-                let addr = parse_live_addr(&addr)
-                    .ok_or_else(|| mlua::Error::RuntimeError("Live.Read : adresse invalide".into()))?;
+                let addr = parse_live_addr(&addr).ok_or_else(|| {
+                    mlua::Error::RuntimeError("Live.Read : adresse invalide".into())
+                })?;
                 if len <= 0 || len as usize > LIVE_READ_MAX {
                     return Err(mlua::Error::RuntimeError(format!(
                         "Live.Read : longueur hors bornes (1..={LIVE_READ_MAX})"
@@ -400,9 +409,12 @@ where
         table.set(
             "ReadU32",
             lua.create_function(move |_, addr: Value| {
-                let addr = parse_live_addr(&addr)
-                    .ok_or_else(|| mlua::Error::RuntimeError("Live.ReadU32 : adresse invalide".into()))?;
-                Ok(read_u32(addr, 4).and_then(|b| b.try_into().ok()).map(|a: [u8; 4]| u32::from_le_bytes(a) as i64))
+                let addr = parse_live_addr(&addr).ok_or_else(|| {
+                    mlua::Error::RuntimeError("Live.ReadU32 : adresse invalide".into())
+                })?;
+                Ok(read_u32(addr, 4)
+                    .and_then(|b| b.try_into().ok())
+                    .map(|a: [u8; 4]| u32::from_le_bytes(a) as i64))
             })?,
         )?;
 
@@ -410,12 +422,15 @@ where
         table.set(
             "ReadU64",
             lua.create_function(move |_, addr: Value| {
-                let addr = parse_live_addr(&addr)
-                    .ok_or_else(|| mlua::Error::RuntimeError("Live.ReadU64 : adresse invalide".into()))?;
+                let addr = parse_live_addr(&addr).ok_or_else(|| {
+                    mlua::Error::RuntimeError("Live.ReadU64 : adresse invalide".into())
+                })?;
                 // Renvoyé en nombre Lua (double) : une adresse (< 2⁴⁷) reste exacte ; une valeur
                 // 64 bits pleine au-delà de 2⁵³ perdrait ses bits de poids faible — pour ces
                 // cas-là, lire les 8 octets bruts avec `Live.Read`.
-                Ok(read_u64(addr, 8).and_then(|b| b.try_into().ok()).map(|a: [u8; 8]| u64::from_le_bytes(a) as f64))
+                Ok(read_u64(addr, 8)
+                    .and_then(|b| b.try_into().ok())
+                    .map(|a: [u8; 8]| u64::from_le_bytes(a) as f64))
             })?,
         )?;
 
@@ -500,8 +515,20 @@ mod tests {
 
         let entries = sink.borrow();
         assert_eq!(entries.len(), 3);
-        assert_eq!(entries[0], LogEntry { level: LogLevel::Info, message: "a".into() });
-        assert_eq!(entries[1], LogEntry { level: LogLevel::Warning, message: "b\t2".into() });
+        assert_eq!(
+            entries[0],
+            LogEntry {
+                level: LogLevel::Info,
+                message: "a".into()
+            }
+        );
+        assert_eq!(
+            entries[1],
+            LogEntry {
+                level: LogLevel::Warning,
+                message: "b\t2".into()
+            }
+        );
         assert_eq!(entries[2].level, LogLevel::Error);
     }
 
@@ -516,7 +543,11 @@ mod tests {
         };
 
         let first = run();
-        assert_eq!(first, run(), "le générateur doit être reproductible d'une VM à l'autre");
+        assert_eq!(
+            first,
+            run(),
+            "le générateur doit être reproductible d'une VM à l'autre"
+        );
         for value in first.split(',') {
             let n: i64 = value.parse().expect("entier");
             assert!((1..=6).contains(&n), "valeur hors bornes : {n}");
@@ -527,7 +558,10 @@ mod tests {
     fn math_lerp() {
         let lua = crate::new_vm();
         MathBinder::default().bind(&lua).expect("bind");
-        let v: f64 = lua.load("return Math.Lerp(0, 10, 0.25)").eval().expect("exécution");
+        let v: f64 = lua
+            .load("return Math.Lerp(0, 10, 0.25)")
+            .eval()
+            .expect("exécution");
         assert!((v - 2.5).abs() < 1e-9, "lerp = {v}");
     }
 
@@ -549,14 +583,26 @@ mod tests {
         let count: i64 = lua.load("return #Vfs.List('data/')").eval().expect("liste");
         assert_eq!(count, 2, "le préfixe doit filtrer");
 
-        let size: i64 = lua.load("return Vfs.Size('data/a.bin')").eval().expect("taille");
+        let size: i64 = lua
+            .load("return Vfs.Size('data/a.bin')")
+            .eval()
+            .expect("taille");
         assert_eq!(size, 4);
 
-        let missing: i64 = lua.load("return Vfs.Size('data/inconnu')").eval().expect("taille");
-        assert_eq!(missing, -1, "un fichier absent doit se distinguer d'un fichier vide");
+        let missing: i64 = lua
+            .load("return Vfs.Size('data/inconnu')")
+            .eval()
+            .expect("taille");
+        assert_eq!(
+            missing, -1,
+            "un fichier absent doit se distinguer d'un fichier vide"
+        );
 
         // Les octets bruts doivent traverser sans conversion lossy.
-        let byte: i64 = lua.load("return string.byte(Vfs.Read('data/a.bin'), 1)").eval().expect("lecture");
+        let byte: i64 = lua
+            .load("return string.byte(Vfs.Read('data/a.bin'), 1)")
+            .eval()
+            .expect("lecture");
         assert_eq!(byte, 1);
     }
 
@@ -573,21 +619,38 @@ mod tests {
         binder.bind(&lua).expect("bind");
 
         // FindProcess expose pid + base.
-        let pid: i64 = lua.load("return Live.FindProcess().pid").eval().expect("pid");
+        let pid: i64 = lua
+            .load("return Live.FindProcess().pid")
+            .eval()
+            .expect("pid");
         assert_eq!(pid, 4242);
-        let base: String = lua.load("return Live.FindProcess().base").eval().expect("base");
+        let base: String = lua
+            .load("return Live.FindProcess().base")
+            .eval()
+            .expect("base");
         assert_eq!(base, "0x140000000");
 
         // Read renvoie les octets bruts, décodables via string.byte.
-        let first: i64 = lua.load("return string.byte(Live.Read(0x1000, 4), 1)").eval().expect("read");
+        let first: i64 = lua
+            .load("return string.byte(Live.Read(0x1000, 4), 1)")
+            .eval()
+            .expect("read");
         assert_eq!(first, 0x78);
 
         // ReadU32 recompose l'entier petit-boutiste.
-        let value: i64 = lua.load("return Live.ReadU32(0x1000)").eval().expect("readu32");
+        let value: i64 = lua
+            .load("return Live.ReadU32(0x1000)")
+            .eval()
+            .expect("readu32");
         assert_eq!(value, 0x1234_5678);
 
         // Une adresse non mappée donne nil, pas une erreur — un script peut sonder sans planter.
-        assert_eq!(lua.load("return Live.ReadU32(0x9999)").eval::<Value>().unwrap(), Value::Nil);
+        assert_eq!(
+            lua.load("return Live.ReadU32(0x9999)")
+                .eval::<Value>()
+                .unwrap(),
+            Value::Nil
+        );
 
         // `Live` n'expose AUCUNE écriture : le contrat lecture seule est vérifiable.
         let has_write: bool = lua
@@ -602,11 +665,16 @@ mod tests {
         let sink: LogSink = Rc::new(RefCell::new(Vec::new()));
         let registry = HostRegistry::standard(Rc::clone(&sink));
         assert_eq!(registry.binder_names(), vec!["Debug", "Math"]);
-        assert_eq!(registry.installed_names(), vec!["Debug".to_string(), "Math".to_string()]);
+        assert_eq!(
+            registry.installed_names(),
+            vec!["Debug".to_string(), "Math".to_string()]
+        );
 
         let lua = crate::new_vm();
         registry.bind_all(&lua).expect("bind_all");
-        lua.load("Debug.Log(Math.Lerp(0, 4, 0.5))").exec().expect("exécution");
+        lua.load("Debug.Log(Math.Lerp(0, 4, 0.5))")
+            .exec()
+            .expect("exécution");
         assert_eq!(sink.borrow()[0].message, "2");
     }
 }

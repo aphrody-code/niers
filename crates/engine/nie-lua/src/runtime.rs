@@ -276,10 +276,7 @@ fn execute_inner(
         names.dedup();
         out.missing_host_calls = names;
     }
-    if let Ok(missing) = lua
-        .globals()
-        .get::<mlua::Table>("_HOST_MISSING_PATHS")
-    {
+    if let Ok(missing) = lua.globals().get::<mlua::Table>("_HOST_MISSING_PATHS") {
         let mut paths: Vec<String> = missing
             .pairs::<String, Value>()
             .filter_map(Result::ok)
