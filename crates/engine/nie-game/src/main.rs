@@ -3153,6 +3153,9 @@ fn cmd_export_layout_runtime(
     let mut merged_layers: BTreeMap<u32, bool> = BTreeMap::new();
     let mut total_known = 0usize;
     let mut total_list_items = 0usize;
+    let mut decoded_scripts = 0usize;
+    let mut decode_errors = 0usize;
+    let mut decoded_instructions = 0usize;
     // cmdId -> (nombre d'appels, échantillon de représentation des args — aide à la RE du handler).
     let mut unknown_cmds: BTreeMap<u32, (usize, String)> = BTreeMap::new();
     // Même télémétrie pour `funcLuaCommand`, séparée des commandes de rendu menu.
@@ -3178,6 +3181,16 @@ fn cmd_export_layout_runtime(
     for path in &scripts {
         let Ok(bytes) = vfs.read(path) else { continue };
         let name = path.rsplit('/').next().unwrap_or(path);
+        match nie_lua::bytecode::parse(&bytes) {
+            Ok(chunk) => {
+                decoded_scripts += 1;
+                decoded_instructions += chunk.main.total_instructions();
+            }
+            Err(error) => {
+                decode_errors += 1;
+                warn!("décodage Lua {name} : {error}");
+            }
+        }
 
         // Le driver passe par la session persistante publique : index physique/logique, reader
         // VFS brut et MenuState live sont ainsi exactement le même chemin que les consommateurs
@@ -3561,6 +3574,9 @@ fn cmd_export_layout_runtime(
         "objects": json_objects,
         "runtimeSummary": {
             "scripts": script_names,
+            "decodedScripts": decoded_scripts,
+            "decodeErrors": decode_errors,
+            "decodedInstructions": decoded_instructions,
             "layersTouched": merged_layers.len(),
             "objectsInMenuState": merged_objs.len(),
             "objectsMatched": n_matched,

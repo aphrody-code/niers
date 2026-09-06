@@ -57,6 +57,8 @@ connues et 0 inconnue.
 L’export `runtimeSummary.loadedIncludes` conserve aussi les modules chargés et
 leur fréquence (notamment `LUA_KIZUNA_TOWN_MENU_INC`, `LUA_MENU_DEF` et
 `LUA_PROG_BASE`).
+Le même export contient désormais `decodedScripts`, `decodeErrors` et
+`decodedInstructions` ; Kizuna vérifie `1/1`, `0` et `1 933` respectivement.
 
 `menu_host` couvre les commandes Kizuna de visibilité, couleur RGBA, paramètres,
 texture et application de flags. Les commandes générales identifiées par le RE
