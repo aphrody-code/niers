@@ -179,6 +179,12 @@ struct Cli {
     #[arg(long)]
     runtime: bool,
 
+    /// Audite tous les `*_setting.cfg.bin` du VFS en une seule montée et écrit leurs comptes de
+    /// layout statique dans un JSON. Ce mode ne lance pas Lua : il mesure la composition réelle
+    /// `menu_setting → objbin → g4pkm → g4tx` écran par écran.
+    #[arg(long)]
+    menu_matrix: Option<PathBuf>,
+
     /// Diagnostic **C4 / D1.d** (rendu de texte) : blit `TEXT` depuis l'atlas de police bitmap RÉEL
     /// (`font_def/font.g4tx` + métriques `font_def/font.cfg.bin`) via `font::draw_text`. Avec
     /// `--capture`, écrit le PNG. Cible du gate D1.d (« 212 / 99 / COMMENCER » depuis l'atlas pré-cuit).
@@ -209,6 +215,12 @@ fn main() -> Result<()> {
     // diagnostic (texture, écran de menu, liste) et n'a rien à valider contre elles.
     if cli.play {
         return cmd_play(cli.frames.unwrap_or(0));
+    }
+
+    // Audit exhaustif des définitions de menu : il doit monter le VFS une seule fois, avant les
+    // modes écran qui montent chacun leur propre instance pour rester compatibles avec leur CLI.
+    if let Some(ref out) = cli.menu_matrix {
+        return cmd_menu_matrix(&game_dir, out);
     }
 
     // Mode --menu : rendu d'un écran de menu complet → PNG (requiert --capture,
@@ -2153,7 +2165,7 @@ fn resolve_vfs_basename(vfs: &Vfs, logical_path: &str, locale: &str) -> Option<S
     // d'itération NON déterministe) → on COLLECTE + TRIE pour un résultat reproductible : un
     // `.find()` direct choisissait une locale au hasard à chaque run (rendu non déterministe,
     // fatal pour le gate pixel-perfect byte-exact).
-    let mut matches: Vec<String> = vfs
+    let matches: Vec<String> = vfs
         .iter()
         .map(|(p, _)| p.to_string())
         .filter(|p| {
@@ -2162,6 +2174,11 @@ fn resolve_vfs_basename(vfs: &Vfs, logical_path: &str, locale: &str) -> Option<S
                     || p.as_bytes().get(p.len() - basename.len() - 1) == Some(&b'/'))
         })
         .collect();
+    choose_vfs_basename(matches, basename, locale)
+}
+
+/// Choisit un chemin parmi des candidats déjà limités au même basename.
+fn choose_vfs_basename(mut matches: Vec<String>, basename: &str, locale: &str) -> Option<String> {
     matches.sort_unstable();
 
     // Segment de répertoire juste avant le basename (= tag de locale pour les assets localisés,
@@ -2188,6 +2205,88 @@ fn resolve_vfs_basename(vfs: &Vfs, logical_path: &str, locale: &str) -> Option<S
         }
     }
     matches.into_iter().next()
+}
+
+/// Index borné des chemins consultés par la matrice menu.
+///
+/// Les modes unitaires conservent leur résolution directe afin de ne pas payer cet index quand
+/// un seul écran est demandé. La matrice, elle, réutilise les candidats des 255 308 entrées :
+/// chaque layer cesse ainsi de rescanner et de réallouer tout le VFS.
+struct MenuVfsLookup {
+    assets: std::collections::BTreeMap<String, Vec<String>>,
+    objbins: Vec<String>,
+    settings: std::collections::BTreeMap<String, String>,
+    menu_text: Vec<(nie_data::hash::HashId, String)>,
+}
+
+impl MenuVfsLookup {
+    fn new(vfs: &Vfs) -> Self {
+        let mut assets = std::collections::BTreeMap::<String, Vec<String>>::new();
+        let mut objbins = Vec::new();
+        let mut settings = std::collections::BTreeMap::new();
+        for (path, _) in vfs.iter() {
+            let path = path.to_string();
+            if let Some(basename) = path.rsplit('/').next() {
+                assets
+                    .entry(basename.to_owned())
+                    .or_default()
+                    .push(path.clone());
+            }
+            if path.contains("/menu/obj/") && path.ends_with(".objbin") {
+                objbins.push(path.clone());
+            }
+            if path.contains("/menu/cfg/")
+                && let Some(name) = path.rsplit('/').next()
+                && let Some(stem) = name.strip_suffix("_setting.cfg.bin")
+                && !stem.is_empty()
+            {
+                settings.entry(stem.to_owned()).or_insert(path);
+            }
+        }
+        for paths in assets.values_mut() {
+            paths.sort_unstable();
+        }
+        objbins.sort_unstable();
+        Self {
+            assets,
+            objbins,
+            settings,
+            menu_text: load_menu_text(vfs),
+        }
+    }
+
+    fn resolve_asset(&self, logical_path: &str, locale: &str) -> Option<String> {
+        let basename = logical_path.rsplit('/').next().filter(|s| !s.is_empty())?;
+        choose_vfs_basename(self.assets.get(basename)?.clone(), basename, locale)
+    }
+
+    fn resolve_objbin(&self, logical_path: &str) -> Option<String> {
+        let basename = logical_path.rsplit('/').next().filter(|s| !s.is_empty())?;
+        let stem = basename.strip_suffix(".objbin").unwrap_or(basename);
+        let prefix = format!("{stem}_");
+        self.objbins
+            .iter()
+            .filter(|path| {
+                let candidate = path.rsplit('/').next().unwrap_or(path);
+                candidate == basename
+                    || candidate
+                        .strip_suffix(".objbin")
+                        .is_some_and(|name| name == stem || name.starts_with(&prefix))
+            })
+            .min_by_key(|path| path.rsplit('/').next().unwrap_or(path).len())
+            .cloned()
+    }
+}
+
+fn resolve_menu_path(
+    vfs: &Vfs,
+    lookup: Option<&MenuVfsLookup>,
+    logical_path: &str,
+) -> Option<String> {
+    lookup.map_or_else(
+        || resolve_vfs_basename(vfs, logical_path, MENU_LOCALE),
+        |index| index.resolve_asset(logical_path, MENU_LOCALE),
+    )
 }
 
 /// Tags de locale connus du jeu (sous-dossiers `<LG>` des assets de menu).
@@ -2480,13 +2579,25 @@ fn build_sprite_list_from_setting(game_dir: &Path, setting: &str) -> Result<Vec<
 /// `Vec` vide si le setting est absent/illisible. Basename EXACT → déterministe (évite
 /// `victory_road_main_menu_setting` pour `main_menu`).
 fn setting_objbin_paths(vfs: &Vfs, setting: &str) -> Vec<String> {
+    setting_objbin_paths_with_lookup(vfs, setting, None)
+}
+
+/// Variante de [`setting_objbin_paths`] qui réutilise l'index construit pour un audit complet.
+fn setting_objbin_paths_with_lookup(
+    vfs: &Vfs,
+    setting: &str,
+    lookup: Option<&MenuVfsLookup>,
+) -> Vec<String> {
     let target = format!("{setting}_setting.cfg.bin");
-    let Some(setting_path) = vfs
-        .iter()
-        .map(|(p, _)| p.to_string())
-        .filter(|p| p.contains("/menu/cfg/") && p.rsplit('/').next() == Some(target.as_str()))
-        .min()
-    else {
+    let setting_path = if let Some(index) = lookup {
+        index.settings.get(setting).cloned()
+    } else {
+        vfs.iter()
+            .map(|(p, _)| p.to_string())
+            .filter(|p| p.contains("/menu/cfg/") && p.rsplit('/').next() == Some(target.as_str()))
+            .min()
+    };
+    let Some(setting_path) = setting_path else {
         return Vec::new();
     };
     let Ok(bytes) = vfs.read(&setting_path) else {
@@ -2500,6 +2611,14 @@ fn setting_objbin_paths(vfs: &Vfs, setting: &str) -> Vec<String> {
     ms.layers
         .iter()
         .filter_map(|l| {
+            if let Some(index) = lookup {
+                let resolved = index.resolve_objbin(&l.objbin_path);
+                if resolved.is_none() {
+                    let basename = l.objbin_path.rsplit('/').next().unwrap_or(&l.objbin_path);
+                    warn!("layer '{}' : objbin '{basename}' absent du VFS", l.name);
+                }
+                return resolved;
+            }
             let basename = l.objbin_path.rsplit('/').next().unwrap_or(&l.objbin_path);
             let stem = basename.strip_suffix(".objbin").unwrap_or(basename);
             let pref = format!("{stem}_");
@@ -2565,6 +2684,82 @@ fn cmd_export_layout(
         "export-layout: screen={screen_name} objets={n_objects} sprites={n_sprites} -> {} ({} octets)",
         out.display(),
         txt.len()
+    );
+    Ok(())
+}
+
+/// Énumère les définitions de menu et mesure leur composition statique en réutilisant le même
+/// pipeline que `--menu --from-setting`.
+fn cmd_menu_matrix(game_dir: &Path, out: &Path) -> Result<()> {
+    use serde_json::json;
+    use std::collections::BTreeSet;
+
+    let data_dir = game_dir.join("data");
+    let mut vfs = Vfs::new();
+    vfs.init(&data_dir)
+        .context("VFS init échoué (cpk_list.cfg.bin)")?;
+    info!("VFS monté : {} assets", vfs.asset_count());
+    let lookup = MenuVfsLookup::new(&vfs);
+
+    const SUFFIX: &str = "_setting.cfg.bin";
+    let mut screens = BTreeSet::new();
+    for (path, _) in vfs.iter() {
+        if !path.contains("/menu/cfg/") {
+            continue;
+        }
+        let Some(name) = path.rsplit('/').next() else {
+            continue;
+        };
+        if let Some(stem) = name.strip_suffix(SUFFIX)
+            && !stem.is_empty()
+        {
+            screens.insert(stem.to_owned());
+        }
+    }
+
+    let mut rows = Vec::with_capacity(screens.len());
+    let mut objects_total = 0usize;
+    let mut sprites_total = 0usize;
+    let mut nonempty = 0usize;
+    for screen in screens {
+        let (objects, sprites) =
+            collect_layout_objects_with_lookup(&vfs, &screen, true, Some(&lookup));
+        let object_count = objects.len();
+        objects_total += object_count;
+        sprites_total += sprites;
+        if object_count > 0 {
+            nonempty += 1;
+        }
+        rows.push(json!({
+            "screen": screen,
+            "objects": object_count,
+            "sprites": sprites,
+        }));
+    }
+
+    let screen_count = rows.len();
+    let result = json!({
+        "schema": "niers.menu.matrix/v1",
+        "vfsAssets": vfs.asset_count(),
+        "screens": rows,
+        "summary": {
+            "screens": screen_count,
+            "nonempty": nonempty,
+            "empty": screen_count.saturating_sub(nonempty),
+            "objects": objects_total,
+            "sprites": sprites_total,
+        },
+    });
+    let text = serde_json::to_string_pretty(&result)?;
+    std::fs::write(out, &text).with_context(|| format!("écriture {}", out.display()))?;
+    println!(
+        "menu-matrix: écrans={} non_vides={} objets={} sprites={} -> {} ({} octets)",
+        screen_count,
+        nonempty,
+        objects_total,
+        sprites_total,
+        out.display(),
+        text.len()
     );
     Ok(())
 }
@@ -2679,15 +2874,29 @@ fn load_menu_text(vfs: &Vfs) -> Vec<(nie_data::hash::HashId, String)> {
 }
 
 fn collect_layout_objects(vfs: &Vfs, screen: &str, from_setting: bool) -> (Vec<LayoutObj>, usize) {
+    collect_layout_objects_with_lookup(vfs, screen, from_setting, None)
+}
+
+/// Variante de [`collect_layout_objects`] qui réutilise les chemins indexés pour une matrice.
+fn collect_layout_objects_with_lookup(
+    vfs: &Vfs,
+    screen: &str,
+    from_setting: bool,
+    lookup: Option<&MenuVfsLookup>,
+) -> (Vec<LayoutObj>, usize) {
     use serde_json::{Value, json};
 
     // Table de texte de menu (locale fr) : résout les libellés STATIQUES (cf. DESIGN.md §7).
-    let menu_text = load_menu_text(vfs);
+    let fallback_menu_text = lookup.is_none().then(|| load_menu_text(vfs));
+    let menu_text = lookup
+        .map(|index| &index.menu_text)
+        .or(fallback_menu_text.as_ref())
+        .expect("une table de texte locale existe toujours, même vide");
 
     // Source des objbin : soit la **définition `menu_setting`** (composition correcte multi-préfixes,
     // D1.c-driver brique (a)), soit le filtre historique par préfixe de nom.
     let obj_paths: Vec<String> = if from_setting {
-        setting_objbin_paths(vfs, screen)
+        setting_objbin_paths_with_lookup(vfs, screen, lookup)
     } else {
         let screen_lower = screen.to_ascii_lowercase();
         let mut v: Vec<String> = vfs
@@ -2726,7 +2935,7 @@ fn collect_layout_objects(vfs: &Vfs, screen: &str, from_setting: bool) -> (Vec<L
         let Some(g4pkm_logical) = obj.g4pkm_path.as_deref() else {
             continue;
         };
-        let Some(g4pkm_vfs) = resolve_vfs_basename(vfs, g4pkm_logical, MENU_LOCALE) else {
+        let Some(g4pkm_vfs) = resolve_menu_path(vfs, lookup, g4pkm_logical) else {
             continue;
         };
         let Ok(bytes) = vfs.read(&g4pkm_vfs) else {
@@ -2778,7 +2987,7 @@ fn collect_layout_objects(vfs: &Vfs, screen: &str, from_setting: bool) -> (Vec<L
                     // non résolus (libellés runtime, ex. « COMMENCER ») restent au driver D1.c.
                     for e in &tc.entries {
                         if let Some(label) = e.hashes.iter().find_map(|h| {
-                            nie_data::text::find_text(&menu_text, nie_data::hash::HashId(*h))
+                            nie_data::text::find_text(menu_text, nie_data::hash::HashId(*h))
                         }) {
                             text_labels.push(json!({ "slot": e.key, "text": label }));
                         }
@@ -2807,10 +3016,10 @@ fn collect_layout_objects(vfs: &Vfs, screen: &str, from_setting: bool) -> (Vec<L
             });
         if let (Some(g4pkm_logical), Some(g4tx_logical)) =
             (obj.g4pkm_path.as_deref(), g4tx_logical.as_deref())
-            && let Some(g4pkm_vfs) = resolve_vfs_basename(vfs, g4pkm_logical, MENU_LOCALE)
+            && let Some(g4pkm_vfs) = resolve_menu_path(vfs, lookup, g4pkm_logical)
             && let Ok(g4pkm_bytes) = vfs.read(&g4pkm_vfs)
             && let Ok(skel) = g4pkm::parse(&g4pkm_bytes)
-            && let Some(g4tx_vfs) = resolve_vfs_basename(vfs, g4tx_logical, MENU_LOCALE)
+            && let Some(g4tx_vfs) = resolve_menu_path(vfs, lookup, g4tx_logical)
             && let Ok(g4tx_bytes) = vfs.read(&g4tx_vfs)
             && let Ok(parsed) = g4tx::parse(&g4tx_bytes)
         {
