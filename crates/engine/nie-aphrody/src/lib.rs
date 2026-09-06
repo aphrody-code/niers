@@ -13,6 +13,9 @@
 
 pub mod assets;
 pub mod codex;
+/// Le design system du site : les couleurs de l'interface **dérivées** de la palette mesurée
+/// d'Aphrody, et la feuille `game-tokens.css` qu'elles produisent.
+pub mod design;
 pub mod gisement;
 /// Le contrat « pet » de Codex : manifeste, pistes minutées, états. Dérivé d'`openai/codex`
 /// (Apache-2.0) — voir `NOTICE`.

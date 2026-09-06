@@ -51,3 +51,9 @@ path = "src/bin/export_aphrody.rs"
 [[bin]]
 name = "export_assets"
 path = "src/bin/export_assets.rs"
+
+# `design` : la feuille de couleurs du site, engendree depuis la palette mesuree. C'est le seul
+# chemin par lequel une couleur atteint `packages/inacord-ui/src/shell/game-tokens.css`.
+[[bin]]
+name = "design"
+path = "src/bin/design.rs"

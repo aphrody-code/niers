@@ -1,78 +1,74 @@
 /*
  * game-tokens.css — la direction artistique du jeu, en variables CSS.
  *
- * ## D'ou viennent ces valeurs
+ * FICHIER ENGENDRE — ne pas retoucher a la main.
+ *   Regenerer :  cargo run -p nie-aphrody --bin design
+ *   Source     :  crates/engine/nie-aphrody/src/design.rs
+ *   Verifier   :  cargo test -p nie-aphrody
  *
- * Les teintes sont MESUREES sur la reference archivee
- * `data/design/aphrody-ui-ref-mainmenu-7.1.2.png` (2497x1414), par quantification a 16 couleurs
- * uniques. Aucune n'est choisie a l'oeil : une palette citee de memoire ne ressemble au jeu que
- * de loin, et l'ecart ne se voit qu'une fois la maquette montee.
+ * ## D'ou viennent ces couleurs
  *
- * Rejouable :
- *   convert data/design/aphrody-ui-ref-mainmenu-7.1.2.png -resize 25% \
- *     -colors 16 -unique-colors txt:
+ * De la palette MESUREE sur l'atlas d'Aphrody lui-meme — un k-means en Oklab sur les 74 frames
+ * de crates/engine/nie-aphrody/assets/aphrody/sprites/spritesheet.png, rejouable par
+ *
+ *   pixel mesurer crates/engine/nie-aphrody/assets/aphrody/sprites/spritesheet.png --k 10 --json
+ *
+ * Les dix teintes trouvees ne sont pas posees telles quelles : une palette de personnage n'est
+ * pas une palette d'interface (25 % de creme contre 2 % de bleu — au prorata, tout le site
+ * serait creme et rien ne se detacherait). Chaque variable ci-dessous est un ROLE, qui garde la
+ * TEINTE mesuree de sa source et ne pose que sa clarte et son chroma. Le commentaire de fin de
+ * ligne dit de quelle teinte elle vient et quelle part de l'atlas cette teinte occupe.
  *
  * ## Deux coquilles, deux ambiances
  *
- * - `--jeu-*` : le menu principal du jeu, que porte Aphrody. Bleus profonds, accents ambre et
- *   cyan, contraste eleve.
- * - `--inacord-*` : l'application de messagerie du jeu, que porte Inacord. Panneaux sombres
- *   desatures, un seul accent cyan. Ces trois valeurs viennent de la decision produit
- *   (`PLAN.md` J5), pas de la quantification.
+ * - `--jeu-*` : le menu principal du jeu, que porte Aphrody.
+ * - `--inacord-*` : l'application de messagerie du jeu, que porte Inacord — memes teintes,
+ *   posees plus sombres et plus desaturees.
  *
  * Les deux jeux cohabitent : un hote choisit sa coquille, jamais ses couleurs.
  */
 
 :root {
-	/* --- Fonds : du plus profond au plus clair ------------------------------------------- */
-	--jeu-fond-abysse: #0f1011;
-	--jeu-fond-nuit: #304262;
-	--jeu-fond-profond: #2a5ca0;
-	--jeu-fond-moyen: #3c6ebe;
+	/* --- Fonds : du plus profond au plus clair ------------------------------------------------- */
+	--jeu-fond-abysse: oklch(0.1963 0.0242 280.23);  /* #131420 - nuit (2 %) - le fond le plus profond */
+	--jeu-fond-nuit: oklch(0.3000 0.0726 258.02);  /* #152d52 - azur (2 %) - un panneau sombre */
+	--jeu-fond-profond: oklch(0.3800 0.0888 258.02);  /* #224271 - azur (2 %) - une surface bleue */
+	--jeu-fond-moyen: oklch(0.4600 0.0968 258.02);  /* #34588d - azur (2 %) - une surface bleue active */
 
-	/* --- Accents : ce qui appelle l'oeil -------------------------------------------------- */
-	--jeu-accent-ambre: #e5cf39;
-	--jeu-accent-brique: #c35e2d;
-	--jeu-accent-azur: #2b99fa;
-	--jeu-accent-cyan: #63d8fc;
-	--jeu-accent-turquoise: #50a6c1;
+	/* --- Accents : ce qui appelle l'oeil ------------------------------------------------------- */
+	--jeu-accent-ambre: oklch(0.8400 0.1273 94.17);  /* #e6c961 - blond (21 %) - l'accent chaud, la couleur des cheveux */
+	--jeu-accent-brique: oklch(0.5800 0.1600 18.35);  /* #c74955 - brun (7 %) - l'alerte */
+	--jeu-accent-azur: oklch(0.5800 0.1291 258.02);  /* #477ac6 - azur (2 %) - l'accent froid, la couleur de la tenue */
+	--jeu-accent-cyan: oklch(0.8000 0.0968 258.02);  /* #97c0fc - azur (2 %) - le liseré d'un état actif */
+	--jeu-accent-turquoise: oklch(0.7000 0.1533 258.02);  /* #5f9efc - azur (2 %) - le succès */
 
-	/* --- Surfaces claires et texte -------------------------------------------------------- */
-	--jeu-surface-glace: #d2f5fc;
-	--jeu-surface-brume: #a5e1f6;
-	--jeu-surface-craie: #dfdfd8;
-	--jeu-surface-cendre: #bcb6b9;
-	--jeu-surface-rose: #b0858d;
-	--jeu-texte-vif: #fdfefe;
-	--jeu-texte-doux: #5ca2e2;
+	/* --- Surfaces claires ---------------------------------------------------------------------- */
+	--jeu-surface-glace: oklch(0.9400 0.0282 258.02);  /* #e0ecff - azur (2 %) - une carte claire */
+	--jeu-surface-brume: oklch(0.8800 0.0403 258.02);  /* #c7d9f3 - azur (2 %) - un dégradé clair, teinté du bleu de la tenue */
+	--jeu-surface-craie: oklch(0.8800 0.0263 70.41);  /* #e3d5c5 - sable (13 %) - un fond neutre */
+	--jeu-surface-cendre: oklch(0.7000 0.0374 46.43);  /* #b3988b - taupe (11 %) - un texte secondaire */
+	--jeu-surface-rose: oklch(0.6400 0.0435 337.07);  /* #9e8296 - mauve (9 %) - une nuance douce */
 
-	/* --- Menu principal : le CIEL et les TUILES (mesures le 2026-09-05) --------------------
-	 *
-	 * Les tokens ci-dessus decrivent une ambiance sombre ; l'ecran du menu principal, lui, est
-	 * CLAIR — fond blanc bleute, tuiles bleues, texte blanc cercle. Les valeurs viennent d'une
-	 * quantification de la reference archivee, par region et non sur l'image entiere : quantifier
-	 * les 2497x1414 d'un coup noie la rangee de tuiles (~13 % de la surface) dans le fond blanc,
-	 * et rend une palette ou aucun des bleus reels n'apparait.
-	 *
-	 * Rejouable, region par region :
-	 *   convert data/design/aphrody-ui-ref-mainmenu-7.1.2.png -crop 2200x180+150+740 +repage \
-	 *     -colors 8 -unique-colors txt:
-	 */
-	--jeu-ciel-clair: #f9fcfc;
-	--jeu-ciel-brume: #a5e1f6;
-	--jeu-nuit-profonde: #0a2f66;
-	--jeu-tuile-haut: #5898dd;
-	--jeu-tuile-bas: #2a5b9f;
-	--jeu-tuile-bord: #4076c1;
-	--jeu-tuile-active-haut: #5eb1ff;
-	--jeu-tuile-active-bas: #2b93ff;
-	--jeu-plaque-bleu: #0542e1;
-	--jeu-lisere-or: #e3ac2b;
+	/* --- Texte --------------------------------------------------------------------------------- */
+	--jeu-texte-vif: oklch(0.9850 0.0035 59.65);  /* #fcfaf8 - creme (25 %) - le texte sur fond sombre */
+	--jeu-texte-doux: oklch(0.6400 0.1049 258.02);  /* #638dcb - azur (2 %) - un lien, un texte de second plan */
 
-	/* --- Coquille InaCord (decision produit, PLAN.md J5) ---------------------------------- */
-	--inacord-panneau: #323544;
-	--inacord-panneau-clair: #374d5b;
-	--inacord-accent: #4faecc;
+	/* --- Ecran du menu : ciel, tuiles, plaque -------------------------------------------------- */
+	--jeu-ciel-clair: oklch(0.9750 0.0041 59.65);  /* #f9f6f4 - creme (25 %) - le fond de l'écran d'accueil */
+	--jeu-ciel-brume: oklch(0.8900 0.0363 258.02);  /* #ccdcf3 - azur (2 %) - le ciel, en haut à droite */
+	--jeu-nuit-profonde: oklch(0.3229 0.0807 258.02);  /* #17335c - azur (2 %) - le texte sur fond clair — la mesure telle quelle */
+	--jeu-tuile-haut: oklch(0.5000 0.1049 258.02);  /* #3b639e - azur (2 %) - le haut d'une tuile */
+	--jeu-tuile-bas: oklch(0.3900 0.0968 258.02);  /* #214478 - azur (2 %) - le bas d'une tuile */
+	--jeu-tuile-bord: oklch(0.4500 0.0968 258.02);  /* #31558a - azur (2 %) - le bord d'une tuile */
+	--jeu-tuile-active-haut: oklch(0.5800 0.1210 258.02);  /* #4b7ac1 - azur (2 %) - le haut d'une tuile active */
+	--jeu-tuile-active-bas: oklch(0.4600 0.1614 258.02);  /* #0c53b0 - azur (2 %) - le bas d'une tuile active */
+	--jeu-plaque-bleu: oklch(0.4200 0.1533 258.02);  /* #02489e - azur (2 %) - la plaque centrale */
+	--jeu-lisere-or: oklch(0.7800 0.1485 94.17);  /* #d6b52c - blond (21 %) - le liseré doré */
+
+	/* --- Coquille InaCord : l'autre ambiance, memes teintes ------------------------------------ */
+	--inacord-panneau: oklch(0.2900 0.0242 280.23);  /* #292a37 - nuit (2 %) - le panneau d'Inacord */
+	--inacord-panneau-clair: oklch(0.3800 0.0484 258.02);  /* #32435c - azur (2 %) - son panneau clair */
+	--inacord-accent: oklch(0.7000 0.0888 258.02);  /* #7ca0d6 - azur (2 %) - son unique accent */
 
 	/* --- Geometrie : les tuiles du menu sont BISEAUTEES, pas rectangulaires ---------------- */
 	--jeu-biseau: 14px;
@@ -86,10 +82,10 @@
 	--jeu-espace-l: 24px;
 	--jeu-espace-xl: 40px;
 
-	/* --- Elevation ----------------------------------------------------------------------- */
-	--jeu-ombre-tuile: 0 2px 8px rgb(15 16 17 / 45%);
-	--jeu-ombre-panneau: 0 8px 32px rgb(15 16 17 / 65%);
-	--jeu-lueur-accent: 0 0 12px rgb(99 216 252 / 55%);
+	/* --- Elevation : la geometrie est ecrite, les composantes derivent des roles ---------- */
+	--jeu-ombre-tuile: 0 2px 8px rgb(19 20 32 / 45%);
+	--jeu-ombre-panneau: 0 8px 32px rgb(19 20 32 / 65%);
+	--jeu-lueur-accent: 0 0 12px rgb(151 192 252 / 55%);
 
 	/* --- Mouvement : court et net, comme le jeu ------------------------------------------- */
 	--jeu-duree-rapide: 120ms;

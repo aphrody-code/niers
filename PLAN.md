@@ -11,6 +11,14 @@ La stack est **gelée** : [`docs/stack/`](docs/stack/README.md) (décisions, ver
 alternatives rejetées, gates). Ce fichier est le plan d'exécution de cette semaine ; le plan
 maître du moteur et de la forge reste [`docs/PLAN.md`](docs/PLAN.md).
 
+> **Amendement du 2026-09-06 (3) — la façade d'Aphrody est passée au crible.** Session UI :
+> l'accueil montrait la même information jusqu'à trois fois et sept liens d'infrastructure ; le
+> site portait deux chartes ; `nie-aphrody` n'était servie par aucune route. Corrigé et mesuré —
+> sept routes `/pet/*` et `/api/v1/aphrody*`, une coquille unique, le personnage à la place du
+> titre, 18 URL au plan de site, et les 29 couleurs du site désormais **engendrées** depuis la
+> palette mesurée du personnage. Le détail, les échecs qui l'ont motivée et ce qui reste ouvert
+> sont au § 3 et au § 5 bis de [`docs/PLAN-SITE-ULTIME.md`](docs/PLAN-SITE-ULTIME.md).
+
 > **Amendement du 2026-09-06 (2) — l'horizon change d'echelle.** L'utilisateur demande un
 > niveau d'exigence couvrant **toute la surface du depot** vers **un seul site ultime** :
 > [`docs/PLAN-SITE-ULTIME.md`](docs/PLAN-SITE-ULTIME.md). Mesure de depart : 41 sous-commandes

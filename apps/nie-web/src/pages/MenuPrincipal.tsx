@@ -102,11 +102,16 @@ const CIEL = `radial-gradient(70% 55% at 88% -8%, var(--jeu-ciel-brume) 0%, ${FO
 /**
  * L'échelle du personnage sur le canevas du menu.
  *
- * La cellule du package fait 192×208 ; la boîte du logo du jeu, mesurée, 412×287. 1,35 donne
- * 259×281 — la hauteur de la boîte à deux pixels près, sans déborder sur les deux panneaux qui
- * commencent à y = 148.
+ * Elle valait 1,35 — la hauteur de la boîte du logo (287 px) remplie à deux pixels près. Mais
+ * le canevas est lui-même mis à l'échelle : sur une fenêtre de 1440 px, 1280 devient 1440, soit
+ * ×1,125 de plus. Le sprite de 208 px finissait donc affiché à 316 px, un agrandissement de
+ * 1,52 qui rendait chaque pixel de la source visible.
+ *
+ * À 1,0 le personnage est rendu à sa taille native dans le canevas, et le seul agrandissement
+ * qui reste est celui du canevas — le même que celui des tuiles et du reste de l'écran. Il est
+ * plus petit que la boîte du logo, et c'est le prix de sa netteté.
  */
-const ECHELLE_PET = 1.35;
+const ECHELLE_PET = 1;
 
 /**
  * Retirer un élément de la vue SANS le retirer du document.
@@ -176,7 +181,7 @@ export function MenuPrincipal({
 			    l'écrire, et il réagit à l'état réel du service. */}
 			<CanvasItem
 				x={BOITES.titre.x + BOITES.titre.l / 2}
-				y={BOITES.titre.y}
+				y={BOITES.titre.y + Math.round((BOITES.titre.h - 208 * ECHELLE_PET) / 2)}
 				ancreX={0.5}
 				z={10}
 			>

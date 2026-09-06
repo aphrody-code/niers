@@ -302,6 +302,11 @@ export function PetAphrody({
 				backgroundRepeat: "no-repeat",
 				...fond,
 				cursor: "pointer",
+				// Le canevas du menu agrandit tout son contenu ; sans consigne, un fond
+				// redimensionné est interpolé au plus vite et le sprite crénelle. `high-quality`
+				// demande le meilleur filtrage disponible — c'est le seul réglage qui porte sur
+				// une image de FOND, `imageRendering` sur un `<img>` ne s'appliquerait pas ici.
+				imageRendering: "high-quality",
 				// Le personnage n'est pas un bouton de formulaire : il ne doit pas hériter d'un
 				// contour de focus rectangulaire autour de sa cellule transparente.
 				outline: "none",

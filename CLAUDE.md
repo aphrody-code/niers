@@ -692,6 +692,35 @@ alors que 77 `.py` versionnés existent déjà.
 
 ## Pièges d’édition
 
+- **Un test qui ne PEUT PAS échouer est pire qu'une suite absente : il rassure.** Un contrôle de
+  gamut écrit sur `palette::FromColor::from_color` était vert quoi qu'on lui donne — cette
+  conversion écrête elle-même (`from_color_unclamped(t).clamp()`), si bien qu'aucune couleur
+  n'en sort jamais « hors bornes ». Même famille que le `0 passed` et que le `$?` d'un pipe :
+  la suite s'exécute, passe, et ne vérifie rien. **Prouver un test par falsification** — casser
+  volontairement la valeur qu'il garde et le voir rougir — avant de compter dessus.
+- **Une capture d'écran ne prouve pas une ABSENCE.** Une page rendue par Chrome headless
+  montrait tout sauf un sprite ; le composant était accusé pendant une heure. Le DOM
+  (`--dump-dom`) portait l'élément, sa taille et la bonne position de fond : c'est l'atlas de
+  1,5 Mo qui n'était pas décodé dans le budget de `--virtual-time-budget=3000`. Vérifier le DOM
+  avant le rendu, et se rappeler qu'un `background-image` en cours de chargement n'affiche rien
+  **et ne le dit pas** — d'où l'intérêt d'un premier rendu léger explicite.
+- **Dans un canevas mis à l'échelle, les facteurs se MULTIPLIENT.** Un sprite posé à 1,35 dans un
+  canevas 1280 rendu sur 1440 est affiché à ×1,52 : il crénelle, et aucune valeur du code n'est
+  fausse. L'échelle d'un élément se raisonne en pixels **rendus**, pas en pixels du canevas.
+- **`format!("{:?}")` n'est pas une sérialisation.** Sur une `Option`, il publiait `"Some(V2)"`
+  dans un JSON destiné à être lu : le nom Rust d'une variante, entouré de son conteneur. Un
+  champ public se `match` vers une chaîne choisie.
+- **Rien de technique en façade.** Nom de service, version, endpoint d'API, `sitemap.xml`,
+  `llms.txt`, compte d'index, dépôt GitHub, domaine du site écrit sur le site : tout cela était
+  affiché sur l'accueil d'Aphrody. Ces routes restent servies — pour les robots et les agents —
+  mais une interface montre ce qu'on peut FAIRE, jamais ce qui la fait tourner. Corollaire
+  mesuré le 2026-09-06 : la même information ne s'affiche qu'à **un seul endroit** (le total y
+  figurait trois fois), et une affordance se vérifie avant d'être dessinée (deux guides de
+  touches « F » et « V » pour zéro `keydown` dans tout le front).
+- **Un calque de comparaison n'a rien à faire en production.** L'export du menu du jeu était
+  rendu sous l'interface à 18 % d'opacité : invisible à l'œil, mais son texte restait dans le
+  document et sortait au scrape — des libellés d'un AUTRE écran du jeu, lus par les lecteurs
+  d'écran et les moteurs. **Une opacité n'efface rien.**
 - **Un test qui appelle le HANDLER ne teste pas le ROUTEUR.** `/en/manifest.webmanifest`
   rendait du HTML pendant que le test unitaire, qui appelait la fonction avec une URI, était
   vert : le handler savait lire le préfixe, le routeur ne connaissait pas l'URL. Un manifeste

@@ -6,6 +6,23 @@
 
 ---
 
+> **Amendement du 2026-09-06 (3) — la façade est passée au crible, et `nie-aphrody` est branchée.**
+> Cette session n'a pas ajouté de capacité : elle a **retiré** ce que la façade montrait à tort et
+> **servi** ce que le dépôt portait déjà. Trois mesures la résument :
+>
+> - l'accueil affichait la même information jusqu'à **trois fois** et exposait sept liens
+>   d'infrastructure (§ 3, lignes UI) ;
+> - le site avait **deux chartes** — l'accueil dans la DA du jeu, les écrans secondaires dans une
+>   seconde interface sombre avec son propre modèle de tuiles ;
+> - `nie-aphrody` n'était servie **par aucune route** alors qu'elle embarque au build le package
+>   du personnage et tout son dossier. Elle l'est maintenant par **sept** (lot 5, § 5).
+>
+> Le lot 5 passe donc de « à brancher » à **fait, mesuré** ; le lot 4 gagne son premier écran
+> réellement épuré ; le lot 6 gagne son SEO (18 URL au plan de site au lieu de 15). Ce qui reste
+> ouvert est dit tel quel au § 5 bis.
+
+---
+
 ## 1. Ce que « ultime » veut dire ici
 
 Un seul site — Aphrody, servi par `nie-site`, monté par `apps/nie-web` et par Inacord — où :
@@ -89,6 +106,16 @@ Ce plan est fondé sur ces échecs. Chaque ligne est un défaut réellement pay�
 | L'angle des parallélogrammes déclaré « non mesurable » (R² < 0,45) | une DA posée à l'œil pendant des semaines | **Un R² bas accuse la méthode avant la forme.** Mesuré ligne à ligne : R² = 1,000. |
 | Règle `*.txt` : les 4 templates askama de `nie-site` hors du dépôt | la crate ne compilait pas sur un clone frais | **`git check-ignore -v` sur tout fichier non-code nouveau.** |
 | `188e409` a capté 3 fichiers d'une autre session à mi-course | un lot attribué au mauvais auteur | **`claim:` avant d'écrire, un commit par lot.** |
+| L'accueil affichait le total des ressources **3 fois**, le compte par catalogue **2 fois**, le bouton « Calque » **3 fois**, l'explorateur et le flux Atom **2 fois chacun** | un écran illisible, et trois endroits à corriger pour changer un chiffre | **Une information, un seul endroit.** Un second affichage du même fait est un bug, pas une redondance utile. |
+| Le calque exporté du jeu, rendu **sous** l'interface à 18 % d'opacité, laissait son texte dans le document : « Photos commémoratives disponibles après », « Exclure plusieurs joueurs », « Fusion rapide » | des libellés d'un AUTRE écran du jeu lus par les lecteurs d'écran et les moteurs, au milieu de l'accueil | **Une opacité n'efface rien.** Un calque de validation ne se met pas en façade ; ce qui est décoratif ne doit pas être lisible. |
+| Deux guides de touches — « F » et « V » — alors que `rg 'keydown|onKeyDown'` rend **0** dans `nie-web` et `inacord-ui` | une interface qui promet un raccourci inexistant | **Une affordance se vérifie avant d'être dessinée.** |
+| Sept liens d'infrastructure en façade : `nie-site 0.5.9`, `255 308` entrées indexées, `/api/v1/health`, `sitemap.xml`, `llms.txt`, GitHub, et le domaine du site écrit sur le site | l'utilisateur lisait l'exploitation, pas le produit | **Aucune donnée ni lien technique en façade.** Le SEO et l'API restent servis — pour les robots et les agents, pas dans le menu. |
+| `/explorateur` sortait avec `<title>explorateur — Aphrody</title>`, identique dans les trois langues, et manquait au plan de site comme à `robots.txt` | une entrée du menu invisible pour les moteurs | **Une entrée que le serveur ne connaît pas est une page sans titre.** Le front et le back partagent la même liste d'entrées. |
+| Une capture Chrome headless à budget court montrait la page complète et **la place du sprite vide**, alors que le DOM portait le bon élément et la bonne position de fond | une heure passée à chercher un bug de composant | **Une capture ne prouve pas une absence.** Vérifier `--dump-dom` avant d'accuser le rendu ; un atlas de 1,5 Mo n'est pas décodé dans un budget de 3 s. |
+| Le personnage était agrandi **×1,52** — 1,35 posés par le composant, ×1,125 par la mise à l'échelle du canevas 1280 → 1440 | un sprite crénelé sans qu'aucune valeur soit fausse | **Dans un canevas mis à l'échelle, les facteurs se multiplient.** L'échelle d'un élément se raisonne en pixels rendus, pas en pixels du canevas. |
+| `format!("{:?}")` sur une `Option` publiait `"Some(V2)"` dans un JSON destiné à être lu | le nom Rust d'une variante, entouré de son conteneur, servi comme donnée | **Un JSON public ne se sérialise pas par `Debug`.** |
+| Un test de gamut bâti sur `FromColor::from_color`, qui **écrête lui-même** (`palette-0.7.7 … from_color_unclamped(t).clamp()`) | un test qui s'exécute, passe, et ne vérifie rien — pire qu'une suite absente, parce qu'il rassure | **Un test doit pouvoir échouer.** Le prouver par falsification : casser volontairement la valeur et voir rougir. |
+| La palette mesurée d'Aphrody est **crème 25 %, blond 21 %, bleu 2 %** | peindre au prorata donnerait un site où rien ne se détache | **Une palette de personnage n'est pas une palette d'interface.** On en dérive des rôles à clarté posée, en conservant la teinte mesurée. |
 
 ### Ce qui a été corrigé le 2026-09-06, et ce que ça enseigne
 
@@ -211,12 +238,33 @@ reconstruction**, et l'ancienne SSIM du rendu moteur vaut 0,004.
 **Gate :** par écran — nombre de blocs, écart max en px, SSIM. **Aucune affirmation
 « pixel-perfect » sans ces trois nombres.**
 
-### Lot 5 — `nie-aphrody` sert les icônes, assets, pets et personnages
+### Lot 5 — `nie-aphrody` sert les icônes, assets, pets et personnages — **fait le 2026-09-06**
 
-- `assets` : favicon, apple-touch, maskable, manifeste — déjà produits par la crate, à brancher.
-- `pets` : le pet Aphrody (contrat `Pet`/`Frame`/`Rect`) servi et animé.
-- `codex`, `gisement` : les personnages d'Aphrody et leur source.
-- `pixel` : la mesure, exposée en interne (`/couverture`).
+La crate est importée par `nie-site` et republiée en entier, **sept routes, une par capacité
+réelle** — aucune copie d'asset dans `apps/nie-web/public/`, parce que le manifeste porte un
+condensé par frame et qu'une copie ne le porterait plus.
+
+| Route | Ce qu'elle tire de la crate | Mesuré |
+|---|---|---|
+| `/pet/aphrody.json` | `AnimationsManifest`, réduit aux rectangles et aux durées | 3 192 o (contre 101 Ko pour le manifeste complet) |
+| `/pet/atlas.webp` | `BUNDLED_ATLAS_WEBP` — VP8L sans perte, même RGBA que le PNG | 1 510 454 o, 480 Ko de moins que le PNG |
+| `/pet/frame/{anim}/{n}.png` | `Pet::extract` + `assets::encoder_png` | les **74** frames, découpées à la demande |
+| `/pet/aphrody.svg` | `pixel::vectoriser` | 40 376 o — un **décalque**, pas un dessin vectoriel |
+| `/api/v1/aphrody` | `BUNDLED_DOSSIER_JSON` | 221 324 o : identité trilingue, 3 séries, stats, techniques, auras, variantes |
+| `/api/v1/aphrody/diagnostic` | `Pet::diagnose` + `codex::conformite` | **74/74** frames conformes à leur condensé, Codex Pet **v2**, 0 écart |
+| `/api/v1/aphrody/palette` | `pixel::mesurer` + `pixel::tokens_css` | 5 couleurs Oklab et leurs jetons |
+
+Le personnage **remplace le titre** au centre de l'accueil, et il n'anime rien gratuitement :
+`failed` quand le site ne joint pas ses ressources, `waiting` pendant la préparation du
+catalogue, `idle` au repos, une des seize poses de `look-directions` quand la souris bouge,
+`waving` au survol, `jumping` au clic. L'affichage se fait en deux temps — la pose de repos
+seule (30 Ko) puis l'atlas après `img.decode()` — parce qu'un `background-image` en cours de
+chargement n'affiche rien et ne le dit pas.
+
+Reste du lot, avec sa raison : les huit favicons et le manifeste que `assets::assets_de_marque`
+sait produire ne sont **pas** encore branchés ; l'icône du site est aujourd'hui un portrait du
+personnage recadré à la main depuis le zukan officiel. C'est un asset LEVEL-5 et non une sortie
+de la crate — à faire passer par `assets_de_marque` ou à assumer comme tel.
 
 **Gate :** `rg -c '<svg' packages/inacord-ui/src` → les glyphes restants sont **justifiés un à
 un** (un tracé géométrique du dépôt est légitime ; une icône du jeu redessinée à la main ne
@@ -238,6 +286,34 @@ déclarée « reste sur Azalée » **avec sa raison** (Azalée demeure le wiki d
 - `nie-db` / `niers push` (amendement A2) : la couche SQL native remplace les 18 importeurs
   Bun. Gate connue : `niers push --dry-run` annonce table par table, puis un push réel rend
   **le même total qu'aujourd'hui, écart 0**.
+
+## 5 bis. Ce que la session du 2026-09-06 a livré, et ce qu'elle laisse ouvert
+
+### Livré et vérifié
+
+| Chantier | Preuve |
+|---|---|
+| La façade purgée : doublons, texte étranger, liens d'infrastructure | le DOM rendu ne porte plus qu'une fois chaque information ; aucune route technique dans le menu |
+| Une seule coquille (`pages/Ecran.tsx`) au lieu de deux chartes | l'accueil et les écrans secondaires partagent fond, biseaux, typographie et la même rangée de tuiles |
+| `nie-aphrody` servie en sept routes ; le personnage remplace le titre | lot 5 ci-dessus |
+| Le SEO recentré sur ce que le site est | `<title>` de l'accueil = « Aphrody » ; `/explorateur` titré et traduit ; **18** URL au plan de site (15 avant), `robots.txt` et `llms.txt` alignés |
+| La compatibilité `?vue=` retirée | le type de `entreeDemandee` l'interdit désormais **à la compilation**, ce qu'aucun test ne garantissait |
+| Portails | `cargo test -p nie-site` 96/96, `bun test` 87/87, clippy et lint sans avertissement sur les crates et paquets touchés |
+| Le design system de couleur : `nie-aphrody` est la **source** des 29 couleurs du site | `game-tokens.css` est **engendré** (`cargo run -p nie-aphrody --bin design`), 48 propriétés dont 29 couleurs, **zéro hexadécimal écrit à la main** ; un golden le prouve par falsification |
+
+### Ouvert, et pourquoi
+
+1. **La couche 3D.** `nie-render3d` (rendu CPU, GLB, scène, WGSL) et `nie-model-serve` existent
+   et tournent ; le site n'en expose que le proxy `/assets/*`. Le branchement natif — liste des
+   modèles, métadonnées, GLB, et une vue qui affiche réellement un modèle — est le chantier en
+   cours. Rien n'en est annoncé ici tant qu'une route n'a pas rendu son compte.
+2. **Les huit favicons de `assets_de_marque`** ne sont pas branchées (cf. lot 5).
+3. **Le sas `apps/nie-web/src/legacy/`** reste à **87 fichiers**, exclu du `tsconfig` et importé
+   nulle part, mais il porte encore `@rosegriffon/*` et `cdn.rosegriffon.fr` — ce que la
+   décision du 2026-09-05 interdit côté Aphrody. C'est le plus gros résidu du dépôt côté front.
+4. **La page « Sons »** liste les `.awb` comme des sons individuels : `bgm_chronicle.awb` y
+   apparaît avec un lecteur audio et **1 291,9 Mo**. Ce sont des banques, pas des pistes ; il
+   faut cataloguer par ACB, comme le fait déjà Azalée.
 
 ## 6. Les invariants — ce qui vaut pour tous les lots
 
