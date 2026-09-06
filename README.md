@@ -102,6 +102,11 @@ Elsewhere, point at the install with `NIE_GAME_DIR`. No machine path is ever com
 binary: the root is resolved at runtime from `NIE_GAME_DIR`, then the working directory or an
 ancestor holding `data/cpk_list.cfg.bin`, then the executable's own directory.
 
+A fresh clone holds the code and nothing else: the game files come from Steam, and the data
+seams (mirror, episodes, VFS inventory) live on the server. **[`LOCAL.md`](LOCAL.md)** sets a
+Windows workstation up end to end — Steam detection, `NIE_GAME_DIR`, and 102 MB fetched from the
+server — with one command: `pwsh -File scripts\ops\bootstrap-windows.ps1`.
+
 ### Visual GLB QA
 
 `niers render` produces reviewable artifacts from an assembled GLB: a lossless PNG for a stable
