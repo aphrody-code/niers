@@ -56,6 +56,8 @@ réellement chargé d’un simple état global déjà présent.
 il construit l’index physique/logique, sélectionne la version numérique correcte
 et délègue la lecture au reader brut de l’appelant. Un test vérifie la sélection
 de `module_10` devant `module_9`.
+`LuaSession::exec_vfs` réutilise ce même résolveur pour le chunk principal : le caller n’a plus
+à lire séparément le fichier avant de l’envoyer à la VM persistante.
 
 `RuntimeContext` fournit l’injection typée des globals primitifs que le manager
 natif pose avant un callback (nombres, booléens, chaînes). Le contexte est

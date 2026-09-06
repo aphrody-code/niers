@@ -87,6 +87,9 @@ pub enum LuaError {
     /// que notre décodeur ne sait pas lire rendrait les métriques d'audit trompeuses.
     #[error("erreur de décodage Lua : {0}")]
     Decode(#[from] bytecode::BytecodeError),
+    /// Le chemin logique/physique demandé n'existe pas dans l'index VFS de la session.
+    #[error("script Lua introuvable dans le VFS : {0}")]
+    VfsScriptNotFound(String),
 }
 
 /// Vrai si `data` commence par la signature d'un bytecode Lua 5.2 PUC-Rio.

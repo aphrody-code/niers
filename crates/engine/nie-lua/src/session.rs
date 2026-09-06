@@ -475,6 +475,24 @@ impl LuaSession {
         Ok(values.iter().map(value_to_string).collect())
     }
 
+    /// Lit et exécute un chunk directement depuis le résolveur VFS de la session.
+    ///
+    /// Avec [`Self::with_script_paths`], `path` accepte un chemin physique, un basename ou un
+    /// nom logique `LUA_*`; la résolution de version est exactement celle des `INCLUDE`. Le
+    /// bytecode est validé par [`crate::validate_bytecode`] avant d'entrer dans la VM persistante.
+    ///
+    /// # Errors
+    /// [`LuaError::VfsScriptNotFound`] si aucun résolveur n'est installé ou si le chemin est
+    /// absent ; les erreurs de validation/exécution suivent le contrat de [`Self::exec`].
+    pub fn exec_vfs(&self, path: &str) -> Result<Vec<String>, LuaError> {
+        let bytes = self
+            .include_resolver
+            .as_ref()
+            .and_then(|resolver| resolver(path))
+            .ok_or_else(|| LuaError::VfsScriptNotFound(path.to_string()))?;
+        self.exec(path, &bytes)
+    }
+
     /// Attache un script comme comportement.
     ///
     /// Contrat d'Overload : le chunk doit **renvoyer une table**. Un chunk qui renvoie autre chose
@@ -802,6 +820,10 @@ mod tests {
             .exec("main", br#"INCLUDE("LUA_MODULE"); assert(vfs_value == 42)"#)
             .expect("include VFS versionné");
         assert_eq!(session.take_loaded_includes(), vec!["LUA_MODULE"]);
+        session
+            .exec_vfs("data/common/script/lua/menu/module_10.lua.bin")
+            .expect("chunk principal VFS versionné");
+        assert_eq!(session.eval("vfs_value").unwrap(), "42");
     }
 
     #[test]
