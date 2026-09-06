@@ -7,15 +7,17 @@
  * floue. Aucun pilote SQLite, aucun accès disque — elle se bundle donc dans une
  * webview Tauri, un navigateur ou un worker.
  *
- * L'accès réel aux données (miroir SQLite, index CPK, index de texte, API HTTP)
- * vit dans `@rosegriffon/azalee/server`, réservé à un runtime Bun/Node.
+ * L'accès réel aux données (miroir SQLite, index CPK, index de texte, API HTTP,
+ * CLI) ne vit plus ici : il est dans `@niers/azalee-tools`, outillage HORS LIGNE
+ * jamais déployé. Les modules `wiki/*` de ce package lisent la source que l'hôte
+ * leur injecte via `./db`, et n'en ouvrent aucune eux-mêmes.
  *
  * ```ts
  * // Frontend (Tauri, navigateur) — pur
  * import { FORMATIONS, translateEffect, getCharacterFaceUrl } from "@rosegriffon/azalee";
  *
- * // Backend (CLI, sidecar Tauri, serveur) — accès données
- * import { wikiService, createAzaleeServer } from "@rosegriffon/azalee/server";
+ * // Backend hors ligne (CLI, sidecar) — accès données
+ * import { wikiService, createAzaleeServer } from "@niers/azalee-tools/server/index";
  * ```
  */
 

@@ -1,7 +1,7 @@
 {
 	"name": "@rosegriffon/azalee",
 	"version": "1.0.0",
-	"description": "Bibliothèque Bun du wiki Azalée (Inazuma Eleven: Victory Road) — accès données via miroir SQLite, index CPK, index de texte de jeu, résolution d'URLs CDN, recherche floue et CLI.",
+	"description": "Bibliothèque Bun du wiki Azalée (Inazuma Eleven: Victory Road) — logique métier client-safe : résolution d'URLs CDN, recherche floue, texte et règles de jeu. Le miroir SQLite, l'index CPK et la CLI vivent dans @niers/azalee-tools.",
 	"keywords": [
 		"azalee",
 		"bun",
@@ -30,16 +30,11 @@
 	"types": "./src/index.ts",
 	"exports": {
 		".": "./src/index.ts",
-		"./config": "./src/config.ts",
 		"./db": "./src/db/index.ts",
 		"./wiki": "./src/wiki/index.ts",
 		"./wiki/*": "./src/wiki/*.ts",
-		"./cpk": "./src/cpk/index.ts",
 		"./cpk/*": "./src/cpk/*.ts",
-		"./game-text": "./src/game-text/index.ts",
 		"./game-text/*": "./src/game-text/*.ts",
-		"./icon-index": "./src/icon-index/index.ts",
-		"./icon-index/*": "./src/icon-index/*.ts",
 		"./cross": "./src/cross/index.ts",
 		"./cross/*": "./src/cross/*.ts",
 		"./images": "./src/images/index.ts",
@@ -50,10 +45,6 @@
 		"./game": "./src/game/index.ts",
 		"./game/*": "./src/game/*.ts",
 		"./rag": "./src/rag.ts",
-		"./remote": "./src/remote/index.ts",
-		"./remote/*": "./src/remote/*.ts",
-		"./server": "./src/server/index.ts",
-		"./server/*": "./src/server/*.ts",
 		"./data/*": "./src/data/*",
 		"./package.json": "./package.json"
 	},
@@ -67,7 +58,7 @@
 		"lint": "bunx oxlint -c ../../.oxlintrc.json -A style -A pedantic -A restriction src",
 		"lint:fix": "bunx oxlint -c ../../.oxlintrc.json -A style -A pedantic -A restriction --fix src",
 		"type-check": "bun --bun tsc --noEmit",
-		"clean": "rm -rf dist *.tsbuildinfo",
+		"clean": "rm -rf dist .tsbuildinfo tsconfig.tsbuildinfo",
 		"prepublishOnly": "bun run build",
 		"typecheck": "bun --bun tsc --noEmit"
 	},

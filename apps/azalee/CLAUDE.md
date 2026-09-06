@@ -104,7 +104,12 @@ Migration 2026-02-06 (cf. `CHANGELOG.md`) : tous les PNG de `data/images/menu/` 
 - CSP construit dynamiquement avec l'origin CDN (cf. `headers()` dans `next.config.ts`). Ajouter une nouvelle source externe → editer `cspHeader` array.
 - `compiler.removeConsole` strip les `console.log` en prod (garde `error` + `warn`).
 - 3 redirects permanents : `/dashboard/news/edit → /new`, `/compare → /tools/compare`, `/random-team → /tools/random-team`.
-- Rewrite `/storage/v1/:path* → SUPABASE_INTERNAL_URL` (proxy Supabase Storage par notre origin).
+- Rewrite `/storage/v1/:path*` → `NEXT_PUBLIC_SUPABASE_URL` (filet de repli quand l'app est servie
+  sans nginx devant ; en production nginx intercepte avant). **Une seule URL Supabase** : la
+  variable `SUPABASE_INTERNAL_URL` et la cascade `pickUrl()` ont été retirées le 2026-09-05 — c'est
+  l'URL interne qui gagnait et faisait rendre `/chara` en 200 avec **0 lien**. Mesuré 2026-09-06 :
+  `rg -c 'SUPABASE_INTERNAL_URL|pickUrl' apps/azalee packages/azalee` ne trouve plus aucun code, le
+  nom ne survit que dans les leçons écrites.
 
 ## Pieges
 
