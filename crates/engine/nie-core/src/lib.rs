@@ -16,6 +16,7 @@
 //! - [`keeper`] — Calcul d'arrêt du gardien (`game::SoccerCalcKeeperSaveComponent`)
 //! - [`tactics`] — IA tactique par joueur (`game::SoccerCharaTacticsAI`)
 //! - [`stats`] — Courbe d'interpolation 3-segments des statistiques
+//! - [`comparaison`] — Comparaison des variantes d'un personnage (port inagle)
 //! - [`growth`] — Tables de croissance + lookup à fallback + `calculate_stats`
 //! - [`exp`] — Table d'XP par niveau + multiplicateur de rareté
 //! - [`skill`] — Modèle de technique (hissatsu) + maps élément/catégorie
@@ -75,6 +76,7 @@ pub mod ball;
 pub mod byte_keyed_table;
 pub mod category_lookup;
 pub mod command_effect;
+pub mod comparaison;
 pub mod crand;
 pub mod ecs;
 pub mod effect_obj_ctor;
