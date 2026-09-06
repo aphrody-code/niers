@@ -47,8 +47,11 @@ pub fn run(
     let mut missing_includes: BTreeMap<String, usize> = BTreeMap::new();
     let mut loaded_includes: BTreeMap<String, usize> = BTreeMap::new();
     let mut missing_hosts: BTreeMap<String, usize> = BTreeMap::new();
+    let mut missing_host_reads: BTreeMap<String, usize> = BTreeMap::new();
+    let mut missing_host_invocations: BTreeMap<String, usize> = BTreeMap::new();
     let mut missing_host_paths: BTreeMap<String, usize> = BTreeMap::new();
     let mut missing_host_scripts: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    let mut missing_host_read_scripts: BTreeMap<String, Vec<String>> = BTreeMap::new();
     let mut missing_host_path_scripts: BTreeMap<String, Vec<String>> = BTreeMap::new();
     let mut samples = Vec::new();
 
@@ -109,6 +112,16 @@ pub fn run(
                         scripts.push(path.clone());
                     }
                 }
+                for host in output.missing_host_reads {
+                    *missing_host_reads.entry(host.clone()).or_default() += 1;
+                    let scripts = missing_host_read_scripts.entry(host).or_default();
+                    if !scripts.iter().any(|known| known == path) {
+                        scripts.push(path.clone());
+                    }
+                }
+                for host in output.missing_host_invocations {
+                    *missing_host_invocations.entry(host).or_default() += 1;
+                }
                 for missing_path in output.missing_host_paths {
                     *missing_host_paths.entry(missing_path.clone()).or_default() += 1;
                     let scripts = missing_host_path_scripts.entry(missing_path).or_default();
@@ -151,8 +164,11 @@ pub fn run(
             "missingIncludes": missing_includes,
             "loadedIncludes": loaded_includes,
             "missingHostCalls": missing_hosts,
+            "missingHostReads": missing_host_reads,
+            "missingHostInvocations": missing_host_invocations,
             "missingHostPaths": missing_host_paths,
             "missingHostScripts": missing_host_scripts,
+            "missingHostReadScripts": missing_host_read_scripts,
             "missingHostPathScripts": missing_host_path_scripts,
             "samples": samples,
         }))?

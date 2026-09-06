@@ -62,6 +62,11 @@ pub struct ExecOutput {
     pub returned: Vec<String>,
     /// Globals hôtes touchés mais non définis — la surface d'API que ce script attend du moteur.
     pub missing_host_calls: Vec<String>,
+    /// Globals hôtes indéfinis seulement lus (sans appel), souvent des paramètres injectés par le
+    /// moteur dans le contexte du chunk plutôt que des fonctions d'API.
+    pub missing_host_reads: Vec<String>,
+    /// Chemins hôtes effectivement invoqués (`__call__`), sous-ensemble actionnable des lectures.
+    pub missing_host_invocations: Vec<String>,
     /// Chemins d'API hôte imbriqués touchés par les stubs (`LISTVIEW.Set...`, par exemple).
     pub missing_host_paths: Vec<String>,
     /// Modules demandés par `INCLUDE` mais absents du résolveur VFS.
@@ -144,16 +149,23 @@ pub fn install_host_stubs(lua: &Lua) -> mlua::Result<()> {
     lua.load(
         r#"
         _HOST_MISSING = {}
+        _HOST_MISSING_READS = {}
+        _HOST_MISSING_CALLS = {}
         _HOST_MISSING_PATHS = {}
-        local function note(path)
+        local function note_read(path)
+            _HOST_MISSING_READS[path] = true
+            _HOST_MISSING_PATHS[path] = true
+        end
+        local function note_call(path)
+            _HOST_MISSING_CALLS[path] = true
             _HOST_MISSING_PATHS[path] = true
         end
         local function stub(path)
             return setmetatable({}, {
-                __call = function() note(path .. "()"); return stub(path .. "()") end,
+                __call = function() note_call(path .. "()"); return stub(path .. "()") end,
                 __index = function(_, k)
                     local child = path .. "." .. tostring(k)
-                    note(child)
+                    note_read(child)
                     return stub(child)
                 end,
             })
@@ -161,7 +173,7 @@ pub fn install_host_stubs(lua: &Lua) -> mlua::Result<()> {
         setmetatable(_G, {
             __index = function(_, k)
                 _HOST_MISSING[k] = true
-                note(k)
+                note_read(k)
                 return stub(k)
             end,
         })
@@ -286,6 +298,26 @@ fn execute_inner(
         names.sort_unstable();
         names.dedup();
         out.missing_host_calls = names;
+    }
+    if let Ok(missing) = lua.globals().get::<mlua::Table>("_HOST_MISSING_READS") {
+        let mut names: Vec<String> = missing
+            .pairs::<String, Value>()
+            .filter_map(Result::ok)
+            .map(|(k, _)| k)
+            .collect();
+        names.sort_unstable();
+        names.dedup();
+        out.missing_host_reads = names;
+    }
+    if let Ok(missing) = lua.globals().get::<mlua::Table>("_HOST_MISSING_CALLS") {
+        let mut names: Vec<String> = missing
+            .pairs::<String, Value>()
+            .filter_map(Result::ok)
+            .map(|(k, _)| k)
+            .collect();
+        names.sort_unstable();
+        names.dedup();
+        out.missing_host_invocations = names;
     }
     if let Ok(missing) = lua.globals().get::<mlua::Table>("_HOST_MISSING_PATHS") {
         let mut paths: Vec<String> = missing

@@ -73,6 +73,8 @@ pub fn run(
             "stdout": output.stdout,
             "returned": output.returned,
             "missingHostCalls": output.missing_host_calls,
+            "missingHostReads": output.missing_host_reads,
+            "missingHostInvocations": output.missing_host_invocations,
             "missingHostPaths": output.missing_host_paths,
             "missingIncludes": output.missing_includes,
             "loadedIncludes": output.loaded_includes,

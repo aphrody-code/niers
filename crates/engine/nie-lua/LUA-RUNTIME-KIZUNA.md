@@ -92,5 +92,10 @@ coordonnées `x/y` de quatre menus de recherche/summon, et `MENU_LINIT_NONE` de
 `soccer_top_menu_1.03.98.00.lua.bin` ; cette liste est donc actionnable pour le
 prochain RE.
 
+La classification runtime confirme que ces 13 résidus sont des **lectures
+uniquement** : l’audit global rend `missingHostInvocations={}`. Aucun appel de
+fonction hôte inconnue ne reste donc dans le corpus actuel ; les valeurs à
+injecter concernent le contexte de données fourni aux scripts.
+
 Un build workspace complet n’a pas été lancé, conformément à la règle du dépôt
 qui le déconseille lorsque l’espace disque est contraint.
