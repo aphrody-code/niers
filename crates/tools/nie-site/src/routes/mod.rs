@@ -5,6 +5,7 @@ pub mod aphrody;
 pub mod assets;
 pub mod couverture;
 pub mod donnees;
+pub mod entites;
 pub mod episodes;
 pub mod feed;
 pub mod formats;
@@ -15,7 +16,9 @@ pub mod lua;
 pub mod modeles3d;
 pub mod pages;
 pub mod recherche;
+pub mod regles;
 pub mod static_files;
+pub mod text;
 pub mod vfs;
 pub mod well_known;
 

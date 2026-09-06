@@ -50,6 +50,24 @@ nie-formats = { path = "../../engine/nie-formats", features = ["serde"] }
 # le module n'existe pas — l'appel ne compile pas, il ne degrade pas.
 nie-data = { path = "../../engine/nie-data", features = ["serde", "std"] }
 
+# La logique de JEU pure : courbe de statistiques a trois segments, tables de croissance
+# reelles, comparaison des variantes d'un personnage, builds BASARA. Ecrite, testee, et servie
+# par aucune route jusqu'ici — c'est ce que la matrice de couverture appelle `manquant`, et ce
+# que `docs/inagle/05-service-et-types.md` § 5.4 classait deuxieme dans l'ordre qui fait tomber
+# le plus de code TypeScript.
+#
+# Features PAR DEFAUT, c'est-a-dire `data` seule. Ce qu'elle decide, mesure :
+# - `data` embarque les 4 vraies tables de croissance par `include_str!` (lv1=36, lv30=144,
+#   main=48, sub=48) et donne `GrowthTables::load_embedded()`. Sans elle, la route de stats
+#   n'aurait aucune table a interroger et rendrait des blocs a zero en annoncant un succes ;
+# - la feature `serde` de `nie-core` reste ETEINTE, et c'est deliberé : elle derive
+#   `Serialize` sur les types du moteur, donc elle publierait le nom des variantes Rust
+#   (`"EvolutionHybride"`) dans un JSON public. `routes::regles` traduit chaque enum par un
+#   `match` vers une chaine choisie — un champ public ne se serialise pas par son nom interne.
+#   L'eteindre est donc une garantie, pas une economie : le derive ne peut pas etre invoque
+#   par erreur.
+nie-core = { path = "../../engine/nie-core" }
+
 # Le pet Aphrody : atlas, animations et poses de regard, embarques au build par
 # `include_bytes!`. Le site ne fait que republier ce package — il n'en garde aucune copie.
 # Il porte aussi `assets::encoder_png`, le seul encodeur PNG du site (cf. `routes::modeles3d`).

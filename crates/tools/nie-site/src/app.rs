@@ -9,7 +9,7 @@ use std::time::Duration;
 
 use axum::Router;
 use axum::http::{HeaderValue, StatusCode, header};
-use axum::routing::get;
+use axum::routing::{get, post};
 use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
 
@@ -80,16 +80,29 @@ macro_rules! declarer_routes {
             vec![$($chemin),+]
         }
 
-        /// Monte les routes déclarées sur un routeur nu.
+        /// Monte les routes déclarées sur un routeur nu, toutes en `GET`.
         fn monter(routeur: Router<EtatSite>) -> Router<EtatSite> {
             routeur $(.route($chemin, get($handler)))+
         }
     };
 }
 
-// Toutes les routes du site sont en `GET` : le site ne prend aucune écriture, et c'est
-// volontaire — la seule chose qu'un visiteur puisse faire est lire. La macro le rend
-// structurel plutôt que conventionnel.
+/// Les chemins qui acceptent autre chose que `GET`, montés par [`routeur`] par-dessus la macro.
+///
+/// Elle est **écrite**, et c'est voulu : la lecture seule du site est une garantie, et une
+/// garantie qu'on ne peut pas énumérer n'en est pas une. Un test fige cette liste — une seconde
+/// entrée y arrivera par une décision visible, jamais par inadvertance.
+pub const CHEMINS_HORS_GET: &[&str] = &["/api/v1/regles/comparaison"];
+
+// Le site ne prend **aucune écriture** : ni base, ni disque, ni état. C'est la garantie que la
+// macro rend structurelle, et le défaut de la déclaration est `GET`.
+//
+// Une seule route sort du `GET`, et elle n'écrit rien non plus : `POST /api/v1/regles/comparaison`
+// CALCULE sur un corps que la query string ne peut pas porter (deux personnages entiers, leurs
+// stats et leurs techniques). Le verbe dit la taille de l'entrée, pas un effet de bord — et son
+// pendant `GET` publie le contrat plutôt que de rendre un `405` muet au premier client qui
+// explore. Le test `seules_les_routes_declarees_sortent_du_get` fige cette liste à une entrée :
+// une seconde y entrera par une décision visible, jamais par inadvertance.
 declarer_routes! {
     "/healthz" => crate::routes::health::healthz,
     "/robots.txt" => crate::routes::well_known::robots,
@@ -161,6 +174,39 @@ declarer_routes! {
     "/api/v1/donnees/familles" => crate::routes::donnees::familles,
     "/api/v1/donnees/famille/{cle}" => crate::routes::donnees::famille,
     "/api/v1/donnees/{*chemin}" => crate::routes::donnees::donnees,
+    // Le texte localise du jeu, adresse par LANGUE et par FAMILLE. `/api/v1/donnees/{chemin}`
+    // le sert deja, mais seulement a qui connait le chemin VFS exact AVEC son numero de version
+    // (`menu_text_1.03.98.00.cfg.bin`) : inutilisable pour un consommateur. Neuf langues,
+    // 980 fichiers, 247 familles, 643 168 lignes. Cf. `routes::text`.
+    //
+    // URLs en ANGLAIS (regle du 2026-09-06, cf. CLAUDE.md § Language) : ce sont elles qu'un
+    // consommateur etranger lit. `/search` a UN segment, `{language}/{family}` en a DEUX :
+    // aucune ambiguite pour matchit.
+    "/api/v1/text" => crate::routes::text::catalog,
+    "/api/v1/text/search" => crate::routes::text::search,
+    "/api/v1/text/{language}/{family}" => crate::routes::text::family,
+    "/api/v1/text/{language}/{family}/{hash}" => crate::routes::text::line,
+    // Les 219 tables du miroir, en lecture generique — 165 249 lignes. Ce qu'elle remplace est
+    // mesure (`docs/inagle/05-service-et-types.md`) : 71 acces directs `from("inagle_…")` ecrits
+    // a la main dans les pages du wiki, et 28 methodes de facade que plus rien n'appelle.
+    //
+    // Aucun nom venu du client n'entre dans une requete : il sert a RETROUVER une entree du
+    // catalogue relu sur `sqlite_master` a chaque appel, et c'est le nom de la BASE qui est
+    // ecrit. Cf. `routes::entites`.
+    "/api/v1/entites" => crate::routes::entites::catalogue,
+    "/api/v1/entites/{table}" => crate::routes::entites::lignes,
+    "/api/v1/entites/{table}/{id}" => crate::routes::entites::ligne,
+    // Les regles de JEU, calculees par le moteur — pas lues dans une base. C'est la logique
+    // portee d'inagle vers `nie-core` : croissance, comparaison, rarete, builds.
+    //
+    // `/comparaison` est la seule route du site a accepter autre chose qu'un `GET`, et elle
+    // n'ecrit rien : deux personnages entiers ne tiennent pas dans une query string. Son `GET`
+    // publie le contrat au lieu de rendre un `405` muet.
+    "/api/v1/regles" => crate::routes::regles::capacites,
+    "/api/v1/regles/stats" => crate::routes::regles::stats,
+    "/api/v1/regles/comparaison" => crate::routes::regles::contrat_comparaison,
+    "/api/v1/regles/rarete" => crate::routes::regles::rarete,
+    "/api/v1/regles/builds" => crate::routes::regles::builds,
     // La matrice de couverture du plan (§ 4). Elle est LUE, jamais mesuree ici : mesurer,
     // c'est lancer `niers --help`, lire quatre arbres de sources et parcourir 255 308 lignes
     // d'inventaire. Cf. `routes::couverture`.
@@ -211,6 +257,16 @@ pub fn correspond(motif: &str, uri: &str) -> bool {
 /// **panique** au `route()` — elle ne dégrade pas.
 pub fn routeur(etat: EtatSite) -> Router {
     monter(Router::new())
+        // La SEULE route du site qui accepte autre chose qu'un `GET` — et elle n'écrit rien
+        // non plus. Deux personnages entiers, leurs stats et leurs techniques ne tiennent pas
+        // dans une query string : le verbe dit ici la taille de l'entrée, pas un effet de bord.
+        // Le `GET` du même chemin, déclaré dans la macro, publie le contrat au lieu de rendre
+        // un `405` muet au premier client qui explore ; axum fusionne les deux méthodes sur un
+        // chemin déjà monté, si bien que `chemins()` continue de le compter une fois.
+        .route(
+            CHEMINS_HORS_GET[0],
+            post(crate::routes::regles::comparaison),
+        )
         .fallback(crate::routes::static_files::statique)
         // Les couches s'empilent de la plus INTERNE à la plus externe, et l'ordre est ici un
         // choix, pas une habitude :
@@ -296,9 +352,30 @@ mod tests {
     }
 
     #[test]
+    fn seules_les_routes_declarees_sortent_du_get() {
+        // La lecture seule du site est une GARANTIE, pas une habitude : ce test l'énumère.
+        // Une route qui accepterait un `POST` sans passer par `CHEMINS_HORS_GET` ne serait
+        // visible nulle part — c'est exactement le défaut que `ROUTES` figé à 19 avait déjà
+        // coûté à cette crate.
+        assert_eq!(
+            CHEMINS_HORS_GET,
+            ["/api/v1/regles/comparaison"],
+            "une seule route sort du GET, et elle CALCULE : elle n'écrit ni base ni disque"
+        );
+        // Et son chemin est bien déclaré par la macro : sans cela, `chemins()` ne le compterait
+        // pas et la matrice de couverture rétrograderait la capacité qu'il sert.
+        for chemin in CHEMINS_HORS_GET {
+            assert!(
+                chemins().contains(chemin),
+                "{chemin} accepte un POST mais n'est pas declare en GET"
+            );
+        }
+    }
+
+    #[test]
     fn contrat_de_routes() {
         let routes = chemins();
-        assert_eq!(routes.len(), 44, "44 routes montees");
+        assert_eq!(routes.len(), 56, "56 routes montees");
         for r in &routes {
             assert!(r.starts_with('/'), "{r}");
             // Syntaxe axum 0.7 (`:id`, `*path`) : elle PANIQUE au `route()`, elle ne degrade

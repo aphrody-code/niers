@@ -13,7 +13,22 @@ moteur. Il tient sur un écran : le détail est ailleurs, et dit où.
 | Le protocole de coexistence | `docs/A2A-CODEX.md` |
 | La carte machine (A2A v1.0) | `ai.json` à la racine |
 
-Communiquer en **français**.
+## 0. Langue — français pour répondre, **anglais pour nommer**
+
+Décidé par l'utilisateur le **2026-09-06**, et cela vaut pour **tous** les agents : `niers` est
+un projet **mondial**. On **pense en anglais** (ou en japonais) ; on ne traduit qu'au moment de
+répondre.
+
+- **Français** : la prose adressée à l'utilisateur — rapports, résumés, explications.
+- **Anglais** : noms de fichiers et de dossiers, variables, fonctions, types, champs,
+  constantes, modules, **slugs du site, URLs, routes, paramètres de query, clés JSON
+  publiques**, commandes CLI, tables et colonnes nouvelles.
+
+La dette existante (le dépôt est massivement nommé en français) **ne se migre pas d'un coup**,
+et jamais par `sed`. Tout nom **nouveau** est en anglais ; une **API déjà servie** se renomme
+par un lot dédié, avec double service ou redirection, jamais en passant. Les noms produits
+restent gelés : Azalée, Aphrody, Inacord, nie, `niers`, crates `nie-*`, préfixe `inagle_`.
+Détail : `CLAUDE.md` § *Langue*.
 
 > **Mission en cours — consigne de l'utilisateur du 2026-09-06.** Codex prend en charge
 > **tout** `/PLAN.md` (J1 → J7) et l'exécute **en une journée**, en raisonnement maximal et en

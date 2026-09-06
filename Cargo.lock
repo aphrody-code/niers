@@ -5113,6 +5113,8 @@ dependencies = [
  "http-body-util",
  "moka",
  "nie-aphrody",
+ "nie-core",
+ "nie-data",
  "nie-formats",
  "nie-lua",
  "nie-render3d",

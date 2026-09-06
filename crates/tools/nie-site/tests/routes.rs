@@ -91,7 +91,7 @@ fn json(corps: &[u8]) -> serde_json::Value {
 async fn toutes_les_routes_declarees_repondent() {
     let etat = etat();
     // Une instance concrète par route déclarée, dans le même ordre que `app::chemins()`.
-    let instances: [(&str, &[u16]); 45] = [
+    let instances: [(&str, &[u16]); 57] = [
         ("/healthz", &[200]),
         ("/robots.txt", &[200]),
         ("/.well-known/security.txt", &[200]),
@@ -154,6 +154,27 @@ async fn toutes_les_routes_declarees_repondent() {
         // vide et un total de 0 — mais la route repond, elle ne 503 pas.
         ("/api/v1/donnees/familles", &[200]),
         ("/api/v1/donnees/famille/chara_base", &[404]),
+        // Le texte localise : le catalogue enumere `common/text/**` dans le VFS. L'index de
+        // test ne porte aucun fichier de texte — la route repond quand meme, elle ne 503 que
+        // sans VFS du tout.
+        ("/api/v1/texte", &[200, 503]),
+        ("/api/v1/texte/recherche", &[400, 503]),
+        ("/api/v1/texte/fr/menu_text", &[404, 503]),
+        ("/api/v1/texte/fr/menu_text/0x2d909dd6", &[404, 503]),
+        // Les 219 tables du miroir : absent dans l'etat de test, donc 503 en citant la
+        // capacite manquante — jamais un catalogue vide qu'un client prendrait pour une base
+        // sans tables.
+        ("/api/v1/entites", &[503]),
+        ("/api/v1/entites/inagle_characters", &[503]),
+        ("/api/v1/entites/inagle_characters/1", &[503]),
+        // Les regles de jeu : elles ne lisent NI le VFS NI le miroir — elles calculent. Ce
+        // sont donc les seules routes de donnees qui repondent 200 sur une machine nue, et
+        // c'est ce que ce test doit montrer.
+        ("/api/v1/regles", &[200]),
+        ("/api/v1/regles/stats", &[200, 400]),
+        ("/api/v1/regles/comparaison", &[200]),
+        ("/api/v1/regles/rarete", &[200]),
+        ("/api/v1/regles/builds", &[200, 400]),
         // La matrice de couverture : elle est LUE sur disque, jamais mesuree par le service.
         // Dans l'etat de test elle n'a pas ete produite, donc 503 en citant la commande qui
         // la produit — la meme regle que le VFS, le miroir et l'amont.
@@ -163,7 +184,7 @@ async fn toutes_les_routes_declarees_repondent() {
     ];
 
     let declarees = nie_site::app::chemins();
-    assert_eq!(declarees.len(), 44, "le routeur monte 44 routes");
+    assert_eq!(declarees.len(), 56, "le routeur monte 56 routes");
     assert!(
         instances.len() >= declarees.len(),
         "au moins une instance par route declaree"
@@ -195,7 +216,7 @@ async fn toutes_les_routes_declarees_repondent() {
         );
         vus += 1;
     }
-    assert_eq!(vus, 45, "45 instances interrogees pour 44 routes");
+    assert_eq!(vus, 57, "57 instances interrogees pour 56 routes");
 }
 
 /// Vrai quand `uri` est une instance du motif de route `motif` (syntaxe axum 0.8).

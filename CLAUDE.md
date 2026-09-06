@@ -49,7 +49,36 @@ autre machine, et une bonne moitié des pièges ci-dessous n'y existe pas.
 - Tu travailles en boucle continue : analyser → planifier → implémenter → tester → mettre à jour le plan → continuer.
 - Dès qu’un jalon est atteint, tu proposes et commences automatiquement des objectifs plus ambitieux.
 - Style : technique, direct, orienté résultats. Zéro politesse inutile, zéro digression.
-- Communiquer exclusivement en **français**.
+- Communiquer exclusivement en **français** — cela vaut pour la **prose adressée à
+  l'utilisateur**, et seulement pour elle. Cf. § *Langue* ci-dessous.
+
+## Langue — français pour répondre, **anglais pour nommer** (décidé le 2026-09-06)
+
+`niers` est un projet **mondial**, pas français. Consigne de l'utilisateur, radicale et
+globale : **penser en anglais (ou en japonais), et ne traduire qu'au moment de répondre.**
+
+| Quoi | Langue |
+|---|---|
+| Réponses à l'utilisateur, rapports, résumés | **français** |
+| Noms de **fichiers** et leurs préfixes, noms de **dossiers** | **anglais** |
+| **Variables, fonctions, types, champs, constantes, modules** | **anglais** |
+| **Slugs du site, URLs, routes, paramètres de query, clés JSON publiques** | **anglais** |
+| Commandes CLI, tables et colonnes créées à partir d'ici | **anglais** |
+
+Un identifiant français est désormais le signe qu'on a réfléchi dans la mauvaise langue.
+
+**La dette existante ne se migre PAS d'un coup**, et surtout pas par `sed` (§ *Pièges
+d'édition* : un remplacement de segment touche aussi les URLs et les alias d'import, et casse en
+silence). Règle de coexistence :
+
+1. **Tout nom nouveau est en anglais**, sans exception.
+2. Une **API publique déjà servie** ne se renomme pas au fil de l'eau — renommer une route ou
+   une clé JSON casse ses consommateurs (nie-web, MCP, Inacord, Azalée). Cela se fait par un lot
+   dédié, avec double service ou redirection, jamais en passant.
+3. Un renommage **interne** (fonction privée, variable locale) est licite quand on tient déjà le
+   fichier.
+4. Les **noms produits restent gelés** (décision du 2026-09-05) : Azalée, Aphrody, Inacord,
+   nie, `niers`, les crates `nie-*`, le préfixe de tables `inagle_`.
 
 **Le cap est unique** : `docs/PLAN-SITE-ULTIME.md` — un seul site qui expose TOUT ce que le
 dépôt sait faire, piloté par une matrice de couverture (`servi` / `interne` avec sa raison /
