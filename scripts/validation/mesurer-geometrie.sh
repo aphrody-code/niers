@@ -26,7 +26,7 @@ INVENTAIRE="$RACINE/var/vfs/inventaire.txt"
 printf '%-9s %7s %7s %7s %9s  %s\n' famille total testes ok echecs "premier echec"
 total_ok=0; total_test=0
 
-for ext in g4pk objbin g4pkm g4cm col g4sk mevbin g4mt; do
+for ext in g4pk g4mg objbin g4pkm g4cm col g4sk mevbin g4mt; do
     # Tous les chemins de la famille, puis un pas régulier : un échantillon en tête de fichier
     # ne verrait qu'un seul dossier, donc un seul producteur d'assets.
     mapfile -t tous < <(awk -v e=".$ext" '$1 ~ e"$" {print $1}' "$INVENTAIRE")

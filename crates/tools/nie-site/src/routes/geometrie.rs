@@ -1,14 +1,16 @@
-//! Les huit familles **géométriques** du jeu, décodées en process — lot 9.1 du plan.
+//! Les neuf familles **géométriques** du jeu, décodées en process — lot 9.1 du plan.
 //!
-//! ## Pourquoi elles étaient `manquant`, et ce qui change
+//! ## Pourquoi elles étaient `manquant` ou `partiel`, et ce qui change
 //!
-//! `docs/VFS.md` les comptait à **67 878 fichiers, 26,59 % du VFS**, classés `manquant` :
-//! « le décodeur existe déjà ici, aucune route ne l'appelle ». La mesure du 2026-09-06
-//! (`awk` sur `var/vfs/inventaire.txt`, 255 308 lignes) le confirme fichier par fichier :
+//! `docs/VFS.md` en comptait **83 753, soit 32,8 % du VFS** : 67 878 `manquant` (« le décodeur
+//! existe déjà ici, aucune route ne l'appelle ») et 15 875 `.g4mg` `partiel` (servis seulement
+//! pour les codes que l'amont sait assembler). La mesure du 2026-09-06 (`awk` sur
+//! `var/vfs/inventaire.txt`, 255 308 lignes) les compte fichier par fichier :
 //!
 //! | Suffixe | Fichiers | Plus gros | Total |
 //! |---|---:|---:|---:|
 //! | `.g4pk` | 45 591 | 12 316 032 o | 2 549 547 328 o |
+//! | `.g4mg` | 15 875 | 12 296 576 o | — |
 //! | `.objbin` | 12 190 | 15 024 o | 20 942 080 o |
 //! | `.g4pkm` | 6 992 | 707 232 o | 169 979 872 o |
 //! | `.g4cm` | 1 217 | 129 664 o | 8 910 272 o |
@@ -17,11 +19,20 @@
 //! | `.mevbin` | 328 | 22 448 o | 1 044 032 o |
 //! | `.g4mt` | 71 | 1 765 056 o | 8 206 080 o |
 //!
-//! **Aucune dépendance nouvelle n'a été nécessaire.** Les huit parseurs de `nie-formats` sont
+//! **Aucune dépendance nouvelle n'a été nécessaire.** Les neuf parseurs de `nie-formats` sont
 //! derrière `#[cfg(feature = "std")]`, et `std` est une feature **par défaut** — le site les
 //! liait déjà sans les appeler. C'est la définition même du câblage : le décodeur était là, la
 //! route manquait. Seule la feature `serde` a été ajoutée, pour que `?forme=complet` rende la
 //! structure décodée au lieu d'un `Debug` — un JSON public ne se sérialise pas par `Debug`.
+//!
+//! ## Décoder un fichier n'est pas assembler un modèle
+//!
+//! `.g4mg` est servi ici **et** par `/api/v1/3d`, et ce n'est pas un doublon : la 3D catalogue
+//! des **entités assemblables** (`<code>/<code>.g4mg` plus la recette de l'amont, 7 466 codes
+//! sur 7 679), quand cette route décode un **fichier**, quel qu'il soit — y compris les
+//! maillages de décor, d'effet et de menu que l'amont ne sait pas assembler en GLB. C'est ce
+//! qui fait tomber `partiel` à zéro sans rien promettre de faux : un décor décodé n'est pas un
+//! personnage jouable, et les deux routes ne disent pas la même chose.
 //!
 //! ## Ce que chaque famille rend, et ce qu'elle ne rend pas
 //!
@@ -34,6 +45,10 @@
 //!   `Motion::parse`, qui rend `None` sur les conteneurs qu'il ne sait pas suivre. Le résumé
 //!   porte alors `animation_decodee: false` plutôt qu'un compte de clips à zéro.
 //!
+//! Et une famille ne se lit **pas seule** : `.g4mg` a besoin de sa description, cf.
+//! [`Compagnon`]. Elle est résolue par l'appelant (`super::formats`), là où l'index et le VFS
+//! sont disponibles ; le décodeur reste une fonction pure, testable sans HTTP.
+//!
 //! ## Deux formes, et pourquoi la borne n'est pas la même
 //!
 //! `?forme=resume` (défaut) rend des **comptes** ; `?forme=complet` rend la structure entière.
@@ -44,7 +59,7 @@
 
 use serde::Serialize;
 
-use nie_formats::{col, g4cm, g4mt, g4pk, g4pkm, g4sk, mevbin, objbin};
+use nie_formats::{col, g4cm, g4md, g4mg, g4mt, g4pk, g4pkm, g4sk, mevbin, objbin};
 
 use crate::error::ErreurSite;
 
@@ -77,13 +92,17 @@ pub enum Famille {
     Mevbin,
     /// Animation squelettique (`.g4mt`) : clips, cibles, canaux.
     G4mt,
+    /// Géométrie (`.g4mg`) : sous-mailles, sommets, triangles. **Illisible seule** — cf.
+    /// [`Compagnon`].
+    G4mg,
 }
 
-/// Les huit familles, dans l'ordre décroissant de leur compte sur le VFS.
+/// Les neuf familles, dans l'ordre décroissant de leur compte sur le VFS.
 ///
 /// `(suffixe, famille, ce que le décodage produit)`.
-pub const FAMILLES: [(&str, Famille, &str); 8] = [
+pub const FAMILLES: [(&str, Famille, &str); 9] = [
     (".g4pk", Famille::G4pk, "table des sous-fichiers"),
+    (".g4mg", Famille::G4mg, "sous-mailles, sommets et triangles"),
     (".objbin", Famille::Objbin, "objet de menu et ses composants"),
     (".g4pkm", Famille::G4pkm, "squelette 2D et poses de liaison"),
     (".g4cm", Famille::G4cm, "clips, objets et canaux de camera"),
@@ -92,6 +111,61 @@ pub const FAMILLES: [(&str, Famille, &str); 8] = [
     (".mevbin", Famille::Mevbin, "motions et evenements dates"),
     (".g4mt", Famille::G4mt, "clips et cibles d'animation"),
 ];
+
+/// La description dont un `.g4mg` a besoin pour être lu — et qui n'est pas dans le `.g4mg`.
+///
+/// **Un `.g4mg` seul ne dit rien.** Les sommets y sont un tampon d'octets sans forme : ce sont
+/// le stride, la disposition d'attributs et la table de sous-mailles du **G4MD** qui les
+/// découpent. Décoder l'un sans l'autre ne rend pas un résultat pauvre, il ne rend rien.
+///
+/// Le G4MD vit à deux endroits, et la mesure du 2026-09-06 sur les 255 308 entrées de
+/// `var/vfs/inventaire.txt` dit exactement lesquels — **aucun `.g4mg` n'est orphelin** :
+///
+/// | Où est la description | `.g4mg` concernés |
+/// |---|---:|
+/// | `.g4md` frère (`<base>.g4md`) | 8 955 |
+/// | empaquetée dans le `.g4pkm` frère (`<base>.g4pkm`) | 6 920 |
+/// | nulle part | **0** |
+///
+/// C'est le même mécanisme que l'amont applique aux cut-in `_waza`, et c'est pour cela que la
+/// couverture est totale : le second cas n'est pas une exception, c'est la moitié du corpus.
+#[derive(Debug, Clone)]
+pub struct Compagnon {
+    /// D'où vient la description : jeton `g4md` ou `g4pkm`.
+    pub source: &'static str,
+    /// Les octets du G4MD, déjà extraits de leur conteneur le cas échéant.
+    pub octets: Vec<u8>,
+}
+
+impl Compagnon {
+    /// Les chemins où chercher la description d'un `.g4mg`, dans l'ordre de préférence.
+    ///
+    /// Le `.g4md` d'abord : quand il existe en fichier libre, ouvrir le `.g4pkm` pour en
+    /// extraire le même contenu serait du travail en pure perte.
+    #[must_use]
+    pub fn candidats(chemin_g4mg: &str) -> [String; 2] {
+        let base = chemin_g4mg.trim_end_matches(".g4mg");
+        [format!("{base}.g4md"), format!("{base}.g4pkm")]
+    }
+
+    /// Construit la description depuis les octets d'un candidat.
+    ///
+    /// Rend `None` quand le `.g4pkm` ne porte aucun G4MD — un conteneur peut n'avoir qu'un
+    /// squelette.
+    #[must_use]
+    pub fn depuis(chemin: &str, octets: Vec<u8>) -> Option<Self> {
+        if chemin.ends_with(".g4md") {
+            return Some(Self {
+                source: "g4md",
+                octets,
+            });
+        }
+        g4pkm::extract_g4md(&octets).map(|md| Self {
+            source: "g4pkm",
+            octets: md.to_vec(),
+        })
+    }
+}
 
 impl Famille {
     /// La famille d'un chemin, d'après son suffixe. `None` quand aucune ne correspond.
@@ -252,6 +326,23 @@ pub enum Resume {
         /// Vrai quand l'extrait correspond exactement à ce que l'en-tête annonce.
         conforme_a_l_entete: bool,
     },
+    /// Géométrie `.g4mg`.
+    G4mg {
+        /// D'où venait la description : `g4md` (fichier frère) ou `g4pkm` (empaquetée).
+        description: &'static str,
+        /// Nombre de sous-mailles décodées.
+        sous_mailles: usize,
+        /// Nombre total de sommets.
+        sommets: usize,
+        /// Nombre total de triangles.
+        triangles: usize,
+        /// Nombre de matériaux déclarés par la description.
+        materiaux: usize,
+        /// Nombre d'os déclarés par la description (0 = maillage non skinné).
+        os: usize,
+        /// Nombre de sous-mailles portant des UV — sans elles, aucune texture ne s'applique.
+        sous_mailles_texturees: usize,
+    },
     /// Animation squelettique `.g4mt`.
     G4mt {
         /// Faux quand seul l'en-tête a pu être lu : les comptes sont alors nuls **parce que
@@ -336,10 +427,56 @@ pub fn decoder(
     octets: &[u8],
     famille: Famille,
     forme: Forme,
+    compagnon: Option<&Compagnon>,
 ) -> Result<Decodage, ErreurSite> {
     let complet = forme == Forme::Complet;
     let mut donnees = None;
     let resume = match famille {
+        Famille::G4mg => {
+            let c = compagnon.ok_or_else(|| {
+                ErreurSite::Demande(
+                    "un .g4mg ne se lit pas seul : sa description vit dans le .g4md frere ou \
+                     dans le .g4pkm voisin, et aucun des deux n'a ete trouve"
+                        .to_owned(),
+                )
+            })?;
+            let md = g4md::parse(&c.octets)
+                .map_err(|e| ErreurSite::Demande(format!("G4MD illisible: {e}")))?;
+            let sous_mailles = g4mg::extract_geometry(octets, &md);
+            let resume = Resume::G4mg {
+                description: c.source,
+                sous_mailles: sous_mailles.len(),
+                sommets: sous_mailles.iter().map(|s| s.vertex_count).sum(),
+                triangles: sous_mailles.iter().map(|s| s.indices.len() / 3).sum(),
+                materiaux: md.material_base_names.len(),
+                os: md.header.bone_count as usize,
+                sous_mailles_texturees: sous_mailles.iter().filter(|s| !s.uv0.is_empty()).count(),
+            };
+            if complet {
+                // La description ENTIÈRE et les métadonnées par sous-maille — mais **pas** les
+                // tableaux de sommets. Un `.g4mg` de 12 Mio rendrait des centaines de mégaoctets
+                // de JSON, que ni l'ETag (borne 8 Mio) ni un client ne sauraient traiter. Le
+                // maillage complet se demande en GLB, sur `/model/{famille}/{code}.glb`.
+                donnees = Some(serde_json::json!({
+                    "description": en_valeur(&md)?,
+                    "sous_mailles": sous_mailles
+                        .iter()
+                        .map(|s| serde_json::json!({
+                            "index": s.index,
+                            "sommets": s.vertex_count,
+                            "triangles": s.indices.len() / 3,
+                            "stride": s.stride,
+                            "materiau": s.material_index,
+                            "index32": s.index32,
+                            "uv": !s.uv0.is_empty(),
+                            "normales": !s.normals.is_empty(),
+                            "couleurs": !s.colors.is_empty(),
+                        }))
+                        .collect::<Vec<_>>(),
+                }));
+            }
+            resume
+        }
         Famille::G4pk => {
             let a = g4pk::parse(octets).map_err(|e| illisible(famille, &e))?;
             if complet {
@@ -521,13 +658,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn les_huit_familles_sont_distinctes_et_completes() {
+    fn les_neuf_familles_sont_distinctes_et_completes() {
         let suffixes: Vec<&str> = FAMILLES.into_iter().map(|(s, ..)| s).collect();
-        assert_eq!(suffixes.len(), 8);
+        assert_eq!(suffixes.len(), 9);
         let mut tries = suffixes.clone();
         tries.sort_unstable();
         tries.dedup();
-        assert_eq!(tries.len(), 8, "deux familles partagent un suffixe");
+        assert_eq!(tries.len(), 9, "deux familles partagent un suffixe");
         for (s, f, produit) in FAMILLES {
             assert!(s.starts_with('.'), "{s}");
             assert_eq!(f.suffixe(), s);
@@ -566,6 +703,7 @@ mod tests {
                 b"ceci n'est certainement pas un fichier du jeu",
                 famille,
                 Forme::Resume,
+                None,
             )
             .unwrap_err();
             assert_eq!(e.statut().as_u16(), 400, "{suffixe}");
@@ -593,7 +731,7 @@ mod tests {
         o.extend_from_slice(&0u32.to_le_bytes()); // decompressed / inutilisé ici
         o.extend_from_slice(&16u32.to_le_bytes()); // data_size
         o.extend_from_slice(&[0u8; 16]); // le corps PhysX, non interprété
-        let d = decoder("data/x.col", &o, Famille::Col, Forme::Resume).unwrap();
+        let d = decoder("data/x.col", &o, Famille::Col, Forme::Resume, None).unwrap();
         assert_eq!(d.format, "col");
         assert_eq!(d.octets, 32);
         assert!(d.donnees.is_none(), "le resume ne porte pas les donnees");

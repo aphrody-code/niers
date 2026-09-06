@@ -15,7 +15,7 @@
 //! |---|---|---|
 //! | `cfg.bin` (RDBN et T2B) | cette crate, en process | `/api/v1/formats/decode/{chemin}` |
 //! | `lua.bin` (bytecode Lua 5.2) | cette crate, en process | `/api/v1/lua` (cf. [`super::lua`]) |
-//! | les 8 familles géométriques, 67 878 fichiers | cette crate, en process | `/api/v1/formats/decode/{chemin}` (cf. [`super::geometrie`]) |
+//! | les 9 familles géométriques, 83 753 fichiers | cette crate, en process | `/api/v1/formats/decode/{chemin}` (cf. [`super::geometrie`]) |
 //! | textures, modèles, audio, vidéo | `nie-model-serve`, en amont | `/assets/…` (cf. [`super::assets`]) |
 //! | octets bruts, sans décodage | le VFS | `/f/{chemin}` (cf. [`super::vfs`]) |
 //!
@@ -86,10 +86,10 @@ async fn jeton_decodage() -> Result<tokio::sync::SemaphorePermit<'static>, Erreu
 /// dessein : chaque ligne doit être vraie, et une ligne dont la route répondrait `500` n'a rien
 /// à y faire.
 ///
-/// Il ne porte **pas** les huit familles géométriques : leur source unique est
+/// Il ne porte **pas** les neuf familles géométriques : leur source unique est
 /// [`super::geometrie::FAMILLES`], et [`familles`] fusionne les deux. Recopier une liste, c'est
 /// s'engager à la mettre à jour deux fois.
-const FAMILLES_PROPRES: [(&str, bool, &str, &str); 8] = [
+const FAMILLES_PROPRES: [(&str, bool, &str, &str); 7] = [
     (
         ".cfg.bin",
         true,
@@ -104,13 +104,16 @@ const FAMILLES_PROPRES: [(&str, bool, &str, &str); 8] = [
     ),
     (".g4tx", false, "/assets/tex/{chemin}.png", "image/png"),
     (".g4md", false, "/api/v1/3d", "model/gltf-binary"),
-    (".g4mg", false, "/api/v1/3d", "model/gltf-binary"),
+    // `.g4mg` n'est PAS ici : il est passé au décodage en process (cf. `super::geometrie`), et
+    // une extension ne peut avoir qu'une ligne — deux donneraient deux comptes du même corpus.
+    // Le maillage **assemblé** reste servi en GLB par `/api/v1/3d` et `/model/…` : décoder la
+    // géométrie d'un fichier et assembler un modèle jouable sont deux services distincts.
     (".acb", false, "/assets/audio-info/{chemin}", "application/json"),
     (".awb", false, "/assets/audio-info/{chemin}", "application/json"),
     (".usm", false, "/f/{chemin}", "application/octet-stream"),
 ];
 
-/// Toutes les familles annoncées : celles de ce module, plus les huit géométriques.
+/// Toutes les familles annoncées : celles de ce module, plus les neuf géométriques.
 ///
 /// Une seule liste est publiée, mais elle a deux sources et aucune n'est recopiée : c'est ce
 /// qui garantit qu'une famille ajoutée à [`super::geometrie::FAMILLES`] apparaît ici, dans les
@@ -548,6 +551,32 @@ impl Forme {
     }
 }
 
+/// Cherche la description d'un `.g4mg` — son `.g4md` frère, sinon le `.g4pkm` qui l'empaquette.
+///
+/// Rend `None` sans erreur quand aucun des deux n'est lisible : c'est au décodeur de dire ce
+/// qui manque, en une phrase qui nomme les deux endroits cherchés. Un `None` silencieux ici
+/// deviendrait un « décodage vide » là-bas, et personne ne saurait pourquoi.
+async fn resoudre_compagnon(
+    etat: &EtatSite,
+    index: &IndexVfs,
+    chemin_g4mg: &str,
+) -> Option<super::geometrie::Compagnon> {
+    let vfs = etat.vfs().ok()?;
+    for candidat in super::geometrie::Compagnon::candidats(chemin_g4mg) {
+        if !index.contient(&candidat) {
+            continue;
+        }
+        let vfs = Arc::clone(&vfs);
+        let a_lire = candidat.clone();
+        let lu = tokio::task::spawn_blocking(move || vfs.read(&a_lire)).await;
+        let Ok(Ok(octets)) = lu else { continue };
+        if let Some(c) = super::geometrie::Compagnon::depuis(&candidat, octets) {
+            return Some(c);
+        }
+    }
+    None
+}
+
 /// `GET /api/v1/formats/decode/{*chemin}` — un fichier du VFS décodé.
 ///
 /// Deux espaces de formes derrière une seule route, parce qu'il n'y a qu'une intention —
@@ -627,12 +656,26 @@ pub async fn decode(
         )));
     }
 
+    // Un `.g4mg` ne se lit pas seul : sa description vit dans le `.g4md` frère ou, pour 6 920
+    // fichiers sur 15 875, empaquetée dans le `.g4pkm` voisin. On la résout ICI, où l'index et
+    // le VFS sont disponibles, plutôt que dans le décodeur — qui reste une fonction pure,
+    // testable sans HTTP.
+    let compagnon = if geom == Some(super::geometrie::Famille::G4mg) {
+        resoudre_compagnon(&etat, &index, &chemin).await
+    } else {
+        None
+    };
+
     let _jeton = jeton_decodage().await?;
     let corps = tokio::task::spawn_blocking(move || {
         let v = match (geom, forme_geom, forme_cfg) {
-            (Some(f), Some(forme), _) => {
-                serde_json::to_value(super::geometrie::decoder(&chemin, &octets, f, forme)?)
-            }
+            (Some(f), Some(forme), _) => serde_json::to_value(super::geometrie::decoder(
+                &chemin,
+                &octets,
+                f,
+                forme,
+                compagnon.as_ref(),
+            )?),
             (_, _, Some(Forme::Structure)) => {
                 serde_json::to_value(structurer(&octets)?).map(|st| {
                     serde_json::json!({ "chemin": chemin, "octets": octets.len(), "structure": st })
@@ -654,14 +697,14 @@ mod tests {
     #[test]
     fn les_familles_declarent_une_route_et_un_type() {
         let table = familles();
-        assert_eq!(table.len(), 16, "8 familles propres + 8 geometriques");
+        assert_eq!(table.len(), 16, "7 familles propres + 9 geometriques");
         for (suffixe, _, route, sortie) in &table {
             assert!(suffixe.starts_with('.'), "{suffixe}");
             assert!(route.starts_with('/'), "{route}");
             assert!(sortie.contains('/'), "{sortie}");
         }
-        // Dix familles sont decodees ici : les deux de ce module (`cfg.bin` via `std`,
-        // `lua.bin` via `lua`) et les huit geometriques, toutes derriere `std`. Les six autres
+        // Onze familles sont decodees ici : les deux de ce module (`cfg.bin` via `std`,
+        // `lua.bin` via `lua`) et les neuf geometriques, toutes derriere `std`. Les cinq autres
         // exigeraient `textures` / `images` / `audio-decode`, qui restent eteintes.
         let en_process: Vec<&str> = table
             .iter()
@@ -670,8 +713,8 @@ mod tests {
         assert_eq!(
             en_process,
             vec![
-                ".cfg.bin", ".lua.bin", ".g4pk", ".objbin", ".g4pkm", ".g4cm", ".col", ".g4sk",
-                ".mevbin", ".g4mt",
+                ".cfg.bin", ".lua.bin", ".g4pk", ".g4mg", ".objbin", ".g4pkm", ".g4cm", ".col",
+                ".g4sk", ".mevbin", ".g4mt",
             ]
         );
         assert_eq!(features(), vec!["std", "lua"]);

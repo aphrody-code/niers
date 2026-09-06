@@ -38,15 +38,15 @@ trois écrasaient :
 
 | État | Fichiers | Part | Ce que ça veut dire |
 |---|---:|---:|---|
-| **servi** | 230097 | 90.13 % | une route l'expose, avec un code HTTP **mesuré** |
+| **servi** | 245972 | 96.34 % | une route l'expose, avec un code HTTP **mesuré** |
 | **manquant** | **0** | 0 % | plus aucun : les 67 878 fichiers des huit familles géométriques ont été câblés le 2026-09-06 (§ 2 bis) |
-| **partiel** | 15875 | 6.22 % | une route existe, elle ne couvre pas tout le corpus |
+| **partiel** | **0** | 0 % | plus aucun : les 15 875 `.g4mg` sont décodés en process, y compris ceux que l'amont ne sait pas assembler (§ 2 bis) |
 | **interne** | 5512 | 2.16 % | délibérément non exposé, **avec sa raison écrite** |
 | **bloqué** | 3776 | 1.48 % | aucune route **et aucun parseur** : reverse préalable |
 | **inconnu** | 48 | 0.02 % | extension non identifiée — ne rien router avant de savoir ce que c'est |
 | | **255308** | **100 %** | |
 
-**`manquant` est retombé à zéro le 2026-09-06.** Les 67 878 fichiers (26,6 %) qu'un parseur
+**`manquant` et `partiel` sont retombés à zéro le 2026-09-06.** Les 67 878 fichiers (26,6 %) qu'un parseur
 du dépôt décodait déjà sans qu'aucune route ne l'appelle sont servis par
 `/api/v1/formats/decode/{chemin}` — cf. § 2 bis. Le diagnostic tenait : ce n'était pas un trou
 de connaissance mais un trou de câblage, et il s'est refermé sans une dépendance de plus.
@@ -54,13 +54,27 @@ de connaissance mais un trou de câblage, et il s'est refermé sans une dépenda
 À l'opposé, **3 776 fichiers (1,5 %) sont `bloqué`** : shaders, effets, particules, tissu,
 navigation. Aucune route n'est possible avant du reverse. Les promettre serait mentir.
 
-## 2 bis. Le câblage du 2026-09-06 — `manquant` : 67 878 → 0
+## 2 bis. Le câblage du 2026-09-06 — `manquant` : 67 878 → 0, `partiel` : 15 875 → 0
 
-Les huit familles géométriques sont servies par `/api/v1/formats/decode/{chemin}`
+Les neuf familles géométriques sont servies par `/api/v1/formats/decode/{chemin}`
 (`crates/tools/nie-site/src/routes/geometrie.rs`), `?forme=resume` par défaut,
 `?forme=complet` pour la structure entière.
 
-**Aucune dépendance nouvelle.** Les huit parseurs sont derrière `#[cfg(feature = "std")]`, une
+**`.g4mg` a rejoint le lot en cours de route, et c'est la mesure qui l'y a mis.** Il était
+classé `partiel` parce que le catalogue 3D ne sert que les codes *assemblables* (7 466 sur
+7 679) : les maillages de décor, d'effet et de menu n'ont pas de recette d'assemblage et
+restaient hors d'atteinte. Or un `.g4mg` ne se lit pas seul — sa description vit dans le
+`.g4md`. Comptés sur l'inventaire : **8 955 ont leur `.g4md` frère, 6 920 l'ont empaqueté dans
+leur `.g4pkm` voisin, et 0 n'ont ni l'un ni l'autre.** La couverture est donc totale, et sans
+recherche : `g4pkm::extract_g4md` existait déjà, c'est ce que fait l'amont pour les cut-in
+`_waza`.
+
+Décoder un fichier et assembler un modèle restent deux services distincts : `/api/v1/3d` dit
+ce qui s'affiche comme entité, `/decode` dit ce que le fichier contient. Confondre les deux
+aurait annoncé 15 875 modèles affichables — le défaut exact que le `partiel` avait été inventé
+pour éviter.
+
+**Aucune dépendance nouvelle.** Les neuf parseurs sont derrière `#[cfg(feature = "std")]`, une
 feature **par défaut** : ils étaient déjà liés dans le binaire du site, personne ne les
 appelait. Seule la feature `serde` de `nie-formats` a été ajoutée, pour que la forme complète
 rende la structure décodée au lieu d'un `Debug`.
@@ -70,6 +84,7 @@ Mesure, `scripts/validation/mesurer-geometrie.sh <base> 25`, le 2026-09-06 :
 | Famille | Fichiers | Échantillon | Conformes |
 |---|---:|---:|---:|
 | `.g4pk` | 45 591 | 25 | 25 |
+| `.g4mg` | 15 875 | 25 | 25 |
 | `.objbin` | 12 190 | 25 | 25 |
 | `.g4pkm` | 6 992 | 25 | 25 |
 | `.g4cm` | 1 217 | 25 | 25 |
@@ -77,7 +92,7 @@ Mesure, `scripts/validation/mesurer-geometrie.sh <base> 25`, le 2026-09-06 :
 | `.g4sk` | 339 | 25 | 25 |
 | `.mevbin` | 328 | 25 | 25 |
 | `.g4mt` | 71 | 25 | 25 |
-| **total** | **67 878** | **200** | **200 (100 %)** |
+| **total** | **83 753** | **225** | **225 (100 %)** |
 
 L'échantillon est pris à **pas régulier** dans l'inventaire, pas en tête de fichier : les
 premiers chemins d'une extension viennent tous du même dossier, donc du même producteur
@@ -101,7 +116,7 @@ Deux familles ne rendent qu'un en-tête, et le résumé le **dit** au lieu de le
 | `.g4tx` | 54203 | servi | `/assets/tex/<chemin>.png`, 200 mesuré — **sauf** les 14 de `common/font/font/`, qui rendent 404 |
 | `.g4pk` | 45591 | servi | `/api/v1/formats/decode/{chemin}` — **200 mesuré**, 25/25 de l'échantillon conformes (table des sous-fichiers) |
 | `.p3lip` | 21047 | servi | `/lip/<chemin>.p3lip`, visèmes datés |
-| `.g4mg` | 15875 | partiel | servi pour les codes assemblables (`<code>/<code>.g4mg` présent), muet pour le reste — **7 466 codes assemblables sur 7 679** |
+| `.g4mg` | 15875 | servi | `/api/v1/formats/decode/{chemin}` — **200 mesuré**, 25/25 de l'échantillon conformes. La description vient du `.g4md` frère (8 955) ou du `.g4pkm` qui l'empaquette (6 920) ; **0 orphelin**. Le GLB *assemblé* reste `/api/v1/3d` — **7 466 codes assemblables sur 7 679**, ce qui n'est pas la même couverture ni la même promesse |
 | `.objbin` | 12190 | servi | `/api/v1/formats/decode/{chemin}` — **200 mesuré**, 25/25 de l'échantillon conformes (objet de menu et ses composants) |
 | `.g4md` | 8955 | servi | `/api/v1/3d` + `/model/{famille}/{code}.glb` |
 | `.g4pkm` | 6992 | servi | `/api/v1/formats/decode/{chemin}` — **200 mesuré**, 25/25 de l'échantillon conformes (squelette 2D et poses de liaison) |
