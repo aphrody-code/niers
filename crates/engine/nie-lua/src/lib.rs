@@ -211,6 +211,32 @@ pub fn script_logical_base(basename: &str) -> String {
     s
 }
 
+/// Extrait le suffixe de version numérique d'un chemin de script.
+///
+/// La résolution d'include doit comparer `10.00` après `9.00`, même si l'ordre ASCII inverse
+/// les deux chaînes. Les composants sont comparés numériquement ; le chemin complet départage
+/// uniquement deux fichiers portant exactement la même version.
+fn script_version_key(path: &str) -> Vec<u64> {
+    let basename = path.rsplit('/').next().unwrap_or(path);
+    let without_ext = basename
+        .strip_suffix(".lua.bin")
+        .or_else(|| basename.strip_suffix(".lua"))
+        .unwrap_or(basename);
+    let Some((_, tail)) = without_ext.rsplit_once('_') else {
+        return Vec::new();
+    };
+    if tail.is_empty()
+        || !tail
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || byte == b'.')
+    {
+        return Vec::new();
+    }
+    tail.split('.')
+        .map(|part| part.parse::<u64>().unwrap_or(0))
+        .collect()
+}
+
 #[cfg(feature = "vm")]
 /// Indexe les chemins de scripts du VFS par nom physique et par nom logique versionless.
 ///
@@ -245,11 +271,14 @@ where
             .or_insert_with(|| path.clone());
         by_logical
             .entry(script_logical_base(base))
-            // Le tri place la version lexicographiquement la plus récente en dernier. Les
-            // suffixes du jeu ont des composants à deux chiffres, donc cet ordre correspond à
-            // l'ordre de version observé (`7.01.12.00`, `7.01.10.00`, etc.).
+            // Comparaison numérique : l'ordre ASCII (`10` < `9`) ne doit jamais choisir une
+            // mauvaise version d'include en session live.
             .and_modify(|selected| {
-                if path > *selected {
+                let candidate_key = script_version_key(&path);
+                let selected_key = script_version_key(selected);
+                if candidate_key > selected_key
+                    || (candidate_key == selected_key && path > *selected)
+                {
                     *selected = path.clone();
                 }
             })
@@ -412,6 +441,25 @@ mod tests {
             Some(&expected)
         );
         assert!(resolve_script_path("LUA_MISSING", &by_name, &by_logical).is_none());
+    }
+
+    #[test]
+    fn script_index_compare_les_versions_numeriquement() {
+        let paths = [
+            "data/lua/foo_9.00.00.lua.bin",
+            "data/lua/foo_10.00.00.lua.bin",
+            "data/lua/bar_1.9.lua.bin",
+            "data/lua/bar_1.10.lua.bin",
+        ];
+        let (_, by_logical) = index_script_paths(paths);
+        assert_eq!(
+            by_logical.get("foo").map(String::as_str),
+            Some("data/lua/foo_10.00.00.lua.bin")
+        );
+        assert_eq!(
+            by_logical.get("bar").map(String::as_str),
+            Some("data/lua/bar_1.10.lua.bin")
+        );
     }
 
     /// **Bout-en-bout sur le vrai jeu** : charge un `.lua.bin` réel dans la VM 5.2.

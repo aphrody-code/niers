@@ -25,6 +25,10 @@ runtime est opérationnel pour le menu `kizuna_town_mainmenu`.
 rechargement de VM. `drive_menu_for_frames` permet d’exécuter plusieurs frames
 avec le même résolveur d’include et le même hôte.
 
+La sélection d’un include versionné compare ses composants de version
+numériquement, afin qu’un fichier `..._10...` ne soit pas devancé par
+`..._9...` selon l’ordre ASCII.
+
 `ExecOutput` expose désormais `loaded_includes`, dans l’ordre réel de chargement.
 `lua-run` le rend dans `loadedIncludes` et `lua-audit` l’agrège par nom de module,
 ce qui rend la résolution VFS observable et vérifiable.
