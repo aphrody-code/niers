@@ -373,20 +373,19 @@
     },
     "workspace_library_tests": {
       "status": "passed_with_unrelated_failures",
-      "passed_targets": 36,
+      "passed_targets": 37,
       "failed_targets": [
-        "nie-aphrody",
         "nie-forge"
       ],
-      "menu_pipeline_targets_passed": 13,
+      "menu_pipeline_targets_passed": 15,
       "command": "cargo test --workspace --lib --no-fail-fast --quiet",
       "failures": {
-        "nie-aphrody": "packages/inacord-ui/src/shell/game-tokens.css differs from generated CSS",
         "nie-forge": "lift::disp32_diag::diag_disp32 rejects mov rcx,[rdx+0x30]"
-      }
+      },
+      "note": "nie-aphrody left this list on 2026-09-07: game-tokens.css/game-screens.css were reaching disk in CRLF (core.autocrlf=true, .gitattributes did not declare them) and the byte-for-byte golden read CRLF while the generator emits LF — a line-ending artefact, not a colour regression. Fixed by declaring packages/inacord-ui/src/shell/*.css as `text eol=lf`."
     },
     "nie_ui_unit_tests": {
-      "date": "2026-09-06",
+      "date": "2026-09-07",
       "passed": 35,
       "failed": 0,
       "ignored": 0,
@@ -396,21 +395,54 @@
       "canonical_screens": 14,
       "screen_colors_measured": 45,
       "screen_lengths": 5,
-      "golden": "css::tests::game_screens_css_est_identique_au_fichier_livre (byte-for-byte, GOLDEN SAUTE if absent)",
+      "golden": "css::tests::le_bloc_root_est_identique_au_css_livre and css::tests::game_screens_css_est_identique_au_fichier_livre (byte-for-byte, GOLDEN SAUTE if absent)",
       "manifest_parity": "screens::tests::le_manifeste_local_est_identique_aux_captures_typees (33/33 entries)",
       "png_ihdr": "screens::tests::chaque_png_existe_en_2560x1440 (33/33 IHDR = 2560x1440)",
       "anchors": "surfaces::tests::les_ancres_suivent_la_mesure_reelle_de_nie_aphrody (panel body, focused row, tile deep; dE Oklab < 0.02)",
       "generator": "cargo run -p nie-ui --bin game_screens_css -- --write | --verify",
       "instrument": "cargo run -p nie-aphrody --bin pixel -- capture data/menu/<png> --crop X,Y,W,H --k N",
-      "clippy": "cargo clippy -p nie-ui --lib --tests --bins : 0 warnings"
+      "clippy": "cargo clippy -p nie-ui --lib --tests --bins : 0 warnings",
+      "game_screens_css_bytes": 22189,
+      "game_screens_css_lines": 533,
+      "game_screens_css_classes_added_2026_09_07": [".game-filter-panel", ".game-check__count", ".game-tab-strip__label"]
     },
     "nie_aphrody_unit_tests": {
-      "date": "2026-09-06",
-      "passed": 39,
-      "failed": 1,
+      "date": "2026-09-07",
+      "passed": 40,
+      "failed": 0,
       "command": "cargo test -p nie-aphrody --lib",
-      "failure": "design::tests::le_css_livre_est_celui_qu_on_produit (pre-existing: game-tokens.css differs from generated CSS, not touched in this batch)",
+      "fixed": "design::tests::le_css_livre_est_celui_qu_on_produit was failing since 2026-09-06 on a CRLF/LF mismatch, not a colour drift — see workspace_library_tests.note. Falsified (cp of game-tokens.css, sha 4b6d30b7c21e2f60, one value 0.1963 -> 0.9999) and restored by cp, never git checkout.",
       "added": "pixel::tests::{crop_parse_accepte_la_forme_x_y_w_h_et_refuse_le_reste, palette_crop_ne_voit_que_la_region_demandee}"
+    },
+    "nie_e2e_site": {
+      "date": "2026-09-07",
+      "status": "passed",
+      "checks": 65,
+      "failed": 0,
+      "skipped": 0,
+      "vfs_entries": 255308,
+      "command": "bash scripts/e2e-site.sh",
+      "fixed": "the script could not run on Windows at all (python3 in PATH is the Microsoft Store shim; jq on Windows writes CRLF, which curl then rejects as a malformed URL) — port selection rewritten in pure bash, chemins piped through tr -d '\\r' after jq."
+    },
+    "codex_typed_settings_pipeline": {
+      "date": "2026-09-07",
+      "status": "passed",
+      "description": "A sibling pipeline delivered by Codex in parallel, over the same data/menu/manifest.json + *_setting.cfg.bin corpus, exposing menu settings as typed data (FFI/WASM/catalog) rather than as design tokens (nie-ui's lane). No file overlap with the nie-ui/inacord-ui/nie-web lane.",
+      "commits": ["be1eaa11", "5679b238", "78eac842", "08c6db76", "c720d9b0", "d05f10e7"],
+      "nie_cli_mode_coverage_strict": {
+        "command": "niers mode coverage --strict",
+        "modes": 12,
+        "screens_total_steam": 475,
+        "screens_classified": 109,
+        "screens_unclassified": 366,
+        "duplicate_screens": 0
+      },
+      "nie_ffi": {
+        "exports": ["decodeMenuSetting()", "vfs.menuSetting()"],
+        "tests_passed": 13
+      },
+      "nie_wasm": "cfgbin_menu_setting_json()",
+      "nie_catalog": "packages/nie-catalog/src/jeu.ts — canonical /typed/<...>_menu_setting.cfg.bin.json URL builder"
     }
   },
   "image_dimensions": [
@@ -674,6 +706,13 @@
   "consumers": {
     "nie-ui": "crates/engine/nie-ui/src/screens.rs",
     "game-screens.css": "packages/inacord-ui/src/shell/game-screens.css",
-    "nie-web": "apps/nie-web"
+    "inacord-ui-game-components": "packages/inacord-ui/src/components/game/**",
+    "inacord-ui-settings": "packages/inacord-ui/src/components/settings/**",
+    "nie-web": "apps/nie-web (accueil, explorateur, catalogue, /settings)",
+    "nie-site": "crates/tools/nie-site (routes /, /settings, /medias, /explorateur x3 langues)",
+    "nie-cli": "crates/tools/nie-cli/src/mode_index.rs (niers mode coverage --strict)",
+    "nie-ffi": "crates/engine/nie-ffi/src/lib.rs (decodeMenuSetting, vfs.menuSetting)",
+    "nie-wasm": "cfgbin_menu_setting_json()",
+    "nie-catalog": "packages/nie-catalog/src/jeu.ts (URLs canoniques /typed/..._menu_setting.cfg.bin.json)"
   }
 }

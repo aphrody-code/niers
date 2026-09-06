@@ -170,11 +170,11 @@ Moyenne des quatre bords −10,02° → `--game-skew: -10deg`. Les **tuiles** de
 reprennent cet angle, et le commentaire le dit. Cinq longueurs sont aussi mesurées (barre 160 px,
 onglet 63 px, ligne 79 px, touche 41 px, tuile 167 px à 1440, ÷ 2 pour le canevas 1280×720).
 
-### Le contrat de classes (`game-screens.css`, 515 lignes, 21 595 octets)
+### Le contrat de classes (`game-screens.css`, 533 lignes, 22 189 octets au 2026-09-07)
 
-`.game-skew` (+ `--game-skew`) · `.game-header-bar{,__icon,__title}` · `.game-tab-strip{,__key}`,
+`.game-skew` (+ `--game-skew`) · `.game-header-bar{,__icon,__title}` · `.game-tab-strip{,__key,__label}`,
 `.game-tab{,--active}` · `.game-panel{,__title,__body,__footer,__watermark}` ·
-`.game-check{,__box,__label,--checked}` · `.game-icon-chip` ·
+`.game-filter-panel{,__extra}` · `.game-check{,__box,__label,--checked,__count}` · `.game-icon-chip` ·
 `.game-setting-list{,__scrollbar}`, `.game-setting-row{,--focused,__label,__value,__arrow,__more}` ·
 `.game-button-primary`, `.game-button-secondary` · `.game-key-cap`, `.game-key-hint`,
 `.game-hint-bar` · `.game-cursor` · `.game-tile-row`, `.game-tile{,__icon,--active}` ·
@@ -182,6 +182,12 @@ onglet 63 px, ligne 79 px, touche 41 px, tuile 167 px à 1440, ÷ 2 pour le cane
 `.game-info-window{,__title}`. Toute couleur est `var(--screen-*)` (déclaré dans le `:root` du
 fichier) ou `var(--jeu-*)` (déjà servi par `game-tokens.css`) — un test refuse tout hex nu hors
 commentaire et toute `var(--screen-*)` non déclarée.
+
+`.game-filter-panel`, `.game-check__count` et `.game-tab-strip__label` sont arrivées le 2026-09-07 :
+les composants de `packages/inacord-ui/src/components/game/` (`GameFilterPanel.tsx`,
+`GameTabStrip.tsx`) les employaient déjà, compensées par un `style={{…}}` en ligne — trois règles
+manquantes au contrat, régularisées dans `surfaces.rs` puis retirées du TSX. Voir la falsification
+plus bas.
 
 ### Les comptes (2026-09-06)
 
@@ -194,7 +200,7 @@ commentaire et toute `var(--screen-*)` non déclarée.
 | Golden CSS | `cargo run -p nie-ui --bin game_screens_css -- --verify` | exit 0, 21 595 octets conformes |
 | Ancres re-mesurées | `surfaces::tests::les_ancres_suivent_la_mesure_reelle_de_nie_aphrody` | 3/3 (corps du panneau, ligne focalisée, tuile) à ΔE < 0,02 et part à ±0,5 % |
 | Suite nie-ui | `cargo test -p nie-ui` | **35 passed, 0 failed** (20 avant ce batch) |
-| Suite nie-aphrody | `cargo test -p nie-aphrody --lib` | 39 passed, **1 failed** — `design::tests::le_css_livre_est_celui_qu_on_produit`, échec PRÉEXISTANT (déjà noté dans le manifeste : `game-tokens.css` diverge du générateur ; fichier interdit d'édition dans ce batch) ; +2 tests `pixel::tests` ajoutés |
+| Suite nie-aphrody | `cargo test -p nie-aphrody --lib` | **40 passed, 0 failed** (le rouge `design::tests::le_css_livre_est_celui_qu_on_produit` du 2026-09-06 est corrigé le 07, voir plus bas) ; +2 tests `pixel::tests` ajoutés |
 | Gate clippy | `cargo clippy -p nie-ui --lib --tests --bins` et `-p nie-aphrody --lib --tests --bins` | 0 warning |
 
 ### Falsification (rejouée, transcrite)
@@ -220,6 +226,47 @@ test result: ok. 2 passed; 0 failed
   dégradé inventé.
 - L'angle des tuiles du menu principal n'est pas mesuré sur les tuiles elles-mêmes (fond photo,
   R² < 0,95) — il est repris des onglets et des lignes, et signalé comme tel.
-- `data/menu/manifest.json` est mis à jour localement (`crate_coverage`, `consumers`,
-  `validation.nie_ui_unit_tests`) mais **jamais commité** — le dossier est suivi par git depuis
-  `a0d464d6` malgré la règle « `data/` gitignoré » : la modification reste dans l'arbre de travail.
+
+## Corrections du 2026-09-07
+
+Trois défauts découverts en vérifiant le batch du 06, aucun n'était une erreur de couleur ou de
+géométrie :
+
+1. **`design::tests::le_css_livre_est_celui_qu_on_produit` rougissait sur une fin de ligne, pas
+   une couleur.** `core.autocrlf=true` réécrivait `game-tokens.css`/`game-screens.css` en CRLF au
+   checkout (`.gitattributes` ne les déclarait pas) ; le golden de `nie-aphrody` compare les
+   octets bruts et annonçait « 111 lignes livrées, 111 attendues » sans aucune ligne différente.
+   Les deux CSS de `packages/inacord-ui/src/shell/` sont maintenant `text eol=lf` dans
+   `.gitattributes`. `nie-aphrody --lib` : 39 passed/1 failed → **40 passed/0 failed**. Falsifié
+   (`cp` du fichier, sha `4b6d30b7c21e2f60`, une valeur `0.1963` → `0.9999`) → rouge exact ligne
+   33 → restauré par `cp`, jamais `git checkout`.
+2. **`scripts/e2e-site.sh` ne tournait pas du tout sous Windows** — `python3` du `PATH` est le
+   raccourci Microsoft Store (n'exécute rien), et le `jq` natif Windows écrit en CRLF, que `curl`
+   refuse ensuite comme URL malformée sur les 201 vérifications VFS. Port choisi en bash pur
+   (`/dev/tcp`), chemins passés par `tr -d '\r'` après `jq`. Avant : exit 3, 0 compte final. Après :
+   exit 0, **65 vérifications, 0 échec**, VFS 255 308 entrées.
+3. **`CLAUDE.md`/`.gitignore` contredisaient le dépôt réel.** La règle disait « `data/` gitignoré —
+   ne jamais commiter, `start.png`/`menu.png` compris », alors que `data/menu/` est suivi par git
+   depuis `a0d464d6` et poussé sur un dépôt public (couvert par l'accord RG-L5-VR-2026-001). Les
+   deux fichiers disent maintenant la même chose que le dépôt : le gros de `data/` reste ignoré
+   pour le poids, `data/menu/` est explicitement rouvert (`!data/menu/**`) parce que c'est la
+   source mesurée de cette crate.
+
+## Pipeline jumeau — réglages typés (Codex, 2026-09-07)
+
+En parallèle de cette crate (couleurs/géométrie → CSS → composants), Codex a construit une seconde
+lecture de `data/menu` sur le même corpus `*_setting.cfg.bin`, sans toucher un seul fichier de
+`nie-ui`/`inacord-ui`/`nie-web` :
+
+| Commit | Portée |
+|---|---|
+| `be1eaa11` | `crates/tools/nie-cli` — `niers mode coverage --strict` : 475 écrans Steam vus, 109 classés dans 12 modes, 366 non classés, 0 doublon |
+| `5679b238` | `crates/engine/nie-game` — audit de tous les réglages de menu en une passe VFS |
+| `78eac842`/`08c6db76` | `crates/engine/nie-ffi` — `decodeMenuSetting()`/`vfs.menuSetting()` exposés à Bun, 13 tests |
+| `c720d9b0` | binding WASM — `cfgbin_menu_setting_json()` |
+| `d05f10e7` | `packages/nie-catalog/src/jeu.ts` — constructeur d'URL canonique `/typed/<...>_menu_setting.cfg.bin.json` |
+
+Les deux pipelines partagent la source (`data/menu`) et divergent volontairement en aval : celui-ci
+produit du **design** (jetons, CSS, composants visuels), celui de Codex produit des **données
+typées** (FFI/WASM/catalogue) consommables côté client sans repasser par Rust. Voir
+`data/menu/manifest.json.validation.codex_typed_settings_pipeline` pour le détail chiffré.

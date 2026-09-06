@@ -11,11 +11,6 @@ obj/
 
 # IECODE extracted data (gros, non versionné)
 data/
-# Sauf les captures d'écran des menus : elles sont la source mesurée de l'UI (nie-ui les lit,
-# game-screens.css en dérive, un golden le prouve). Suivies depuis a0d464d6. Le `!` sur le
-# contenu ne suffit pas quand le dossier parent est exclu : il faut d'abord ré-ouvrir `data/menu/`.
-!data/menu/
-!data/menu/**
 dump/
 out/
 # Meme piege que `bin/` ci-dessus : `data/` n'est pas ancre, il avale aussi les `src/data/` des
@@ -32,15 +27,19 @@ packages/*/src/data/**/*.json
 # Sortie par defaut des exportateurs de familles nie-data (`export_formations --out`) : du
 # contenu de jeu (c) LEVEL-5 reserialise en JSON, regenerable, jamais du code du depot.
 /export/
-# `data/oc/` — personnages originaux (OC). Seule exception au `data/` ci-dessus : leur doc,
-# leur provenance et leurs manifestes sont du travail DU DEPOT, pas du contenu de jeu, donc
-# ils se versionnent. Git ne descend jamais dans un repertoire exclu : re-inclure directement
-# `!/data/oc/` ne ferait rien. Il faut d'abord re-inclure `/data/` lui-meme, puis re-exclure
-# tout son contenu direct, et seulement ensuite re-inclure `/data/oc/`.
+# `data/oc/` et `data/menu/` — deux exceptions au `data/` ci-dessus : les OC (doc, provenance,
+# manifestes) sont du travail DU DEPOT, pas du contenu de jeu ; `data/menu/` porte les 33 captures
+# suivies depuis `a0d464d6`, source mesurée de nie-ui (voir `docs/DESIGN-UI.md`). Git ne descend
+# jamais dans un repertoire exclu : re-inclure directement `!/data/oc/` ne ferait rien. Il faut
+# d'abord re-inclure `/data/` lui-meme, puis re-exclure tout son contenu direct, et seulement
+# ensuite re-inclure chaque exception. Toute regle `!data/menu/**` placee AVANT ce bloc est sans
+# effet : `/data/*` ci-dessous est plus specifique et plus tardive, elle l'emporte.
 !/data/
 /data/*
 !/data/oc/
 !/data/oc/**
+!/data/menu/
+!/data/menu/**
 # Les originaux (planches, pages de BD) sont l'oeuvre de leur auteur : conserves sur le poste
 # et le VPS, hors depot public. Ce qui reste versionne a cote — la provenance et les
 # empreintes — dit d'ou chaque fichier vient et ce qu'il pese, sans le distribuer.
