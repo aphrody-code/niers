@@ -366,6 +366,56 @@ impl LuaSession {
         )
     }
 
+    /// Résout et pilote un menu directement depuis le VFS indexé de la session.
+    ///
+    /// Le chunk principal passe par le même résolveur que `INCLUDE`: chemin physique, basename
+    /// ou nom logique versionless sont acceptés, et la version numérique la plus récente est
+    /// sélectionnée. Le bytecode principal et les includes sont donc validés/décodés sur le
+    /// chemin live avant d'être exécutés dans la VM persistante.
+    ///
+    /// # Errors
+    /// [`LuaError::VfsScriptNotFound`] si aucun résolveur VFS n'est installé ou si `path` est
+    /// absent; les autres erreurs suivent [`Self::drive_menu_for_frames`].
+    pub fn drive_menu_vfs_for_frames(
+        &self,
+        path: &str,
+        layer_ids: &[u32],
+        item_counts: &std::collections::BTreeMap<u32, i32>,
+        frames: u32,
+    ) -> Result<DriveReport, LuaError> {
+        self.drive_menu_vfs_for_frames_with_limit(
+            path,
+            layer_ids,
+            item_counts,
+            frames,
+            Some(DEFAULT_VFS_INSTRUCTION_LIMIT),
+        )
+    }
+
+    /// Variante du pilotage VFS permettant de régler ou désactiver la limite d'instructions.
+    pub fn drive_menu_vfs_for_frames_with_limit(
+        &self,
+        path: &str,
+        layer_ids: &[u32],
+        item_counts: &std::collections::BTreeMap<u32, i32>,
+        frames: u32,
+        instruction_limit: Option<u32>,
+    ) -> Result<DriveReport, LuaError> {
+        let bytes = self
+            .include_resolver
+            .as_ref()
+            .and_then(|resolver| resolver(path))
+            .ok_or_else(|| LuaError::VfsScriptNotFound(path.to_string()))?;
+        self.drive_menu_for_frames_with_limit(
+            &bytes,
+            path,
+            layer_ids,
+            item_counts,
+            frames,
+            instruction_limit,
+        )
+    }
+
     /// Variante du driver live avec une limite d'instructions configurable.
     ///
     /// Le hook couvre toute la séquence du manager (`top-level`, callbacks de construction et
@@ -972,6 +1022,57 @@ mod tests {
             .exec_vfs("data/common/script/lua/menu/module_10.lua.bin")
             .expect("chunk principal VFS versionné");
         assert_eq!(session.eval("vfs_value").unwrap(), "42");
+    }
+
+    #[test]
+    fn le_driver_menu_vfs_resout_le_chunk_principal_et_son_include() {
+        let logs: LogSink = Rc::new(RefCell::new(Vec::new()));
+        let registry = HostRegistry::standard(Rc::clone(&logs));
+        let vm = crate::new_vm();
+        let main = vm
+            .load(r#"INCLUDE("LUA_INC"); function OnInit() menu_ready = included end"#)
+            .into_function()
+            .expect("chunk menu principal")
+            .dump(false);
+        let include = vm
+            .load("included = true")
+            .into_function()
+            .expect("chunk include")
+            .dump(false);
+        let main_for_reader = main.clone();
+        let include_for_reader = include.clone();
+        let paths = vec![
+            "data/common/script/lua/menu/main_1.lua.bin".to_string(),
+            "data/common/script/lua/menu/inc_1.lua.bin".to_string(),
+        ];
+        let session = LuaSession::with_script_paths(
+            registry,
+            logs,
+            true,
+            paths,
+            move |path| {
+                if path.ends_with("main_1.lua.bin") {
+                    Some(main_for_reader.clone())
+                } else if path.ends_with("inc_1.lua.bin") {
+                    Some(include_for_reader.clone())
+                } else {
+                    None
+                }
+            },
+        )
+        .expect("session VFS menu");
+        let report = session
+            .drive_menu_vfs_for_frames(
+                "LUA_MAIN",
+                &[],
+                &std::collections::BTreeMap::new(),
+                0,
+            )
+            .expect("pilotage VFS");
+        assert!(report.top_level_ok);
+        assert_eq!(report.on_init, Some(true));
+        assert_eq!(session.eval("menu_ready").unwrap(), "true");
+        assert_eq!(session.take_loaded_includes(), vec!["LUA_INC"]);
     }
 
     #[test]
