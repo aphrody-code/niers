@@ -3,18 +3,22 @@ import { type SanteApi, sante } from "@niers/asset-source/nie-site";
 import {
 	AssetSourceProvider,
 	FournisseurNavigation,
+	useApplySettings,
 	useCapacites,
 	useErreurSource,
 } from "@niers/inacord-ui";
 import "@niers/inacord-ui/shell/game-tokens.css";
+// Les classes `game-*` des écrans du jeu (Options, filtres), engendrées depuis les captures.
+import "@niers/inacord-ui/shell/game-screens.css";
 import * as React from "react";
 import { useEffect, useMemo, useState } from "react";
-import { ALIAS, EXPLORATEUR, MEDIAS, routesReconnues } from "./entrees";
+import { ALIAS, EXPLORATEUR, MEDIAS, SETTINGS, routesReconnues } from "./entrees";
 import { Catalogue } from "./pages/Catalogue";
 import { Chargement } from "./pages/Chargement";
 import { EcranSecondaire, Note } from "./pages/Ecran";
 import { Explorateur } from "./pages/Explorateur";
 import { MenuPrincipal } from "./pages/MenuPrincipal";
+import { Settings } from "./pages/Settings";
 import { ACCUEIL, cheminPourEntree, entreeDemandee, separerLangue } from "./routage";
 
 /**
@@ -46,6 +50,11 @@ function Site() {
 	const capacites = useCapacites();
 	const erreurSource = useErreurSource();
 	const [etat, setEtat] = useState<SanteApi | null>(null);
+
+	// Les réglages d'apparence (thème, densité, mouvement, taille du texte, zoom) prennent
+	// effet sur `<html>` dès ici, sur TOUS les écrans — un réglage enregistré qui ne change
+	// rien serait un défaut, et l'écran des Options ne doit pas être le seul à le voir.
+	useApplySettings();
 
 	// Le prefixe de langue de l'URL courante. Il ne change pas pendant la session : changer de
 	// langue est une navigation entiere, servie par nie-site, pas un changement d'etat local.
@@ -168,6 +177,13 @@ function Site() {
 				/>
 			</div>
 		);
+	}
+
+	// Les Options sont un écran ENTIER du jeu, comme l'accueil : pas de barre au-dessus, la
+	// touche Échap ramène au menu. Elles ne dépendent pas du catalogue — on y arrive même
+	// quand le VFS n'est pas prêt.
+	if (vue === SETTINGS) {
+		return <Settings prefixe={prefixe} onRetour={() => setVue(ACCUEIL)} />;
 	}
 
 	return (

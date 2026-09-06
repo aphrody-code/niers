@@ -196,3 +196,37 @@ body {
 	 * Lui donner un jeton --jeu-* masquerait cette fuite au lieu de la signaler ; le vrai
 	 * correctif est de retirer ce rôle du composant partagé, hors périmètre d'un seul fichier. */
 }
+
+/* ══════════════════════════════════════════════════════════════════════════════════════════
+ * Les réglages d'apparence, tels que `useApplySettings()` les pose sur `<html>`.
+ *
+ * `data-theme`, `data-density` et `data-motion` sont écrits par le paquet partagé depuis le
+ * magasin d'Inacord (`nie-explorer:settings`) ; ces règles sont ce qui les fait CHANGER quelque
+ * chose. Aucune couleur n'est inventée : le thème sombre réaffecte des jetons déjà mesurés.
+ * ══════════════════════════════════════════════════════════════════════════════════════════ */
+html[data-theme="dark"] {
+	color-scheme: dark;
+	--jeu-ciel-clair: var(--jeu-fond-abysse);
+	--jeu-ciel-brume: var(--jeu-fond-nuit);
+	--jeu-surface-glace: var(--jeu-fond-profond);
+	--jeu-surface-brume: var(--jeu-fond-moyen);
+	--jeu-surface-craie: var(--jeu-fond-nuit);
+	--jeu-nuit-profonde: var(--jeu-texte-vif);
+	--jeu-texte-doux: var(--jeu-accent-cyan);
+}
+
+html[data-density="compact"] {
+	--jeu-espace-s: 4px;
+	--jeu-espace-m: 10px;
+	--jeu-espace-l: 16px;
+	--jeu-espace-xl: 24px;
+}
+
+html[data-motion="reduced"] {
+	--jeu-duree-rapide: 0ms;
+	--jeu-duree-moyenne: 0ms;
+}
+html[data-motion="reduced"] * {
+	animation-duration: 0ms !important;
+	transition-duration: 0ms !important;
+}

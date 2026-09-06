@@ -19,7 +19,26 @@ export const ACCENT_THEMES: readonly AccentTheme[] = [
   "mocha",
 ];
 
+/** Le thème clair/sombre. `system` suit `prefers-color-scheme`. */
+export type ThemeMode = "light" | "dark" | "system";
+
+/** La densité des listes : `compact` resserre les espacements du jeu (`--jeu-espace-*`). */
+export type ListDensity = "comfortable" | "compact";
+
 export interface Settings {
+  /**
+   * Thème clair/sombre/système.
+   *
+   * Sous Inacord, `next-themes` reste la source de vérité (sa propre clé `theme`) : ce champ y
+   * est ignoré. Sous Aphrody, où il n'y a pas de `ThemeProvider`, c'est ce champ que l'hôte
+   * applique — `useApplySettings()` pose `data-theme` sur `<html>`. Le porter ici, avec le même
+   * identifiant que la clé de `next-themes`, rend la synchronisation future triviale.
+   */
+  theme: ThemeMode;
+  /** Réduit les mouvements de l'interface (les durées `--jeu-duree-*` tombent à zéro). */
+  reducedMotion: boolean;
+  /** Densité des listes — cf. [`ListDensity`]. */
+  listDensity: ListDensity;
   gameDir: string;
   wikiDb: string;
   blenderExe: string;
@@ -58,6 +77,9 @@ export interface Settings {
 // "theme") — pas dupliqué ici pour éviter deux sources de vérité qui divergent.
 const KEY = "nie-explorer:settings";
 const DEFAULTS: Settings = {
+  theme: "system",
+  reducedMotion: false,
+  listDensity: "comfortable",
   gameDir: "",
   wikiDb: "",
   blenderExe: "",
@@ -91,6 +113,12 @@ const listeners = new Set<() => void>();
 export function getSettings(): Settings {
   return state;
 }
+
+/** Les valeurs par défaut, figées : c'est ce que « Réinitialiser » restaure. */
+export const SETTINGS_DEFAULTS: Readonly<Settings> = DEFAULTS;
+
+/** La clé `localStorage` — une seule, partagée par les deux hôtes. */
+export const SETTINGS_STORAGE_KEY = KEY;
 
 export function setSettings(patch: Partial<Settings>): void {
   state = { ...state, ...patch };

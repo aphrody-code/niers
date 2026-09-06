@@ -379,23 +379,25 @@ async fn documents_well_known() {
     );
     let texte = String::from_utf8(corps).unwrap();
     assert!(texte.starts_with("<?xml"));
-    // 3 routes x 3 langues, et chaque entree porte le groupe complet de ses traductions.
-    // Trois, et non huit : les quatre catalogues ont fusionne dans `/medias`, les trois vues
-    // d'exploration dans `/explorateur`. Une page, une URL canonique.
-    assert_eq!(texte.matches("<url>").count(), 9);
-    assert_eq!(texte.matches("<loc>").count(), 9);
+    // 4 routes x 3 langues, et chaque entree porte le groupe complet de ses traductions.
+    // Quatre, et non neuf : les quatre catalogues ont fusionne dans `/medias`, les trois vues
+    // d'exploration dans `/explorateur`, et `/settings` a sa page. Une page, une URL canonique.
+    assert_eq!(texte.matches("<url>").count(), 12);
+    assert_eq!(texte.matches("<loc>").count(), 12);
     assert_eq!(
         texte.matches("xhtml:link").count(),
-        36,
+        48,
         "4 alternates par entree"
     );
-    assert_eq!(texte.matches(r#"hreflang="x-default""#).count(), 9);
+    assert_eq!(texte.matches(r#"hreflang="x-default""#).count(), 12);
     // Sans la declaration de l'espace de noms, les `xhtml:link` ne sont que du bruit.
     assert!(texte.contains(r#"xmlns:xhtml="http://www.w3.org/1999/xhtml""#));
     for attendu in [
         "<loc>https://exemple.test/medias</loc>",
         "<loc>https://exemple.test/en/medias</loc>",
         "<loc>https://exemple.test/ja/medias</loc>",
+        "<loc>https://exemple.test/settings</loc>",
+        "<loc>https://exemple.test/en/settings</loc>",
     ] {
         assert!(texte.contains(attendu), "{attendu} absent du plan");
     }
@@ -827,8 +829,9 @@ async fn routes_inconnues_repondent_selon_leur_espace() {
         ("/medias", 200, false),
         ("/explorateur", 200, false),
         ("/recherche", 200, false),
+        ("/settings", 200, false),
     ];
-    assert_eq!(cas.len(), 7);
+    assert_eq!(cas.len(), 8);
     for (uri, code, en_json) in cas {
         let (statut, entetes, corps) = reponse(&etat, uri).await;
         assert_eq!(statut.as_u16(), code, "{uri}");

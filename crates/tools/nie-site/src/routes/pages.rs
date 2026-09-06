@@ -83,7 +83,7 @@ struct Entree {
 /// segment d'URL brut, en minuscule, identique dans les trois langues — parce qu'il tombait
 /// dans la branche générique de [`metadonnees`]. Une entrée du menu que le serveur ne connaît
 /// pas est une page sans titre, absente du plan du site et non déclarée à `robots.txt`.
-const ENTREES: [Entree; 6] = [
+const ENTREES: [Entree; 7] = [
     Entree {
         // `/medias` manquait, alors que c'est l'une des DEUX entrées du menu et qu'elle figure
         // au plan du site : elle sortait donc en `<title>medias — Aphrody</title>`, description
@@ -140,6 +140,17 @@ const ENTREES: [Entree; 6] = [
             "Parcourir l'arborescence du jeu dossier par dossier, telle qu'elle existe dedans.",
             "Walk the game's directory tree folder by folder, exactly as it exists inside.",
             "ゲーム内のディレクトリ構造を、フォルダーごとにそのまま辿れます。",
+        ],
+    },
+    Entree {
+        // Les Options : l'écran des réglages du jeu, avec les réglages d'Inacord dedans.
+        // Segment anglais, comme toute URL nouvelle (CLAUDE.md § Language).
+        segment: "settings",
+        titres: ["Options", "Settings", "オプション"],
+        descriptions: [
+            "Langue, thème, densité des listes, taille du texte : les réglages d'Aphrody, dans l'écran des Options du jeu.",
+            "Language, theme, list density, text size: Aphrody's settings, in the game's Options screen.",
+            "言語・テーマ・リストの密度・文字サイズなど、Aphrody の設定をゲームのオプション画面で。",
         ],
     },
 ];

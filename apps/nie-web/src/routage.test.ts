@@ -1,8 +1,32 @@
 import { describe, expect, test } from "bun:test";
 
-import { cheminPourEntree, entreeDemandee, separerLangue } from "./routage";
+import {
+	cheminPourEntree,
+	entreeDemandee,
+	localeDuPrefixe,
+	prefixeDeLocale,
+	separerLangue,
+} from "./routage";
 
-const ENTREES = ["textures", "modeles", "sons", "videos", "explorateur"] as const;
+const ENTREES = ["textures", "modeles", "sons", "videos", "explorateur", "settings"] as const;
+
+describe("localeDuPrefixe / prefixeDeLocale", () => {
+	test("les trois langues, aller et retour", () => {
+		expect(localeDuPrefixe("")).toBe("fr");
+		expect(localeDuPrefixe("/en")).toBe("en");
+		expect(localeDuPrefixe("/ja")).toBe("ja");
+		for (const locale of ["fr", "en", "ja"] as const) {
+			expect(localeDuPrefixe(prefixeDeLocale(locale))).toBe(locale);
+		}
+	});
+
+	test("changer de langue depuis les Options est un chemin servi", () => {
+		// C'est ce que la page `/settings` assigne quand « Appliquer » a changé la langue.
+		expect(cheminPourEntree(prefixeDeLocale("ja"), "settings")).toBe("/ja/settings");
+		expect(cheminPourEntree(prefixeDeLocale("fr"), "settings")).toBe("/settings");
+		expect(separerLangue("/ja/settings")).toEqual({ prefixe: "/ja", route: "/settings" });
+	});
+});
 
 describe("separerLangue", () => {
 	test("le français n'a pas de préfixe", () => {
@@ -34,6 +58,8 @@ describe("entreeDemandee", () => {
 		expect(entreeDemandee(ENTREES, emplacement("/textures"))).toBe("textures");
 		expect(entreeDemandee(ENTREES, emplacement("/ja/videos"))).toBe("videos");
 		expect(entreeDemandee(ENTREES, emplacement("/en/explorateur"))).toBe("explorateur");
+		expect(entreeDemandee(ENTREES, emplacement("/settings"))).toBe("settings");
+		expect(entreeDemandee(ENTREES, emplacement("/ja/settings"))).toBe("settings");
 	});
 
 	test("l'accueil ne désigne aucune entrée", () => {

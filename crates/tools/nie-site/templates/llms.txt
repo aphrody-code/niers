@@ -19,6 +19,7 @@ and returns the same identifiers the game uses.
 - [Sounds]({{ origine }}/sons): audio banks (ACB, AWB, HCA), decoded on demand.
 - [Videos]({{ origine }}/videos): in-game videos (USM).
 - [Browse]({{ origine }}/explorateur): walk the directory tree instead of filtering by kind.
+- [Settings]({{ origine }}/settings): language, theme, list density, text size — the game's Options screen.
 
 ## JSON API
 

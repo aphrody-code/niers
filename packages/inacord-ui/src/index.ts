@@ -118,3 +118,49 @@ export {
 	useRouter,
 	useSearchParams,
 } from "./compat/next";
+
+// --- Les ecrans du jeu : FILTRES, barre d'onglets, guides de touches, tuiles ----------------
+//
+// Reconstruits sur les captures de `data/menu/` (main_menu, filters_*, options, player_roster).
+// Ils consomment les classes `game-*` de `shell/game-screens.css`, engendree depuis Rust.
+export * from "./components/game";
+
+// --- L'ecran des Options : les reglages d'Inacord, dans l'ecran du jeu ----------------------
+//
+// Le modele (`settings-model`) est la seule liste des reglages, avec les identifiants du
+// magasin partage (`lib/settings`). L'ecran demande `useCapacites()` et cache ce que l'hote ne
+// sait pas honorer ; l'hote monte `useApplySettings()` a sa racine pour que ce qui est regle
+// change quelque chose.
+export {
+	cycleValue,
+	formatValue,
+	isSettingVisible,
+	LOCALE_OPTIONS,
+	SETTING_DEFINITIONS,
+	SETTING_FAMILIES,
+	type SettingDefinition,
+	type SettingFamily,
+	type SettingId,
+	type SettingOption,
+	visibleFamilies,
+	visibleSettings,
+} from "./components/settings/settings-model";
+export { SettingsScreen } from "./components/settings/SettingsScreen";
+export { SettingRow } from "./components/settings/SettingRow";
+export { SettingList } from "./components/settings/SettingList";
+export {
+	getSettings,
+	resetSettings,
+	resolveTheme,
+	type Settings,
+	useApplySettings,
+	useSettings,
+} from "./components/settings/use-settings";
+export {
+	type ListDensity,
+	type Locale,
+	SETTINGS_DEFAULTS,
+	SETTINGS_STORAGE_KEY,
+	setSettings,
+	type ThemeMode,
+} from "./lib/settings";

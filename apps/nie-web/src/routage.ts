@@ -23,6 +23,18 @@
 /** Les préfixes de langue servis par `nie-site`. Le français est à la racine, sans préfixe. */
 export const PREFIXES_LANGUE = ["/en", "/ja"] as const;
 
+/** La langue que sert un préfixe : `""` est le français. */
+export function localeDuPrefixe(prefixe: string): "fr" | "en" | "ja" {
+	if (prefixe === "/en") return "en";
+	if (prefixe === "/ja") return "ja";
+	return "fr";
+}
+
+/** Le préfixe qui sert une langue — l'inverse de [`localeDuPrefixe`]. */
+export function prefixeDeLocale(locale: "fr" | "en" | "ja"): string {
+	return locale === "fr" ? "" : `/${locale}`;
+}
+
 /** Ce qu'un chemin dit de la langue et de la route. */
 export interface CheminSepare {
 	/** `""` pour le français, `/en` ou `/ja` sinon. */

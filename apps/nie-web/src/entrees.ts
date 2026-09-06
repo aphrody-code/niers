@@ -57,6 +57,13 @@ export const CATALOGUES = ["textures", "modeles", "sons", "videos"] as const;
  */
 export const MEDIAS = "medias";
 
+/**
+ * Les Options — l'écran des réglages du jeu, avec les réglages d'Inacord dedans.
+ *
+ * Segment anglais (`/settings`), comme toute URL nouvelle. La tuile porte l'engrenage du jeu.
+ */
+export const SETTINGS = "settings";
+
 /** Une entrée du menu : sa route, son libellé, son pictogramme. */
 export interface EntreeMenu {
 	/** Le segment d'URL — c'est aussi l'identité de l'entrée. */
@@ -78,6 +85,7 @@ const HABILLAGE: Record<string, { libelle: string; glyphe: NomGlyphe }> = {
 	videos: { libelle: "Vidéos", glyphe: "film" },
 	[MEDIAS]: { libelle: "Médias", glyphe: "image" },
 	[EXPLORATEUR]: { libelle: "Explorer", glyphe: "arbre" },
+	[SETTINGS]: { libelle: "Options", glyphe: "engrenage" },
 };
 
 /** Le libellé d'une entrée, ou son nom brut si le site ne la connaît pas. */
@@ -98,15 +106,14 @@ export function routesReconnues(etat: SanteApi | null): string[] {
 }
 
 /**
- * Les entrées du menu : les catalogues connus, complétés par ceux que le serveur publie en
- * plus, puis l'explorateur.
+ * Les entrées du menu : les médias, l'explorateur, puis les Options.
  *
  * L'ordre vient du serveur quand il a répondu — c'est lui qui décide de la place d'un
  * catalogue. L'explorateur ferme toujours la marche : il ne parcourt pas un catalogue mais
  * l'arborescence, et le serveur ne le publie pas comme une vue.
  */
 export function entreesMenu(_etat: SanteApi | null): EntreeMenu[] {
-	return [MEDIAS, EXPLORATEUR].map((vue) => ({
+	return [MEDIAS, EXPLORATEUR, SETTINGS].map((vue) => ({
 		vue,
 		libelle: libelleEntree(vue),
 		glyphe: HABILLAGE[vue]?.glyphe ?? "arbre",
