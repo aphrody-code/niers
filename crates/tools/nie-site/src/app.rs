@@ -148,6 +148,14 @@ declarer_routes! {
     "/api/v1/lua/desassemblage/{*chemin}" => crate::routes::lua::desassemblage,
     "/api/v1/formats" => crate::routes::formats::capacites,
     "/api/v1/formats/decode/{*chemin}" => crate::routes::formats::decode,
+    // Chercher un fichier dans TOUT le VFS. `/b` ne filtre qu'un niveau — verifie :
+    // `/b/data?q=chara_base` rend 0. Cf. `routes::recherche`.
+    "/api/v1/recherche" => crate::routes::recherche::recherche,
+    // Les donnees du jeu, en structures NOMMEES. Distincte de `/formats/decode`, qui rend la
+    // structure generique du conteneur : un consommateur typé qui lit le générique y trouve
+    // zero element en annoncant un succes. Cf. `routes::donnees`.
+    "/api/v1/donnees" => crate::routes::donnees::capacites,
+    "/api/v1/donnees/{*chemin}" => crate::routes::donnees::donnees,
     // La matrice de couverture du plan (§ 4). Elle est LUE, jamais mesuree ici : mesurer,
     // c'est lancer `niers --help`, lire quatre arbres de sources et parcourir 255 308 lignes
     // d'inventaire. Cf. `routes::couverture`.
@@ -285,7 +293,7 @@ mod tests {
     #[test]
     fn contrat_de_routes() {
         let routes = chemins();
-        assert_eq!(routes.len(), 39, "39 routes montees");
+        assert_eq!(routes.len(), 42, "42 routes montees");
         for r in &routes {
             assert!(r.starts_with('/'), "{r}");
             // Syntaxe axum 0.7 (`:id`, `*path`) : elle PANIQUE au `route()`, elle ne degrade

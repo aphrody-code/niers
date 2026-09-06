@@ -45,6 +45,32 @@ const fn interne(raison: &'static str) -> Etat {
     }
 }
 
+/// Les modules de `nie-data` que `nie_data::typed::decode_by_key` atteint, et donc que
+/// `/api/v1/donnees/{chemin}` sert.
+///
+/// Cette liste est **écrite**, mais elle n'est pas crue : un test la confronte au fichier
+/// source (`crates/engine/nie-data/src/typed.rs`) et rougit dès qu'un module y entre ou en
+/// sort. C'est ce qui la distingue d'un inventaire tenu à la main — celui-là se périme en
+/// silence, et ce dépôt l'a déjà payé avec `app::ROUTES` figé à 19 sur un routeur qui en
+/// montait 37.
+pub static MODULES_TYPES: &[&str] = &[
+    "ai", "ai_type", "aura", "banner", "basara", "belong_team", "boost_grp", "capsule", 
+    "change_aura_skill_config", "chara_bank", "chara_base", "chara_costume", "chara_description", 
+    "chara_details", "chara_edit", "chara_menu_resource", "chara_param", "chara_series", 
+    "chat_emote", "chronicle_top", "command", "craft", "ctrl_chara", "dictionary", "dungeon", 
+    "emblems", "enjoy_mode_team", "event_bustup", "event_map_tag", "event_subtitle", "exp", 
+    "extend_story", "fast_travel", "flag_config", "font_color", "formation", "friendmap", 
+    "gallery", "game_quest", "happen_event_npc", "help", "inacode", "input", "item", 
+    "item_emission", "light", "menu_setting", "mission", "movie", "music_app", "nfc", 
+    "opponent_team", "override_skill", "party", "passive", "phase", "phase_set", "photo_mode", 
+    "players_universe", "post", "quest", "real_skill_config", "record", "rpg_battle", 
+    "scene_archive", "search_word", "setting_menu", "shop", "skill", "skill_technic", "skill_view", 
+    "soccer", "soccer_drop", "soccer_fixed_reward", "soccer_map_env", "soccer_opponent", 
+    "soccer_placement", "soccer_player_record", "soccer_rank", "soccer_suggest", "system_unlock", 
+    "talk_select", "trial_take_over", "trigger", "trophy", "uniform", "update_notice", 
+    "user_name_plate", "vsroute", "weather",
+];
+
 /// Toutes les décisions de classement, source par source.
 pub static REGLES: &[Regle] = &[
     // ---------------------------------------------------------------- niers (sous-commandes)
@@ -60,8 +86,8 @@ pub static REGLES: &[Regle] = &[
     // Le moteur de recherche existe (`ignore`, celui de ripgrep) et l'index du VFS est monté :
     // il manque la route. C'est du câblage, et c'est le défaut 1 du lot 8 — `/b` accepte `q`
     // et l'ignore.
-    r!("niers-recherche", Niers, Motif::Exact("find"), manquant("crates/tools/nie-cli (moteur `ignore`) + vfs_index")),
-    r!("niers-grep", Niers, Motif::Exact("grep"), manquant("crates/tools/nie-cli (moteur de ripgrep)")),
+    r!("niers-recherche", Niers, Motif::Exact("find"), interne("cherche sur le DISQUE de la machine (moteur `ignore`) ; la recherche dans le VFS du jeu, elle, est servie par /api/v1/recherche")),
+    r!("niers-grep", Niers, Motif::Exact("grep"), interne("cherche dans le CONTENU des fichiers du disque : un service web ne lit pas l'arbre de la machine")),
     r!("niers-icons", Niers, Motif::Exact("icons"), manquant("nie_explore::icons — index nom → atlas + rectangle")),
     r!("niers-avatar", Niers, Motif::Exact("avatar"), manquant("nie_data::chara_edit — catalogue, parts, recettes")),
     r!("niers-mode", Niers, Motif::Exact("mode"), manquant("nie_explore::mode_index — écrans, calques, scripts par mode")),
@@ -104,8 +130,8 @@ pub static REGLES: &[Regle] = &[
     r!("inacord-vfs-cfgbin", Inacord, Motif::Prefixe("vfs_decode_cfgbin"), servi("/api/v1/formats/decode/{*chemin}")),
     r!("inacord-vfs-camera", Inacord, Motif::Exact("vfs_apercu_camera"), servi("/api/v1/formats/decode/{*chemin}")),
     r!("inacord-vfs-navmesh", Inacord, Motif::Exact("vfs_apercu_navmesh"), servi("/api/v1/formats/decode/{*chemin}")),
-    r!("inacord-vfs-recherche", Inacord, Motif::Exact("vfs_find"), manquant("vfs_index — l'index est monté, la route de recherche manque (lot 8)")),
-    r!("inacord-vfs-recherche-p", Inacord, Motif::Exact("vfs_find_paged"), manquant("vfs_index — l'index est monté, la route de recherche manque (lot 8)")),
+    r!("inacord-vfs-recherche", Inacord, Motif::Exact("vfs_find"), servi("/api/v1/recherche")),
+    r!("inacord-vfs-recherche-p", Inacord, Motif::Exact("vfs_find_paged"), servi("/api/v1/recherche")),
     r!("inacord-vfs-lecture", Inacord, Motif::Prefixe("vfs_"), servi("/b/{*prefixe}")),
     r!("inacord-preload", Inacord, Motif::Exact("preload_vfs"), interne("montage du VFS de l'hôte : le site le monte en fond au démarrage")),
     // Les catalogues de données : le miroir est là, les routes ne le sont pas.
@@ -190,6 +216,7 @@ pub static REGLES: &[Regle] = &[
     // Les 110 familles restantes : le parseur est écrit, testé par golden, et **rien** ne
     // l'expose. C'est la mesure qui a motivé le plan : le dépôt sait faire dix fois ce qu'il
     // montre.
+    r!("data-typees", NieData, Motif::Parmi(MODULES_TYPES), servi("/api/v1/donnees/{*chemin}")),
     r!("data-familles", NieData, Motif::Tout, manquant("crates/engine/nie-data/src/<module>.rs — parseur typé, golden testé, sans route")),
 
     // ---------------------------------------------------------------- nie-formats (modules)

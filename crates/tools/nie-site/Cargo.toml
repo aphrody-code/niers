@@ -39,6 +39,17 @@ workspace = true
 #   `/api/v1/formats` le dit au lieu de le promettre.
 nie-formats = { path = "../../engine/nie-formats", features = ["serde"] }
 
+# Les 93 familles de donnees du jeu, derriere UNE facade : `nie_data::typed::decode_by_key`,
+# deja partagee par `nie-model-serve` (route `/typed`) et `nie-wasm` (decodage in-browser).
+# C'est la source unique — la brancher ici n'en cree pas une seconde.
+#
+# Ce que la matrice de couverture a chiffre le 2026-09-06 : 110 des 116 modules de `nie-data`
+# etaient `manquant` — parseur ecrit, golden teste, aucune route. La facade en atteint 90.
+#
+# `serde` est REQUISE : `typed` est gate `#![cfg(feature = "serde")]` en entier, et sans elle
+# le module n'existe pas — l'appel ne compile pas, il ne degrade pas.
+nie-data = { path = "../../engine/nie-data", features = ["serde", "std"] }
+
 # Le pet Aphrody : atlas, animations et poses de regard, embarques au build par
 # `include_bytes!`. Le site ne fait que republier ce package — il n'en garde aucune copie.
 # Il porte aussi `assets::encoder_png`, le seul encodeur PNG du site (cf. `routes::modeles3d`).

@@ -189,11 +189,11 @@ mod tests {
 
     fn matrice_temoin() -> crate::couverture::Matrice {
         let entrees = vec![
-            // Un module de `nie-data` dont le parseur est ecrit et qu'aucune route n'appelle
-            // — le cas que la page doit rendre visible.
+            // Une capacite manquante — le cas que la page doit rendre visible, avec son
+            // detail et pas seulement son compte.
             mesure::Entree {
-                source: Source::NieData,
-                nom: "shop".to_string(),
+                source: Source::Azalee,
+                nom: "/tools/compare".to_string(),
                 poids: 1,
             },
             mesure::Entree {
@@ -211,10 +211,10 @@ mod tests {
         assert!(html.contains("71101"), "le poids servi est affiché");
         assert!(html.contains("gate maîtresse"));
         assert!(html.contains("rompue"), "manquant = 1 : la gate est rompue");
-        assert!(html.contains("shop"), "la capacité manquante est nommée");
+        assert!(html.contains("/tools/compare"), "la capacité manquante est nommée");
         assert!(
-            html.contains("golden testé"),
-            "le décodeur déjà écrit est nommé, pas seulement compté"
+            html.contains("les dix 308"),
+            "la raison est publiée, pas seulement le compte"
         );
     }
 

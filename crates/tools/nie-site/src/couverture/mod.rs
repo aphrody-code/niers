@@ -192,6 +192,9 @@ pub enum Motif {
     Prefixe(&'static str),
     /// Un suffixe de nom (utile pour les extensions du VFS).
     Suffixe(&'static str),
+    /// Une liste close de noms — quand la règle porte sur un ensemble mesurable ailleurs, et
+    /// qu'un test peut confronter la liste à sa source (cf. `MODULES_TYPES`).
+    Parmi(&'static [&'static str]),
     /// Toutes les capacités restantes de la source — le filet, toujours en dernier.
     Tout,
 }
@@ -204,6 +207,7 @@ impl Motif {
             Self::Exact(m) => nom == m,
             Self::Prefixe(m) => nom.starts_with(m),
             Self::Suffixe(m) => nom.ends_with(m),
+            Self::Parmi(noms) => noms.contains(&nom),
             Self::Tout => true,
         }
     }
@@ -585,16 +589,59 @@ mod tests {
     }
 
     #[test]
+    fn la_liste_des_modules_types_est_celle_du_fichier_source() {
+        // La garde qui empeche `MODULES_TYPES` de devenir un faux document : on relit
+        // `typed.rs` et on extrait les `crate::<module>::` que son `match` appelle. Un module
+        // ajoute a la facade sans etre ajoute ici fait rougir ce test, et un module retire
+        // aussi. C'est la meme lecon que `app::ROUTES` fige a 19 sur 37 routes montees.
+        let source = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../engine/nie-data/src/typed.rs");
+        let texte = std::fs::read_to_string(&source)
+            .unwrap_or_else(|e| panic!("{} illisible: {e}", source.display()));
+
+        let mut mesures: Vec<&str> = texte
+            .match_indices("crate::")
+            .filter_map(|(i, _)| {
+                let reste = &texte[i + "crate::".len()..];
+                let fin = reste.find("::")?;
+                let nom = &reste[..fin];
+                nom.chars()
+                    .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_')
+                    .then_some(nom)
+            })
+            .collect();
+        mesures.sort_unstable();
+        mesures.dedup();
+
+        let mut declares: Vec<&str> = REGLES
+            .iter()
+            .find_map(|r| match r.motif {
+                Motif::Parmi(noms) if r.id == "data-typees" => Some(noms.to_vec()),
+                _ => None,
+            })
+            .expect("la regle `data-typees` doit exister");
+        declares.sort_unstable();
+
+        assert_eq!(
+            declares, mesures,
+            "MODULES_TYPES a derive de nie-data/src/typed.rs — regenerer par \
+             `rg -o 'crate::([a-z0-9_]+)::' -r '$1' crates/engine/nie-data/src/typed.rs | sort -u`"
+        );
+    }
+
+    #[test]
     fn les_agregats_somment_au_total() {
-        // `shop` est l'un des 110 modules de `nie-data` dont le parseur est ecrit et
-        // qu'aucune route n'appelle. Ce test rougira le jour ou il sera cable — et c'est
-        // voulu : un temoin de `manquant` qui survit a tout ne temoigne de rien.
+        // Temoin de `manquant` : une page d'outils d'Azalee, redirigee vers Aphrody par les
+        // dix 308 sans y avoir d'equivalent. Ce test rougira le jour ou elle sera portee — et
+        // c'est voulu : un temoin de `manquant` qui survit a tout ne temoigne de rien. Le
+        // temoin precedent (`nie-data::shop`) a justement rougi quand `/api/v1/donnees` l'a
+        // servi, ce qui est la preuve que la garde fonctionne.
         let inv = inventaire(&[
             (Source::Vfs, ".cfg.bin", 71_101),
             (Source::Vfs, ".awb", 5_512),
             (Source::Vfs, ".g4tg", 9),
             (Source::Niers, "vfs", 1),
-            (Source::NieData, "shop", 1),
+            (Source::Azalee, "/tools/compare", 1),
         ]);
         let m = construire(&inv, &crate::app::chemins());
         assert_eq!(m.total.capacites, 5);
