@@ -199,8 +199,15 @@
 > `400` de la table trouvée ressortait en `404 « aucune table ne se nomme episodes »` — un
 > message qui envoie corriger un nom parfaitement juste.
 >
-> **Le retard a changé de côté.** 35 des 41 filtres servis n'ont aucune commande à l'écran ;
-> le combler ne coûte aucune ligne de Rust.
+> **Le retard avait changé de côté ; il a été comblé le jour même.** Trois pages câblées sans
+> une ligne de Rust — `/explorateur`, les catalogues, et **`/donnees`** (nouvelle : les 224
+> tables des deux gisements, une commande par colonne mesurée, intervalles, présence, tri par
+> en-tête, export CSV). Chacune vérifiée **à l'écran**, `chromium --dump-dom` contre
+> `https://aphrody.com`, en comparant le premier élément rendu à celui que l'API trie.
+>
+> Restent cinq filtres servis sans commande (#6, #10, #11, #36, #47) : ils appellent un écran
+> de **recherche globale**, et les greffer sur l'explorateur — qui *est* déjà un préfixe —
+> ferait deux façons de dire la même chose au même endroit.
 
 ---
 

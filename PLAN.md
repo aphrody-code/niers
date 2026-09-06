@@ -63,9 +63,17 @@ maître du moteur et de la forge reste [`docs/PLAN.md`](docs/PLAN.md).
 > commune). Le plan annonçait `manquant = 42` — la mesure en a trouvé 5, et la moitié de l'écart
 > était **déjà servie** sans que le recensement, fait en lecture de code, le sache.
 >
-> **Ce qui reste, et c'est le seul point ouvert :** 35 des 41 filtres servis n'ont **aucune
-> commande à l'écran**. L'explorateur et le catalogue en utilisent six ; le combler ne coûte
-> aucune ligne de Rust. Détail : amendement 8 de
+> **Le point ouvert a été comblé dans la foulée, et sans une ligne de Rust.** Trois pages
+> câblées : `/explorateur` (recherche, extension, tri, borne de taille, état dans l'URL),
+> les catalogues (extension, tri, taille de page), et **`/donnees`**, nouvelle — les 224 tables
+> des deux gisements, une commande par colonne **mesurée**, intervalles, présence, tri par
+> en-tête, export CSV. Vérifié à l'écran par `chromium --dump-dom` sur `https://aphrody.com` à
+> chaque fois, jamais sur le diff.
+>
+> **Reste cinq filtres servis sans commande** — #6 préfixe, #10 CPK, #11 glob, #36 langue,
+> #47 facettes chiffrées : ils appellent un écran de **recherche globale** qui n'existe pas
+> encore, et les greffer sur l'explorateur ferait deux façons de dire la même chose au même
+> endroit. Détail : amendement 8 de
 > [`docs/PLAN-SITE-ULTIME.md`](docs/PLAN-SITE-ULTIME.md) et `docs/FILTRES.md` § 5.
 
 > **Amendement du 2026-09-06 (6) — la matrice de couverture existe, et la gate est rompue.**

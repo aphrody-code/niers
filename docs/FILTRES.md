@@ -359,9 +359,21 @@ servis 41 · absents 5 · côté client 2 · à relire 0  (sur 48)
   - Restent deux vrais manques, tous deux du **classement** et non du filtrage : #40 pertinence
     pondérée et #41 repli approché. `apps/inacord/src/lib/recherche.ts:186-295` en est le
     portage direct.
-- **Aphrody côté interface : l'explorateur utilise désormais `q` et `ext`** (#1, #2, #3, #16 par
-  l'URL), mais 35 des 41 filtres servis n'ont toujours aucune commande à l'écran. **C'est le
-  retard qui reste**, et il ne coûte aucune ligne de serveur.
+- **Aphrody côté interface : le retard est comblé pour l'essentiel.** Trois pages ont été
+  câblées le 2026-09-06, sans une ligne de serveur :
+  - **`/explorateur`** — recherche, extension, tri (nom/taille, deux sens), borne basse de
+    taille, compte du serveur, et l'état entier dans l'URL (#1, #2, #3, #5, #7, #8, #9, #15,
+    #16) ;
+  - **`/textures`, `/sons`, `/videos`** — extension, tri, taille de page (liste close à 200,
+    le plafond du serveur), état dans l'URL (#4, #14) ;
+  - **`/donnees`, nouvelle** — les **224 tables** des deux gisements, une commande par colonne
+    **mesurée**, intervalles sur les colonnes non textuelles, test de présence, tri par
+    en-tête, export CSV (#17 à #35, #37 à #39, #48).
+  Restent **cinq filtres servis sans commande à l'écran** : #6 (préfixe), #10 (CPK), #11
+  (glob), #36 (langue par le glob) et #47 (facettes chiffrées, publiées mais pas dessinées).
+  Les quatre premiers relèvent d'une **recherche globale**, un écran qui n'existe pas encore —
+  l'explorateur est déjà un préfixe, et y ajouter un glob ferait deux façons de dire la même
+  chose sur le même écran.
 - **#2 et #10 étaient les deux divergences du § 8** — `q` ignoré par `/b`, `cpk_filename` jeté à
   la construction de l'index. Les deux sont corrigées et mesurées ci-dessus.
 
