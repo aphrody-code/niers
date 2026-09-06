@@ -1,35 +1,35 @@
 {
-  "name": "@niers/bxc",
-  "version": "0.1.0",
-  "private": true,
-  "description": "Point d'entrée unique du scrapping Inazuma : workflow épisodes → iecrawl → catalogue → annonces, et le bot Discord Wonderbot.",
-  "type": "module",
-  "main": "./src/cli.ts",
-  "types": "./src/cli.ts",
-  "bin": {
-    "niers-bxc": "./src/cli.ts"
-  },
-  "exports": {
-    ".": "./src/cli.ts",
-    "./workflow": "./src/workflow.ts",
-    "./iecrawl": "./src/iecrawl.ts"
-  },
-  "scripts": {
-    "typecheck": "bunx tsc --noEmit",
-    "test": "bun test",
-    "workflow": "bun --bun ./src/cli.ts workflow",
-    "wonderbot": "bun --bun ./src/cli.ts wonderbot"
-  },
-  "dependencies": {
-    "@aphrody/bxc": "0.9.0",
-    "@aphrody/ietv": "0.1.0",
-    "@aphrody/wonderbot": "0.1.0",
-    "@aphrody/zukan": "0.1.5",
-    "discord.js": "^14.26.4"
-  },
-  "devDependencies": {
-    "@types/bun": "catalog:",
-    "typescript": "catalog:"
-  },
-  "license": "Apache-2.0"
+	"name": "@niers/bxc",
+	"version": "0.1.0",
+	"private": true,
+	"description": "Point d'entr\u00e9e unique du scrapping Inazuma : workflow \u00e9pisodes \u2192 iecrawl \u2192 catalogue \u2192 annonces, et le bot Discord Wonderbot.",
+	"type": "module",
+	"main": "./src/cli.ts",
+	"types": "./src/cli.ts",
+	"bin": {
+		"niers-bxc": "./src/cli.ts"
+	},
+	"exports": {
+		".": "./src/cli.ts",
+		"./workflow": "./src/workflow.ts",
+		"./iecrawl": "./src/iecrawl.ts"
+	},
+	"scripts": {
+		"typecheck": "bunx tsc --noEmit",
+		"test": "bun test",
+		"workflow": "bun --bun ./src/cli.ts workflow",
+		"wonderbot": "bun --bun ./src/cli.ts wonderbot"
+	},
+	"dependencies": {
+		"@aphrody/bxc": "0.9.6",
+		"@aphrody/ietv": "0.1.0",
+		"@aphrody/wonderbot": "0.1.0",
+		"@aphrody/zukan": "0.1.5",
+		"discord.js": "^14.26.4"
+	},
+	"devDependencies": {
+		"@types/bun": "catalog:",
+		"typescript": "catalog:"
+	},
+	"license": "Apache-2.0"
 }
