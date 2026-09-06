@@ -306,7 +306,7 @@ vignette), compté à part et jamais comme un manque.
 | 33 | Tri par puissance / coût | ✅ | ✅ | ❌ | **SERVI** | 0 / 900 |
 | 34 | Catégorie d'objet | ✅ | ◐ | ❌ | **SERVI** | 1 807 → 334 |
 | 35 | Catégorie d'illustration | ✅ | ✅ | ❌ | **SERVI** | 360 → 1 |
-| 36 | Langue / variante d'un asset | ❌ | ✅ | ❌ | **ABSENT** | paramètre avalé |
+| 36 | Langue / variante d'un asset | ❌ | ✅ | ❌ | **SERVI** | `glob=data/**/fr/**` → 6 124 ; `en` 13 175 |
 | **Épisodes / médias** |
 | 37 | Saison / numéro d'épisode | ❌ | ✅ | ❌ | **SERVI** | `entites/episodes?season=3` → 1 141 → 274 |
 | 38 | Langue de piste | ❌ | ✅ | ❌ | **SERVI** | `?language=vf` → 1 141 → 390 |
@@ -332,37 +332,43 @@ tort — c'est le gisement qui est pauvre, pas la route.
 ### Compte — 2026-09-06 au soir
 
 ```
-servis 40 · absents 6 · côté client 2 · à relire 0  (sur 48)
+servis 41 · absents 5 · côté client 2 · à relire 0  (sur 48)
 ```
 
-- **API : 40 servis, 6 absents, 2 hors périmètre.** Le matin, la même colonne comptait 6 servis.
-- Les deux derniers (#29, #32) ont été gagnés **le soir même, par la mesure** : le script les a
-  classés `ABSENT` en disant *pourquoi* — « l'égalité ne sait dire ni l'intervalle ni la
-  présence » — et cette phrase était le cahier des charges. `entites` a gagné `colonne__min` /
-  `colonne__max` et les jetons `__present__` / `__absent__` : **un seul endroit, les 219 tables**.
-- Ce qui a changé n'est pas 26 filtres écrits un par un, mais **deux routes génériques** :
-  `/api/v1/recherche` (`q`, `ext`, `cpk`, `taille_min`, `taille_max`, `tri`, `ordre`) couvre le
-  VFS, et `/api/v1/entites/{table}` (`q`, `tri`, `ordre`, **égalité sur toute colonne du schéma**)
-  couvre les **219 tables** du gisement d'un coup. Une facette de plus n'y coûte pas une ligne de
-  code : elle existe dès que la colonne existe.
-- **Les 14 absents forment trois familles**, et une seule est un manque de code :
-  - **la forme du filtre** (#6 sous-arbre, #11 glob, #29 « non nul », #32 fourchette, #41 fuzzy) —
-    l'égalité et la sous-chaîne ne savent pas l'exprimer. C'est là qu'il reste à écrire ;
-  - **le gisement absent de l'API entités** (#37–#40 épisodes) — `episodes.db` est servi par
-    `/api/v1/episodes`, une API de **synchronisation** (`since`/`limit`), pas un catalogue ;
-    #44/#45 (RE, forge) n'ont aucune route, délibérément — la KB du VPS est ancrée sur le build
-    transitoire, y brancher une route publierait des chiffres faux ;
-  - **le hors-périmètre serveur** (#36 langue d'asset, #46 recherche inter-gisements, #48 export).
-- **Aphrody côté interface n'a toujours que 3 ✅ et 3 ◐.** C'est désormais **le** retard : le
-  serveur sait filtrer, l'explorateur (`Explorateur.tsx:43-117`) n'offre toujours aucun filtre.
-  L'écart n'est plus « il manque du serveur », il est « le client n'utilise pas ce qui est servi ».
+- **API : 41 servis, 5 absents, 2 hors périmètre.** Le matin, la même colonne comptait 6 servis.
+- **Le gros du gain n'est pas 35 filtres écrits un par un, ce sont deux routes génériques.**
+  `/api/v1/recherche` (`q`, `ext`, `cpk`, `prefixe`, `glob`, `taille_min`, `taille_max`, `tri`,
+  `ordre`) couvre l'espace VFS ; `/api/v1/entites/{table}` (`q`, `tri`, `ordre`, égalité,
+  intervalle, présence, `format=csv`) couvre les **224 tables** des deux gisements d'un coup.
+  Une facette de plus n'y coûte pas une ligne : elle existe dès que la colonne existe.
+- **Le reste a été gagné par la mesure, pas malgré elle.** Chaque fois qu'une ligne est passée
+  d'`ABSENT` à `SERVI` dans la journée, c'est parce que le script disait *pourquoi* elle
+  manquait, et que cette phrase était le cahier des charges :
+  - « l'égalité ne sait dire ni l'intervalle ni la présence » → `colonne__min` / `colonne__max`
+    et les jetons `__present__` / `__absent__` (#29, #32) ;
+  - « `/b` filtre le dossier direct » → `prefixe=` sur la recherche (#6) ;
+  - « `/api/v1/episodes` est une API de synchronisation » → `episodes.db` servi comme second
+    gisement (#37–#39) ;
+  - « le moteur de glob existe et n'est pas atteignable » → `glob=` (#11), qui a rendu #36 au
+    passage — la langue d'un asset est un **segment de chemin**, pas une colonne.
+- **Les 5 absents ne sont pas une liste de tâches.** Trois sont des refus argumentés :
+  - #44 et #45 (RE, forge) : la KB du VPS est ancrée sur le build transitoire `4c2b91fbae6f…`,
+    pas sur la cible. Une route publierait des **chiffres faux** — `niers rebuild` d'abord ;
+  - #46 (recherche inter-gisements) : le jeu et la série n'ont **aucune clé commune**, et un
+    rapprochement par le nom ne peut pas se présenter comme un fait.
+  - Restent deux vrais manques, tous deux du **classement** et non du filtrage : #40 pertinence
+    pondérée et #41 repli approché. `apps/inacord/src/lib/recherche.ts:186-295` en est le
+    portage direct.
+- **Aphrody côté interface : l'explorateur utilise désormais `q` et `ext`** (#1, #2, #3, #16 par
+  l'URL), mais 35 des 41 filtres servis n'ont toujours aucune commande à l'écran. **C'est le
+  retard qui reste**, et il ne coûte aucune ligne de serveur.
 - **#2 et #10 étaient les deux divergences du § 8** — `q` ignoré par `/b`, `cpk_filename` jeté à
   la construction de l'index. Les deux sont corrigées et mesurées ci-dessus.
 
 ---
 
 
-## 6. Les 6 manques restants : source de données et coût
+## 6. Les 5 manques restants : source de données et coût
 
 > Réécrit le 2026-09-06 au soir contre la mesure. Les 26 lignes que cette section chiffrait le
 > matin (#1–#3, #7–#10, #14–#17, #17–#28, #33–#35, #42, #43, #47) sont **servies** : elles ne
@@ -370,7 +376,6 @@ servis 40 · absents 6 · côté client 2 · à relire 0  (sur 48)
 
 | # | Manque | Source de données | Coût |
 |---|---|---|---|
-| 36 | Langue / variante d'un asset | segment de chemin du VFS | lisible sans passe ; Inacord le fait déjà (`lib/galerie.ts:24-59`). Coût quasi nul une fois #6 fait |
 | 40/41 | Pertinence pondérée, fuzzy | — | **à écrire** ; `apps/inacord/src/lib/recherche.ts:186-295` est un portage direct |
 | 44/45 | RE, forge | `var/niers.sqlite` (`function`, `forge_unit`, `v_forge_function`) | **bloqué en amont, pas en code** : la KB du VPS est ancrée sur le build transitoire `4c2b91fbae6f…`, pas sur la cible. Une route servirait des chiffres faux. `niers rebuild` d'abord |
 | 46 | Recherche globale multi-gisements | les 4 gisements, via `@niers/catalog` | **coûteux et incertain** : le jeu et la série n'ont aucune clé commune ; un rapprochement par le nom ne peut pas se présenter comme un fait |

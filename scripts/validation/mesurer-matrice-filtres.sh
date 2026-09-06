@@ -222,8 +222,12 @@ reduit 34 "categorie d'objet" \
 reduit 35 "categorie d'illustration" \
         "/api/v1/entites/inagle_gallery?per_page=1" \
         "/api/v1/entites/inagle_gallery?per_page=1&flg_no=1"
-absent 36 "langue / variante d'un asset" \
-        "/api/v1/recherche?per_page=1" "/api/v1/recherche?per_page=1&langue=fr"
+# La langue d'un asset est un SEGMENT de chemin (`data/…/en/…`), pas une colonne : elle se
+# demande donc au selecteur de chemins, pas a une facette nommee. Mesure : en 13 175, fr 6 124,
+# et `jp` — qui n'existe pas dans ce jeu, ou le japonais se dit `ja` — rend 0 au lieu de tout.
+reduit 36 "langue / variante d'un asset" \
+        "/api/v1/recherche?per_page=1" \
+        "/api/v1/recherche?per_page=1&glob=data/**/fr/**"
 
 # `/api/v1/episodes` reste ce qu'elle est — une API de SYNCHRONISATION (`since`/`limit`) que
 # les Inacord installes interrogent. Les filtres viennent de l'autre cote : `episodes.db` est
