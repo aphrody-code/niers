@@ -38,12 +38,12 @@ trois écrasaient :
 
 | État | Fichiers | Part | Ce que ça veut dire |
 |---|---:|---:|---|
-| **servi** | 245972 | 96.34 % | une route l'expose, avec un code HTTP **mesuré** |
+| **servi** | 246003 | 96.35 % | une route l'expose, avec un code HTTP **mesuré** |
 | **manquant** | **0** | 0 % | plus aucun : les 67 878 fichiers des huit familles géométriques ont été câblés le 2026-09-06 (§ 2 bis) |
 | **partiel** | **0** | 0 % | plus aucun : les 15 875 `.g4mg` sont décodés en process, y compris ceux que l'amont ne sait pas assembler (§ 2 bis) |
 | **interne** | 5512 | 2.16 % | délibérément non exposé, **avec sa raison écrite** |
-| **bloqué** | 3776 | 1.48 % | aucune route **et aucun parseur** : reverse préalable |
-| **inconnu** | 48 | 0.02 % | extension non identifiée — ne rien router avant de savoir ce que c'est |
+| **bloqué** | 3784 | 1.48 % | aucun parseur — mais le format est **nommé** quand son en-tête le dit (`G4VS`, `G4LA`) : reverse préalable, pas ignorance |
+| **inconnu** | **9** | 0.004 % | les `.g4tg`, seuls restants : 37 des 46 fichiers rares ont été identifiés le 2026-09-06 (§ 3) |
 | | **255308** | **100 %** | |
 
 **`manquant` et `partiel` sont retombés à zéro le 2026-09-06.** Les 67 878 fichiers (26,6 %) qu'un parseur
@@ -138,10 +138,45 @@ Deux familles ne rendent qu'un en-tête, et le résumé le **dit** au lieu de le
 | `.cfxo` | 29 | bloqué | **aucun parseur** — reverse préalable |
 | `.gfxo` | 20 | bloqué | **aucun parseur** — reverse préalable |
 | `.linb` | 16 | bloqué | **aucun parseur** |
-Les 15 extensions restantes (moins de 15 fichiers chacune, 48 au total) sont **non
-identifiées** — dont huit de la forme `.rNNNNN` (`.r41152`, `.r47929`, `.r66286`…). Aucun
-parseur ne les connaît et aucun document du dépôt ne les nomme. Elles restent `inconnu` :
-un nom de fichier ne dit pas ce qu'un fichier contient.
+Les 15 extensions restantes (moins de 15 fichiers chacune) ont été **identifiées une par une
+le 2026-09-06**, par requête et non par supposition : `scripts/validation/mesurer-extensions-rares.sh <base> 15`
+rend **37 / 46 fichiers identifiés**.
+
+| Ce que la mesure a trouvé | Fichiers | Comment |
+|---|---:|---|
+| archives **G4PK** sous un suffixe de révision (`.r41152`, `.r47929`, `.r51528`…) | 14 | **au magic** — leur extension est unique au fichier près, leur contenu ne l'est pas |
+| **texte** (`.log` journaux `fbx2g4`, `.cfg` listes de blocs) | 12 | servis par `/f` en `text/plain`, type de contenu mesuré |
+| conteneurs **Level-5** nommés mais non interprétés (`.g4vs` → `G4VS`, `.g4la` → `G4LA`) | 8 | en-tête commun de 16 octets |
+| `cfg.bin` **T2B** sous un suffixe de révision (`.r65902`, `.r66286`) | 2 | le T2B n'a pas de magic : il ne se reconnaît qu'en le lisant |
+| table **`@UTF` CriWare** (`sound.acf`, la configuration du moteur audio) | 1 | magic `@UTF`, décodage délégué à l'amont |
+| **non identifiés** : `.g4tg` | **9** | assumé, cf. ci-dessous |
+
+**Le compte est passé de 48 à 46 sans qu'un fichier disparaisse** : deux des 48 étaient un
+artefact de mesure. Le VFS contient de vrais noms de fichier **avec un espace**
+(`…/u021801/u021802 .g4md`), et découper l'inventaire par espaces en faisait deux « fichiers
+sans extension ». Ce sont un `.g4md` et un `.g4mg`, tous deux déjà servis.
+
+Les **9 `.g4tg` restent non identifiés, et c'est dit plutôt que comblé.** Ce qu'on en sait,
+mesuré : tous vivent sous `dx11/` (8 sous `effect/`, 1 sous `menu/`), aucun ne porte de magic —
+le fichier commence directement par ses données, sur le motif répété `7f 7f ff ff` — et leurs
+tailles vont de 65 536 à 4 587 520 octets, toutes multiples de 1 024. Aucun parseur du dépôt ne
+les connaît et aucun document ne les nomme. Une hypothèse de format n'est pas une
+identification : un nom de fichier ne dit pas ce qu'un fichier contient, et une conjecture non
+plus.
+
+Deux faux positifs ont été trouvés **par cette mesure**, et corrigés :
+
+1. `objbin::is_objb` cherche le pied de page `01 74 32 62` (« t2b »), commun à **tous** les
+   `cfg.bin` — ce n'est pas un magic d'objbin. L'appeler dans la reconnaissance au magic
+   envoyait les deux `…placement.cfg.bin.rNNNNN` au parseur objbin, qui répondait « OBJ_BGN
+   attendu » : une erreur qui accuse le fichier quand c'est l'aiguillage qui s'est trompé.
+2. `w10i000_placement.cfg`, un fichier **texte** commençant par `BLOCK_LIST_BEG`, passait pour
+   un conteneur Level-5 de magic « BLOC ». Son `header_size` lu à `0x04` valait `K_` = 24 395,
+   valeur qu'aucun format Level-5 ne déclare : la taille d'en-tête doit être un multiple de 16,
+   au plus `0x100`.
+
+Une mesure qui ne trouve rien n'a pas prouvé grand-chose ; celle-ci a trouvé deux défauts dans
+le code qui la servait.
 
 ## 4. Ce que la mesure a corrigé dans nos propres documents
 

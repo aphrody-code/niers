@@ -604,28 +604,20 @@ pub async fn decode(
         ));
     }
 
-    // La famille décide de tout ce qui suit : la forme acceptée, la borne de taille et le
-    // décodeur appelé. Elle est résolue AVANT la lecture — inutile de lire 12 Mio pour
-    // découvrir ensuite qu'aucun parseur ne les prend.
+    // La famille décide de la forme acceptée, de la borne de taille et du décodeur appelé. On
+    // la résout d'abord au **suffixe**, parce que c'est gratuit ; mais un suffixe inconnu ne
+    // fait plus refuser la requête : le magic tranchera après lecture (cf. `identifier`).
+    // Quatorze fichiers du VFS portent le magic `G4PK` sous un suffixe de révision
+    // (`.g4pk.r41152`…) — les refuser sur leur nom, c'est croire le nom plutôt que le contenu.
     let geom = super::geometrie::Famille::depuis_chemin(&chemin);
-    if geom.is_none() && !chemin.ends_with(SUFFIXE_CFG) {
-        return Err(ErreurSite::Demande(format!(
-            "cette route decode {SUFFIXE_CFG} et les familles geometriques ({}) — les autres \
-             sont servies par les routes annoncees sur /api/v1/formats",
-            super::geometrie::FAMILLES
-                .iter()
-                .map(|(s, ..)| *s)
-                .collect::<Vec<_>>()
-                .join(", ")
-        )));
-    }
+    let cfg = chemin.ends_with(SUFFIXE_CFG);
     let forme_geom = geom
         .map(|_| super::geometrie::Forme::depuis(demande.forme.as_deref()))
         .transpose()?;
-    let forme_cfg = if geom.is_some() {
-        None
-    } else {
+    let forme_cfg = if cfg {
         Some(Forme::depuis(demande.forme.as_deref())?)
+    } else {
+        None
     };
 
     let index = etat.index()?;
@@ -643,11 +635,30 @@ pub async fn decode(
             tracing::debug!(erreur = %e, "lecture VFS impossible");
             ErreurSite::Introuvable("fichier indexe mais illisible sur ce montage".to_owned())
         })?;
-    // Deux bornes, parce qu'elles ne bornent pas la même chose : un résumé ne grossit pas avec
-    // sa source (16 Mio couvrent le plus gros `.g4pk` du jeu), un JSON complet, si.
-    let borne = match forme_geom {
-        Some(super::geometrie::Forme::Resume) => super::geometrie::TAILLE_MAX_RESUME,
-        _ => TAILLE_MAX,
+    // La famille définitive : le suffixe s'il disait quelque chose, le **magic** sinon.
+    let famille = geom.or_else(|| {
+        if cfg {
+            None
+        } else {
+            super::geometrie::famille_au_magic(&octets)
+        }
+    });
+    let forme_geom = match (famille, forme_geom) {
+        (Some(_), None) => Some(super::geometrie::Forme::depuis(demande.forme.as_deref())?),
+        (_, f) => f,
+    };
+
+    // Deux bornes, parce qu'elles ne bornent pas la même chose : la sortie grossit avec la
+    // source (un `cfg.bin` décodé, une structure complète) ou non (un résumé, un en-tête
+    // identifié). La seconde borne vaut 16 Mio et couvre le plus gros `.g4pk` du jeu.
+    //
+    // Mesuré : avec la borne de 4 Mio par défaut, `ev60007900.g4tg` (4 587 520 o) était refusé
+    // « trop volumineux » alors que l'identification n'aurait rendu que seize octets d'en-tête.
+    // Une borne qui protège d'un JSON énorme n'a rien à faire sur un chemin qui n'en produit
+    // aucun.
+    let borne = match (forme_geom, forme_cfg) {
+        (Some(super::geometrie::Forme::Complet), _) | (_, Some(_)) => TAILLE_MAX,
+        _ => super::geometrie::TAILLE_MAX_RESUME,
     };
     if octets.len() > borne {
         return Err(ErreurSite::Demande(format!(
@@ -660,7 +671,7 @@ pub async fn decode(
     // fichiers sur 15 875, empaquetée dans le `.g4pkm` voisin. On la résout ICI, où l'index et
     // le VFS sont disponibles, plutôt que dans le décodeur — qui reste une fonction pure,
     // testable sans HTTP.
-    let compagnon = if geom == Some(super::geometrie::Famille::G4mg) {
+    let compagnon = if famille == Some(super::geometrie::Famille::G4mg) {
         resoudre_compagnon(&etat, &index, &chemin).await
     } else {
         None
@@ -668,7 +679,7 @@ pub async fn decode(
 
     let _jeton = jeton_decodage().await?;
     let corps = tokio::task::spawn_blocking(move || {
-        let v = match (geom, forme_geom, forme_cfg) {
+        let v = match (famille, forme_geom, forme_cfg) {
             (Some(f), Some(forme), _) => serde_json::to_value(super::geometrie::decoder(
                 &chemin,
                 &octets,
@@ -681,13 +692,71 @@ pub async fn decode(
                     serde_json::json!({ "chemin": chemin, "octets": octets.len(), "structure": st })
                 })
             }
-            _ => serde_json::to_value(decoder(&chemin, &octets)?),
+            (_, _, Some(Forme::Valeurs)) => serde_json::to_value(decoder(&chemin, &octets)?),
+            // Ni suffixe connu, ni magic connu : le dernier recours, qui identifie au lieu de
+            // refuser. Il rend un `cfg.bin` déguisé, un conteneur Level-5 nommé, ou une erreur
+            // qui DIT ce qu'elle a vu.
+            _ => serde_json::to_value(identifier(&chemin, &octets)?),
         }
         .map_err(|e| ErreurSite::Interne(format!("reponse non serialisable: {e}")))?;
         Ok::<_, ErreurSite>(v)
     })
     .await??;
     Ok(Json(corps))
+}
+
+/// Identifie un fichier qu'aucun suffixe ni aucun magic de parseur ne réclame.
+///
+/// Trois issues, dans cet ordre, et **aucune n'invente** :
+///
+/// 1. un `cfg.bin` déguisé — le T2B n'a pas de magic ASCII, donc un `.cfg.bin.r65902` ne se
+///    reconnaît qu'en essayant de le lire ;
+/// 2. un **conteneur Level-5** dont le corps n'est pas interprété : `.g4vs` et `.g4la` portent
+///    le même en-tête de 16 octets que les formats connus, et le dire vaut mieux que se taire ;
+/// 3. un refus qui **publie les premiers octets**. Une erreur qui n'apprend rien oblige le
+///    prochain à refaire le `xxd` ; celle-ci le lui épargne.
+///
+/// # Errors
+///
+/// `Demande` quand rien n'identifie le fichier.
+pub fn identifier(chemin: &str, octets: &[u8]) -> Result<serde_json::Value, ErreurSite> {
+    if let Ok(d) = decoder(chemin, octets) {
+        return serde_json::to_value(d)
+            .map_err(|e| ErreurSite::Interne(format!("reponse non serialisable: {e}")));
+    }
+    if let Some(c) = super::geometrie::conteneur_level5(octets) {
+        return Ok(serde_json::json!({
+            "chemin": chemin,
+            "octets": octets.len(),
+            "format": "conteneur_level5",
+            "produit": "en-tete commun Level-5, corps non interprete",
+            "conteneur": c,
+        }));
+    }
+    // CriWare : `@UTF` est la table de métadonnées de toute la pile audio (ACB, AWB, ACF). Le
+    // site ne décode pas l'audio — ces features sont éteintes, cf. la doc de module — mais
+    // **nommer** un format qu'on ne décode pas est une information, et « inconnu » n'en est
+    // pas une. Le seul `.acf` du VFS (`sound.acf`, la configuration du moteur audio) tombe ici.
+    if octets.starts_with(b"@UTF") {
+        return Ok(serde_json::json!({
+            "chemin": chemin,
+            "octets": octets.len(),
+            "format": "criware_utf",
+            "produit": "table @UTF CriWare, corps non interprete par ce service",
+            "decodage": "delegue",
+            "route": "/assets/audio-info/{chemin}",
+        }));
+    }
+    let tete: String = octets
+        .iter()
+        .take(8)
+        .map(|b| format!("{b:02x}"))
+        .collect::<Vec<_>>()
+        .join(" ");
+    Err(ErreurSite::Demande(format!(
+        "format non identifie: ni cfg.bin, ni conteneur Level-5, ni magic connu \
+         (premiers octets: {tete})"
+    )))
 }
 
 #[cfg(test)]

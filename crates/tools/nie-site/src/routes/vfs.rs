@@ -94,7 +94,11 @@ pub fn type_contenu(chemin: &str) -> &'static str {
         "wav" => "audio/wav",
         "ogg" => "audio/ogg",
         "json" => "application/json",
-        "txt" | "csv" => "text/plain; charset=utf-8",
+        // `.log` et `.cfg` sont du texte, mesuré au contenu et non supposé : les 10 `.log` du
+        // VFS commencent par « **** fbx2g4 version… » (le journal de conversion FBX de
+        // l'outillage Level-5) et les 2 `.cfg` par « BLOCK_LIST_BEG ». Servis en
+        // `application/octet-stream`, ils se téléchargeaient au lieu de s'afficher.
+        "txt" | "csv" | "log" | "cfg" => "text/plain; charset=utf-8",
         "xml" => "application/xml; charset=utf-8",
         _ => "application/octet-stream",
     }
@@ -217,5 +221,18 @@ mod tests {
         assert_eq!(type_contenu("a/b.png"), "image/png");
         assert_eq!(type_contenu("a/b.g4tx"), "application/octet-stream");
         assert_eq!(type_contenu("a/b"), "application/octet-stream");
+        // Les deux seuls formats TEXTE des extensions rares du VFS (12 fichiers) : un journal
+        // de conversion et une liste de blocs. Servis en octets, ils se telechargeaient.
+        assert_eq!(
+            type_contenu("a/c11806100_p250.log"),
+            "text/plain; charset=utf-8"
+        );
+        assert_eq!(
+            type_contenu("a/w10i000_placement.cfg"),
+            "text/plain; charset=utf-8"
+        );
+        // `.cfg.bin` reste BINAIRE : c'est `.cfg` qui est du texte, et confondre les deux
+        // servirait 71 101 fichiers RDBN/T2B en `text/plain`.
+        assert_eq!(type_contenu("a/base_act.cfg.bin"), "application/octet-stream");
     }
 }

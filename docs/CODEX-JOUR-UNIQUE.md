@@ -132,8 +132,11 @@ La journee finie, la cible suivante est deja ecrite :
 [`docs/PLAN-SITE-ULTIME.md`](PLAN-SITE-ULTIME.md). Elle ne demande pas d'ecrire des capacites
 nouvelles — elle demande de **servir celles qui existent** : 41 sous-commandes `niers` et
 155 commandes Tauri pour 14 chemins d'API aujourd'hui. Son instrument est une matrice de
-couverture ou chaque capacite est `servi`, `interne` (avec sa raison) ou `manquant`, et sa
-gate maitresse est **`manquant = 0`**.
+couverture a CINQ etats — `servi`, `partiel`, `manquant` (le decodeur existe ici, la route
+non), `bloque` (ni l'un ni l'autre : du reverse d'abord) et `interne` (avec sa raison) — et sa
+gate maitresse est **`manquant = 0` ET `partiel = 0`**. Atteinte sur le VFS le 2026-09-06
+(245 972 / 255 308 servis) ; les 41 commandes de `niers`, les 155 d'Inacord et les 81 pages
+d'Azalee restent a classer.
 
 ## 4. Les gates de la journée, toutes chiffrées
 

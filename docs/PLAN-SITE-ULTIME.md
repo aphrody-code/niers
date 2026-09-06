@@ -44,6 +44,51 @@
 
 ---
 
+> **Amendement du 2026-09-06 (5) — la gate maîtresse est atteinte côté VFS : `manquant = 0`,
+> `partiel = 0`.**
+> Le lot 9.1 est fait, et il n'a **rien exigé de neuf**. Les neuf parseurs qui manquaient au
+> site vivaient derrière la feature `std` de `nie-formats` — une feature **par défaut** : ils
+> étaient déjà liés dans le binaire, aucune route ne les appelait. Le diagnostic du § 9 tenait
+> donc à la lettre : « 82 % du reste à faire est du câblage, pas de la recherche ».
+>
+> | État | Avant | Après | Ce qui l'a déplacé |
+> |---|---:|---:|---|
+> | `servi` | 162 219 | **246 003** (96,35 %) | 9 familles décodées en process, plus 31 fichiers rares |
+> | `manquant` | 67 878 | **0** | `/api/v1/formats/decode/{chemin}` |
+> | `partiel` | 15 875 | **0** | les `.g4mg`, description comprise |
+> | `interne` | 5 512 | 5 512 | inchangé, la raison est écrite |
+> | `bloqué` | 3 776 | 3 784 | descend par le RE, pas par le câblage |
+> | `inconnu` | 48 | **9** | § 9.2 — 37 des 46 identifiés, les 9 `.g4tg` assumés |
+>
+> Trois faits mesurés qui n'étaient dans aucun document :
+>
+> - **Aucun `.g4mg` n'est orphelin.** 8 955 ont leur `.g4md` frère, **6 920 l'ont empaqueté
+>   dans leur `.g4pkm` voisin**, 0 n'ont ni l'un ni l'autre. Le second cas n'est pas une
+>   exception : c'est 44 % du corpus, et `g4pkm::extract_g4md` savait déjà l'ouvrir.
+> - **Quatorze fichiers portent le magic `G4PK` sous un suffixe de révision** (`.g4pk.r41152`,
+>   `.r47929`, `.r51528`…). Les classer `inconnu` sur leur extension aurait été croire le nom
+>   plutôt que le contenu — la route reconnaît désormais au **magic** quand le suffixe se tait.
+> - **Le VFS contient des noms de fichier avec un espace** (`…/u021801/u021802 .g4md`).
+>   Découper l'inventaire par espaces en fait deux faux « fichiers sans extension » : deux des
+>   48 `inconnu` n'en étaient pas.
+>
+> Preuve : `scripts/validation/mesurer-geometrie.sh`, échantillon à pas régulier, 25 par
+> famille — **225/225 décodages conformes (100 %)**. « Conforme » exige le jeton de famille
+> dans le corps : un 200 qui rendrait un résumé vide compte comme un échec.
+>
+> Le point 2 des ouvertures (§ 5 bis) est réglé au passage : `app::ROUTES` figeait 19 routes
+> pour un routeur qui en monte **37**. Une macro les déclare une seule fois et en tire le
+> montage **et** la liste ; `tests/routes.rs` interroge les 37 par couverture de motifs, pas par
+> égalité de longueurs.
+>
+> **Ce que cet amendement ne dit pas :** la matrice de couverture du § 4
+> (`var/couverture-site.json` + `/couverture`) n'existe toujours pas. La gate est atteinte sur
+> le **VFS**, qui n'est qu'une des sources de la matrice — les 41 commandes de `niers`, les 155
+> d'Inacord et les 81 pages d'Azalée restent non classées. Dire « gate maîtresse atteinte » sans
+> cette phrase serait exactement le genre de raccourci que le § 3 recense.
+
+---
+
 ## 1. Ce que « ultime » veut dire ici
 
 Un seul site — Aphrody, servi par `nie-site`, monté par `apps/nie-web` et par Inacord — où :
@@ -399,19 +444,21 @@ C'est le lot terminal du plan : **255 308 fichiers, aucun non classé.** La cart
 `docs/VFS.md`, établie le 2026-09-06 par six agents sur un inventaire figé
 (`var/vfs/inventaire.txt`), et recalculable en une commande.
 
-#### L'état de départ, mesuré
+#### L'état, mesuré — départ et arrivée du 2026-09-06
 
-| État | Fichiers | Part | Nature du travail |
+| État | Au départ | Aujourd'hui | Nature du travail |
 |---|---:|---:|---|
-| `servi` | 162 219 | 63,54 % | — |
-| `manquant` | **67 878** | **26,59 %** | **câblage** : le décodeur existe déjà ici |
-| `partiel` | 15 875 | 6,22 % | câblage : élargir une route qui existe |
-| `interne` | 5 512 | 2,16 % | rien à faire, la raison est écrite |
-| `bloqué` | 3 776 | 1,48 % | **reverse** préalable |
-| `inconnu` | 48 | 0,02 % | identification préalable |
+| `servi` | 162 219 (63,54 %) | **246 003 (96,35 %)** | — |
+| `manquant` | 67 878 (26,59 %) | **0** | c'était du **câblage** : le décodeur était déjà là |
+| `partiel` | 15 875 (6,22 %) | **0** | idem — élargir une route qui existait |
+| `interne` | 5 512 (2,16 %) | 5 512 | rien à faire, la raison est écrite |
+| `bloqué` | 3 776 (1,48 %) | 3 784 | **reverse** préalable — le format est nommé quand son en-tête le dit |
+| `inconnu` | 48 (0,02 %) | **9** | les `.g4tg` seuls, assumés (§ 9.2) |
 
-**82 % du reste à faire est du câblage, pas de la recherche.** C'est le fait qui structure ce
-lot : le dépôt sait déjà décoder les deux tiers de ce qu'il n'expose pas.
+**82 % du reste à faire était du câblage, pas de la recherche** — et le fait s'est vérifié :
+les 83 753 fichiers ont basculé sans une dépendance nouvelle, parce que les neuf parseurs
+étaient derrière `std`, feature par défaut. Le dépôt savait déjà décoder les deux tiers de ce
+qu'il n'exposait pas, au sens le plus littéral : le code était **compilé dans le binaire**.
 
 #### 9.1 — Le câblage (83 753 fichiers, 32,8 %)
 
@@ -431,17 +478,45 @@ Chaque ligne a son décodeur déjà écrit ici. Aucune n'exige de recherche.
 | famille `uniform` | 1 022 modèles | pipeline 3D existant | **une ligne de famille**, même filtre que `waza` |
 | `common/font/font/*.g4tx` | 14 | `g4tx_decode.rs:197` | un mapping de route — **404 aujourd'hui**, le miroir `dx11` répond 200 |
 
-**Gate 9.1 :** `manquant = 0` et `partiel = 0`, chaque corpus prouvé par une requête qui rend un
-**total** et un code HTTP, jamais un statut seul.
+**Gate 9.1 — tenue le 2026-09-06.** `manquant = 0`, `partiel = 0`, et chaque corpus est
+prouvé par une requête : `scripts/validation/mesurer-geometrie.sh <base> 25` rend
+**225/225 décodages conformes** sur les neuf familles, en exigeant le jeton de famille dans le
+corps et pas seulement un 200. Les deux voies de description des `.g4mg` sont vérifiées en
+direct — `description: "g4md"` sur `_face/01_IE1/c01000010`, `description: "g4pkm"` sur
+`_animal/an000150`.
 
-#### 9.2 — L'identification (48 fichiers, 0,02 %)
+Deux corpus du tableau ci-dessus ont changé de nature en cours de route, et c'est la mesure qui
+l'a imposé : les `.g4mg` ne se lisent pas seuls (leur description vit ailleurs), et la famille
+`uniform` n'est **pas** « une ligne de famille, même filtre que `waza` » — l'amont borne
+l'assemblage à cinq sous-domaines (`waza`, `item`, `animal`, `armd`, `keshin`), et `_uniform`
+comme `_face` y répondent « sous-domaine chr non servable ». Ils sont servis ici par le
+**décodage** du fichier, pas par l'assemblage d'une entité : les deux ne promettent pas la même
+chose.
 
-15 extensions de moins de 15 fichiers, dont huit de la forme `.rNNNNN` (`.r41152`, `.r47929`,
-`.r66286`…). Aucun parseur ne les connaît, **aucun document du dépôt ne les nomme**. Elles ne
-seront pas routées avant d'être identifiées — un nom de fichier ne dit pas ce qu'un fichier
-contient. Sortie attendue : pour chacune, soit un format nommé, soit la mention « non identifié »
-assumée dans `docs/VFS.md`. Le volume est dérisoire ; **c'est la gate `100 %` qui le rend
-bloquant**, et c'est voulu : un plan qui s'autorise 48 exceptions s'en autorisera 4 800.
+#### 9.2 — L'identification — **faite le 2026-09-06 : 37 / 46**
+
+Le volume était dérisoire et la gate `100 %` le rendait bloquant, à dessein : un plan qui
+s'autorise 48 exceptions s'en autorisera 4 800. Résultat, par
+`scripts/validation/mesurer-extensions-rares.sh <base> 15` :
+
+| Trouvé | Fichiers |
+|---|---:|
+| archives **G4PK** sous un suffixe de révision, reconnues **au magic** | 14 |
+| **texte** (`.log`, `.cfg`), servi en `text/plain` | 12 |
+| conteneurs **Level-5** nommés sans être interprétés (`G4VS`, `G4LA`) | 8 |
+| `cfg.bin` **T2B** sous un suffixe de révision | 2 |
+| table **`@UTF` CriWare** (`sound.acf`) | 1 |
+| **non identifiés** — les 9 `.g4tg`, assumés dans `docs/VFS.md` | 9 |
+
+Deux enseignements que le plan retient au-delà de ce lot :
+
+- **48 n'était pas le bon compte.** Deux des 48 étaient un artefact de mesure : le VFS porte de
+  vrais noms de fichier **avec un espace** (`…/u021801/u021802 .g4md`), et un découpage par
+  espaces en fait des « fichiers sans extension ». Le corpus réel était de 46.
+- **La mesure a trouvé deux faux positifs dans le code qui la servait** : `objbin::is_objb`
+  teste le pied de page `t2b` commun à tous les `cfg.bin` (donc n'est pas un magic), et un
+  fichier texte commençant par `BLOCK_LIST_BEG` passait pour un conteneur de magic « BLOC ».
+  Une gate qui ne trouve jamais rien n'est pas une gate.
 
 #### 9.3 — Le reverse (3 776 fichiers, 1,48 %)
 
@@ -519,9 +594,14 @@ atteint. La question de l'indexation reste ouverte au § 7, et elle appartient �
    armures sont conformes (`maxidx == count − 1`). Le correctif appartient à `nie-model-serve` ;
    côté site l'erreur est classée **502** — l'amont a produit l'artefact — et le viewport écarte
    les triangles hors bornes plutôt que d'abandonner la scène.
-2. **`app::ROUTES` est périmé** : il fige 19 routes et `tests/routes.rs` épingle
-   `ROUTES.len() == 19`. Les 7 routes d'Aphrody y manquaient déjà, les 12 de la 3D aussi. Une
-   liste de routes qui ne suit pas le routeur est un inventaire faux, pas une garde.
+2. ~~**`app::ROUTES` est périmé**~~ — **réglé le 2026-09-06.** Il figeait 19 routes pour un
+   routeur qui en montait **37** : les 7 d'Aphrody, les 5 de la 3D et les 6 de Lua/formats n'y
+   étaient jamais entrées, chaque lot ayant respecté son périmètre et la liste n'appartenant à
+   aucun. La macro `declarer_routes!` supprime la classe de défaut : une route ajoutée est
+   montée **et** listée, une route retirée disparaît des deux. La garde ne tient plus à une
+   égalité de longueurs — deux instances peuvent viser la même route — mais à une **couverture
+   de motifs** : toute route déclarée doit être atteinte par au moins une instance, et toute
+   instance doit correspondre à une route.
 3. **Le rendu serveur reste CPU.** `nie-render3d` a bien une feature `gpu` (wgpu) mais elle est
    éteinte, et ce VPS n'a pas de GPU. C'est le navigateur qui gagne le **WebGPU**, pas le
    serveur — et cette asymétrie doit rester écrite, sans quoi on la redécouvrira.

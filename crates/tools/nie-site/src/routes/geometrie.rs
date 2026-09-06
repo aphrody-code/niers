@@ -167,6 +167,116 @@ impl Compagnon {
     }
 }
 
+/// La famille d'un fichier lue dans ses **premiers octets**, quand son suffixe ne dit rien.
+///
+/// Ce que la mesure du 2026-09-06 a trouvé, et pourquoi cette fonction existe : sur les 15
+/// extensions de moins de 15 fichiers du VFS (`docs/VFS.md` § 9.2), **quatorze fichiers portent
+/// le magic `G4PK`** sous des suffixes de révision — `…​.g4pk.r41152`, `.r47929`, `.r51528`…
+/// Les classer `inconnu` parce que leur extension est inconnue serait exactement l'erreur que
+/// ce dépôt s'interdit : **un nom de fichier ne dit pas ce qu'un fichier contient.**
+///
+/// L'ordre n'a pas d'importance — les magics testés sont mutuellement exclusifs — mais la
+/// fonction ne devine rien : chaque test est celui du parseur lui-même.
+#[must_use]
+pub fn famille_au_magic(octets: &[u8]) -> Option<Famille> {
+    if g4pk::is_g4pk(octets) || g4pk::is_g4ra(octets) {
+        return Some(Famille::G4pk);
+    }
+    if g4cm::is_g4cm(octets) {
+        return Some(Famille::G4cm);
+    }
+    if g4sk::is_g4sk(octets) {
+        return Some(Famille::G4sk);
+    }
+    if g4mt::is_g4mt(octets) {
+        return Some(Famille::G4mt);
+    }
+    if col::is_pxcl(octets) {
+        return Some(Famille::Col);
+    }
+    // `objbin::is_objb` n'est **pas** un test de magic, et l'appeler ici a produit un faux
+    // positif mesuré : il cherche le pied de page `01 74 32 62` (« t2b ») dans les 32 derniers
+    // octets, c'est-à-dire la signature du conteneur **cfg.bin** dont un objbin n'est qu'un
+    // cas. Deux `s47g001_placement.cfg.bin.rNNNNN` y répondaient « oui », partaient au parseur
+    // objbin et rendaient « OBJ_BGN attendu » — une erreur qui accuse le fichier quand c'est
+    // l'aiguillage qui s'est trompé. Ces fichiers-là sont rendus au décodeur `cfg.bin`, qui
+    // sait ce qu'ils sont.
+    None
+}
+
+/// Taille de l'en-tête commun Level-5, et décalage de ses champs.
+const ENTETE_LEVEL5: usize = 0x10;
+
+/// Résumé d'un conteneur Level-5 dont **aucun parseur du dépôt ne lit le corps**.
+///
+/// Les formats Level-5 partagent un en-tête de 16 octets : magic sur 4 caractères,
+/// `header_size`, `type_id`, alignement, `data_size`. Il est lisible même quand le corps ne
+/// l'est pas — c'est ce qui permet de dire d'un `.g4vs` ou d'un `.g4la` **ce qu'il est**
+/// (`G4VS`, `G4LA`, en-tête de 0x40, taille cohérente) sans prétendre le décoder.
+///
+/// La distinction porte tout le sens de l'état `bloqué` du plan : « je sais ce que c'est et je
+/// ne sais pas le lire » est une information ; « inconnu » n'en est pas une.
+#[derive(Debug, Clone, Serialize)]
+pub struct Conteneur {
+    /// Le magic, en ASCII (`G4VS`, `G4LA`…).
+    pub magic: String,
+    /// Taille déclarée de l'en-tête, en octets.
+    pub entete_octets: u32,
+    /// Taille déclarée des données, en octets.
+    pub donnees_octets: u32,
+    /// Vrai quand `header_size + data_size == taille du fichier`.
+    pub taille_coherente: bool,
+    /// Toujours `false` : aucun parseur du dépôt ne lit ce corps.
+    pub interieur_interprete: bool,
+}
+
+/// Taille d'en-tête maximale acceptée pour un conteneur Level-5 (les formats connus déclarent
+/// `0x10` ou `0x40`).
+const ENTETE_LEVEL5_MAX: u32 = 0x100;
+
+/// Lit l'en-tête commun Level-5, si les octets en portent un.
+///
+/// **Deux contrôles, et le second a été ajouté après un faux positif mesuré.** Le magic doit
+/// être quatre lettres majuscules ou chiffres — sans quoi du bruit devient un « conteneur »
+/// nommé par du bruit. Mais cela ne suffisait pas : `w10i000_placement.cfg`, un fichier
+/// **texte** qui commence par `BLOCK_LIST_BEG 1`, passait pour un conteneur de magic « BLOC ».
+/// Son `header_size` lu à `0x04` valait `K_` = 24 395, une valeur qu'aucun format Level-5 ne
+/// déclare. La taille d'en-tête doit donc être **un multiple de 16, au plus `0x100`**, et tenir
+/// dans le fichier.
+#[must_use]
+pub fn conteneur_level5(octets: &[u8]) -> Option<Conteneur> {
+    if octets.len() < ENTETE_LEVEL5 {
+        return None;
+    }
+    let magic = &octets[..4];
+    if !magic
+        .iter()
+        .all(|b| b.is_ascii_uppercase() || b.is_ascii_digit())
+    {
+        return None;
+    }
+    let u16_a = |o: usize| u16::from_le_bytes([octets[o], octets[o + 1]]);
+    let u32_a = |o: usize| {
+        u32::from_le_bytes([octets[o], octets[o + 1], octets[o + 2], octets[o + 3]])
+    };
+    let entete = u32::from(u16_a(0x04));
+    let donnees = u32_a(0x0C);
+    if entete == 0
+        || entete % 16 != 0
+        || entete > ENTETE_LEVEL5_MAX
+        || entete as usize > octets.len()
+    {
+        return None;
+    }
+    Some(Conteneur {
+        magic: String::from_utf8_lossy(magic).into_owned(),
+        entete_octets: entete,
+        donnees_octets: donnees,
+        taille_coherente: entete as usize + donnees as usize == octets.len(),
+        interieur_interprete: false,
+    })
+}
+
 impl Famille {
     /// La famille d'un chemin, d'après son suffixe. `None` quand aucune ne correspond.
     ///
@@ -708,6 +818,76 @@ mod tests {
             .unwrap_err();
             assert_eq!(e.statut().as_u16(), 400, "{suffixe}");
         }
+    }
+
+    /// Le magic prime sur le nom : c'est ce qui rattrape les quatorze `.g4pk.rNNNNN` du VFS,
+    /// dont l'extension est unique au fichier près et dont le contenu est une archive G4PK.
+    #[test]
+    fn le_magic_reconnait_ce_que_le_suffixe_ignore() {
+        let mut g4pk = b"G4PK".to_vec();
+        g4pk.extend_from_slice(&[0u8; 60]);
+        assert_eq!(famille_au_magic(&g4pk), Some(Famille::G4pk));
+        assert_eq!(Famille::depuis_chemin("data/x.g4pk.r41152"), None);
+
+        let mut pxcl = b"PXCL".to_vec();
+        pxcl.extend_from_slice(&[0u8; 12]);
+        assert_eq!(famille_au_magic(&pxcl), Some(Famille::Col));
+
+        // Et il ne reconnaît PAS n'importe quoi : sans cette assertion, une fonction qui
+        // rendrait toujours `G4pk` passerait le test précédent.
+        assert_eq!(famille_au_magic(b"ceci n'est pas un format du jeu"), None);
+        assert_eq!(famille_au_magic(&[]), None);
+    }
+
+    /// Un conteneur Level-5 se **nomme** même quand son corps ne se lit pas — c'est la
+    /// différence entre `bloqué` (je sais ce que c'est) et `inconnu` (je ne sais pas).
+    #[test]
+    fn un_conteneur_level5_se_nomme_sans_etre_interprete() {
+        let mut o = b"G4VS".to_vec();
+        o.extend_from_slice(&0x40u16.to_le_bytes()); // header_size
+        o.extend_from_slice(&0x68u16.to_le_bytes()); // type_id
+        o.extend_from_slice(&0u32.to_le_bytes());
+        o.extend_from_slice(&16u32.to_le_bytes()); // data_size
+        o.resize(0x40 + 16, 0);
+        let c = conteneur_level5(&o).expect("en-tete Level-5 lisible");
+        assert_eq!(c.magic, "G4VS");
+        assert_eq!(c.entete_octets, 0x40);
+        assert!(c.taille_coherente, "0x40 + 16 == taille du fichier");
+        assert!(!c.interieur_interprete);
+
+        // Un magic non imprimable n'en est pas un : sans ce refus, n'importe quels octets
+        // produiraient un « conteneur » nommé par du bruit.
+        assert!(conteneur_level5(&[0x7f, 0x7f, 0xff, 0xff, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+            .is_none());
+        assert!(conteneur_level5(b"G4VS").is_none(), "trop court");
+
+        // Non-régression, mesurée en production le 2026-09-06 : ce fichier TEXTE du VFS
+        // (`w10i000_placement.cfg`) passait pour un conteneur de magic « BLOC ». Son
+        // `header_size` lu à 0x04 vaut `K_` = 24 395 — aucun format Level-5 ne déclare cela.
+        assert!(
+            conteneur_level5(b"BLOCK_LIST_BEG 1\nBLOCK 0 0 0\n").is_none(),
+            "un fichier texte n'est pas un conteneur Level-5"
+        );
+    }
+
+    /// Non-régression : `objbin::is_objb` cherche le pied de page `t2b`, commun à TOUS les
+    /// `cfg.bin`. L'avoir mis dans la reconnaissance au magic envoyait deux fichiers de
+    /// placement au parseur objbin, qui répondait « OBJ_BGN attendu » — une erreur qui accuse
+    /// le fichier quand c'est l'aiguillage qui s'est trompé.
+    #[test]
+    fn un_cfg_bin_t2b_n_est_pas_pris_pour_un_objbin() {
+        let mut t2b = vec![0x3b, 0x01, 0x00, 0x00, 0x10, 0x39, 0x00, 0x00];
+        t2b.extend_from_slice(&[0u8; 40]);
+        t2b.extend_from_slice(&[0x01, 0x74, 0x32, 0x62]); // le pied « t2b »
+        assert!(
+            nie_formats::objbin::is_objb(&t2b),
+            "le pied t2b est bien la — c'est justement le probleme"
+        );
+        assert_eq!(
+            famille_au_magic(&t2b),
+            None,
+            "un cfg.bin doit revenir au decodeur cfg.bin, pas au parseur objbin"
+        );
     }
 
     #[test]
