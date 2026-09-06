@@ -33,7 +33,9 @@
 >   corpus de **6 191 modèles assemblables** — et le catalogue ne proposait jusque-là que des
 >   *pièces* (`.g4mg` seuls, 143 000 fichiers dont aucun n'était affichable) ;
 > - les filtres d'Aphrody sont inventoriés contre leurs équivalents : **48 recensés,
->   42 manquants** (`docs/FILTRES.md`) ;
+>   42 manquants** (`docs/FILTRES.md`) — chiffre **corrigé le soir même** par la mesure :
+>   **41 servis, 5 absents, 2 côté client**. Le recensement lu se trompait d'un facteur six, et
+>   c'est l'amendement 8 qui le raconte ;
 > - les 4 vues du catalogue ne couvrent que **143 246 des 255 308** entrées — **112 062**
 >   fichiers (`.bin` 72 308, `.p3lip` 21 047, `.objbin` 12 190) ne sont atteignables que par le
 >   parcours, sans le moindre filtre ;
@@ -171,6 +173,34 @@
 > § 8 — les 475 écrans, la SSIM par écran, le sas `legacy/` à 87 fichiers — restent ouvertes.
 
 ---
+
+> **Amendement du 2026-09-06 (8) — le lot 8 est clos, et il a corrigé le plan qui l'avait
+> ouvert.**
+>
+> ```bash
+> scripts/validation/mesurer-filtres.sh          # 14/14 filtres appliqués ET republiés
+> scripts/validation/mesurer-matrice-filtres.sh  # servis 41 · absents 5 · côté client 2
+> ```
+>
+> Le plan du matin annonçait `manquant = 42`. La mesure du soir en trouve **5**, et l'écart
+> n'est pas dû aux 35 filtres écrits dans la journée : la moitié était **déjà servie** et le
+> recensement, fait en lecture de code, ne le savait pas. Trois leçons, toutes payées ici :
+>
+> 1. **Une matrice tenue à la main est un souvenir.** Celle-ci est désormais produite par un
+>    script qui interroge le service monté ; chaque ligne exige une **réduction de total** ou un
+>    **changement d'ordre**, jamais un `200`.
+> 2. **Un `ABSENT` qui dit pourquoi est un cahier des charges.** Les cinq formes ajoutées ce
+>    jour — intervalle, présence, préfixe, second gisement, glob — viennent toutes d'une phrase
+>    du script. Aucune ne vient d'une idée.
+> 3. **Le défaut 1 avait une jumelle sans nom** : appliquer un filtre sans le republier. Vu du
+>    client, c'est le même aveuglement que ne pas l'appliquer. Six routes le faisaient.
+>
+> Et un défaut trouvé par la mesure seule, que ni clippy ni les 293 tests n'auraient vu : un
+> `400` de la table trouvée ressortait en `404 « aucune table ne se nomme episodes »` — un
+> message qui envoie corriger un nom parfaitement juste.
+>
+> **Le retard a changé de côté.** 35 des 41 filtres servis n'ont aucune commande à l'écran ;
+> le combler ne coûte aucune ligne de Rust.
 
 ---
 
@@ -617,6 +647,40 @@ chiffres, avant et après, et ici c'est le second qui a corrigé le premier.
 un **total**, pas un statut. Un filtre servi mais jamais appliqué compte comme manquant — c'est
 exactement le défaut 1.
 
+#### Clos le 2026-09-06 au soir — **41 servis, 5 absents, 2 hors périmètre**
+
+```bash
+scripts/validation/mesurer-filtres.sh          # 14/14 appliqués ET republiés
+scripts/validation/mesurer-matrice-filtres.sh  # servis 41 · absents 5 · côté client 2 · à relire 0
+```
+
+Le gate est tenu au sens où il a été écrit — chaque ligne rend un total, jamais un statut — et
+la matrice n'est plus tenue à la main : c'est le second script qui la produit. Ce que ce lot a
+appris tient en cinq points, et aucun n'était dans le plan du matin.
+
+1. **La matrice lue était fausse d'un facteur six.** « 48 recensés, `manquant = 42` » venait
+   d'une lecture de code, et cette lecture avait servi — c'est elle qui a trouvé le défaut 1.
+   Mais elle ignorait que `/api/v1/entites/{table}` servait déjà `q`, le tri et l'égalité de
+   colonne sur 219 tables. **Une matrice lue est vraie le jour où on l'écrit.**
+2. **Le gain n'est pas 35 filtres écrits un par un, ce sont deux routes génériques.** Une
+   facette de plus ne coûte pas une ligne : elle existe dès que la colonne existe.
+3. **Chaque `ABSENT` qui dit POURQUOI est un cahier des charges.** Les cinq formes ajoutées
+   dans la journée — intervalle, présence, préfixe, second gisement, glob — sont toutes venues
+   d'une phrase du script, pas d'une idée.
+4. **Un `ABSENT` argumenté vaut mieux qu'une route.** #44/#45 restent absents parce que la KB
+   est ancrée sur le build transitoire et qu'une route publierait des chiffres faux ; #46 parce
+   que le jeu et la série n'ont aucune clé commune.
+5. **Le défaut 1 avait une jumelle que personne n'avait nommée** : appliquer un filtre sans le
+   republier. Vu du client, c'est le même aveuglement. Les deux scripts l'exigent désormais.
+
+Les trois défauts à réparer sont réparés : `/b?q=` filtre (46 → 1), `cpk=` filtre
+(255 308 → 19 913), et l'état de l'explorateur vit dans l'URL (`?d=…&q=…&ext=…`, vérifié à
+l'écran par `chromium --dump-dom` sur `https://aphrody.com`).
+
+**Ce qui reste, et c'est le vrai reste :** 35 des 41 filtres servis n'ont **aucune commande à
+l'écran**. Le retard a changé de côté — il n'est plus dans le serveur, il est dans l'interface,
+et le combler ne coûte aucune ligne de Rust.
+
 ### Lot 9 — 100 % du VFS servi, comme `nie.exe` le lit
 
 C'est le lot terminal du plan : **255 308 fichiers, aucun non classé.** La carte est
@@ -845,7 +909,7 @@ arithmétique ne la trouve.
 | L'écran d'attente est celui du jeu | `loading01` — **1** objet, bande 784×136, texture servie par `/assets/tex/…` (200, `image/png`, 11 008 o), **jamais copiée** dans `public/`. `title00` a été mesuré puis écarté : 67 objets, 21 à la position par défaut, atlas entiers |
 | La sonde d'état se reboucle | `App.tsx` ne demandait `/api/v1/health` qu'une fois : l'écran d'attente n'aurait jamais basculé. Elle se rejoue toutes les 2 s et s'arrête sur `pret` ou `absent` |
 | Le personnage est **visible** | il était blanc sur un ciel crème, DOM juste et écran vide. Halo `aria-hidden` derrière lui, et `FOND_MENU` (hex en dur) remplacé par `--jeu-ciel-clair` : une seule source de couleur, sans exception |
-| L'inventaire des filtres | `docs/FILTRES.md` : **48** filtres, **42** manquants, avec l'ordre de dépendance (lot 8) |
+| L'inventaire des filtres | `docs/FILTRES.md` : **48** filtres, **41 servis / 5 absents / 2 côté client** au 2026-09-06 au soir, mesurés par `scripts/validation/mesurer-matrice-filtres.sh` et non tenus à la main (lot 8, clos) |
 | Le viewport 3D est en **WebGPU** | `navigator.gpu`, un module **WGSL**, `createRenderPipeline` avec `depthStencil`. La profondeur est adaptée au NDC z ∈ [0,1] de WebGPU (`a = LOIN/(LOIN−PROCHE)`, `b = −LOIN·PROCHE/(LOIN−PROCHE)`) — le piège de cette traduction : avec la forme OpenGL le modèle est écrêté sans qu'aucune valeur ne paraisse fausse. Prouvé par une passe **hors écran** de 64×64 relue par `copyTextureToBuffer` : demi-côté du quad unitaire = 0,548 en NDC, soit exactement `1,7 / 3,1` — focale et distance cadrent comme le rastériseur ; le quad proche l'emporte sur le lointain dessiné avant ET après lui, donc `less` et [0,1] sont justes |
 | `nie-lua` et `nie-formats` servis nativement (lot 3) | **13 routes** mesurées. `/api/v1/lua/scripts/{chemin}` rend une analyse **statique** réelle — `kizuna_town_mainmenu` : 49 prototypes, 1 933 instructions, `funcLuaCommand` ×66 ; `?forme=chunk` rend le décodage intégral de `nie_lua::bytecode::parse` (52 173 o) ; `/api/v1/lua/desassemblage/…` 101 805 o en `text/plain` + ETag fort. `/api/v1/formats` compte sur les 255 308 entrées (71 101 `.cfg.bin`, 1 197 `.lua.bin`, 54 203 `.g4tx`) ; `?forme=structure` expose la table de types, la table de champs et le CRC32 qui résout les noms — ce que `to_iecode_json` ne donne pas, et sans quoi un client ignore pourquoi un champ sort en `Unknown_0x…`. Traversée de chemin → **400**, extension étrangère → **400**, absent → **404** |
 | L'exécution de Lua est refusée **structurellement**, pas déclarativement | `nie-lua` est déclaré `default-features = false` : `vm` (mlua) et `analysis` (tree-sitter) ne sont pas liés, et un `const { assert!(!VM_LIEE) }` le vérifie **à la compilation**. `/api/v1/lua` publie `vm_liee: false`. Les globaux sont lus dans les `GETTABUP`/`SETTABUP` sur l'upvalue `_ENV` — la définition d'un accès global en Lua 5.2 |
