@@ -756,6 +756,28 @@ pub fn identifier(chemin: &str, octets: &[u8]) -> Result<serde_json::Value, Erre
             "conteneur": c,
         }));
     }
+    // **DXBC** — les shaders du jeu. C'est le quatrième format que ce dépôt a classé « aucun
+    // parseur » alors qu'il le parsait déjà, et cette fois le code le disait lui-même :
+    // `nie_formats::decode::decode_level5_annexe` porte le commentaire « leurs extensions les
+    // faisaient passer pour des effets, et 2 497 fichiers comptaient comme non reconnus alors
+    // que le module `dxbc` les parse depuis toujours ». Cette route-ci refusait quand même,
+    // parce qu'elle a son propre aiguillage et qu'il ne consultait pas `is_dxbc` — un
+    // `.pfxo` ressortait « ni magic connu » **en publiant `44 58 42 43`, c'est-à-dire `DXBC`
+    // en ASCII**. Le message d'erreur portait la réfutation de ce qu'il affirmait.
+    //
+    // Mesuré le 2026-09-06 : 2 497 fichiers — `.vfxo` 1 335, `.pfxo` 1 113, `.cfxo` 29,
+    // `.gfxo` 20.
+    if nie_formats::dxbc::is_dxbc(octets) {
+        let d = nie_formats::dxbc::parse(octets)
+            .map_err(|e| ErreurSite::Demande(format!("DXBC illisible: {e}")))?;
+        return Ok(serde_json::json!({
+            "chemin": chemin,
+            "octets": octets.len(),
+            "format": "dxbc",
+            "produit": "conteneur DXBC : ses fragments nommes et leurs tailles",
+            "shader": d,
+        }));
+    }
     // CriWare : `@UTF` est la table de métadonnées de toute la pile audio (ACB, AWB, ACF). Le
     // site ne décode pas l'audio — ces features sont éteintes, cf. la doc de module — mais
     // **nommer** un format qu'on ne décode pas est une information, et « inconnu » n'en est

@@ -1,15 +1,15 @@
 {
-  "genere_le": "2026-09-06T14:20:32Z",
+  "genere_le": "2026-09-06T14:59:35Z",
   "version": "0.5.9",
-  "routes_montees": 77,
+  "routes_montees": 80,
   "total": {
     "capacites": 582,
     "poids": 255847
   },
   "par_etat": {
     "bloque": {
-      "capacites": 10,
-      "poids": 3600
+      "capacites": 1,
+      "poids": 9
     },
     "interne": {
       "capacites": 294,
@@ -24,8 +24,8 @@
       "poids": 0
     },
     "servi": {
-      "capacites": 278,
-      "poids": 246442
+      "capacites": 287,
+      "poids": 250033
     }
   },
   "par_source": [
@@ -304,8 +304,8 @@
       },
       "par_etat": {
         "bloque": {
-          "capacites": 10,
-          "poids": 3600
+          "capacites": 1,
+          "poids": 9
         },
         "interne": {
           "capacites": 1,
@@ -320,8 +320,8 @@
           "poids": 0
         },
         "servi": {
-          "capacites": 32,
-          "poids": 246196
+          "capacites": 41,
+          "poids": 249787
         }
       },
       "gate_tenue": true
@@ -332,13 +332,14 @@
     "partiel": 0,
     "manquant_poids": 0,
     "partiel_poids": 0,
-    "bloque": 10,
+    "bloque": 1,
     "tenue": true
   },
   "regles_mortes": [
     "inacord-lua",
     "data-familles",
-    "formats-restants"
+    "formats-restants",
+    "vfs-effets"
   ],
   "incoherences": [],
   "capacites": [
@@ -4690,9 +4691,9 @@
       "source": "vfs",
       "nom": ".bin",
       "poids": 10,
-      "regle": "vfs-bin-inconnu",
-      "etat": "bloque",
-      "raison": "10 fichiers `.bin` hors `.cfg.bin` et `.lua.bin`, non identifiés"
+      "regle": "vfs-bin-cfg",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
     },
     {
       "source": "vfs",
@@ -4714,17 +4715,17 @@
       "source": "vfs",
       "nom": ".cfxo",
       "poids": 29,
-      "regle": "vfs-effets",
-      "etat": "bloque",
-      "raison": "shaders, effets, particules, tissu : aucun parseur dans le dépôt, du reverse est nécessaire avant toute route"
+      "regle": "vfs-shaders",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
     },
     {
       "source": "vfs",
       "nom": ".clobin",
       "poids": 39,
-      "regle": "vfs-effets",
-      "etat": "bloque",
-      "raison": "shaders, effets, particules, tissu : aucun parseur dans le dépôt, du reverse est nécessaire avant toute route"
+      "regle": "vfs-clobin",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
     },
     {
       "source": "vfs",
@@ -4738,9 +4739,9 @@
       "source": "vfs",
       "nom": ".fxbin",
       "poids": 372,
-      "regle": "vfs-effets",
-      "etat": "bloque",
-      "raison": "shaders, effets, particules, tissu : aucun parseur dans le dépôt, du reverse est nécessaire avant toute route"
+      "regle": "vfs-fxbin",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
     },
     {
       "source": "vfs",
@@ -4828,7 +4829,7 @@
       "poids": 9,
       "regle": "vfs-g4tg",
       "etat": "bloque",
-      "raison": "non identifié : sans magic, motif `7f 7f ff ff`, 9 fichiers sous `dx11/` — une hypothèse de format n'est pas une identification"
+      "raison": "charge utile de TEXTURE, disposition non reversée : 9/9 voisins d'un `.g4tx` de même stem, 9/9 alignés sur 1 024 o, structure spatiale mesurée (écart inter-lignes 3 à 4× sous le mélange) ; ni RGBA8 linéaire ni BC3 aux dimensions évidentes — les deux rendus ont été produits et écartés"
     },
     {
       "source": "vfs",
@@ -4850,17 +4851,17 @@
       "source": "vfs",
       "nom": ".gfxo",
       "poids": 20,
-      "regle": "vfs-effets",
-      "etat": "bloque",
-      "raison": "shaders, effets, particules, tissu : aucun parseur dans le dépôt, du reverse est nécessaire avant toute route"
+      "regle": "vfs-shaders",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
     },
     {
       "source": "vfs",
       "nom": ".linb",
       "poids": 16,
-      "regle": "vfs-effets",
-      "etat": "bloque",
-      "raison": "shaders, effets, particules, tissu : aucun parseur dans le dépôt, du reverse est nécessaire avant toute route"
+      "regle": "vfs-linb",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
     },
     {
       "source": "vfs",
@@ -4906,17 +4907,17 @@
       "source": "vfs",
       "nom": ".pfxo",
       "poids": 1113,
-      "regle": "vfs-effets",
-      "etat": "bloque",
-      "raison": "shaders, effets, particules, tissu : aucun parseur dans le dépôt, du reverse est nécessaire avant toute route"
+      "regle": "vfs-shaders",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
     },
     {
       "source": "vfs",
       "nom": ".ptlb",
       "poids": 657,
-      "regle": "vfs-effets",
-      "etat": "bloque",
-      "raison": "shaders, effets, particules, tissu : aucun parseur dans le dépôt, du reverse est nécessaire avant toute route"
+      "regle": "vfs-ptlb",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
     },
     {
       "source": "vfs",
@@ -4994,9 +4995,9 @@
       "source": "vfs",
       "nom": ".vfxo",
       "poids": 1335,
-      "regle": "vfs-effets",
-      "etat": "bloque",
-      "raison": "shaders, effets, particules, tissu : aucun parseur dans le dépôt, du reverse est nécessaire avant toute route"
+      "regle": "vfs-shaders",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
     }
   ]
 }

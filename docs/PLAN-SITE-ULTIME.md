@@ -697,13 +697,49 @@ Deux enseignements que le plan retient au-delà de ce lot :
   fichier texte commençant par `BLOCK_LIST_BEG` passait pour un conteneur de magic « BLOC ».
   Une gate qui ne trouve jamais rien n'est pas une gate.
 
-#### 9.3 — Le reverse (3 776 fichiers, 1,48 %)
+#### 9.3 — Le reverse : **3 600 → 9 le 2026-09-06**, et pas une ligne de reverse
 
-Shaders (`fxbin`, `vfxo`, `pfxo`, `cfxo`, `gfxo` — 2 869, plus les 2 870 de
-`dx11/shader/1.00.41/`), particules (`ptlb`), tissu (`clobin`), navigation (`g4nv`), `linb`.
-**Aucun parseur n'existe.** Ces corpus ne descendent pas par du câblage et **rien ne doit
-promettre une route avant que le format soit lu**. Ils restent comptés `bloqué` — visibles,
-chiffrés, jamais silencieux.
+~~Shaders (`fxbin`, `vfxo`, `pfxo`, `cfxo`, `gfxo`), particules (`ptlb`), tissu (`clobin`),
+navigation (`g4nv`), `linb`. **Aucun parseur n'existe.**~~ **Faux.** Les parseurs existaient
+tous, et pour les shaders `nie_formats::decode` le disait dans un commentaire :
+
+> « leurs extensions les faisaient passer pour des effets, et 2 497 fichiers comptaient comme
+> non reconnus alors que le module `dxbc` les parse depuis toujours »
+
+**C'est la quatrième fois** que ce plan classe `bloqué` un format que le dépôt sait lire (après
+les `.g4ma`/`.g4vs`/`.g4la` du § 9 bis, puis les 10 `.bin`). Le défaut se répète pour une raison
+structurelle, et il faut l'écrire ici pour qu'il ne revienne pas une cinquième : **le classement
+se fait sur l'extension, la lecture sur le magic.** Un `.pfxo` ressortait « ni magic connu » en
+publiant `44 58 42 43` — `DXBC` en ASCII. *Le message d'erreur portait la réfutation de ce qu'il
+affirmait*, et personne ne l'a lu.
+
+| Famille | Fichiers | Jeton | Ce qui les lit | Ce qui manquait |
+|---|---:|---|---|---|
+| `.vfxo` | 1 335 | `dxbc` | `nie_formats::dxbc` | **11 lignes** dans `routes::formats::identifier` |
+| `.pfxo` | 1 113 | `dxbc` | idem | idem |
+| `.cfxo` | 29 | `dxbc` | idem | idem |
+| `.gfxo` | 20 | `dxbc` | idem | idem |
+| `.ptlb` | 657 | `t2b` | conteneur T2B | **rien** — la route décodait déjà |
+| `.fxbin` | 372 | `t2b` | conteneur T2B | rien |
+| `.clobin` | 39 | `t2b` | conteneur T2B | rien |
+| `.linb` | 16 | `t2b` | conteneur T2B | rien |
+| `.bin` | 10 | `rdbn`/`t2b` | conteneur Level-5 | rien — version placée avant `.bin` |
+
+**Preuve : `scripts/validation/mesurer-formats-bloques.sh` — 219/219 décodages conformes**,
+échantillon à pas régulier, jeton de format exigé dans le corps (un 200 ne compte pas :
+`/api/v1/formats/decode` répond aussi en disant « format non identifié »). Le script est
+versionné et reste la garde contre la cinquième occurrence.
+
+**Ce qui reste vraiment bloqué : les 9 `.g4tg`**, et cette fois avec une identification, pas une
+absence. Mesuré sur les 9 fichiers extraits : chacun est **voisin d'un `.g4tx` de même stem**
+(9/9), chaque taille est un **multiple exact de 1 024 octets** (9/9 — l'alignement de page d'un
+téléversement GPU), et l'écart entre lignes voisines tombe **3 à 4 fois sous** celui des mêmes
+lignes mélangées (`eb01800` en 512×352 : 6,28 contre 23,72), donc la donnée a une structure
+spatiale. **Réfuté** en produisant les rendus et en les regardant : ce n'est ni du RGBA8 linéaire
+ni du BC3 aux dimensions évidentes. Conclusion écrite dans la matrice : *charge utile de
+texture, disposition non reversée*. Dire « texture » sans dire « disposition inconnue » aurait
+été l'hypothèse prise pour une identification — précisément ce que la version précédente de
+cette raison refusait, et elle avait raison.
 
 #### 9.4 — Les écrans, l'autre couverture
 

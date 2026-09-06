@@ -389,8 +389,71 @@ pub static REGLES: &[Regle] = &[
     r!("vfs-g4ma", Vfs, Motif::Exact(".g4ma"), servi("/api/v1/formats/decode/{*chemin}")),
     r!("vfs-g4vs", Vfs, Motif::Exact(".g4vs"), servi("/api/v1/formats/decode/{*chemin}")),
     r!("vfs-g4la", Vfs, Motif::Exact(".g4la"), servi("/api/v1/formats/decode/{*chemin}")),
+    // ─────────────────────────────────────────────────────────────────────────────────────
+    // Les huit familles que ce plan appelait « shaders, effets, particules, tissu : aucun
+    // parseur dans le dépôt, du reverse est nécessaire avant toute route ».
+    //
+    // **3 591 fichiers, et le dépôt les décodait déjà.** C'est la QUATRIÈME occurrence du même
+    // défaut (§ 9 bis pour `.g4ma`/`.g4vs`/`.g4la`, puis les `.bin` ci-dessous), et il se
+    // répète pour une raison structurelle : le classement se fait sur l'**extension**, la
+    // lecture sur le **magic**. Un `.pfxo` ressortait « ni magic connu » en publiant
+    // `44 58 42 43` — `DXBC` en ASCII. Le message d'erreur portait la réfutation de ce qu'il
+    // affirmait, et personne ne l'a lu pendant des semaines.
+    //
+    // Mesuré le 2026-09-06 par `scripts/validation/mesurer-formats-bloques.sh`, échantillon à
+    // pas régulier, jeton de format exigé dans le corps : **219/219 décodages conformes**.
+    //
+    // | Famille | Fichiers | Jeton | Ce qui les lit |
+    // |---|---:|---|---|
+    // | `.vfxo` | 1 335 | `dxbc` | `nie_formats::dxbc` — shaders de sommets |
+    // | `.pfxo` | 1 113 | `dxbc` | idem — shaders de pixels |
+    // | `.cfxo` | 29 | `dxbc` | idem — shaders de calcul |
+    // | `.gfxo` | 20 | `dxbc` | idem — shaders de géométrie |
+    // | `.ptlb` | 657 | `t2b` | conteneur T2B — particules |
+    // | `.fxbin` | 372 | `t2b` | conteneur T2B — effets |
+    // | `.clobin` | 39 | `t2b` | conteneur T2B — tissu |
+    // | `.linb` | 16 | `t2b` | conteneur T2B |
+    //
+    // Le branchement DXBC a demandé **onze lignes** dans `routes::formats::identifier` : le
+    // parseur, lui, existait « depuis toujours », et `nie_formats::decode` le disait dans un
+    // commentaire que la matrice n'a jamais lu. Un plan ne lit pas les commentaires : il faut
+    // interroger la route.
+    r!("vfs-shaders", Vfs, Motif::Suffixe("fxo"), servi("/api/v1/formats/decode/{*chemin}")),
+    r!("vfs-fxbin", Vfs, Motif::Exact(".fxbin"), servi("/api/v1/formats/decode/{*chemin}")),
+    r!("vfs-ptlb", Vfs, Motif::Exact(".ptlb"), servi("/api/v1/formats/decode/{*chemin}")),
+    r!("vfs-clobin", Vfs, Motif::Exact(".clobin"), servi("/api/v1/formats/decode/{*chemin}")),
+    r!("vfs-linb", Vfs, Motif::Exact(".linb"), servi("/api/v1/formats/decode/{*chemin}")),
+
     // Ce qu'aucun parseur du dépôt ne connaît : du reverse d'abord.
-    r!("vfs-g4tg", Vfs, Motif::Exact(".g4tg"), bloque("non identifié : sans magic, motif `7f 7f ff ff`, 9 fichiers sous `dx11/` — une hypothèse de format n'est pas une identification")),
-    r!("vfs-bin-inconnu", Vfs, Motif::Exact(".bin"), bloque("10 fichiers `.bin` hors `.cfg.bin` et `.lua.bin`, non identifiés")),
+    // `.g4tg` — IDENTIFIÉ le 2026-09-06, toujours `bloqué`, et la nuance est celle du § 4 :
+    // « bloqué » veut dire qu'il faut du reverse, pas qu'on ignore ce que c'est.
+    //
+    // Ce qui a été mesuré sur les 9 fichiers extraits : (1) chacun est **voisin d'un `.g4tx` de
+    // même stem**, 9/9 ; (2) chaque taille est un **multiple exact de 1 024 octets**, 9/9 —
+    // l'alignement de page d'un téléversement GPU ; (3) l'écart entre lignes voisines, à des
+    // largeurs plausibles, tombe **3 à 4 fois sous** celui des mêmes lignes mélangées
+    // (`eb01800` en 512×352 : 6,28 contre 23,72), donc la donnée a une structure spatiale ;
+    // (4) plusieurs en-têtes et queues sont des constantes RGBA franches (`000000ff`,
+    // `808080ff`, `ffffff00`, `7f7fffff`).
+    //
+    // Ce qui a été **réfuté** : ce n'est ni du RGBA8 linéaire ni du BC3 aux dimensions
+    // évidentes — les deux rendus ont été produits et regardés. La disposition est donc tuilée
+    // ou permutée, et elle n'est pas reversée. Dire « texture » sans dire « disposition
+    // inconnue » serait exactement l'hypothèse prise pour une identification que la version
+    // précédente de cette raison refusait.
+    r!("vfs-g4tg", Vfs, Motif::Exact(".g4tg"), bloque("charge utile de TEXTURE, disposition non reversée : 9/9 voisins d'un `.g4tx` de même stem, 9/9 alignés sur 1 024 o, structure spatiale mesurée (écart inter-lignes 3 à 4× sous le mélange) ; ni RGBA8 linéaire ni BC3 aux dimensions évidentes — les deux rendus ont été produits et écartés")),
+    // `.bin` — ce n'était PAS du reverse, c'était une erreur de classement.
+    //
+    // Les 10 fichiers portent le numéro de version **avant** le `.bin` au lieu d'après
+    // (`formation_config.cfg_0.00.32.bin` et non `formation_config_0.00.32.cfg.bin`), si bien
+    // que l'extension dérivée est `.bin` et qu'aucune règle de `cfg.bin` ne les attrapait. Le
+    // contenu, lui, n'a jamais changé : mesuré le 2026-09-06 en interrogeant la route montée,
+    // **10/10 décodent** — 6 RDBN (`formation_config`, `soccer_game_config`, `team_config`,
+    // deux versions chacun) et 4 T2B (`font_style` ×3 locales, `ev99_90100.cfg_test`).
+    //
+    // C'est la troisième fois que ce plan classe `bloqué` quelque chose que le dépôt décodait
+    // déjà (cf. § 9 bis, les `.g4ma`/`.g4vs`/`.g4la`). La leçon ne change pas : on interroge la
+    // route avant d'écrire « aucun parseur ».
+    r!("vfs-bin-cfg", Vfs, Motif::Exact(".bin"), servi("/api/v1/formats/decode/{*chemin}")),
     r!("vfs-effets", Vfs, Motif::Tout, bloque("shaders, effets, particules, tissu : aucun parseur dans le dépôt, du reverse est nécessaire avant toute route")),
 ];
