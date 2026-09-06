@@ -2156,20 +2156,54 @@ pub fn drive_menu_for_frames(
     item_counts: &BTreeMap<u32, i32>,
     frames: u32,
 ) -> Result<DriveReport, LuaError> {
-    let func = crate::load_bytecode(lua, script_bytes, name)?;
+    drive_menu_for_frames_impl(lua, script_bytes, name, layer_ids, item_counts, frames, true)
+}
+
+/// Pilote un menu dont le chunk principal est déjà chargé dans `lua`.
+///
+/// Utilisé par [`crate::session::LuaSession`] pour reproduire le cycle natif : le top-level et
+/// `OnInit` ne sont exécutés qu'au premier chargement, tandis que les callbacks de navigation et
+/// les frames restent pilotables sur la VM persistante.
+pub(crate) fn drive_menu_for_frames_existing(
+    lua: &Lua,
+    script_bytes: &[u8],
+    name: &str,
+    layer_ids: &[u32],
+    item_counts: &BTreeMap<u32, i32>,
+    frames: u32,
+) -> Result<DriveReport, LuaError> {
+    drive_menu_for_frames_impl(lua, script_bytes, name, layer_ids, item_counts, frames, false)
+}
+
+fn drive_menu_for_frames_impl(
+    lua: &Lua,
+    script_bytes: &[u8],
+    name: &str,
+    layer_ids: &[u32],
+    item_counts: &BTreeMap<u32, i32>,
+    frames: u32,
+    initialize: bool,
+) -> Result<DriveReport, LuaError> {
+    let func = initialize
+        .then(|| crate::load_bytecode(lua, script_bytes, name))
+        .transpose()?;
 
     let mut report = DriveReport {
         frames_requested: frames,
+        top_level_ok: !initialize,
         ..DriveReport::default()
     };
 
     // Exécution top-level : définit les callbacks (OnInit, OnSetupLayer, …). Tolérante :
     // un script peut échouer en route mais avoir déjà défini ses callbacks (cf. main_menu
     // qui indexe un global de scène absent dans OnInit, pas au top-level).
-    match func.call::<()>(()) {
-        Ok(()) => report.top_level_ok = true,
-        Err(e) => {
-            report.top_level_err = Some(e.to_string().lines().next().unwrap_or("").to_string())
+    if let Some(func) = func {
+        match func.call::<()>(()) {
+            Ok(()) => report.top_level_ok = true,
+            Err(e) => {
+                report.top_level_err =
+                    Some(e.to_string().lines().next().unwrap_or("").to_string())
+            }
         }
     }
 
@@ -2180,7 +2214,7 @@ pub fn drive_menu_for_frames(
     g.set("__menuObjPtr", 1.0_f64)?;
 
     // OnInit() — SANS argument (vérité terrain : la séquence du manager).
-    if let Ok(Value::Function(f)) = g.raw_get::<Value>("OnInit") {
+    if initialize && let Ok(Value::Function(f)) = g.raw_get::<Value>("OnInit") {
         count_callback(&mut report, "OnInit");
         match f.call::<MultiValue>(()) {
             Ok(_) => report.on_init = Some(true),

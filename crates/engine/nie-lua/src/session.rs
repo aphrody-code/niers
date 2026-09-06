@@ -165,6 +165,11 @@ pub struct LuaSession {
     loaded_includes: Rc<RefCell<Vec<String>>>,
     /// Contexte natif réappliqué après chaque reconstruction de VM.
     context: RuntimeContext,
+    /// Chunk menu déjà initialisé dans cette VM (`top-level` + `OnInit`).
+    ///
+    /// La cellule permet aux méthodes de pilotage (`&self`) de conserver le cycle de vie natif
+    /// sans rendre la session mutable à chaque frame.
+    active_menu: RefCell<Option<(String, Vec<u8>)>>,
 }
 
 impl LuaSession {
@@ -267,6 +272,7 @@ impl LuaSession {
             missing_includes,
             loaded_includes,
             context,
+            active_menu: RefCell::new(None),
         })
     }
 
@@ -403,16 +409,37 @@ impl LuaSession {
                 },
             )?;
         }
-        let result = crate::menu_host::drive_menu_for_frames(
-            &self.lua,
-            script_bytes,
-            name,
-            layer_ids,
-            item_counts,
-            frames,
-        );
+        let already_initialized = self
+            .active_menu
+            .borrow()
+            .as_ref()
+            .is_some_and(|(loaded_name, loaded_bytes)| {
+                loaded_name == name && loaded_bytes.as_slice() == script_bytes
+            });
+        let result = if already_initialized {
+            crate::menu_host::drive_menu_for_frames_existing(
+                &self.lua,
+                script_bytes,
+                name,
+                layer_ids,
+                item_counts,
+                frames,
+            )
+        } else {
+            crate::menu_host::drive_menu_for_frames(
+                &self.lua,
+                script_bytes,
+                name,
+                layer_ids,
+                item_counts,
+                frames,
+            )
+        };
         if instruction_limit.is_some() {
             self.lua.remove_hook();
+        }
+        if result.is_ok() && !already_initialized {
+            *self.active_menu.borrow_mut() = Some((name.to_string(), script_bytes.to_vec()));
         }
         result
     }
@@ -673,6 +700,7 @@ impl LuaSession {
         )?;
         self.lua = lua;
         self.menu_state = menu_state;
+        *self.active_menu.borrow_mut() = None;
         self.behaviours.clear();
 
         let sources = std::mem::take(&mut self.attached_sources);
@@ -1055,6 +1083,32 @@ mod tests {
         s.exec("after-menu-limit", b"menu_survived = true")
             .expect("la VM reste utilisable après le driver");
         assert_eq!(s.eval("menu_survived").unwrap(), "true");
+    }
+
+    #[test]
+    fn le_driver_menu_initialise_un_chunk_une_seule_fois_dans_la_vm() {
+        let s = LuaSession::standard(true).expect("session menu");
+        let bytes = s
+            .lua()
+            .load(
+                r#"local counts = { init = 0, frame = 0 }
+                   function OnInit() counts.init = counts.init + 1 end
+                   function Step() counts.frame = counts.frame + 1 end"#,
+            )
+            .into_function()
+            .expect("compilation menu")
+            .dump(false);
+        let empty = std::collections::BTreeMap::new();
+        let first = s
+            .drive_menu_for_frames(&bytes, "persistent-menu", &[], &empty, 1)
+            .expect("premier pilotage");
+        let second = s
+            .drive_menu_for_frames(&bytes, "persistent-menu", &[], &empty, 1)
+            .expect("second pilotage");
+        assert_eq!(first.on_init, Some(true));
+        assert_eq!(second.on_init, None, "OnInit ne doit pas être rejoué");
+        assert_eq!(first.callback_invocations.get("Step"), Some(&1));
+        assert_eq!(second.callback_invocations.get("Step"), Some(&1));
     }
 
     #[test]
