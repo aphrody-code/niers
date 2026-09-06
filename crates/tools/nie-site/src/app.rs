@@ -176,6 +176,9 @@ declarer_routes! {
     // assets, sans recopier ni réimplémenter le catalogue.
     "/api/v1/menu/screens" => crate::routes::menu::screens,
     "/api/v1/menu/screens/{stem}" => crate::routes::menu::screen,
+    // Le layout statique est construit depuis les mêmes settings/objbin/g4pkm/g4tx que
+    // `/api/v1/screens`. L'exécution Lua reste volontairement hors du service HTTP.
+    "/api/v1/menu/layout/{screen}" => crate::routes::menu::layout,
     "/api/v1/formats" => crate::routes::formats::capacites,
     "/api/v1/formats/decode/{*chemin}" => crate::routes::formats::decode,
     // Les modules de `nie-formats` que le decodage generique n'atteint pas : ils prennent une
@@ -466,7 +469,7 @@ mod tests {
     #[test]
     fn contrat_de_routes() {
         let routes = chemins();
-        assert_eq!(routes.len(), 82, "82 routes montees");
+        assert_eq!(routes.len(), 83, "83 routes montees");
         for r in &routes {
             assert!(r.starts_with('/'), "{r}");
             // Syntaxe axum 0.7 (`:id`, `*path`) : elle PANIQUE au `route()`, elle ne degrade

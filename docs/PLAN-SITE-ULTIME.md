@@ -593,8 +593,10 @@ politique.
 - `/api/v1/menu/screens` et `/api/v1/menu/screens/{stem}` : l'arbre de navigation construit par
   `nie-model-serve`, relayé par `nie-site` avec ses bornes d'amont. `{stem}` est le stem du
   `*_setting.cfg.bin`, pas un calque ni un script.
-- `/api/v1/menu/<ecran>` : la disposition **exportée par le runtime**, pas un gabarit — reste à
-  extraire la logique de `nie-game` dans une bibliothèque ou à assumer un worker borné.
+- `/api/v1/menu/layout/{screen}` : la disposition **statique** construite depuis les settings,
+  objbin, g4pkm et g4tx réels du VFS ; le stem est celui du `_setting.cfg.bin` et la réponse
+  annonce `runtime.available=false`. Le pilotage Lua complet reste réservé au CLI
+  `nie-game --runtime` et n'est pas ouvert comme interpréteur HTTP.
 - `/api/v1/script/<chemin>` : le Lua décodé, ses `Setup*`, ses commandes reconnues.
 - Le front consomme ces routes : un écran nouveau apparaît **sans une ligne de TSX**.
 

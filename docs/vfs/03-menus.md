@@ -216,7 +216,7 @@ HTML et n'est pas l'API menu.
 | Famille | État | Détail |
 |---|---|---|
 | Textures `.g4tx` isolées (icônes, images plates) | **servi** | `/assets/tex/<chemin>.png` — `200`, mesuré ci-dessus |
-| Layout statique d'un écran à calque (ex. `mainmenu01`) | **interne** | `nie-game --export-layout` produit le JSON complet (34/34 objets positionnés), mais aucune route HTTP ne l'expose encore côté Aphrody |
+| Layout statique d'un écran à calque (ex. `main_menu`) | **servi** | `/api/v1/menu/layout/{screen}` produit le contrat JSON depuis les vrais `_setting.cfg.bin`, `.objbin`, `.g4pkm` et `.g4tx` ; `{screen}` est le stem du setting, et `runtime.available=false` rappelle que Lua n'est pas exécuté par `nie-site` |
 | Comportement piloté-script d'un écran (ex. `kizuna_town_mainmenu`) | **manquant** | le driver Lua tourne et compte les commandes, mais produit 0 objet visible (`GetItemButtonNum` sans état scène/save C++) — rien à servir tant que la couche donnée n'existe pas |
 | Table de navigation (crc32, layers, commandes) | **servi** | `nie-model-serve` construit `/menu-tree.json`; `nie-site` la relaie par `/api/v1/menu/screens` et `/api/v1/menu/screens/{stem}`, 475 écrans |
 | Composition PNG d'un écran depuis son layout | **interne** | `--compose-layout` existe en CLI, jamais exposé en route |
@@ -230,7 +230,7 @@ HTML et n'est pas l'API menu.
 |---|---|---|
 | `GET /api/v1/menu/screens` | **livrée** : relais du `/menu-tree.json` de model-serve (475 écrans, nav+layers+commandes) | `nie-model-serve` port 8790, relayé par le proxy borné de `nie-site` |
 | `GET /api/v1/menu/screens/{stem}` | **livrée** : une entrée de nav (`/menu-tree/{stem}.json`) ; `{stem}` est le nom du `*_setting.cfg.bin`, pas celui du calque | même sélecteur, `crates/tools/nie-model-serve/src/main.rs:5064` et suite |
-| `GET /api/v1/menu/layout/{ecran}` | layout statique d'un écran à calque (objets, transform, sprite, texte) — `{ecran}` est ici le nom du calque (`mainmenu01`), **troisième espace de noms**, à ne jamais confondre avec `{stem}` ci-dessus | `nie-game --runtime --menu {ecran} --export-layout` (`crates/engine/nie-game/src/main.rs:3078`) — à faire tourner en bibliothèque plutôt qu'en sous-process pour une route HTTP |
+| `GET /api/v1/menu/layout/{screen}` | **livrée** : layout statique (objets, transform, sprite, animation, texte statique et instances d'attach locator) — `{screen}` est le stem du `_setting.cfg.bin` (`main_menu`), le même espace de noms que `/api/v1/screens/{screen}` | `nie-site::routes::menu::layout` lit `nie-formats::{cfgbin,objbin,g4pkm,g4tx,menu}` et `nie-data::text` sur le VFS ; l'exécution Lua reste explicitement hors de cette route |
 | `GET /api/v1/menu/layout/{ecran}.png` | composition PNG de l'écran | `--compose-layout` (même binaire) |
 | `GET /assets/tex/{chemin}.png` | **déjà servi**, vérifié 200 sur `mainmenu01_06` — rien à créer, juste à documenter dans le cahier des charges comme référence de convention | `nie-site`, `crates/engine/nie-formats/src/g4tx_decode.rs:197` |
 | `GET /api/v1/menu/icons/{theme}` | galerie plate d'un thème `200_icon/<theme>/*.g4tx` (19 534 fichiers, pas de layout — juste une liste de textures) | même décodeur g4tx, pas de layout à charger |
@@ -240,16 +240,14 @@ HTML et n'est pas l'API menu.
 
 - Table de **navigation** : **475/475 accessibles** par `/api/v1/menu/screens`; le relais est
   borné et n'ajoute aucun décodeur concurrent.
-- Table de **rendu** (layout réellement dessinable) : seuls les écrans à calque statique
-  (type `mainmenu01`) produisent un JSON complet aujourd'hui. Le compte exact d'écrans « à
-  calque, 0 script » contre « à script, 0 calque statique » **n'a pas été mesuré ici** — il
-  faudrait faire tourner `--export-layout` sur les 475 stems et compter `objets>0` vs
-  `objets==0`, ce qui dépasse le périmètre d'écriture de ce document (aucun script). À faire
-  avant d'écrire les routes du §7 pour chiffrer précisément `servis / 475` (mission demandait
-  `/440`, la mesure live des écrans donne 475 — préférer 475, plus récent).
-- Chiffre honnête pour le rendu : **1/475 vérifié en profondeur** (`mainmenu01`, 34/34 objets
-  positionnés, 26/34 avec texte) + **1/475 vérifié en échec documenté**
-  (`kizuna_town_mainmenu`, 0/5 objets rendus, cause connue et non un bug de mesure). Le reste
-  est à passer au même protocole (`--export-layout` + comptage `sprite==null`/`text==0`) avant
-  toute annonce de couverture globale. La navigation et le rendu restent deux couvertures
-  différentes.
+- Table de **rendu** (layout statique) : `/api/v1/menu/layout/{screen}` accepte le même stem
+  que `/api/v1/screens/{screen}` et construit chaque objet depuis le VFS réel. La route publie
+  ses comptes (`objectsParsed`, `spritesResolved`, `layersMissing`) et ne transforme pas un
+  calque absent en objet vide.
+- Mesures live du 2026-09-06 : `main_menu` → **20 objets, 12 sprites, 1 calque manquant** ;
+  `chronicle_mode_top_menu` → **27 objets, 17 sprites, 1 calque manquant**. Le contrat expose
+  `runtime.available=false` : le rendu statique est servi, tandis que le comportement Lua et
+  les listes dépendantes d'un état de scène restent dans `nie-game --runtime` et ne sont pas
+  promis par cette API.
+- La table de navigation reste distincte : **475/475** par `/api/v1/menu/screens`. Rendre un
+  layout statique ne prouve donc pas que les mutations Lua d'un écran sont complètes.
