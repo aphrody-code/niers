@@ -179,6 +179,21 @@ impl Etat {
         }
     }
 
+    /// Ce que l'état **écrit** : la route qui sert, le décodeur qui attend, la raison du refus.
+    ///
+    /// Le plan exige que chaque classement porte sa justification ; ce rendu la donne sans que
+    /// l'appelant ait à connaître les cinq variantes. Sur `Partiel`, c'est ce qui **manque** qui
+    /// est rendu, pas la route : une route partielle sans son manque ne dit rien.
+    #[must_use]
+    pub fn detail(&self) -> &str {
+        match self {
+            Self::Servi { route } => route,
+            Self::Partiel { manque, .. } => manque,
+            Self::Manquant { decodeur } => decodeur,
+            Self::Bloque { raison } | Self::Interne { raison } => raison,
+        }
+    }
+
     /// Les cinq noms d'état, dans l'ordre du § 4.
     pub const NOMS: [&'static str; 5] = ["servi", "partiel", "manquant", "bloque", "interne"];
 }
@@ -213,6 +228,30 @@ impl Motif {
     }
 }
 
+/// Ce que le **vide** d'une règle veut dire — et c'est l'inverse selon la règle.
+///
+/// Une règle qui ne classe plus rien peut être une décision périmée **ou** un objectif atteint.
+/// Publier les deux dans la même liste rend cette liste illisible : au 2026-09-06 elle portait
+/// quatre entrées, **toutes** des filets vides, c'est-à-dire quatre succès — et une vraie
+/// décision morte s'y serait ajoutée en cinquième ligne sans que personne la distingue. Une
+/// liste dont on sait d'avance qu'elle est pleine de bruit ne signale plus rien.
+///
+/// Le distinguo était laissé à la lecture. Il est désormais **déclaré**, et un [`Motif::Tout`]
+/// déclaré autrement qu'en filet ne compile pas (cf. [`tous_les_tout_sont_des_filets`]).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum Portee {
+    /// Une décision **nommée** : elle vise des capacités précises, et son vide est une anomalie.
+    /// Une commande renommée, un module supprimé, une page disparue laissent leur règle sans
+    /// objet — c'est ce que `regles_mortes` doit attraper, et rien d'autre.
+    Decision,
+    /// Un **filet** : il ferme une source pour qu'aucune capacité n'échappe au classement. Son
+    /// vide est l'objectif — il veut dire que chaque capacité de la source porte une décision
+    /// nommée. Ce qu'il attrape, à l'inverse, est une **dette mesurée** : une seule raison
+    /// couvrant N capacités différentes (`iecode-admin` en couvre 39 à lui seul).
+    Filet,
+}
+
 /// Une décision de classement : ce qu'elle reconnaît, l'état qu'elle pose, et son identifiant.
 ///
 /// L'identifiant est reporté sur chaque capacité classée : on peut donc remonter d'une ligne de
@@ -227,7 +266,34 @@ pub struct Regle {
     pub motif: Motif,
     /// L'état qu'elle pose.
     pub etat: Etat,
+    /// Ce que son vide veut dire.
+    pub portee: Portee,
 }
+
+/// Vrai si aucune règle [`Motif::Tout`] n'est déclarée en [`Portee::Decision`].
+///
+/// Un `Tout` reconnaît toutes les capacités restantes de sa source : il **est** un filet, par
+/// construction. Le déclarer en décision ferait remonter son vide dans `regles_mortes`, c'est-à-
+/// dire présenter un objectif atteint comme une anomalie — précisément le défaut que cette
+/// séparation corrige.
+#[must_use]
+pub const fn tous_les_tout_sont_des_filets() -> bool {
+    let mut i = 0;
+    while i < REGLES.len() {
+        if matches!(REGLES[i].motif, Motif::Tout) && !matches!(REGLES[i].portee, Portee::Filet) {
+            return false;
+        }
+        i += 1;
+    }
+    true
+}
+
+// Structurel, pas déclaratif : la règle mal déclarée ne compile pas. Une politique qui dépend de
+// la discipline du prochain contributeur n'en est pas une (cf. `CLAUDE.md` § Pièges d'édition).
+const _: () = assert!(
+    tous_les_tout_sont_des_filets(),
+    "une regle `Motif::Tout` se declare avec `filet!`, jamais avec `r!` : son vide est un objectif atteint, pas une decision perimee"
+);
 
 /// Une capacité classée — une ligne de la matrice.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -281,6 +347,33 @@ pub struct LigneSource {
     pub gate_tenue: bool,
 }
 
+/// Ce qu'un filet a attrapé — la **dette de classement en gros**, chiffrée.
+///
+/// Un filet ferme sa source pour qu'aucune capacité n'échappe au classement, et c'est ce qui
+/// rend la matrice honnête. Mais ce qu'il attrape, il le classe **d'une seule raison** : au
+/// 2026-09-06, six lignes de filet portaient à elles seules 152 des 294 `interne` —
+/// `iecode-admin` en couvre 39, `azalee-catalogues` 32, `lua-exec` 22. Une raison qui vaut pour
+/// 39 sous-commandes différentes ne peut pas être fausse pour l'une d'elles : elle n'est pas
+/// réfutable, donc elle ne mesure rien.
+///
+/// La publier ligne à ligne fait de cette dette une **cible chiffrée**, et son vide un objectif :
+/// un filet à zéro veut dire que chaque capacité de sa source porte une décision nommée.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LigneFilet {
+    /// L'identifiant du filet.
+    pub id: String,
+    /// La source qu'il ferme.
+    pub source: Source,
+    /// L'état qu'il pose sur tout ce qu'il attrape.
+    pub etat: String,
+    /// Combien de capacités il classe. **Zéro est l'objectif.**
+    pub capacites: u64,
+    /// Leur poids cumulé.
+    pub poids: u64,
+    /// La raison unique qu'il applique à toutes.
+    pub raison: String,
+}
+
 /// La gate maîtresse du plan : `manquant = 0` **et** `partiel = 0`.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Gate {
@@ -316,10 +409,16 @@ pub struct Matrice {
     pub par_source: Vec<LigneSource>,
     /// La gate maîtresse.
     pub gate: Gate,
-    /// Les règles qui n'ont rien classé cette fois. Une règle `Exact` morte est une décision
-    /// périmée ; un filet de préfixe qui ne prend rien reste utile — il protège le classement
-    /// des capacités à venir. Le distinguo se lit, il ne s'automatise pas.
+    /// Les **décisions** ([`Portee::Decision`]) qui n'ont rien classé cette fois : une commande
+    /// renommée, un module supprimé, une page disparue. **Attendu vide**, et un test l'assène —
+    /// c'est ce qui en fait un signal plutôt qu'une liste qu'on survole.
+    ///
+    /// Les filets vides n'y sont plus : leur vide est un succès, pas une anomalie. Ils se lisent
+    /// dans [`Self::filets`], à `capacites = 0`.
     pub regles_mortes: Vec<String>,
+    /// Les filets ([`Portee::Filet`]), avec ce que chacun a attrapé. Un filet à `0` est un
+    /// objectif atteint ; un filet chargé est une dette de classement, chiffrée.
+    pub filets: Vec<LigneFilet>,
     /// Ce que la construction a corrigé d'elle-même : une route citée qui n'existe pas, un
     /// classement impossible. Chaque incohérence a **rétrogradé** une capacité.
     pub incoherences: Vec<String>,
@@ -360,7 +459,9 @@ pub fn route_montee(route: &str, chemins: &[&str]) -> bool {
 #[must_use]
 pub fn construire(inventaire: &mesure::Inventaire, chemins: &[&str]) -> Matrice {
     let mut capacites = Vec::with_capacity(inventaire.entrees.len());
-    let mut utilisees: BTreeMap<&'static str, u64> = BTreeMap::new();
+    // Par règle : combien de capacités elle prend, et leur poids. Le poids compte autant que le
+    // nombre — un filet du VFS qui attrape une extension attrape 54 203 fichiers avec elle.
+    let mut pris: BTreeMap<&'static str, (u64, u64)> = BTreeMap::new();
     let mut incoherences = Vec::new();
 
     for entree in &inventaire.entrees {
@@ -376,7 +477,9 @@ pub fn construire(inventaire: &mesure::Inventaire, chemins: &[&str]) -> Matrice 
                 },
             ),
         };
-        *utilisees.entry(id).or_default() += 1;
+        let compte = pris.entry(id).or_default();
+        compte.0 += 1;
+        compte.1 += entree.poids;
 
         if let Some(route) = etat.route()
             && !route_montee(route, chemins)
@@ -451,10 +554,30 @@ pub fn construire(inventaire: &mesure::Inventaire, chemins: &[&str]) -> Matrice 
         tenue: par_etat["manquant"].capacites == 0 && par_etat["partiel"].capacites == 0,
     };
 
+    // Deux listes, parce que le vide veut dire l'inverse selon la règle. Une décision vide est
+    // une décision périmée ; un filet vide est un objectif atteint. Les publier ensemble — ce
+    // que faisait la version precedente — rendait la liste inutilisable : elle portait quatre
+    // entrees, toutes des succes, et une vraie decision morte s'y serait glissee en cinquieme
+    // sans que rien ne la distingue.
     let regles_mortes = REGLES
         .iter()
-        .filter(|r| !utilisees.contains_key(r.id))
+        .filter(|r| r.portee == Portee::Decision && !pris.contains_key(r.id))
         .map(|r| r.id.to_string())
+        .collect();
+    let filets = REGLES
+        .iter()
+        .filter(|r| r.portee == Portee::Filet)
+        .map(|r| {
+            let (capacites, poids) = pris.get(r.id).copied().unwrap_or((0, 0));
+            LigneFilet {
+                id: r.id.to_string(),
+                source: r.source,
+                etat: r.etat.nom().to_string(),
+                capacites,
+                poids,
+                raison: r.etat.detail().to_string(),
+            }
+        })
         .collect();
 
     Matrice {
@@ -466,6 +589,7 @@ pub fn construire(inventaire: &mesure::Inventaire, chemins: &[&str]) -> Matrice 
         par_source,
         gate,
         regles_mortes,
+        filets,
         incoherences,
         capacites,
     }
@@ -662,5 +786,85 @@ mod tests {
         assert!(!m.gate.tenue, "manquant = 1 : la gate n'est pas tenue");
         assert_eq!(m.gate.manquant, 1);
         assert_eq!(m.gate.manquant_poids, 1);
+    }
+
+    #[test]
+    fn un_filet_vide_nest_pas_une_regle_morte() {
+        // Le défaut que cette séparation corrige, prouvé par falsification. Sur un inventaire
+        // qui ne contient QUE des capacités du VFS, tout le reste ne classe rien :
+        //
+        //   - les **décisions** sans objet sortent dans `regles_mortes` — c'est leur rôle ;
+        //   - les **filets** sans objet n'y sortent pas, ils sortent dans `filets` à zéro.
+        //
+        // Avant la séparation, les deux se mélangeaient : la liste publiée le 2026-09-06
+        // portait quatre entrées, toutes des filets vides, c'est-à-dire quatre succès. Une
+        // vraie décision morte s'y serait ajoutée en cinquième ligne sans se distinguer.
+        let inv = inventaire(&[(Source::Vfs, ".cfg.bin", 71_101)]);
+        let m = construire(&inv, &crate::app::chemins());
+
+        let ids_filets: Vec<&str> = REGLES
+            .iter()
+            .filter(|r| r.portee == Portee::Filet)
+            .map(|r| r.id)
+            .collect();
+        for id in &ids_filets {
+            assert!(
+                !m.regles_mortes.iter().any(|mort| mort == id),
+                "le filet `{id}` ne doit jamais compter comme une décision périmée"
+            );
+        }
+
+        // La contre-épreuve : une décision sans objet, elle, EST signalée. Sans cette moitié,
+        // le test passerait aussi sur une implémentation qui ne signale plus rien du tout.
+        assert!(
+            m.regles_mortes.iter().any(|mort| mort == "niers-vfs"),
+            "une décision sans objet doit sortir dans `regles_mortes` : {:?}",
+            m.regles_mortes
+        );
+
+        // Et chaque filet est publié, y compris à zéro : c'est ce zéro qui est l'objectif.
+        assert_eq!(m.filets.len(), ids_filets.len());
+        let vfs_effets = m
+            .filets
+            .iter()
+            .find(|f| f.id == "vfs-effets")
+            .expect("le filet du VFS est publié");
+        assert_eq!(vfs_effets.capacites, 0, "`.cfg.bin` est pris par une décision nommée");
+        assert!(!vfs_effets.raison.is_empty(), "un filet publie la raison qu'il applique");
+    }
+
+    #[test]
+    fn un_filet_tout_est_la_derniere_regle_de_sa_source() {
+        // C'est LA façon dont une décision meurt sans qu'on s'en aperçoive : la première règle
+        // qui reconnaît une capacité la classe, donc toute règle placée après le `Motif::Tout`
+        // de sa source est inatteignable — morte à l'écriture, pas à l'usage. Le signalement
+        // par `regles_mortes` ne l'attrape qu'après coup ; ici on refuse la déclaration.
+        for source in Source::toutes() {
+            let regles: Vec<&Regle> = REGLES.iter().filter(|r| r.source == source).collect();
+            let filet = regles
+                .iter()
+                .position(|r| matches!(r.motif, Motif::Tout))
+                .unwrap_or_else(|| panic!("{source:?} n'a pas de filet `Motif::Tout`"));
+            assert_eq!(
+                filet,
+                regles.len() - 1,
+                "{source:?} : `{}` est un `Motif::Tout` suivi de {} règle(s) inatteignable(s) — la première est `{}`",
+                regles[filet].id,
+                regles.len() - 1 - filet,
+                regles[filet + 1].id
+            );
+        }
+    }
+
+    #[test]
+    fn les_identifiants_de_regle_sont_uniques() {
+        // Deux règles de même identifiant rendent `regles_mortes` et `filets` faux des deux
+        // côtés : l'une masque le vide de l'autre, et une capacité ne remonte plus à la
+        // décision qui l'a produite.
+        let mut ids: Vec<&str> = REGLES.iter().map(|r| r.id).collect();
+        let total = ids.len();
+        ids.sort_unstable();
+        ids.dedup();
+        assert_eq!(ids.len(), total, "identifiant de règle en double");
     }
 }

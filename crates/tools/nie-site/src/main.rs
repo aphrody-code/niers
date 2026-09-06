@@ -98,6 +98,23 @@ fn regenerer_couverture(racine: &std::path::Path, sortie: &std::path::Path) -> a
     for r in &matrice.regles_mortes {
         println!("  REGLE MORTE {r}");
     }
+    // Les filets : ce qu'ils attrapent est classe EN GROS, d'une seule raison. Zero est
+    // l'objectif — la source est alors classee decision par decision.
+    let filets_charges: Vec<_> = matrice.filets.iter().filter(|f| f.capacites > 0).collect();
+    let (cap_filets, poids_filets) = filets_charges
+        .iter()
+        .fold((0u64, 0u64), |(c, p), f| (c + f.capacites, p + f.poids));
+    println!(
+        "filets : {} charges sur {} — {cap_filets} capacites classees en gros ({poids_filets} poids)",
+        filets_charges.len(),
+        matrice.filets.len()
+    );
+    for f in filets_charges {
+        println!(
+            "  FILET {:<24} {:>5} capacites  {:>7} poids  [{}]",
+            f.id, f.capacites, f.poids, f.etat
+        );
+    }
     println!(
         "gate maitresse : manquant = {} ({} poids), partiel = {} ({} poids) -> {}",
         matrice.gate.manquant,

@@ -135,12 +135,40 @@ fn rendre(m: &crate::couverture::Matrice) -> String {
         html.push_str("</ul>");
     }
     if !m.regles_mortes.is_empty() {
-        html.push_str("<h2>Règles sans effet aujourd'hui</h2><ul>");
+        html.push_str(
+            "<h2>Décisions périmées</h2><p class=\"sous\">Une règle nommée qui ne classe plus rien : la capacité qu'elle visait a été renommée ou supprimée. Attendu vide.</p><ul>",
+        );
         for r in &m.regles_mortes {
             html.push_str(&format!("<li><code>{}</code></li>", echapper(r)));
         }
         html.push_str("</ul>");
     }
+
+    // Les filets, tous, chargés ou non. Un filet vide n'est pas une règle morte : c'est une
+    // source entièrement classée par des décisions nommées. Un filet chargé applique UNE raison
+    // à N capacités — la dette se lit ici, chiffrée, au lieu de se cacher dans « interne ».
+    let charges = m.filets.iter().filter(|f| f.capacites > 0).count();
+    let cap_filets: u64 = m.filets.iter().map(|f| f.capacites).sum();
+    html.push_str(&format!(
+        "<h2>Les filets — ce qui est classé en gros</h2><p class=\"sous\">Un filet ferme sa source pour qu'aucune capacité n'échappe au classement, mais il applique <strong>une seule raison</strong> à tout ce qu'il attrape. {charges} filets chargés sur {} portent {cap_filets} capacités à eux seuls. Zéro est l'objectif : la source est alors classée décision par décision.</p>",
+        m.filets.len()
+    ));
+    html.push_str("<table><tr><th>Filet</th><th>Source</th><th>État posé</th><th class=\"n\">Capacités</th><th class=\"n\">Poids</th><th>La raison, unique</th></tr>");
+    let mut filets: Vec<&crate::couverture::LigneFilet> = m.filets.iter().collect();
+    filets.sort_by_key(|f| std::cmp::Reverse(f.capacites));
+    for f in filets {
+        html.push_str(&format!(
+            "<tr><td><code>{}</code></td><td>{}</td><td class=\"{}\">{}</td><td class=\"n\">{}</td><td class=\"n\">{}</td><td>{}</td></tr>",
+            echapper(&f.id),
+            echapper(f.source.libelle()),
+            echapper(&f.etat),
+            echapper(&f.etat),
+            f.capacites,
+            f.poids,
+            echapper(&f.raison)
+        ));
+    }
+    html.push_str("</table>");
 
     html.push_str("<h2>Ce qui reste à faire</h2><table><tr><th>Source</th><th>Capacité</th><th class=\"n\">Poids</th><th>Où est le décodeur</th></tr>");
     let mut restes: Vec<&crate::couverture::Capacite> = m.etat("manquant");

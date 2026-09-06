@@ -10,9 +10,13 @@
 
 use std::borrow::Cow;
 
-use super::{Etat, Motif, Regle, Source};
+use super::{Etat, Motif, Portee, Regle, Source};
 
-/// Raccourci de déclaration : `regle!(id, Source, motif, etat)`.
+/// Une **décision nommée** : `r!(id, Source, motif, etat)`.
+///
+/// Elle vise des capacités précises. Si elle n'en classe plus aucune, c'est qu'elle est périmée
+/// — une commande renommée, un module supprimé — et elle sort dans `regles_mortes`, que le
+/// service attend **vide**.
 macro_rules! r {
     ($id:literal, $src:ident, $motif:expr, $etat:expr) => {
         Regle {
@@ -20,6 +24,26 @@ macro_rules! r {
             source: Source::$src,
             motif: $motif,
             etat: $etat,
+            portee: Portee::Decision,
+        }
+    };
+}
+
+/// Un **filet** : `filet!(id, Source, motif, etat)` — il ferme une source.
+///
+/// Son vide est l'objectif, pas une anomalie : il veut dire que chaque capacité de la source
+/// porte une décision nommée. Ce qu'il attrape est publié dans `filets`, avec son compte : une
+/// seule raison couvrant N capacités est une dette, et elle se chiffre.
+///
+/// Tout [`Motif::Tout`] doit passer par ici — le déclarer avec `r!` ne compile pas.
+macro_rules! filet {
+    ($id:literal, $src:ident, $motif:expr, $etat:expr) => {
+        Regle {
+            id: $id,
+            source: Source::$src,
+            motif: $motif,
+            etat: $etat,
+            portee: Portee::Filet,
         }
     };
 }
@@ -125,7 +149,7 @@ pub static REGLES: &[Regle] = &[
     r!("niers-cs", Niers, Motif::Exact("cs"), interne("façade vers l'outillage .NET : API d'administration, non affichée")),
     r!("niers-backends", Niers, Motif::Exact("backends"), interne("dit ce qui est construit sur CETTE machine : sans objet en ligne")),
     // Le reverse et la forge, en bloc : neuf commandes qui lisent ou écrivent `var/niers.sqlite`.
-    r!("niers-reverse", Niers, Motif::Tout, interne("boucle de reverse-engineering : coûteuse, privilégiée, sans public (§ 5, lot 1)")),
+    filet!("niers-reverse", Niers, Motif::Tout, interne("boucle de reverse-engineering : coûteuse, privilégiée, sans public (§ 5, lot 1)")),
 
     // ------------------------------------------------------------- Inacord (commandes IPC)
     r!("inacord-pet", Inacord, Motif::Prefixe("aphrody_pet_"), servi("/pet/aphrody.json")),
@@ -164,7 +188,10 @@ pub static REGLES: &[Regle] = &[
     r!("inacord-lua-scripts", Inacord, Motif::Exact("lua_list_scripts"), servi("/api/v1/lua/scripts")),
     r!("inacord-lua-chunk", Inacord, Motif::Exact("lua_chunk_info"), servi("/api/v1/lua/scripts/{*chemin}")),
     r!("inacord-lua-disasm", Inacord, Motif::Exact("lua_disassemble"), servi("/api/v1/lua/desassemblage/{*chemin}")),
-    r!("inacord-lua", Inacord, Motif::Prefixe("lua_"), interne("touche à l'exécution de scripts : refus structurel")),
+    // Filet de famille, pas décision : les quatre commandes `lua_*` d'Inacord sont toutes prises
+    // par une règle nommée au-dessus. Son vide dit que la famille est classée une par une —
+    // c'est l'objectif, et c'est ce qui le faisait remonter à tort dans `regles_mortes`.
+    filet!("inacord-lua", Inacord, Motif::Prefixe("lua_"), interne("touche à l'exécution de scripts : refus structurel")),
     // La 3D et l'amont.
     r!("inacord-model-avatar", Inacord, Motif::Prefixe("model_service_avatar"), servi("/api/v1/donnees/famille/{cle}")),
     r!("inacord-model", Inacord, Motif::Prefixe("model_service_"), servi("/assets/{*chemin}")),
@@ -184,7 +211,7 @@ pub static REGLES: &[Regle] = &[
     r!("inacord-clipboard", Inacord, Motif::Prefixe("clipboard_"), interne("presse-papiers du système")),
     r!("inacord-defaut", Inacord, Motif::Prefixe("default_"), interne("chemins par défaut de la machine hôte : sans objet en ligne")),
     r!("inacord-open", Inacord, Motif::Prefixe("open_"), interne("ouvre une application locale")),
-    r!("inacord-hote", Inacord, Motif::Tout, interne("relève de l'hôte desktop : disque, fenêtre, presse-papiers, corbeille (cf. `capacites()` du contrat asset-source)")),
+    filet!("inacord-hote", Inacord, Motif::Tout, interne("relève de l'hôte desktop : disque, fenêtre, presse-papiers, corbeille (cf. `capacites()` du contrat asset-source)")),
 
     // ------------------------------------------------------------------ Azalée (pages)
     r!("azalee-outils-updater", Azalee, Motif::Exact("/tools/niers"), interne("point de mise à jour d'Inacord : il doit rester à l'URL que les 0.5.x interrogent")),
@@ -229,7 +256,7 @@ pub static REGLES: &[Regle] = &[
     // depuis le 2026-09-06 par /api/v1/donnees/famille/{cle}, sur les 121 familles nommees que
     // le VFS porte reellement. « Reste sur Azalee » justifie la page, jamais l'absence de la
     // donnee — et c'est pour cela que cette regle n'a pu devenir `interne` qu'apres le cablage.
-    r!("azalee-catalogues", Azalee, Motif::Tout, interne("fiche encyclopedique : Azalee demeure le wiki de reference (lot 6) ; la donnee du jeu, elle, est servie par /api/v1/donnees/famille/{cle}")),
+    filet!("azalee-catalogues", Azalee, Motif::Tout, interne("fiche encyclopedique : Azalee demeure le wiki de reference (lot 6) ; la donnee du jeu, elle, est servie par /api/v1/donnees/famille/{cle}")),
 
     // -------------------------------------------------------------- Azalée (routes d'API)
     r!("azalee-api-updater", AzaleeApi, Motif::Exact("/tools/niers/latest.json"), interne("point de mise à jour d'Inacord : les 0.5.x déjà installés interrogent CETTE URL, elle ne bouge pas")),
@@ -242,7 +269,7 @@ pub static REGLES: &[Regle] = &[
     r!("azalee-api-jeton", AzaleeApi, Motif::Exact("/api/supabase-token"), interne("émet un jeton : un secret ne traverse jamais Aphrody")),
     r!("azalee-api-llm", AzaleeApi, Motif::Prefixe("/api/llm"), interne("passerelle vers un service tiers facturé")),
     r!("azalee-api-rag", AzaleeApi, Motif::Prefixe("/api/rag"), interne("index vectoriel du wiki : propre à Azalée")),
-    r!("azalee-api-editorial", AzaleeApi, Motif::Tout, interne("éditorial et métadonnées du wiki : Azalée demeure le wiki de référence")),
+    filet!("azalee-api-editorial", AzaleeApi, Motif::Tout, interne("éditorial et métadonnées du wiki : Azalée demeure le wiki de référence")),
 
     // ------------------------------------------------------------------- nie-data (modules)
     r!("data-cfgbin", NieData, Motif::Exact("cfgbin"), servi("/api/v1/formats/decode/{*chemin}")),
@@ -271,7 +298,7 @@ pub static REGLES: &[Regle] = &[
     // pas les appeler. C'était un manque d'adresse, pas de code.
     r!("data-cond", NieData, Motif::Exact("cond"), servi("/api/v1/conditions/{blob}")),
     r!("data-unlock", NieData, Motif::Exact("unlock_condition"), servi("/api/v1/conditions/{blob}")),
-    r!("data-familles", NieData, Motif::Tout, manquant("crates/engine/nie-data/src/<module>.rs — parseur typé, golden testé, sans route")),
+    filet!("data-familles", NieData, Motif::Tout, manquant("crates/engine/nie-data/src/<module>.rs — parseur typé, golden testé, sans route")),
 
     // ---------------------------------------------------------------- nie-formats (modules)
     r!("formats-vfs", NieFormats, Motif::Exact("vfs"), servi("/f/{*chemin}")),
@@ -334,7 +361,7 @@ pub static REGLES: &[Regle] = &[
     // webp 56 534 o, png 58 844, gif 21 384, bmp 262 266, tga 127 420, tiff 262 358,
     // qoi 62 879, jpg 27 315, chacun avec son `Content-Type`.
     r!("formats-image-out", NieFormats, Motif::Exact("image_out"), servi("/assets/{*chemin}")),
-    r!("formats-restants", NieFormats, Motif::Tout, manquant("crates/engine/nie-formats/src/<module>.rs — parseur écrit, aucune route ne l'appelle")),
+    filet!("formats-restants", NieFormats, Motif::Tout, manquant("crates/engine/nie-formats/src/<module>.rs — parseur écrit, aucune route ne l'appelle")),
 
     // -------------------------------------------------------------------- nie-lua (pub fn)
     r!("lua-bytecode", NieLua, Motif::Exact("parse"), servi("/api/v1/lua/scripts/{*chemin}")),
@@ -351,10 +378,10 @@ pub static REGLES: &[Regle] = &[
     r!("lua-analyse", NieLua, Motif::Prefixe("analyze"), interne("analyse de Lua SOURCE : le jeu n'en contient aucun (0 `.lua` pour 1 197 `.lua.bin` sur 255 308 entrees)")),
     r!("lua-chaines", NieLua, Motif::Exact("is_interesting_string"), interne("predicat de l'analyse statique de Lua source : meme corpus vide")),
     r!("lua-chemins", NieLua, Motif::Prefixe("script_logical_base"), interne("résolution de chemins de l'hôte d'exécution")),
-    r!("lua-exec", NieLua, Motif::Tout, interne("VM, hôte de menu, capture de `print`, découverte d'appels : TOUT ceci exécute le script — `nie-site` lie `nie-lua` avec `default-features = false` et un test le vérifie")),
+    filet!("lua-exec", NieLua, Motif::Tout, interne("VM, hôte de menu, capture de `print`, découverte d'appels : TOUT ceci exécute le script — `nie-site` lie `nie-lua` avec `default-features = false` et un test le vérifie")),
 
     // ------------------------------------------------------------------ iecode (C++)
-    r!("iecode-admin", Iecode, Motif::Tout, interne("toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)")),
+    filet!("iecode-admin", Iecode, Motif::Tout, interne("toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)")),
 
     // ------------------------------------------------------------------ VFS (par extension)
     r!("vfs-cfgbin", Vfs, Motif::Exact(".cfg.bin"), servi("/api/v1/formats/decode/{*chemin}")),
@@ -455,5 +482,5 @@ pub static REGLES: &[Regle] = &[
     // déjà (cf. § 9 bis, les `.g4ma`/`.g4vs`/`.g4la`). La leçon ne change pas : on interroge la
     // route avant d'écrire « aucun parseur ».
     r!("vfs-bin-cfg", Vfs, Motif::Exact(".bin"), servi("/api/v1/formats/decode/{*chemin}")),
-    r!("vfs-effets", Vfs, Motif::Tout, bloque("shaders, effets, particules, tissu : aucun parseur dans le dépôt, du reverse est nécessaire avant toute route")),
+    filet!("vfs-effets", Vfs, Motif::Tout, bloque("shaders, effets, particules, tissu : aucun parseur dans le dépôt, du reverse est nécessaire avant toute route")),
 ];
