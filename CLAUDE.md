@@ -654,13 +654,31 @@ csharp/             IECODE.Core / IECODE.CLI / IECODE.Core.Tests (.NET 10, `IECO
 
 ## Knowledge base (`var/niers.sqlite`)
 
-> **Measured on the VPS on 2026-09-02 — the local database is NOT anchored on the target.**
-> `binary` id=2 carries sha `4c2b91fbae6f…` / 31 468 032 bytes, i.e. the **transient** build, while
-> the local `nie.exe` (a link to the Steam install) is `b1fa04ea3658…` / 33 918 464 bytes. Its local
-> figures (108 650 functions, 13 653 named = 12.57 %, 100 664 classified = 92.65 %, `pdata_func` =
-> 50 674 roots on id=1) therefore describe the **other** binary: do not quote them as measurements
-> of the target, and replay `niers rebuild` against `nie.exe` before any numeric claim. The state
-> hook prints this contradiction every session until it is resolved.
+> **RESOLVED on 2026-09-06 (Windows workstation) — the KB is now anchored on the target.**
+> The contradiction below was real until that day; it is kept because it names the failure mode.
+> `var/niers.sqlite` was found **empty** here (507 904 bytes, schema only, `function` = 0 rows), so
+> it was rebuilt against the Steam install — `b1fa04ea3658…` / 33 918 464 bytes, **byte-identical to
+> the reference**. Note there is **no `nie.exe` at the repository root on this machine**: the target
+> is `<NIE_GAME_DIR>/nie.exe`, and `niers info` prints its sha.
+>
+> Measured after `seed` → `rebuild` → `strings` → `rtti` → `rebuild` → `pdata` → `recover`:
+> **117 068 functions** on `binary_id=2`, **93 483 classified (79.85 %)**, **49 158 named**,
+> **`pdata_func` = 55 351 roots** — a figure that **reproduces the 2026-08-15 measurement exactly**,
+> which is what proves the split is the same and the target is the right one.
+>
+> **Trap paid twice, in the same shape.** `niers rebuild` refuses with `aucun binaire indexé —
+> lancer 'niers seed' d'abord`: only `seed` inserts into `binary`, and it wants a Ghidra export
+> (`research/nie-index.json`) that does not exist here. And `.pdata` alone **names nothing** — the
+> first `rebuild` gave `roots=55351` with `named=0`; the two anchoring passes (`strings`, `rtti`)
+> are not optional.
+>
+> **`binary_id=1` still carries 0 functions here**: without the Ghidra index the 60 183-node layer
+> is absent, so a denominator of 106 340 (and any `named %` computed on it) is **not** comparable to
+> the figures above. Quote the denominator with the number, always.
+>
+> The old, now-superseded figures — 108 650 functions, 13 653 named (12.57 %), 100 664 classified
+> (92.65 %) — described the **transient** build `4c2b91fbae6f…` / 31 468 032 bytes. **Do not quote
+> them.**
 
 The real tables are `function`, `pdata_func`, `coverage` (not `functions`).
 
@@ -684,7 +702,34 @@ The real tables are `function`, `pdata_func`, `coverage` (not `functions`).
 - Ground truth is regenerated, never copied from a document: `nie-forge report` (produced share),
   `niers vfs stats` (VFS histogram), `niers coverage --db var/niers.sqlite`.
 
-## Forge (producing the binary) — 2026-08-30: **69.37 % of the file, 90.36 % of `.text`**
+## Forge (producing the binary) — 2026-09-06: **74.00 % of the file, 92.24 % of `.text`**
+
+> **Amendment of 2026-09-06 — the 2026-08-30 reference is passed on both axes.** Rebuilt from
+> nothing on the Windows workstation (`var/forge/` was absent) against `<NIE_GAME_DIR>/nie.exe`,
+> once the KB had been re-anchored (§ *Knowledge base*):
+>
+> | | Reference 2026-08-30 | Measured 2026-09-06 | Delta |
+> |---|---|---|---|
+> | Share of the file | 69.365 % | **74.005 %** | **+4.640 pt** |
+> | Share of `.text` | 90.363 % | **92.239 %** | **+1.876 pt** |
+>
+> `produced=74.004890% code_rust=92.239011%`, and `nie-forge build` still returns a
+> **byte-identical** binary — `identical=true`, 33 918 464 bytes, sha `b1fa04ea3658…`,
+> 219 751 units and 25 101 322 bytes produced, **0 rejected**. The identity contract was not
+> touched.
+>
+> **The lever is confirmed, with a different number.** `niers recover` measured **59 224** leaf
+> functions here (not 61 076 — the shape holds, the count is machine-measured), explaining 98.20 %
+> of the `.pdata` holes; `split` residue falls from 1 828 793 bytes to **65 673** (documented:
+> 51 151), a ~28× collapse, for `units=225767 fns=115623`. Cross-check that ties it together:
+> `55 351 pdata roots + 60 272 recovered leaves = 115 623` function units.
+>
+> **Next targets, ranked by bytes and already diagnosed** (`lift`: 195 causes, 4 366 units,
+> 1 290 354 bytes blocked): the two cheapest are dialect, not semantics — `encodage:mov`
+> (**1 675 units**, 42 399 bytes: the null REX prefix `40 8b ce`, i.e. the `.r` suffix, is not
+> emitted) and `encodage:add` (43 611 bytes: `orig=[47,00,2b]` vs `nie-asm=[45,00,2b]`, missing
+> REX.X). Together 86 010 bytes for encoder work only. Then come real instructions: `extractps`
+> (45 482), `vmovdqu` (45 061), `in` (42 997).
 
 > **Measurement replayed on the Windows machine, not quoted from memory.** `var/forge/` was
 > missing; `nie-forge split` + `lift` + `report` rebuilt it and first **reproduced the old figure
