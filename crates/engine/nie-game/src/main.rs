@@ -3162,6 +3162,7 @@ fn cmd_export_layout_runtime(
     let mut known_by_name: BTreeMap<String, usize> = BTreeMap::new();
     let mut missing_host_calls: BTreeMap<String, usize> = BTreeMap::new();
     let mut missing_host_paths: BTreeMap<String, usize> = BTreeMap::new();
+    let mut loaded_includes: BTreeMap<String, usize> = BTreeMap::new();
     let mut script_reports: Vec<(String, bool, usize, usize, usize)> = Vec::new();
     // Callbacks que les scripts de l'écran DÉFINISSENT. Le driver n'en joue qu'une partie
     // (`OnInit`, `OnSetupLayer`, `OnOpenLayer`, `OnEnter`, `Step`) ; les autres nomment
@@ -3213,6 +3214,10 @@ fn cmd_export_layout_runtime(
                 continue;
             }
         };
+
+        for include in session.take_loaded_includes() {
+            *loaded_includes.entry(include).or_default() += 1;
+        }
 
         // Énumère les onglets d'en-tête PENDANT que la VM est vivante (sous-items virtuels :
         // les 9 onglets du main_menu absents de l'objbin, issus de GetSortOfTabs réel).
@@ -3566,6 +3571,7 @@ fn cmd_export_layout_runtime(
             "knownCmdsByName": known_by_name,
             "missingHostCalls": missing_host_calls,
             "missingHostPaths": missing_host_paths,
+            "loadedIncludes": loaded_includes,
             "callbacksDefinis": callbacks_definis,
             "callbackErrors": callback_errors,
             // Ceux que le driver ne joue pas : la cible exacte du travail de navigation restant.

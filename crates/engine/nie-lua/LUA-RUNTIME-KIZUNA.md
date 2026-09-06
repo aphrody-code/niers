@@ -52,6 +52,9 @@ Le driver `nie-game --runtime` utilise maintenant cette session persistante
 plutôt qu’une VM et des index d’include reconstruits à la main. La vérification
 Kizuna réelle termine avec `on_init=true`, `on_open=true`, 102 commandes
 connues et 0 inconnue.
+L’export `runtimeSummary.loadedIncludes` conserve aussi les modules chargés et
+leur fréquence (notamment `LUA_KIZUNA_TOWN_MENU_INC`, `LUA_MENU_DEF` et
+`LUA_PROG_BASE`).
 
 `menu_host` couvre les commandes Kizuna de visibilité, couleur RGBA, paramètres,
 texture et application de flags. Les commandes générales identifiées par le RE
