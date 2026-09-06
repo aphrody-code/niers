@@ -520,6 +520,7 @@ impl LuaSession {
     /// d'accès manquant. Le contexte est remplacé en bloc pour qu'un ancien état de save/scene ne
     /// survive pas silencieusement à un changement d'écran.
     pub fn set_context(&mut self, context: RuntimeContext) -> Result<(), LuaError> {
+        self.context.clear_replaced_by(&self.lua, &context)?;
         context.apply(&self.lua)?;
         self.context = context;
         Ok(())
@@ -579,12 +580,20 @@ mod tests {
         context.set_number("pieceIdx", 3.0);
         context.set_boolean("isGrayout", true);
         context.set_string("MENU_LINIT_NONE", "native-sentinel");
-        s.set_context(context.clone()).expect("contexte");
+        let mut initial = context.clone();
+        initial.set_number("oldSceneSlot", 9.0);
+        s.set_context(initial).expect("contexte initial");
         s.exec(
             "context",
             br#"assert(pieceIdx == 3); assert(isGrayout == true); assert(MENU_LINIT_NONE == "native-sentinel")"#,
         )
         .expect("globals de contexte");
+        s.set_context(context.clone()).expect("remplacement contexte");
+        s.exec(
+            "context-replacement",
+            br#"assert(rawget(_G, "oldSceneSlot") == nil)"#,
+        )
+        .expect("ancien slot supprimé");
         assert!(s.api_report().missing.is_empty());
         assert_eq!(s.context(), context);
 

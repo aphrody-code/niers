@@ -55,6 +55,9 @@ natif pose avant un callback (nombres, booléens, chaînes). Le contexte est
 appliqué après les stubs, conservé par la session et réappliqué au `reload()` ;
 il permet donc de fournir les valeurs de scène/save réellement connues sans
 transformer un manque de contexte en table Lua truthy.
+Lorsqu’un écran remplace le contexte, les anciennes clés absentes du nouveau
+contexte sont supprimées de la VM avant injection ; aucun slot de scène ne fuit
+ainsi dans le menu suivant.
 Le même type est désormais porté par `ExecOptions` : `execute` et
 `execute_with_include` utilisent ainsi ce contexte sur le chunk principal comme
 sur les modules VFS inclus.

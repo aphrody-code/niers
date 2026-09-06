@@ -64,6 +64,24 @@ impl RuntimeContext {
         }
         Ok(())
     }
+
+    pub(crate) fn clear_replaced_by(&self, lua: &Lua, replacement: &Self) -> mlua::Result<()> {
+        let globals = lua.globals();
+        for name in self
+            .numbers
+            .keys()
+            .chain(self.booleans.keys())
+            .chain(self.strings.keys())
+        {
+            let still_present = replacement.numbers.contains_key(name)
+                || replacement.booleans.contains_key(name)
+                || replacement.strings.contains_key(name);
+            if !still_present {
+                globals.set(name.as_str(), Value::Nil)?;
+            }
+        }
+        Ok(())
+    }
 }
 
 /// Options d'exécution.
