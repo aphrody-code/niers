@@ -3,14 +3,12 @@ import { type SanteApi, sante } from "@niers/asset-source/nie-site";
 import { AssetSourceProvider, useCapacites, useErreurSource } from "@niers/inacord-ui";
 import "@niers/inacord-ui/shell/game-tokens.css";
 import { useEffect, useMemo, useState } from "react";
-import { DONNEES, EXPLORATEUR, RECHERCHE, entreesMenu } from "./entrees";
+import { ALIAS, EXPLORATEUR, entreesMenu, routesReconnues } from "./entrees";
 import { Catalogue } from "./pages/Catalogue";
 import { Chargement } from "./pages/Chargement";
 import { EcranSecondaire, Note } from "./pages/Ecran";
-import { Donnees } from "./pages/Donnees";
 import { Explorateur } from "./pages/Explorateur";
 import { MenuPrincipal } from "./pages/MenuPrincipal";
-import { Recherche } from "./pages/Recherche";
 import { ACCUEIL, cheminPourEntree, entreeDemandee, separerLangue } from "./routage";
 
 /**
@@ -50,7 +48,9 @@ function Site() {
 	// Les entrees reconnues dans l'URL. L'accueil n'en fait PAS partie : il vit a la racine, et
 	// `entreeDemandee` rend `null` pour elle — y ajouter `accueil` creerait un second chemin
 	// vers la meme page.
-	const entrees = useMemo(() => entreesMenu(etat).map((e) => e.vue), [etat]);
+	// Les ROUTES reconnues, pas les tuiles : `/recherche` et `/donnees` mènent à un mode de
+	// l'explorateur sans figurer au menu.
+	const entrees = useMemo(() => routesReconnues(etat), [etat]);
 
 	// L'entree courante vit dans l'URL, pas seulement en memoire : sans cela, un lien vers un
 	// catalogue ne mene qu'a l'accueil, le bouton « precedent » quitte le site, et un
@@ -151,17 +151,12 @@ function Site() {
 				</Note>
 			) : !capacites ? (
 				<Note>Chargement…</Note>
-			) : vue === DONNEES ? (
-				// AVANT la garde `pret` : cette page lit le gisement SQLite, pas l'index VFS.
-				// L'attendre la rendrait indisponible pendant tout le montage de l'index, pour
-				// une dépendance qu'elle n'a pas.
-				<Donnees />
 			) : !pret ? (
 				<Note>Le catalogue est en cours de préparation. Il s'affichera dès qu'il sera prêt.</Note>
-			) : vue === EXPLORATEUR ? (
+			) : vue === EXPLORATEUR || (ALIAS as readonly string[]).includes(vue) ? (
+				// Les deux URL héritées mènent ici : l'explorateur EST la page de recherche et
+				// de données, son panneau de droite en porte le contenu.
 				<Explorateur />
-			) : vue === RECHERCHE ? (
-				<Recherche />
 			) : (
 				// La vue vient de l'URL, et l'URL n'a ete acceptee que parce qu'elle figure dans
 				// les entrees connues — celles du serveur, ou les quatre catalogues qu'il publie
@@ -180,7 +175,7 @@ function Site() {
  * l'accueil le temps d'un aller-retour réseau, puis basculerait — un saut visible qu'aucune
  * donnée ne justifie.
  */
-const DEPART = entreesMenu(null).map((e) => e.vue);
+const DEPART = routesReconnues(null);
 
 /**
  * Période entre deux sondes de `/api/v1/health`, tant que le VFS n'est pas tranché.

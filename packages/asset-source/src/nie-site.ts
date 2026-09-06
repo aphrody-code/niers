@@ -29,6 +29,8 @@ export const urlDossier = (
 		ordre?: string;
 		tailleMin?: number;
 		tailleMax?: number;
+		parPage?: number;
+		page?: number;
 	} = {},
 ) => {
 	const base = prefixe ? `/b/${prefixe}` : "/b";
@@ -41,6 +43,10 @@ export const urlDossier = (
 	// tester la verite ferait disparaitre `taille_max=0` en silence.
 	if (Number.isFinite(filtres.tailleMin)) params.set("taille_min", String(filtres.tailleMin));
 	if (Number.isFinite(filtres.tailleMax)) params.set("taille_max", String(filtres.tailleMax));
+	// Sans `per_page`, le serveur en rend 50 — et un dossier de 373 entrees se presentait comme
+	// un dossier de 50, avec le bon total a cote. Le defaut ne se voyait pas a l'ecran.
+	if (filtres.parPage) params.set("per_page", String(filtres.parPage));
+	if (filtres.page && filtres.page > 1) params.set("page", String(filtres.page));
 	const query = params.toString();
 	return query ? `${base}?${query}` : base;
 };
@@ -64,6 +70,14 @@ export interface Fichier {
 	/** Nom de la feuille, extension du jeu conservee. */
 	nom: string;
 	taille: number;
+	/**
+	 * Le CPK d'origine, quand la route le rend.
+	 *
+	 * Optionnel parce que les routes ne le rendent pas toutes : `/api/v1/recherche` le publie
+	 * depuis le 2026-09-06, `/b` non. Le declarer obligatoire ferait mentir le type sur la
+	 * seconde ; l'omettre le ferait mentir sur la premiere.
+	 */
+	cpk?: string | null;
 }
 
 /** Ce que le serveur sait faire a l'instant de la mesure (`etat::Capacites`). */

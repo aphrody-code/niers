@@ -21,7 +21,7 @@
  *   texte, et qu'une commande à l'écran qui mène à un `400` est pire qu'une commande absente.
  */
 import { useEffect, useMemo, useState } from "react";
-import { accorde, Note, TitreVue } from "./Ecran";
+import { accorde, Note } from "./Ecran";
 
 /** Une colonne, telle que `/api/v1/entites` la mesure. */
 interface Colonne {
@@ -107,9 +107,18 @@ function query(e: Etat, pourLUrl: boolean): URLSearchParams {
 	return p;
 }
 
+/**
+ * Écrit la seule clé que ce panneau revendique dans l'URL : la table lue.
+ *
+ * Depuis la fusion, l'adresse est celle de l'explorateur — elle porte déjà `d`, `q`, `ext`,
+ * `tri`… Y écrire aussi les filtres du panneau ferait deux `q` pour deux corpus différents, et
+ * le premier des deux écraserait l'autre en silence. La table, elle, ne collisionne avec rien
+ * et suffit à retrouver l'écran.
+ */
 function ecrireUrl(e: Etat) {
 	const url = new URL(window.location.href);
-	url.search = query(e, true).toString();
+	if (e.table) url.searchParams.set("table", e.table);
+	else url.searchParams.delete("table");
 	window.history.replaceState(window.history.state, "", url);
 }
 
@@ -129,7 +138,19 @@ function cellule(v: unknown): string {
 	return typeof v === "object" ? JSON.stringify(v) : String(v);
 }
 
-export function Donnees() {
+/**
+ * Le bloc « Données » de l'explorateur.
+ *
+ * Ce n'est plus une page depuis la fusion du 2026-09-06 : c'est le second volet du panneau de
+ * droite, monté à côté du contexte du dossier et de l'asset. Les **routes API n'ont pas
+ * bougé** — `/api/v1/entites` et `/api/v1/entites/{table}`, avec leurs filtres, leur tri et
+ * leur export.
+ *
+ * `contexte` est le nom de l'asset sélectionné, sans extension : il pré-remplit la recherche.
+ * Un fichier du jeu et la ligne qui le décrit portent souvent le même code, et c'est
+ * exactement le rapprochement qu'on venait chercher en ouvrant les deux écrans côte à côte.
+ */
+export function PanneauDonnees({ contexte }: { contexte?: string }) {
 	const initial = useMemo(etatDeLUrl, []);
 	const [etat, setEtat] = useState<Etat>(initial);
 	const [tables, setTables] = useState<TableServie[] | null>(null);
@@ -209,12 +230,23 @@ export function Donnees() {
 	const valeurDe = (colonne: string) =>
 		etat.filtres.find(([c]) => c === colonne)?.[1] ?? "";
 
+	// L'asset sélectionné dans la liste devient la recherche du panneau. Le geste qu'on faisait
+	// à la main entre deux onglets — copier un code de fichier, le coller dans une table — est
+	// désormais le comportement par défaut.
+	useEffect(() => {
+		if (!contexte) return;
+		setSaisie(contexte);
+		setEtat((e) => ({ ...e, q: contexte, page: 1 }));
+	}, [contexte]);
+
 	if (erreur && !tables) return <Note ton="alerte">{erreur}</Note>;
 	if (!tables) return <Note>Chargement…</Note>;
 
 	return (
 		<section>
-			<TitreVue appoint={accorde(tables.length, "table")}>Données</TitreVue>
+			<h3 style={{ margin: "0 0 var(--jeu-espace-s)", fontSize: "1rem", fontWeight: 800 }}>
+				Données · {accorde(tables.length, "table")}
+			</h3>
 
 			<div style={{ display: "flex", flexWrap: "wrap", gap: "var(--jeu-espace-m)", margin: "var(--jeu-espace-m) 0" }}>
 				<label style={ETIQUETTE}>

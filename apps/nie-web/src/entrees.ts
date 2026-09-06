@@ -19,26 +19,24 @@
 import type { SanteApi } from "@niers/asset-source";
 import type { NomGlyphe } from "@niers/inacord-ui";
 
-/** L'explorateur n'est pas un catalogue : il montre la structure, pas une sélection. */
+/**
+ * L'explorateur — **la seule page**, décidé par l'utilisateur le 2026-09-06.
+ *
+ * Parcourir un dossier, chercher dans les 255 308 entrées et lire ce que le serveur sait d'un
+ * asset étaient trois destinations de menu. C'est un seul geste : *où est ce fichier, et que
+ * sait-on de lui*. La page a donc une barre de filtres, une liste, et un panneau de droite qui
+ * parle du **dossier courant** ou de l'**asset sélectionné**.
+ */
 export const EXPLORATEUR = "explorateur";
 
 /**
- * Les données du jeu et de la série — 224 tables mesurées, pas une liste écrite ici.
+ * Les deux URL héritées des écrans fusionnés.
  *
- * Ce n'est ni un catalogue (qui filtre l'espace VFS) ni l'explorateur (qui en montre la
- * structure) : ce sont les **valeurs**, celles que `/api/v1/entites` sert avec la recherche, le
- * tri, l'égalité, les intervalles et l'export. Elles n'avaient aucune porte dans l'interface.
+ * Elles restent **reconnues** — elles mènent à l'explorateur — sans être des entrées de menu :
+ * casser une adresse déjà publiée (`sitemap.xml` compris) pour changer un menu, ce serait payer
+ * une décision d'affichage avec les liens des autres.
  */
-export const DONNEES = "donnees";
-
-/**
- * La recherche qui traverse l'arbre entier.
- *
- * Distincte de l'explorateur, et la distinction est la raison d'être des deux : l'explorateur
- * répond à « qu'y a-t-il **ici** », cette page à « où est **ceci** ». Les fondre donnerait un
- * préfixe qu'on navigue *et* un préfixe qu'on tape, sur le même écran.
- */
-export const RECHERCHE = "recherche";
+export const ALIAS = ["recherche", "donnees"] as const;
 
 /**
  * Les catalogues que le serveur publie sous forme d'URL, dans son document d'accueil.
@@ -70,13 +68,22 @@ const HABILLAGE: Record<string, { libelle: string; glyphe: NomGlyphe }> = {
 	sons: { libelle: "Sons", glyphe: "onde" },
 	videos: { libelle: "Vidéos", glyphe: "film" },
 	[EXPLORATEUR]: { libelle: "Explorer", glyphe: "arbre" },
-	[DONNEES]: { libelle: "Données", glyphe: "arbre" },
-	[RECHERCHE]: { libelle: "Rechercher", glyphe: "arbre" },
 };
 
 /** Le libellé d'une entrée, ou son nom brut si le site ne la connaît pas. */
 export function libelleEntree(vue: string): string {
 	return HABILLAGE[vue]?.libelle ?? vue;
+}
+
+/**
+ * Les routes que l'application reconnaît — le menu n'en montre qu'une partie.
+ *
+ * `/recherche` et `/donnees` sont ici sans être des tuiles : elles mènent à un MODE de
+ * l'explorateur. Les retirer d'ici casserait des liens déjà publiés (`sitemap.xml` compris)
+ * pour une décision d'affichage.
+ */
+export function routesReconnues(etat: SanteApi | null): string[] {
+	return [...entreesMenu(etat).map((e) => e.vue), ...ALIAS];
 }
 
 /**
@@ -91,7 +98,7 @@ export function entreesMenu(etat: SanteApi | null): EntreeMenu[] {
 	const noms = etat?.vues.length
 		? etat.vues.map((v) => v.nom)
 		: [...CATALOGUES];
-	return [...noms, EXPLORATEUR, RECHERCHE, DONNEES].map((vue) => ({
+	return [...noms, EXPLORATEUR].map((vue) => ({
 		vue,
 		libelle: libelleEntree(vue),
 		glyphe: HABILLAGE[vue]?.glyphe ?? "arbre",

@@ -102,6 +102,16 @@ export interface OptionsParcours {
 	tailleMin?: number;
 	/** Taille maximale en octets, incluse. */
 	tailleMax?: number;
+	/**
+	 * Combien de fichiers demander. Le serveur plafonne à 200.
+	 *
+	 * Sans lui, `/b` en rend **50** : un dossier de 373 entrées se présentait comme un dossier
+	 * de 50, et la pagination locale n'avait jamais rien à paginer. Le total, lui, était juste —
+	 * ce qui rendait le défaut invisible à la lecture de l'écran.
+	 */
+	parPage?: number;
+	/** Numéro de page, à partir de 1. */
+	page?: number;
 	signal?: AbortSignal;
 }
 
