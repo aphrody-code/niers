@@ -103,6 +103,12 @@ export interface OptionsPage {
 	parPage?: number;
 	/** Motif de recherche, comparé sans casse au chemin entier. Absent : aucun filtre. */
 	q?: string;
+	/** Extension exacte, sans le point. Absente : aucun filtre. */
+	ext?: string;
+	/** Critère de tri : `nom` (défaut) ou `taille`. */
+	tri?: "nom" | "taille";
+	/** Sens de tri : `asc` (défaut) ou `desc`. */
+	ordre?: "asc" | "desc";
 	signal?: AbortSignal;
 }
 

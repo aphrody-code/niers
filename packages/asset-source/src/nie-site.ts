@@ -84,13 +84,31 @@ export function catalogue(
 		page = 1,
 		parPage = 60,
 		q,
+		ext,
+		tri,
+		ordre,
 		signal,
-	}: { page?: number; parPage?: number; q?: string; signal?: AbortSignal } = {},
+	}: {
+		page?: number;
+		parPage?: number;
+		q?: string;
+		ext?: string;
+		tri?: string;
+		ordre?: string;
+		signal?: AbortSignal;
+	} = {},
 ): Promise<Page<Fichier>> {
 	// `q` est comparé sans casse au chemin ENTIER côté serveur : chercher `chr/` fonctionne
-	// autant qu'un nom de fichier. Encodé, parce qu'un chemin du jeu contient des `/`.
-	const filtre = q?.trim() ? `&q=${encodeURIComponent(q.trim())}` : "";
-	return lire(`/api/v1/${vue}?page=${page}&per_page=${parPage}${filtre}`, signal);
+	// autant qu'un nom de fichier. `URLSearchParams` encode tout, ce qui compte ici : un chemin
+	// du jeu contient des `/`, et un motif tapé par un humain peut contenir un `&`.
+	const params = new URLSearchParams({ page: String(page), per_page: String(parPage) });
+	// Une valeur vide n'est PAS envoyée : `?ext=` est un 400 côté serveur, et il a raison — ni
+	// « pas de filtre » ni « extension vide » ne sont devinables.
+	if (q?.trim()) params.set("q", q.trim());
+	if (ext?.trim()) params.set("ext", ext.trim().replace(/^\./, ""));
+	if (tri?.trim()) params.set("tri", tri.trim());
+	if (ordre?.trim()) params.set("ordre", ordre.trim());
+	return lire(`/api/v1/${vue}?${params}`, signal);
 }
 
 /** L'etat du serveur. */

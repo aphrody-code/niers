@@ -33,13 +33,79 @@
  */
 import type { EntreeVfs, VueCatalogue } from "@niers/asset-source";
 import { useAssetSource, useCapacites } from "@niers/inacord-ui";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { libelleEntree } from "../entrees";
 import { accorde, Note, TitreVue } from "./Ecran";
 import { Modeles3D } from "./Modeles3D";
 
-/** Taille de page. Le serveur borne à 200 ; 60 tient dans une grille sans peser. */
+/**
+ * Tailles de page proposées. Le serveur borne à **200** (`config.rs:27`) : proposer davantage
+ * ferait promettre au lecteur un réglage que le serveur ramènerait en silence.
+ */
+const TAILLES_PAGE = [60, 100, 200] as const;
+
+/** Taille de page par défaut : 60 tient dans une grille sans peser. */
 const PAR_PAGE = 60;
+
+/**
+ * L'état de filtre de cette page, tel qu'il vit dans l'URL.
+ *
+ * Il y vit parce que sinon il ne se partage pas, ne survit pas au rechargement et n'est pas
+ * indexable — et parce que la mesure du 2026-09-06 a montré que le serveur servait **41 filtres
+ * sur 48** dont la page n'utilisait qu'un seul.
+ */
+type EtatFiltre = {
+	q: string;
+	ext: string;
+	tri: "nom" | "taille";
+	ordre: "asc" | "desc";
+	parPage: number;
+	page: number;
+};
+
+/** Lit l'état depuis l'URL courante. Une valeur illisible retombe sur son défaut. */
+function etatDeLUrl(): EtatFiltre {
+	const p = new URLSearchParams(window.location.search);
+	const parPage = Number(p.get("par_page"));
+	const page = Number(p.get("page"));
+	return {
+		q: p.get("q") ?? "",
+		ext: p.get("ext") ?? "",
+		tri: p.get("tri") === "taille" ? "taille" : "nom",
+		ordre: p.get("ordre") === "desc" ? "desc" : "asc",
+		// `includes` sur la liste servie, jamais la valeur brute : un `par_page=100000` tapé
+		// dans la barre d'adresse ne doit pas devenir une promesse que le serveur rabotera.
+		parPage: TAILLES_PAGE.includes(parPage as (typeof TAILLES_PAGE)[number])
+			? parPage
+			: PAR_PAGE,
+		page: Number.isFinite(page) && page >= 1 ? page : 1,
+	};
+}
+
+/**
+ * Écrit l'état dans l'URL, sans empiler d'entrée d'historique.
+ *
+ * `replaceState` : filtrer n'est pas naviguer. Le `pathname` n'est pas touché — c'est lui qui
+ * porte la vue (`App.tsx:64-66`).
+ */
+function ecrireUrl(e: EtatFiltre) {
+	const url = new URL(window.location.href);
+	const paires: [string, string][] = [
+		["q", e.q],
+		["ext", e.ext],
+		["tri", e.tri === "nom" ? "" : e.tri],
+		["ordre", e.ordre === "asc" ? "" : e.ordre],
+		["par_page", e.parPage === PAR_PAGE ? "" : String(e.parPage)],
+		["page", e.page === 1 ? "" : String(e.page)],
+	];
+	// Un défaut ne s'écrit pas dans l'URL : `?tri=nom&ordre=asc&page=1` est du bruit qui rend
+	// deux adresses différentes pour le même écran, et casse le partage autant que l'absence.
+	for (const [cle, valeur] of paires) {
+		if (valeur) url.searchParams.set(cle, valeur);
+		else url.searchParams.delete(cle);
+	}
+	window.history.replaceState(window.history.state, "", url);
+}
 
 /**
  * L'aiguillage des quatre vues — et la seule qui ne soit pas un filtre d'extensions.
@@ -67,26 +133,50 @@ function taille(octets: number): string {
 	return `${(octets / (1024 * 1024)).toFixed(1)} Mo`;
 }
 
+/** Un champ de la barre de réglages. */
+const CHAMP: React.CSSProperties = {
+	padding: "var(--jeu-espace-xs) var(--jeu-espace-s)",
+	background: "#fff",
+	border: "2px solid var(--jeu-tuile-bord)",
+	borderRadius: "var(--jeu-rayon)",
+	color: "var(--jeu-nuit-profonde)",
+	font: "inherit",
+};
+
+/** Une étiquette de réglage — un `label` réel, pas un texte posé à côté. */
+const ETIQUETTE: React.CSSProperties = {
+	display: "inline-flex",
+	alignItems: "center",
+	gap: "var(--jeu-espace-xs)",
+	fontWeight: 700,
+};
+
 function CatalogueVfs({ vue }: { vue: VueCatalogue }) {
 	const source = useAssetSource();
 	const capacites = useCapacites();
-	const [page, setPage] = useState(1);
+	const initial = useMemo(etatDeLUrl, []);
+	const [etat, setEtat] = useState<EtatFiltre>(initial);
+	const { page, q: filtre, ext, tri, ordre, parPage } = etat;
 	// Changer de vue ramene a la page 1 : garder la page 900 en passant d'un catalogue de 904
-	// pages a un catalogue de 4 afficherait un vide que rien n'expliquerait.
+	// pages a un catalogue de 4 afficherait un vide que rien n'expliquerait. Les filtres, eux,
+	// sont remis a zero pour la meme raison — `ext=dds` n'a aucun sens sur les sons.
+	const premier = useRef(true);
 	useEffect(() => {
-		setPage(1);
+		if (premier.current) {
+			premier.current = false;
+			return;
+		}
 		setSaisie("");
-		setFiltre("");
+		setEtat({ q: "", ext: "", tri: "nom", ordre: "asc", parPage: PAR_PAGE, page: 1 });
 	}, [vue]);
 	const [elements, setElements] = useState<EntreeVfs[]>([]);
 	const [total, setTotal] = useState(0);
 	const [pages, setPages] = useState(0);
 	const [erreur, setErreur] = useState(false);
 	const [charge, setCharge] = useState(false);
-	// `saisie` suit le champ, `filtre` ce qui a ete envoye : sans ce decalage, chaque frappe
+	// `saisie` suit le champ, `etat.q` ce qui a ete envoye : sans ce decalage, chaque frappe
 	// declencherait une requete sur 143 246 chemins.
-	const [saisie, setSaisie] = useState("");
-	const [filtre, setFiltre] = useState("");
+	const [saisie, setSaisie] = useState(initial.q);
 
 	useEffect(() => {
 		// `catalogue` est OPTIONNEL dans le contrat : un hôte qui ne sait pas paginer sur un jeu
@@ -95,8 +185,9 @@ function CatalogueVfs({ vue }: { vue: VueCatalogue }) {
 		const ac = new AbortController();
 		setCharge(false);
 		setErreur(false);
+		ecrireUrl(etat);
 		source
-			.catalogue(vue, { page, parPage: PAR_PAGE, q: filtre, signal: ac.signal })
+			.catalogue(vue, { page, parPage, q: filtre, ext, tri, ordre, signal: ac.signal })
 			.then((p) => {
 				if (ac.signal.aborted) return;
 				setElements(p.elements);
@@ -111,7 +202,7 @@ function CatalogueVfs({ vue }: { vue: VueCatalogue }) {
 				if (!ac.signal.aborted) setErreur(true);
 			});
 		return () => ac.abort();
-	}, [source, capacites?.vfs, page, vue, filtre]);
+	}, [source, capacites?.vfs, vue, etat, page, filtre, ext, tri, ordre, parPage]);
 
 	const titre = libelleEntree(vue);
 
@@ -132,8 +223,7 @@ function CatalogueVfs({ vue }: { vue: VueCatalogue }) {
 			<form
 				onSubmit={(e) => {
 					e.preventDefault();
-					setPage(1);
-					setFiltre(saisie);
+					setEtat((v) => ({ ...v, q: saisie.trim(), page: 1 }));
 				}}
 				style={{ display: "flex", gap: "var(--jeu-espace-s)", margin: "var(--jeu-espace-m) 0" }}
 			>
@@ -156,13 +246,19 @@ function CatalogueVfs({ vue }: { vue: VueCatalogue }) {
 				<button type="submit" style={BOUTON}>
 					Chercher
 				</button>
-				{filtre ? (
+				{filtre || ext || tri !== "nom" || ordre !== "asc" ? (
 					<button
 						type="button"
 						onClick={() => {
 							setSaisie("");
-							setFiltre("");
-							setPage(1);
+							setEtat((e) => ({
+								...e,
+								q: "",
+								ext: "",
+								tri: "nom",
+								ordre: "asc",
+								page: 1,
+							}));
 						}}
 						style={BOUTON}
 					>
@@ -170,6 +266,77 @@ function CatalogueVfs({ vue }: { vue: VueCatalogue }) {
 					</button>
 				) : null}
 			</form>
+
+			{/*
+			  * Les trois réglages que le serveur sert déjà et que cette page n'utilisait pas :
+			  * l'extension (le catalogue en couvre jusqu'à six par vue), le tri, et la taille de
+			  * page — plafonnée à 200 côté serveur, d'où une liste close plutôt qu'un champ
+			  * libre qui promettrait ce que le serveur raboterait.
+			  */}
+			<div
+				style={{
+					display: "flex",
+					flexWrap: "wrap",
+					alignItems: "center",
+					gap: "var(--jeu-espace-m)",
+					margin: "0 0 var(--jeu-espace-m)",
+					fontSize: "0.9rem",
+				}}
+			>
+				<label style={ETIQUETTE}>
+					Extension
+					<input
+						type="text"
+						value={ext}
+						onChange={(e) =>
+							setEtat((v) => ({
+								...v,
+								ext: e.target.value.trim().replace(/^\./, ""),
+								page: 1,
+							}))
+						}
+						placeholder="toutes"
+						style={{ ...CHAMP, width: "7rem" }}
+					/>
+				</label>
+				<label style={ETIQUETTE}>
+					Trier par
+					<select
+						value={`${tri}-${ordre}`}
+						onChange={(e) => {
+							const [t, o] = e.target.value.split("-");
+							setEtat((v) => ({
+								...v,
+								tri: t === "taille" ? "taille" : "nom",
+								ordre: o === "desc" ? "desc" : "asc",
+								page: 1,
+							}));
+						}}
+						style={CHAMP}
+					>
+						<option value="nom-asc">Nom (A→Z)</option>
+						<option value="nom-desc">Nom (Z→A)</option>
+						<option value="taille-asc">Taille (petits d'abord)</option>
+						<option value="taille-desc">Taille (gros d'abord)</option>
+					</select>
+				</label>
+				<label style={ETIQUETTE}>
+					Par page
+					<select
+						value={String(parPage)}
+						onChange={(e) =>
+							setEtat((v) => ({ ...v, parPage: Number(e.target.value), page: 1 }))
+						}
+						style={CHAMP}
+					>
+						{TAILLES_PAGE.map((n) => (
+							<option key={n} value={n}>
+								{n}
+							</option>
+						))}
+					</select>
+				</label>
+			</div>
 
 			{!charge ? (
 				<Note>Chargement…</Note>
@@ -277,7 +444,7 @@ function CatalogueVfs({ vue }: { vue: VueCatalogue }) {
 					<button
 						type="button"
 						disabled={page <= 1}
-						onClick={() => setPage((p) => p - 1)}
+						onClick={() => setEtat((e) => ({ ...e, page: e.page - 1 }))}
 						style={BOUTON}
 					>
 						Précédent
@@ -288,7 +455,7 @@ function CatalogueVfs({ vue }: { vue: VueCatalogue }) {
 					<button
 						type="button"
 						disabled={page >= pages}
-						onClick={() => setPage((p) => p + 1)}
+						onClick={() => setEtat((e) => ({ ...e, page: e.page + 1 }))}
 						style={BOUTON}
 					>
 						Suivant
