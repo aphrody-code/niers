@@ -16,9 +16,13 @@
  */
 import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { brotliCompressSync, constants, zstdCompressSync } from "node:zlib";
 
-const DIST = new URL("../dist", import.meta.url).pathname;
+// `URL.pathname` renvoie « /C:/Users/… » sous Windows : `readdirSync` échoue alors sur un
+// chemin que rien ne signale comme malformé, et le build meurt APRÈS que vite a écrit `dist`.
+// `fileURLToPath` est la seule conversion correcte des deux côtés.
+const DIST = fileURLToPath(new URL("../dist", import.meta.url));
 
 /** Extensions qui gagnent à être compressées. Une image l'est déjà. */
 const CIBLES = [".js", ".css", ".html", ".json", ".svg", ".map", ".txt"];
