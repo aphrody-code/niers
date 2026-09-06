@@ -38,6 +38,10 @@ Les espaces de noms et constantes observés dans les scripts sont injectés avec
 leurs valeurs CRC32 connues, notamment les recettes de Chara Edit, les os,
 les types de tutoriel, les types d’onglet et les constantes de texture/texte.
 L’état `partVisible` et `partColorRgba` est propagé jusqu’à l’export du layout.
+Les mutations Kizuna `SetPartTexture`, `SetPartParam` et `ApplyPartFlags` conservent
+également leurs arguments numériques bruts par partie, exportés sous
+`partTextureArgs`, `partParamArgs` et `partFlagArgs` sans leur attribuer un sens
+non prouvé.
 
 ## Vérifications
 

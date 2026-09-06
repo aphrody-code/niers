@@ -120,6 +120,10 @@ pub struct MenuObjectState {
     /// Couleur flottante RGBA d'une part/enfant adressée par son hash (handler Kizuna
     /// `0x140CDF9F0`). Les quatre canaux restent en `f32`, comme le vecteur transmis au moteur.
     pub part_color_rgba: BTreeMap<u32, [f32; 4]>,
+    /// Arguments numériques bruts des mutations Kizuna dont la structure native reste à préciser.
+    pub part_texture_args: BTreeMap<u32, Vec<u32>>,
+    pub part_param_args: BTreeMap<u32, Vec<u32>>,
+    pub part_flag_args: BTreeMap<u32, Vec<u32>>,
 }
 
 impl MenuObjectState {
@@ -146,6 +150,9 @@ impl MenuObjectState {
             visible_par_index: BTreeMap::new(),
             part_visible: BTreeMap::new(),
             part_color_rgba: BTreeMap::new(),
+            part_texture_args: BTreeMap::new(),
+            part_param_args: BTreeMap::new(),
+            part_flag_args: BTreeMap::new(),
         }
     }
 
@@ -1871,14 +1878,35 @@ fn dispatch_menu_command(state: &mut MenuState, cmd_id: u32, args: &[Value]) -> 
         }
 
         // Appels UI Kizuna à garde d'arité : les handlers 0x140CB28E0, 0x140CB3570 et
-        // 0x140CB35C0 poussent une réussite après leur mutation dans le manager natif. Cette
-        // mutation n'est pas représentable dans MenuState, mais retourner 0 interromprait les
-        // branches Lua alors que le jeu retourne 1 avec les arités réellement utilisées.
+        // 0x140CB35C0 poussent une réussite après leur mutation dans le manager natif. On
+        // conserve leurs arguments numériques par partie sans inventer leur structure native.
         CMD_KIZUNA_APPLY_PART_FLAGS | CMD_KIZUNA_SET_PART_PARAM | CMD_KIZUNA_SET_PART_TEXTURE => {
             if let Some(name) = command_name(cmd_id) {
                 state
                     .known_cmd_log
                     .push((name.to_string(), state.current_layer));
+            }
+            if args.len() >= 3 {
+                let obj_id = lua_to_u32(args.first());
+                let part_id = lua_to_u32(args.get(2));
+                let raw_args = args
+                    .iter()
+                    .skip(1)
+                    .map(|value| lua_to_u32(Some(value)))
+                    .collect::<Vec<_>>();
+                let object = state.layer(state.current_layer).obj(obj_id);
+                match cmd_id {
+                    CMD_KIZUNA_APPLY_PART_FLAGS => {
+                        object.part_flag_args.insert(part_id, raw_args);
+                    }
+                    CMD_KIZUNA_SET_PART_PARAM => {
+                        object.part_param_args.insert(part_id, raw_args);
+                    }
+                    CMD_KIZUNA_SET_PART_TEXTURE => {
+                        object.part_texture_args.insert(part_id, raw_args);
+                    }
+                    _ => unreachable!("commande Kizuna déjà filtrée"),
+                }
             }
             return 1.0;
         }
@@ -2630,9 +2658,36 @@ mod dispatch_tests {
             .unwrap(),
             1.0
         );
-        let object = &state.borrow().layers[&0].objects[&0x111];
-        assert_eq!(object.part_visible.get(&0x222), Some(&false));
-        assert_eq!(object.part_color_rgba[&0x222], [0.1, 0.2, 0.3, 0.4]);
+        {
+            let object = &state.borrow().layers[&0].objects[&0x111];
+            assert_eq!(object.part_visible.get(&0x222), Some(&false));
+            assert_eq!(object.part_color_rgba[&0x222], [0.1, 0.2, 0.3, 0.4]);
+        }
+        for command in [
+            CMD_KIZUNA_APPLY_PART_FLAGS,
+            CMD_KIZUNA_SET_PART_PARAM,
+            CMD_KIZUNA_SET_PART_TEXTURE,
+        ] {
+            assert_eq!(
+                f.call::<f64>((
+                    f64::from(command),
+                    f64::from(0x111_u32),
+                    3.0_f64,
+                    f64::from(0x222_u32),
+                    0xAABB_CCDD_u64 as f64,
+                ))
+                .unwrap(),
+                1.0
+            );
+            let object = &state.borrow().layers[&0].objects[&0x111];
+            let args = match command {
+                CMD_KIZUNA_APPLY_PART_FLAGS => &object.part_flag_args,
+                CMD_KIZUNA_SET_PART_PARAM => &object.part_param_args,
+                CMD_KIZUNA_SET_PART_TEXTURE => &object.part_texture_args,
+                _ => unreachable!(),
+            };
+            assert_eq!(args.get(&0x222), Some(&vec![3, 0x222, 0xAABB_CCDD]));
+        }
         assert!(state.borrow().unknown_cmd_log.is_empty());
     }
 

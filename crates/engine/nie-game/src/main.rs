@@ -2974,6 +2974,10 @@ struct MergedObj {
     part_visible: std::collections::BTreeMap<u32, bool>,
     /// Couleurs RGBA flottantes des parts adressées par hash (commande Kizuna dédiée).
     part_color_rgba: std::collections::BTreeMap<u32, [f32; 4]>,
+    /// Arguments bruts des mutations Kizuna texture/paramètres/flags.
+    part_texture_args: std::collections::BTreeMap<u32, Vec<u32>>,
+    part_param_args: std::collections::BTreeMap<u32, Vec<u32>>,
+    part_flag_args: std::collections::BTreeMap<u32, Vec<u32>>,
     /// Hash de texture/chemin g4tx du sprite (`SetSprite`/`SetIconSprite` arg1).
     sprite_hash: Option<u32>,
     /// Hash de la région/texture dans l'atlas (`SetIconSprite` arg2). Paire (chemin, région).
@@ -2991,6 +2995,9 @@ impl Default for MergedObj {
             visible_par_index: std::collections::BTreeMap::new(),
             part_visible: std::collections::BTreeMap::new(),
             part_color_rgba: std::collections::BTreeMap::new(),
+            part_texture_args: std::collections::BTreeMap::new(),
+            part_param_args: std::collections::BTreeMap::new(),
+            part_flag_args: std::collections::BTreeMap::new(),
             sprite_hash: None,
             sprite_region: None,
             text: None,
@@ -3266,6 +3273,21 @@ fn cmd_export_layout_runtime(
                 for (part, rgba) in &o.part_color_rgba {
                     m.part_color_rgba.entry(*part).or_insert(*rgba);
                 }
+                for (part, args) in &o.part_texture_args {
+                    m.part_texture_args
+                        .entry(*part)
+                        .or_insert_with(|| args.clone());
+                }
+                for (part, args) in &o.part_param_args {
+                    m.part_param_args
+                        .entry(*part)
+                        .or_insert_with(|| args.clone());
+                }
+                for (part, args) in &o.part_flag_args {
+                    m.part_flag_args
+                        .entry(*part)
+                        .or_insert_with(|| args.clone());
+                }
                 if m.sprite_hash.is_none() {
                     m.sprite_hash = o.sprite_texture_hash;
                     m.sprite_region = o.sprite_region_hash;
@@ -3422,6 +3444,23 @@ fn cmd_export_layout_runtime(
                         .collect::<std::collections::BTreeMap<_, _>>()
                 ),
             );
+        }
+        for (key, values) in [
+            ("partTextureArgs", &m.part_texture_args),
+            ("partParamArgs", &m.part_param_args),
+            ("partFlagArgs", &m.part_flag_args),
+        ] {
+            if !values.is_empty() {
+                rt.insert(
+                    key.into(),
+                    json!(
+                        values
+                            .iter()
+                            .map(|(part, args)| (format!("0x{part:08X}"), args))
+                            .collect::<std::collections::BTreeMap<_, _>>()
+                    ),
+                );
+            }
         }
         if m.sprite_hash.is_some() {
             n_sprite_mut += 1;
