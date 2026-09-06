@@ -31,7 +31,21 @@ nie-formats = { path = "../../engine/nie-formats" }
 
 # Le pet Aphrody : atlas, animations et poses de regard, embarques au build par
 # `include_bytes!`. Le site ne fait que republier ce package — il n'en garde aucune copie.
+# Il porte aussi `assets::encoder_png`, le seul encodeur PNG du site (cf. `routes::modeles3d`).
 nie-aphrody = { path = "../../engine/nie-aphrody" }
+
+# Le rendu 3D du moteur : `glb::parse` + `render::render`, le rasteriseur CPU a z-buffer qui
+# sert de verite terrain aux goldens. C'est ce que l'amont ne sait PAS faire — il assemble des
+# GLB, il n'en fait pas d'image. Features par defaut (`gpu` eteinte) : le site rend en
+# logiciel, et tirer wgpu dans un service sans pilote graphique n'aurait aucun sens.
+nie-render3d = { path = "../../engine/nie-render3d" }
+
+# Le decodeur de bytecode Lua 5.2 — le format des 1 199 `.lua.bin` du jeu.
+# `default-features = false` coupe `vm` (mlua, Lua 5.2 en C) ET `analysis` (tree-sitter) : il
+# ne reste que `nie_lua::bytecode`, pur Rust. Ce n'est pas une economie de build, c'est la
+# garantie qu'AUCUN interpreteur n'est lie dans ce service — cf. `routes::lua`, qui refuse
+# d'exposer l'execution et dont un test verifie que la feature `vm` reste eteinte.
+nie-lua = { path = "../../engine/nie-lua", default-features = false }
 
 # Serveur HTTP. Seul ajout réel au workspace (cf. docs/stack/dependencies.md) : 0.8.9, jamais
 # 0.8.2 (yanked). Syntaxe de route 0.8 : `{param}` et `{*wildcard}` — l'ancienne PANIQUE.

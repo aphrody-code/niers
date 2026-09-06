@@ -23,7 +23,7 @@ use crate::error::ErreurSite;
 use crate::routes::DemandePage;
 use crate::routes::static_files::{Encodage, etiquette, reponse_octets};
 use crate::state::{EtatSite, ReponseCachee};
-use crate::vfs_index::Dossier;
+use crate::vfs_index::{DemandeFiltre, Dossier};
 
 /// Taille au-delà de laquelle une ressource du jeu n'est plus gardée en mémoire.
 pub const TAILLE_MAX_CACHE: usize = 2 * 1024 * 1024;
@@ -150,35 +150,42 @@ pub async fn fichier(
 }
 
 /// `GET /b/{*prefixe}` — parcours d'un dossier du VFS.
+///
+/// Accepte, en plus de `?page=` et `?per_page=` : `?q=` (motif sur le chemin entier), `?ext=`,
+/// `?cpk=`, `?taille_min=`, `?taille_max=`, `?tri=nom|taille` et `?ordre=asc|desc`.
 pub async fn parcours(
     State(etat): State<EtatSite>,
     Path(prefixe): Path<String>,
     Query(demande): Query<DemandePage>,
+    Query(filtre): Query<DemandeFiltre>,
 ) -> Result<Json<Dossier>, ErreurSite> {
-    parcourir(&etat, &prefixe, demande)
+    parcourir(&etat, &prefixe, &demande, &filtre)
 }
 
-/// `GET /b` — parcours de la racine du VFS.
+/// `GET /b` — parcours de la racine du VFS. Mêmes paramètres que [`parcours`].
 pub async fn parcours_racine(
     State(etat): State<EtatSite>,
     Query(demande): Query<DemandePage>,
+    Query(filtre): Query<DemandeFiltre>,
 ) -> Result<Json<Dossier>, ErreurSite> {
-    parcourir(&etat, "", demande)
+    parcourir(&etat, "", &demande, &filtre)
 }
 
 fn parcourir(
     etat: &EtatSite,
     prefixe: &str,
-    demande: DemandePage,
+    demande: &DemandePage,
+    filtre: &DemandeFiltre,
 ) -> Result<Json<Dossier>, ErreurSite> {
     let prefixe = normaliser_prefixe(prefixe)?;
     let index = etat.index()?;
     let p = demande.bornee();
-    Ok(Json(index.dossier(
-        &prefixe,
-        p.offset(),
-        p.per_page as usize,
-    )))
+    // `?q=` était déclaré par `DemandePage` et jamais lu ici : le client croyait filtrer. Il
+    // est désormais résolu avec les autres critères, et la réponse annonce ce qui a compté.
+    let requete = index
+        .resoudre(demande.q.as_deref(), filtre)
+        .paginer(p.offset(), p.per_page as usize);
+    Ok(Json(index.dossier_filtre(&prefixe, &requete)))
 }
 
 #[cfg(test)]

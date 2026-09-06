@@ -36,9 +36,29 @@ import { useAssetSource, useCapacites } from "@niers/inacord-ui";
 import { useEffect, useState } from "react";
 import { libelleEntree } from "../entrees";
 import { accorde, Note, TitreVue } from "./Ecran";
+import { Modeles3D } from "./Modeles3D";
 
 /** Taille de page. Le serveur borne à 200 ; 60 tient dans une grille sans peser. */
 const PAR_PAGE = 60;
+
+/**
+ * L'aiguillage des quatre vues — et la seule qui ne soit pas un filtre d'extensions.
+ *
+ * `modeles` a quitté ce fichier : le filtre `.g4md`/`.g4mg`/`.g4sk`/`.g4mt`/`.g4pk` liste des
+ * PIÈCES, pas des modèles. Un `.g4mg` seul n'est qu'un tampon de géométrie — ni texture, ni
+ * squelette, ni recette — et la grille n'en montrait donc qu'un nom et une taille : 143 000
+ * fichiers dont aucun ne s'affichait. `Modeles3D` liste les 6 191 **codes assemblables** que
+ * publie `/api/v1/3d`, avec le rendu réel de chacun.
+ *
+ * L'aiguillage est un composant à part, sans le moindre hook, et ce n'est pas un détail : un
+ * `if` posé au milieu de `CatalogueVfs` changerait le nombre de hooks appelés d'un rendu à
+ * l'autre en passant de `textures` à `modeles`, ce que React refuse. Ici, changer de vue
+ * démonte un composant et en monte un autre.
+ */
+export function Catalogue({ vue }: { vue: VueCatalogue }) {
+	if (vue === "modeles") return <Modeles3D />;
+	return <CatalogueVfs vue={vue} />;
+}
 
 /** Formate une taille en octets pour l'affichage. */
 function taille(octets: number): string {
@@ -47,7 +67,7 @@ function taille(octets: number): string {
 	return `${(octets / (1024 * 1024)).toFixed(1)} Mo`;
 }
 
-export function Catalogue({ vue }: { vue: VueCatalogue }) {
+function CatalogueVfs({ vue }: { vue: VueCatalogue }) {
 	const source = useAssetSource();
 	const capacites = useCapacites();
 	const [page, setPage] = useState(1);

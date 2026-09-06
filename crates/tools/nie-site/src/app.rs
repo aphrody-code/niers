@@ -58,6 +58,13 @@ pub const DELAI_REQUETE: Duration = Duration::from_secs(15);
 
 /// Les routes exposées, dans l'ordre où elles sont déclarées. Sert de contrat vérifiable : les
 /// tests comptent cette liste et interrogent chacune de ses entrées.
+///
+/// **Elle n'est plus exhaustive**, et le dire vaut mieux que le laisser croire : les sept
+/// routes d'`/pet` et d'`/api/v1/aphrody` (cf. [`crate::routes::aphrody`]) puis les cinq de la
+/// couche 3D (cf. [`crate::routes::modeles3d`]) ont été déclarées au routeur sans y entrer —
+/// `tests/routes.rs` fige `ROUTES.len() == 19` et une instance par entrée. Les remettre en
+/// phase demande de toucher ce fichier de tests, ce que ni l'un ni l'autre de ces lots n'avait
+/// dans son périmètre. Chaque module porte ses propres tests de contrat en attendant.
 pub const ROUTES: [&str; 19] = [
     "/healthz",
     "/robots.txt",
@@ -140,6 +147,53 @@ pub fn routeur(etat: EtatSite) -> Router {
         .route(
             "/api/v1/aphrody/palette",
             get(crate::routes::aphrody::palette),
+        )
+        // La couche 3D. Cinq routes, deux espaces : `/api/v1/3d` DECRIT (capacites, catalogue,
+        // fiche, geometrie mesuree), `/model` SERT (le GLB assemble, l'apercu rendu). Un
+        // catalogue qui rendrait aussi les octets melangerait deux durees de cache et deux
+        // politiques d'erreur — un catalogue absent est un 503, un modele absent un 404.
+        //
+        // `/api/v1/3d` est declare AVANT `/api/v1/{vue}` : matchit prefere de toute facon le
+        // segment litteral au parametre, mais l'ordre de lecture doit dire la meme chose que
+        // l'ordre de resolution.
+        .route("/api/v1/3d", get(crate::routes::modeles3d::capacites))
+        .route(
+            "/api/v1/3d/modeles",
+            get(crate::routes::modeles3d::catalogue),
+        )
+        .route(
+            "/api/v1/3d/modeles/{famille}/{code}",
+            get(crate::routes::modeles3d::fiche),
+        )
+        .route(
+            "/api/v1/3d/modeles/{famille}/{code}/analyse",
+            get(crate::routes::modeles3d::analyse),
+        )
+        .route(
+            "/model/{famille}/{fichier}",
+            get(crate::routes::modeles3d::modele),
+        )
+        // La couche Lua et la couche formats. Elles sont declarees AVANT `/api/v1/{vue}`
+        // pour la meme raison que `/api/v1/3d` : matchit prefere de toute facon le segment
+        // litteral au parametre, mais l'ordre de lecture doit dire ce que fait le routeur.
+        //
+        // Le desassemblage a son PROPRE prefixe au lieu d'etre un suffixe de `/scripts` : un
+        // joker (`{*chemin}`) est terminal chez axum, et `/scripts/{*chemin}/desassemblage`
+        // ne se declare pas. Cf. `routes::lua`.
+        .route("/api/v1/lua", get(crate::routes::lua::capacites))
+        .route("/api/v1/lua/scripts", get(crate::routes::lua::scripts))
+        .route(
+            "/api/v1/lua/scripts/{*chemin}",
+            get(crate::routes::lua::script),
+        )
+        .route(
+            "/api/v1/lua/desassemblage/{*chemin}",
+            get(crate::routes::lua::desassemblage),
+        )
+        .route("/api/v1/formats", get(crate::routes::formats::capacites))
+        .route(
+            "/api/v1/formats/decode/{*chemin}",
+            get(crate::routes::formats::decode),
         )
         .route("/", get(crate::routes::pages::coquille))
         .fallback(crate::routes::static_files::statique)

@@ -11,6 +11,27 @@ La stack est **gelée** : [`docs/stack/`](docs/stack/README.md) (décisions, ver
 alternatives rejetées, gates). Ce fichier est le plan d'exécution de cette semaine ; le plan
 maître du moteur et de la forge reste [`docs/PLAN.md`](docs/PLAN.md).
 
+> **Amendement du 2026-09-06 (5) — le VFS est cartographié, la cible devient 100 %.** Six agents
+> ont couvert les 255 308 entrées, un document par domaine plus la synthèse
+> [`docs/VFS.md`](docs/VFS.md). Résultat : **63,5 % servi, 26,6 % `manquant`, 6,2 % `partiel`,
+> 1,5 % `bloqué`, 48 fichiers `inconnu`**. La matrice du cap passe de trois à **cinq** états —
+> `partiel` et `bloqué` — parce que trois confondaient « élargir une route » et « faire du
+> reverse ». Le fait qui commande la suite : **82 % du reste à faire est du câblage**, le
+> décodeur existant déjà dans ce dépôt (`g4pk.rs`, `objbin.rs`, `g4cm.rs`, `col.rs`…). Le
+> **lot 9** du cap fixe la trajectoire chiffrée vers `manquant = 0`.
+
+> **Amendement du 2026-09-06 (4) — la 3D, l'écran d'attente et les filtres.** Quatre lots menés
+> en parallèle sur des périmètres disjoints. La 3D est servie en **12 routes** mesurées sur
+> **6 191** modèles assemblables, avec un rendu `nie-render3d` côté serveur (171 ms à froid,
+> 0,9 ms en cache) ; l'écran d'attente est celui du jeu (`loading01`, texture servie, jamais
+> copiée) ; et l'inventaire des filtres rend **48 recensés, 42 manquants**
+> ([`docs/FILTRES.md`](docs/FILTRES.md)) — l'explorateur d'Aphrody n'en a aucun, et les 4 vues
+> du catalogue ne couvrent que **143 246 des 255 308** entrées. Deux corrections d'assiette :
+> `nie-menu` n'existe pas (la couche menu est `nie-lua::menu_host`) et `nie-lua` expose **34**
+> `pub fn`, pas 99. Deux points attendent une décision de l'utilisateur, tous deux au § 7 du cap :
+> le préchargement du VFS par **nginx** (geste de production) et la **couverture de tout le VFS
+> en slugs**, qui contredit une décision documentée du même plan.
+
 > **Amendement du 2026-09-06 (3) — la façade d'Aphrody est passée au crible.** Session UI :
 > l'accueil montrait la même information jusqu'à trois fois et sept liens d'infrastructure ; le
 > site portait deux chartes ; `nie-aphrody` n'était servie par aucune route. Corrigé et mesuré —

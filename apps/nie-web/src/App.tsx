@@ -5,6 +5,7 @@ import "@niers/inacord-ui/shell/game-tokens.css";
 import { useEffect, useMemo, useState } from "react";
 import { EXPLORATEUR, entreesMenu } from "./entrees";
 import { Catalogue } from "./pages/Catalogue";
+import { Chargement } from "./pages/Chargement";
 import { EcranSecondaire, Note } from "./pages/Ecran";
 import { Explorateur } from "./pages/Explorateur";
 import { MenuPrincipal } from "./pages/MenuPrincipal";
@@ -76,20 +77,48 @@ function Site() {
 		return () => window.removeEventListener("popstate", surRetour);
 	}, [entrees]);
 
+	// L'index du VFS se monte EN FOND côté serveur (`EtatSite::monter_vfs_en_fond`) : au premier
+	// appel il répond `en_cours`. Une sonde unique fige donc l'écran d'attente pour toujours —
+	// le site n'apprendrait jamais que le catalogue est devenu joignable. On resonde tant que
+	// l'état n'est pas tranché, et on s'arrête dès qu'il l'est (`pret` comme `absent`).
+	const vfs = etat?.capacites?.vfs ?? null;
 	useEffect(() => {
+		if (vfs === "pret" || vfs === "absent") return;
 		const ac = new AbortController();
-		sante(ac.signal)
-			.then(setEtat)
-			.catch(() => {
-				/* l'erreur est déjà portée par le fournisseur */
-			});
-		return () => ac.abort();
-	}, []);
+		let minuteur: ReturnType<typeof setTimeout> | undefined;
+		const sonder = () => {
+			sante(ac.signal)
+				.then(setEtat)
+				.catch(() => {
+					/* l'erreur est déjà portée par le fournisseur */
+				})
+				.finally(() => {
+					if (!ac.signal.aborted) minuteur = setTimeout(sonder, PERIODE_SONDE_MS);
+				});
+		};
+		sonder();
+		return () => {
+			ac.abort();
+			if (minuteur !== undefined) clearTimeout(minuteur);
+		};
+	}, [vfs]);
 
 	// Le catalogue est-il consultable ? `capacites` vaut `null` tant que la mesure court : on
 	// distingue « on ne sait pas encore » de « rien ne marche », au lieu d'afficher des vues
 	// vides pendant la premiere seconde.
 	const pret = Boolean(capacites?.vfs);
+
+	// Tant que le serveur n'a pas tranché sur son VFS, le site montre l'écran d'attente DU JEU
+	// plutôt qu'un menu dont aucune entrée ne mènerait à quelque chose. La panne, elle, est un
+	// état tranché : elle s'affiche dans le même écran, avec l'humeur correspondante.
+	if (vfs === null || vfs === "en_cours") {
+		return (
+			// Même raison qu'en dessous : `GameCanvas` prend la hauteur de son parent.
+			<div style={{ position: "fixed", inset: 0 }}>
+				<Chargement etat={etat} panne={Boolean(erreurSource)} />
+			</div>
+		);
+	}
 
 	// L'accueil occupe tout l'écran : le menu principal EST la page, pas un panneau dedans.
 	if (vue === ACCUEIL) {
@@ -143,3 +172,12 @@ function Site() {
  * donnée ne justifie.
  */
 const DEPART = entreesMenu(null).map((e) => e.vue);
+
+/**
+ * Période entre deux sondes de `/api/v1/health`, tant que le VFS n'est pas tranché.
+ *
+ * Deux secondes : assez court pour que la bascule vers le menu ne se fasse pas attendre, assez
+ * long pour qu'une attente de plusieurs minutes ne représente que quelques dizaines de requêtes
+ * sur une route qui ne lit qu'un état déjà en mémoire.
+ */
+const PERIODE_SONDE_MS = 2000;

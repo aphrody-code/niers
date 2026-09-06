@@ -4,7 +4,7 @@
 		"noEmit": true,
 		"declaration": false,
 		"jsx": "react-jsx",
-		"types": ["vite/client", "bun"],
+		"types": ["vite/client", "bun", "@webgpu/types"],
 		"lib": ["ESNext", "DOM", "DOM.Iterable"],
 		"allowImportingTsExtensions": true,
 		"moduleDetection": "force"

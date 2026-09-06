@@ -14,7 +14,7 @@ use serde::Serialize;
 
 use crate::config::Config;
 use crate::dataset::Gisement;
-use crate::vfs_index::IndexVfs;
+use crate::vfs_index::{Entree, IndexVfs};
 
 /// Une réponse d'amont mise en cache, avec son ETag déjà calculé.
 #[derive(Debug, Clone)]
@@ -75,6 +75,10 @@ pub struct Capacites {
     pub vfs_dump: bool,
     /// `true` si le VFS peut réellement rendre des octets (`/f`).
     pub vfs_contenu: bool,
+    /// Nombre d'extensions distinctes indexées — la mesure de ce que `?ext=` peut viser.
+    pub vfs_extensions: usize,
+    /// Nombre de CPK distincts indexés. `0` sur un montage dump, qui n'a pas de packs.
+    pub vfs_cpks: usize,
     /// `true` si le miroir SQLite est présent à l'instant de la mesure.
     pub gisement: bool,
     /// Racine du bundle statique servie, si elle existe.
@@ -233,19 +237,29 @@ impl EtatSite {
     /// Mesure les capacités à l'instant présent.
     #[must_use]
     pub fn capacites(&self) -> Capacites {
-        let (vfs, vfs_entrees, vfs_dump, vfs_contenu) = match self.vfs.read() {
-            Ok(g) => match &*g {
-                StatutVfs::Pret { vfs, index, dump } => ("pret", index.len(), *dump, vfs.is_some()),
-                StatutVfs::EnCours => ("en_cours", 0, false, false),
-                StatutVfs::Absent(_) => ("absent", 0, false, false),
-            },
-            Err(_) => ("absent", 0, false, false),
-        };
+        let (vfs, vfs_entrees, vfs_dump, vfs_contenu, vfs_extensions, vfs_cpks) =
+            match self.vfs.read() {
+                Ok(g) => match &*g {
+                    StatutVfs::Pret { vfs, index, dump } => (
+                        "pret",
+                        index.len(),
+                        *dump,
+                        vfs.is_some(),
+                        index.nb_extensions(),
+                        index.nb_cpks(),
+                    ),
+                    StatutVfs::EnCours => ("en_cours", 0, false, false, 0, 0),
+                    StatutVfs::Absent(_) => ("absent", 0, false, false, 0, 0),
+                },
+                Err(_) => ("absent", 0, false, false, 0, 0),
+            };
         Capacites {
             vfs,
             vfs_entrees,
             vfs_dump,
             vfs_contenu,
+            vfs_extensions,
+            vfs_cpks,
             gisement: self.gisement.present(),
             bundle: self.config.statique.is_dir(),
             debit: self.limiteur.as_ref().map(|l| l.reglage().par_seconde),
@@ -263,16 +277,32 @@ impl EtatSite {
             match nie_formats::vfs::open_game() {
                 Ok(vfs) => {
                     let dump = vfs.is_dump();
-                    let entrees: Vec<(String, u32)> = vfs
+                    // `cpk_filename` était jeté ici : le VFS porte la provenance de chaque
+                    // fichier (`nie_formats::vfs::VfsEntry`) et le site la perdait, ce qui
+                    // rendait « d'où vient ce fichier » inrépondable. Elle est désormais
+                    // conservée et internée par l'index (936 noms, un `u16` par entrée).
+                    let entrees: Vec<Entree> = vfs
                         .iter()
-                        .map(|(chemin, e)| (chemin.to_owned(), e.file_size))
+                        .map(|(chemin, e)| Entree {
+                            chemin: chemin.to_owned(),
+                            taille: e.file_size,
+                            cpk: e.cpk_filename.clone(),
+                        })
                         .collect();
                     let n = entrees.len();
-                    let index = Arc::new(IndexVfs::depuis(entrees));
+                    let enumere = debut.elapsed();
+                    let debut_index = std::time::Instant::now();
+                    let index = Arc::new(IndexVfs::depuis_entrees(entrees));
+                    let construit = debut_index.elapsed();
+                    let (exts, cpks) = (index.nb_extensions(), index.nb_cpks());
                     etat.poser_vfs(Some(Arc::new(vfs)), index, dump);
                     tracing::info!(
                         entrees = n,
                         dump,
+                        extensions = exts,
+                        cpks,
+                        secondes_enumeration = enumere.as_secs_f32(),
+                        secondes_index = construit.as_secs_f32(),
                         secondes = debut.elapsed().as_secs_f32(),
                         "VFS monte"
                     );

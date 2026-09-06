@@ -1,0 +1,68 @@
+{
+  "canvas": {
+    "h": 720,
+    "w": 1280
+  },
+  "generatedBy": "runtime-lua",
+  "locale": "fr",
+  "objects": [
+    {
+      "anim": {
+        "close": "0xA15F1DEE",
+        "open": "0x5FEC8E4E"
+      },
+      "camera": "0x02D8FB06",
+      "charModel": null,
+      "drawPriority": 300,
+      "drawType": 3,
+      "name": "loading01_01_fade_loading",
+      "parent": null,
+      "primitive": null,
+      "runtime": null,
+      "sprite": {
+        "h": 136,
+        "logicalPath": "dx11/menu/11_loading/loading01/loading01_01/loading01_01.g4tx",
+        "pngUrl": "/dx11/menu/11_loading/loading01/loading01_01/loading01_01.png",
+        "w": 784
+      },
+      "text": null,
+      "transform": {
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "rot": 0.0,
+        "scaleX": 1.0,
+        "scaleY": 1.0,
+        "x": 640.0,
+        "y": 360.0
+      },
+      "visible": true
+    }
+  ],
+  "runtimeSummary": {
+    "callbackErrors": [],
+    "callbacksDefinis": [],
+    "callbacksNonJoues": [],
+    "distinctVisibilityIndexes": 0,
+    "headerTabsAdded": 0,
+    "knownCmdCalls": 0,
+    "knownCmdsByName": {},
+    "layersTouched": 0,
+    "listItemsRecorded": 0,
+    "missingHostCalls": {},
+    "missingHostPaths": {},
+    "objectsHidden": 0,
+    "objectsHiddenByMerge": 0,
+    "objectsInMenuState": 0,
+    "objectsMatched": 0,
+    "objectsMatchedTotal": 0,
+    "objectsWithIndexedVisibility": 0,
+    "regionRects": 0,
+    "scripts": [],
+    "spritesMutated": 0,
+    "spritesNamed": 0,
+    "textsMutated": 0,
+    "unknownCmds": [],
+    "unknownGeneralCmds": []
+  },
+  "screen": "loading01"
+}

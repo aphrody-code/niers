@@ -23,6 +23,27 @@
 
 ---
 
+> **Amendement du 2026-09-06 (4) — la couche 3D est branchée, l'écran d'attente est celui du
+> jeu, et les filtres sont enfin comptés.**
+> Quatre chantiers menés en parallèle sur des périmètres disjoints. Ce qui les relie est une
+> même découverte : **le site ne manquait pas de capacités, il manquait de routes et de
+> mesures.** Quatre chiffres la résument :
+>
+> - la 3D est servie en **12 routes** mesurées (`/api/v1/3d/*` décrit, `/model/*` sert) sur un
+>   corpus de **6 191 modèles assemblables** — et le catalogue ne proposait jusque-là que des
+>   *pièces* (`.g4mg` seuls, 143 000 fichiers dont aucun n'était affichable) ;
+> - les filtres d'Aphrody sont inventoriés contre leurs équivalents : **48 recensés,
+>   42 manquants** (`docs/FILTRES.md`) ;
+> - les 4 vues du catalogue ne couvrent que **143 246 des 255 308** entrées — **112 062**
+>   fichiers (`.bin` 72 308, `.p3lip` 21 047, `.objbin` 12 190) ne sont atteignables que par le
+>   parcours, sans le moindre filtre ;
+> - `nie-lua` expose **34** `pub fn`, pas 99 — le § 4 citait un compte qui ne se rejoue pas.
+>
+> Le lot 8 (les filtres) entre au plan. Le § 7 gagne une question que je ne tranche pas seul :
+> couvrir tout le VFS en slugs contredit une décision documentée de ce même plan.
+
+---
+
 ## 1. Ce que « ultime » veut dire ici
 
 Un seul site — Aphrody, servi par `nie-site`, monté par `apps/nie-web` et par Inacord — où :
@@ -55,7 +76,7 @@ Rien ici n'est cité de mémoire ; chaque ligne a une commande.
 | Routes servies par `nie-site` | **19** déclarations, **~14** chemins distincts | `rg -o '\.route\("[^"]+"' crates/tools/nie-site/src/app.rs` |
 | Modules de `nie-data` | **117** | `ls crates/engine/nie-data/src/*.rs` |
 | Modules de `nie-formats` | **47** | idem |
-| `pub fn` de `nie-lua` | **99** | `rg -c '^pub fn' crates/engine/nie-lua/src/*.rs` |
+| `pub fn` de `nie-lua` | **34** | `rg 'pub fn' crates/engine/nie-lua/src/` — mesuré le 2026-09-06. Le **99** cité jusqu'ici venait d'un `rg -c '^pub fn'` sur `src/*.rs` seul (les sous-modules manquaient dans un sens, les lignes non publiques comptaient dans l'autre) : il ne se rejoue pas. |
 | Modules de `nie-aphrody` | 5 (`assets`, `codex`, `gisement`, `pets`, `pixel`) | `ls` |
 | Pages d'Azalée | **81** pages, **24** routes API | `fd 'page.tsx' apps/azalee/app` |
 | Fichiers d'`inacord-ui` | **51** | `fd -e tsx -e ts . packages/inacord-ui/src` |
@@ -116,6 +137,15 @@ Ce plan est fondé sur ces échecs. Chaque ligne est un défaut réellement pay�
 | `format!("{:?}")` sur une `Option` publiait `"Some(V2)"` dans un JSON destiné à être lu | le nom Rust d'une variante, entouré de son conteneur, servi comme donnée | **Un JSON public ne se sérialise pas par `Debug`.** |
 | Un test de gamut bâti sur `FromColor::from_color`, qui **écrête lui-même** (`palette-0.7.7 … from_color_unclamped(t).clamp()`) | un test qui s'exécute, passe, et ne vérifie rien — pire qu'une suite absente, parce qu'il rassure | **Un test doit pouvoir échouer.** Le prouver par falsification : casser volontairement la valeur et voir rougir. |
 | La palette mesurée d'Aphrody est **crème 25 %, blond 21 %, bleu 2 %** | peindre au prorata donnerait un site où rien ne se détache | **Une palette de personnage n'est pas une palette d'interface.** On en dérive des rôles à clarté posée, en conservant la teinte mesurée. |
+| Le personnage — tenue **blanche** — posé sur un ciel passé au **crème** de la palette : DOM juste, URL juste, PNG juste, **rien à l'écran** | une heure de suspicion sur le composant, alors que le défaut était né de la refonte des couleurs faite le même jour | **Un changement de palette est un changement de contraste.** Deux corrections justes prises séparément peuvent s'annuler ; ce qui se vérifie est l'écran, pas le fichier. |
+| Le canevas portait `FOND_MENU = "#f9fdf9"` (hex en dur, verdâtre) quand le `<body>` portait `--jeu-ciel-clair` (`#f9f6f4`, crème) | une bande d'une autre teinte en bas d'écran, qu'aucune valeur fausse n'expliquait | **Une source unique de couleur ne tolère aucune exception**, pas même une constante de géométrie mesurée sur une capture. |
+| Le viewport 3D écrit en **WebGL 2** là où la consigne était **WebGPU** | une couche entière à retraduire (GLSL → WGSL, NDC z ∈ [-1,1] → [0,1]) | **La technologie d'une couche est une décision de l'utilisateur, pas un détail d'implémentation.** Se la faire confirmer coûte une phrase ; la deviner coûte un lot. |
+| `/b` **accepte** `q` et ne l'applique jamais (déclaré dans le type de query, absent du handler) | un client qui filtre croit filtrer, et la liste complète passe pour un résultat | **Un paramètre accepté est un paramètre honoré.** L'ignorer en silence est pire que le refuser. |
+| `cpk_filename` **jeté** à la construction de l'index alors que `nie-formats` le fournit | le filtre « quel CPK » déclaré impossible pour une donnée déjà lue | **Ce qu'on a lu, on le garde** — ou on écrit pourquoi on le jette. |
+| `App.tsx` ne sondait `/api/v1/health` **qu'une fois** (`useEffect` à dépendances vides) alors que le VFS se monte en fond | l'écran d'attente n'aurait jamais basculé vers le menu : le site aurait attendu pour toujours un état qu'il ne redemandait plus | **Une sonde unique ne mesure pas un état qui change.** Un montage asynchrone se reboucle jusqu'à un état tranché. |
+| `title00` pris pour l'écran de démarrage : **67 objets, 21 à la position par défaut**, sprites = atlas entiers jusqu'à 5828×6840 | une composition cassée présentée comme le rendu du jeu | **Le nom d'un écran ne dit pas s'il est exportable.** Le vrai écran d'attente est `loading01` : **1** objet, une bande 784×136, entièrement décrit par son export. |
+| Le § 4 citait « les `pub fn` de `nie-lua` (99) » ; la mesure du jour en rend **34** | une source de la matrice de couverture fausse d'un facteur 3 | **Un compte cité dans un plan porte sa date et sa commande.** Sinon il devient une légende. |
+| `nie-menu` n'existe pas — la couche menu est `nie-lua::menu_host` | un lot planifié sur une crate imaginaire | **Vérifier qu'une crate existe avant de lui écrire un lot.** `cargo metadata --no-deps`, pas la mémoire. |
 
 ### Ce qui a été corrigé le 2026-09-06, et ce que ça enseigne
 
@@ -147,20 +177,37 @@ seule, mène à une fausse conclusion :
 Le plan se pilote par **une seule table**, versionnée, régénérée par une commande, jamais tenue
 à la main : `var/couverture-site.json` + une page `/couverture` sur le site.
 
-Chaque capacité du dépôt y a une ligne, et **trois états seulement** :
+Chaque capacité du dépôt y a une ligne. Le plan a longtemps prévu **trois** états ; la
+cartographie du VFS du 2026-09-06 (`docs/VFS.md`) en a imposé **cinq**, parce que trois
+écrasaient deux distinctions qui décident du travail à faire :
 
 | État | Sens |
 |---|---|
-| `servi` | une route ou un composant l'expose, et un test le compte |
-| `interne` | délibérément non exposé, **avec sa raison** (privilège, écriture disque, forge, mémoire du jeu) |
-| `manquant` | rien ne l'expose — c'est du travail restant, il est compté |
+| `servi` | une route ou un composant l'expose, et un test le **compte** (code HTTP mesuré, pas supposé) |
+| `partiel` | une route existe et ne couvre **pas tout le corpus** — elle ne peut pas être comptée `servi` |
+| `manquant` | **le décodeur existe dans ce dépôt**, aucune route ne l'appelle. C'est du **câblage** |
+| `bloqué` | aucune route **et aucun décodeur** : il faut du **reverse** d'abord |
+| `interne` | délibérément non exposé, **avec sa raison** (privilège, écriture disque, forge, mémoire du jeu, exécution de code) |
 
-**Gate maîtresse du plan :** `manquant = 0`. Tout le reste en découle. Une capacité classée
-`interne` sans raison écrite compte comme `manquant`.
+Les deux ajouts, et ce qu'ils ont évité :
 
-Sources de la matrice, toutes déjà présentes : `niers --help` (41), l'`invoke_handler` de
+- **`partiel`** — compter les 15 875 `.g4mg` comme `servi` aurait annoncé 15 875 fichiers
+  atteignables là où **7 466 codes** le sont. Un état binaire transforme une couverture
+  incomplète en couverture annoncée.
+- **`bloqué`** — `manquant` confondait « écrire une route sur un parseur qui existe » et « faire
+  du reverse sur un format inconnu ». Deux ordres de grandeur d'effort sous le même mot : le
+  plan devenait inchiffrable.
+
+**Gate maîtresse du plan :** `manquant = 0` **et** `partiel = 0`. `bloqué` est compté à part et
+descend par le RE, pas par le câblage. Une capacité classée `interne` sans raison écrite compte
+comme `manquant` ; une extension classée `inconnu` compte comme `bloqué` — on ne route pas ce
+qu'on n'a pas identifié.
+
+Sources de la matrice, toutes déjà présentes : **le VFS lui-même (255 308 entrées, la source la
+plus large — `docs/VFS.md`)**, `niers --help` (41), l'`invoke_handler` de
 `src-tauri` (155), les modules de `nie-data` (117) et `nie-formats` (47), les `pub fn` de
-`nie-lua` (99), les pages d'Azalée (81 + 24), les sous-commandes d'`iecode` (39).
+`nie-lua` (**34**, mesurés le 2026-09-06 par `rg 'pub fn' crates/engine/nie-lua/src/` — le 99 cité
+jusqu'ici ne se rejoue pas), les pages d'Azalée (81 + 24), les sous-commandes d'`iecode` (39).
 
 ## 5. Les lots, par ordre de dépendance
 
@@ -214,6 +261,30 @@ réelle ; `rg -l '@tauri-apps' packages/inacord-ui` → **0**.
 
 Aujourd'hui : le codec bytecode est byte-exact, `menu_host` est porté, 66 commandes runtime
 sont reconnues sur `kizuna_town_mainmenu`. Ce qui manque, c'est la **route**.
+
+Deux corrections d'assiette, mesurées le 2026-09-06 :
+
+- **`nie-menu` n'existe pas.** La couche menu est `crates/engine/nie-lua/src/menu_host.rs`,
+  aux côtés de `host.rs`, `session.rs` et `runtime.rs`. Un lot écrit contre une crate imaginaire
+  n'aurait rien pu livrer.
+- **`nie-game` n'est pas une bibliothèque** : `crates/engine/nie-game/src/` ne contient que
+  `main.rs`, `gpu_select.rs` et deux shaders WGSL. « L'exploiter nativement » veut donc dire soit
+  l'appeler en sous-processus — ce que fait déjà l'export de layout — soit en extraire une lib.
+  Le plan doit dire laquelle des deux, il ne peut pas l'éluder.
+
+**Ce que le site n'exposera pas, et pourquoi :** `execute_with_include`, `run_menu`,
+`drive_menu`, `install_menu_host`, `eval`/`set_global` exécutent du Lua. Une route publique qui
+les appelle est un interpréteur ouvert.
+
+Et deux qui **ressemblent** à de l'analyse sans en être — c'est le piège de ce lot :
+`discover_host_calls` et `enumerate_header_tabs` posent une métatable sur `_G` puis **appellent
+la fonction principale du script**, sur un `Lua::unsafe_new`. Un nom qui contient « discover »
+ou « enumerate » ne dit pas si la fonction lit ou exécute : **on lit le corps, pas le nom.**
+
+Le refus est **structurel** : `nie-lua` est déclaré `default-features = false`, aucun
+interpréteur n'est lié dans le binaire, et un `const { assert!(!VM_LIEE) }` l'impose à la
+compilation. Une politique qui tient par la discipline du prochain appelant n'est pas une
+politique.
 
 - `/api/v1/menu/<ecran>` : la disposition **exportée par le runtime**, pas un gabarit.
 - `/api/v1/script/<chemin>` : le Lua décodé, ses `Setup*`, ses commandes reconnues.
@@ -287,6 +358,135 @@ déclarée « reste sur Azalée » **avec sa raison** (Azalée demeure le wiki d
   Bun. Gate connue : `niers push --dry-run` annonce table par table, puis un push réel rend
   **le même total qu'aujourd'hui, écart 0**.
 
+### Lot 8 — les filtres : chaque page d'Aphrody vaut son équivalent
+
+Inventaire du 2026-09-06 : `docs/FILTRES.md`. Il compare page à page Aphrody, Azalée (21 pages
+de liste publiques, 24 clés de `searchParams` validées par zod) et Inacord (17 vues filtrantes,
+dont un vrai langage de requête sur le Cinéma — `s3e12 lang:vf vu:non`).
+
+**Le compte : 48 filtres recensés, 3 pleinement présents, 3 partiels, `manquant = 42`.**
+
+L'écart n'est pas ergonomique, il est structurel : l'explorateur d'Aphrody n'a **aucun** filtre,
+le catalogue a `q` + `page` avec un `PAR_PAGE = 60` écrit en dur, et les 4 vues ne couvrent que
+**143 246 des 255 308** entrées. Les **112 062** restantes — `.bin` 72 308, `.p3lip` 21 047,
+`.objbin` 12 190 — ne sont atteignables que par le parcours, sans le moindre filtre. C'est ce
+qui met le filtre par extension en tête, et non un souci de confort.
+
+Trois défauts à réparer avant d'ajouter quoi que ce soit :
+
+1. `/b` **accepte** `q` et l'ignore. Un client qui filtre croit filtrer.
+2. `cpk_filename` est **jeté** à la construction de l'index alors que `nie-formats` le porte :
+   le filtre « quel CPK » est déclaré impossible pour une donnée déjà lue.
+3. L'état des filtres ne vit **pas dans l'URL** — préalable à tout le reste : sans lui, aucun
+   filtre n'est partageable, rechargeable, ni indexable.
+
+Point de faisabilité, **mesuré** : aucun des 42 manques n'exige une seconde passe sur les
+255 308 entrées — la boucle qui pré-calcule les 4 vues produit au même passage les listes par
+extension, par CPK et l'ordre par taille. En revanche la conclusion qu'on en tirait — « le
+surcoût est en mémoire, pas en temps » — était **trop large** : le montage passe de
+**1,10–1,25 s à 1,33–1,37 s, soit +0,12 s (+10 %)**, à cause du tri de la permutation par
+taille. C'est un coût payé une fois au démarrage, sur un index monté en fond. La leçon vaut
+au-delà de ce lot : *une affirmation de complexité n'est pas une mesure* — on exige les deux
+chiffres, avant et après, et ici c'est le second qui a corrigé le premier.
+
+**Gate :** `manquant = 0` sur la matrice des 48, chaque filtre mesuré par une requête qui rend
+un **total**, pas un statut. Un filtre servi mais jamais appliqué compte comme manquant — c'est
+exactement le défaut 1.
+
+### Lot 9 — 100 % du VFS servi, comme `nie.exe` le lit
+
+C'est le lot terminal du plan : **255 308 fichiers, aucun non classé.** La carte est
+`docs/VFS.md`, établie le 2026-09-06 par six agents sur un inventaire figé
+(`var/vfs/inventaire.txt`), et recalculable en une commande.
+
+#### L'état de départ, mesuré
+
+| État | Fichiers | Part | Nature du travail |
+|---|---:|---:|---|
+| `servi` | 162 219 | 63,54 % | — |
+| `manquant` | **67 878** | **26,59 %** | **câblage** : le décodeur existe déjà ici |
+| `partiel` | 15 875 | 6,22 % | câblage : élargir une route qui existe |
+| `interne` | 5 512 | 2,16 % | rien à faire, la raison est écrite |
+| `bloqué` | 3 776 | 1,48 % | **reverse** préalable |
+| `inconnu` | 48 | 0,02 % | identification préalable |
+
+**82 % du reste à faire est du câblage, pas de la recherche.** C'est le fait qui structure ce
+lot : le dépôt sait déjà décoder les deux tiers de ce qu'il n'expose pas.
+
+#### 9.1 — Le câblage (83 753 fichiers, 32,8 %)
+
+Chaque ligne a son décodeur déjà écrit ici. Aucune n'exige de recherche.
+
+| Corpus | Fichiers | Décodeur existant | Ce qui manque |
+|---|---:|---|---|
+| `.g4pk` | 45 591 | `nie-formats/src/g4pk.rs:137` | une route — aujourd'hui **400 mesuré** |
+| `.g4mg` non couverts | 15 875 → 8 409 restants | pipeline 3D existant | élargir le catalogue au-delà des 6 familles |
+| `.objbin` | 12 190 | `objbin.rs:66` | une route |
+| `.g4pkm` | 6 992 | parseur présent | une route |
+| `.g4cm` (caméras) | 1 217 | `g4cm.rs:336` | une route |
+| `.col` (collision) | 1 150 | `col.rs` | une route |
+| `.g4sk` (squelettes) | 339 | parseur présent | une route |
+| `.mevbin` | 328 | `mevbin.rs:136` | une route |
+| `.g4mt` (animation) | 71 | parseur présent | une route |
+| famille `uniform` | 1 022 modèles | pipeline 3D existant | **une ligne de famille**, même filtre que `waza` |
+| `common/font/font/*.g4tx` | 14 | `g4tx_decode.rs:197` | un mapping de route — **404 aujourd'hui**, le miroir `dx11` répond 200 |
+
+**Gate 9.1 :** `manquant = 0` et `partiel = 0`, chaque corpus prouvé par une requête qui rend un
+**total** et un code HTTP, jamais un statut seul.
+
+#### 9.2 — L'identification (48 fichiers, 0,02 %)
+
+15 extensions de moins de 15 fichiers, dont huit de la forme `.rNNNNN` (`.r41152`, `.r47929`,
+`.r66286`…). Aucun parseur ne les connaît, **aucun document du dépôt ne les nomme**. Elles ne
+seront pas routées avant d'être identifiées — un nom de fichier ne dit pas ce qu'un fichier
+contient. Sortie attendue : pour chacune, soit un format nommé, soit la mention « non identifié »
+assumée dans `docs/VFS.md`. Le volume est dérisoire ; **c'est la gate `100 %` qui le rend
+bloquant**, et c'est voulu : un plan qui s'autorise 48 exceptions s'en autorisera 4 800.
+
+#### 9.3 — Le reverse (3 776 fichiers, 1,48 %)
+
+Shaders (`fxbin`, `vfxo`, `pfxo`, `cfxo`, `gfxo` — 2 869, plus les 2 870 de
+`dx11/shader/1.00.41/`), particules (`ptlb`), tissu (`clobin`), navigation (`g4nv`), `linb`.
+**Aucun parseur n'existe.** Ces corpus ne descendent pas par du câblage et **rien ne doit
+promettre une route avant que le format soit lu**. Ils restent comptés `bloqué` — visibles,
+chiffrés, jamais silencieux.
+
+#### 9.4 — Les écrans, l'autre couverture
+
+Le VFS n'est qu'une des deux couvertures. L'autre est celle des **écrans** : `/menu-tree.json`
+en compte **475** (mesuré en direct ; le code source en annonçait 440, jamais rejoué). Un seul
+a été vérifié en profondeur à ce jour. Publier `écrans servis / 475` à chaque étape, avec pour
+chacun le compte d'objets, d'objets positionnés et d'objets muets — un export dit aussi ce
+qu'il ne contient pas.
+
+**Piège à porter dans le code des routes :** il existe **trois** nomenclatures d'écran, pas
+deux. Le nom du calque (`mainmenu01`, 34 objets, 0 script), le nom du script
+(`kizuna_town_mainmenu`, 0 objet, 1 script) et le **stem du `*_setting.cfg.bin.json`** attendu
+par `/menu-tree/{stem}.json` — où `mainmenu01` rend **404**. Les confondre produit un 404 qu'on
+attribuera au fichier.
+
+#### 9.5 — Ce que « servir comme `nie.exe` » exige en plus du volume
+
+Servir 100 % des octets ne suffit pas ; le jeu ne lit pas des fichiers, il lit des **entités**.
+Trois conséquences déjà mesurées :
+
+1. **Cataloguer par l'entité, pas par le fichier.** Une banque `.awb` n'est pas une piste :
+   7,688 Gio d'AWB contre 0,103 Gio d'ACB (**74×**), pour **284 115 cues** réelles. Le catalogue
+   se fait par cue, et un export se nomme par sa sous-entité — sinon tous les téléchargements
+   se recouvrent.
+2. **Un fichier présent n'est pas une entité affichable.** Un modèle n'existe que si
+   `<code>/<code>.g4mg` est là : **7 466 codes assemblables sur 7 679**. Un catalogue qui liste
+   les pièces produit des 404 ; il doit lister ce qui s'assemble, et dire pourquoi le reste
+   ne s'assemble pas.
+3. **Le slug est le code du jeu**, jamais un nom traduit — c'est la règle d'identité déjà gelée
+   pour Aphrody et Inacord.
+
+#### 9.6 — Couverture ≠ indexation
+
+Servir tout le VFS et **indexer** tout le VFS sont deux décisions distinctes. `/f/` ne rend que
+des octets : il n'a pas à entrer dans un plan de site, quel que soit le niveau de couverture
+atteint. La question de l'indexation reste ouverte au § 7, et elle appartient à l'utilisateur.
+
 ## 5 bis. Ce que la session du 2026-09-06 a livré, et ce qu'elle laisse ouvert
 
 ### Livré et vérifié
@@ -300,18 +500,45 @@ déclarée « reste sur Azalée » **avec sa raison** (Azalée demeure le wiki d
 | La compatibilité `?vue=` retirée | le type de `entreeDemandee` l'interdit désormais **à la compilation**, ce qu'aucun test ne garantissait |
 | Portails | `cargo test -p nie-site` 96/96, `bun test` 87/87, clippy et lint sans avertissement sur les crates et paquets touchés |
 | Le design system de couleur : `nie-aphrody` est la **source** des 29 couleurs du site | `game-tokens.css` est **engendré** (`cargo run -p nie-aphrody --bin design`), 48 propriétés dont 29 couleurs, **zéro hexadécimal écrit à la main** ; un golden le prouve par falsification |
+| La couche 3D branchée nativement | **12 routes** mesurées : `/api/v1/3d` (capacités), `/api/v1/3d/modeles` (catalogue des **6 191** modèles assemblables — perso 5 490, techniques 273, objets 237, keshin 100, armures 89, animaux 2), la fiche, `…/analyse` (géométrie **réelle** du GLB : 7 580 triangles et 36 textures pour Mark Evans), `/model/{f}/{c}.glb` (3 180 456 o, 4 ms) et `/model/{f}/{c}.png` (rendu `nie-render3d` côté serveur, **171 ms à froid, 0,9 ms en cache**, ETag + 304). **97 %** de rendus réussis sur 102 modèles échantillonnés |
+| Le catalogue 3D liste des **modèles**, plus des pièces | il proposait `.g4mg` seuls — 143 000 fichiers dont **aucun** n'était affichable. Le critère d'assemblabilité est mesurable sur l'index (`<code>/<code>.g4mg`) ; et `inagle_characters` ne contient pas que des personnages : **66** de ses 5 721 codes commencent par `an`/`n`/`e`/`s`/`i` et rendaient 404 |
+| L'écran d'attente est celui du jeu | `loading01` — **1** objet, bande 784×136, texture servie par `/assets/tex/…` (200, `image/png`, 11 008 o), **jamais copiée** dans `public/`. `title00` a été mesuré puis écarté : 67 objets, 21 à la position par défaut, atlas entiers |
+| La sonde d'état se reboucle | `App.tsx` ne demandait `/api/v1/health` qu'une fois : l'écran d'attente n'aurait jamais basculé. Elle se rejoue toutes les 2 s et s'arrête sur `pret` ou `absent` |
+| Le personnage est **visible** | il était blanc sur un ciel crème, DOM juste et écran vide. Halo `aria-hidden` derrière lui, et `FOND_MENU` (hex en dur) remplacé par `--jeu-ciel-clair` : une seule source de couleur, sans exception |
+| L'inventaire des filtres | `docs/FILTRES.md` : **48** filtres, **42** manquants, avec l'ordre de dépendance (lot 8) |
+| Le viewport 3D est en **WebGPU** | `navigator.gpu`, un module **WGSL**, `createRenderPipeline` avec `depthStencil`. La profondeur est adaptée au NDC z ∈ [0,1] de WebGPU (`a = LOIN/(LOIN−PROCHE)`, `b = −LOIN·PROCHE/(LOIN−PROCHE)`) — le piège de cette traduction : avec la forme OpenGL le modèle est écrêté sans qu'aucune valeur ne paraisse fausse. Prouvé par une passe **hors écran** de 64×64 relue par `copyTextureToBuffer` : demi-côté du quad unitaire = 0,548 en NDC, soit exactement `1,7 / 3,1` — focale et distance cadrent comme le rastériseur ; le quad proche l'emporte sur le lointain dessiné avant ET après lui, donc `less` et [0,1] sont justes |
+| `nie-lua` et `nie-formats` servis nativement (lot 3) | **13 routes** mesurées. `/api/v1/lua/scripts/{chemin}` rend une analyse **statique** réelle — `kizuna_town_mainmenu` : 49 prototypes, 1 933 instructions, `funcLuaCommand` ×66 ; `?forme=chunk` rend le décodage intégral de `nie_lua::bytecode::parse` (52 173 o) ; `/api/v1/lua/desassemblage/…` 101 805 o en `text/plain` + ETag fort. `/api/v1/formats` compte sur les 255 308 entrées (71 101 `.cfg.bin`, 1 197 `.lua.bin`, 54 203 `.g4tx`) ; `?forme=structure` expose la table de types, la table de champs et le CRC32 qui résout les noms — ce que `to_iecode_json` ne donne pas, et sans quoi un client ignore pourquoi un champ sort en `Unknown_0x…`. Traversée de chemin → **400**, extension étrangère → **400**, absent → **404** |
+| L'exécution de Lua est refusée **structurellement**, pas déclarativement | `nie-lua` est déclaré `default-features = false` : `vm` (mlua) et `analysis` (tree-sitter) ne sont pas liés, et un `const { assert!(!VM_LIEE) }` le vérifie **à la compilation**. `/api/v1/lua` publie `vm_liee: false`. Les globaux sont lus dans les `GETTABUP`/`SETTABUP` sur l'upvalue `_ENV` — la définition d'un accès global en Lua 5.2 |
 
 ### Ouvert, et pourquoi
 
-1. **La couche 3D.** `nie-render3d` (rendu CPU, GLB, scène, WGSL) et `nie-model-serve` existent
-   et tournent ; le site n'en expose que le proxy `/assets/*`. Le branchement natif — liste des
-   modèles, métadonnées, GLB, et une vue qui affiche réellement un modèle — est le chantier en
-   cours. Rien n'en est annoncé ici tant qu'une route n'a pas rendu son compte.
-2. **Les huit favicons de `assets_de_marque`** ne sont pas branchées (cf. lot 5).
-3. **Le sas `apps/nie-web/src/legacy/`** reste à **87 fichiers**, exclu du `tsconfig` et importé
+1. **Trois modèles sur 102 ne se rendent pas** (`keshin/k000010`, `keshin/k000100`,
+   `item/d010020`), et la cause est identifiée à l'octet : le GLB assemblé par
+   `nie-model-serve` porte des **indices de sommet globaux** (jusqu'à 11 493) pour des
+   accesseurs `POSITION` **locaux** par primitive (818 / 858 / 2 394). Les personnages et les
+   armures sont conformes (`maxidx == count − 1`). Le correctif appartient à `nie-model-serve` ;
+   côté site l'erreur est classée **502** — l'amont a produit l'artefact — et le viewport écarte
+   les triangles hors bornes plutôt que d'abandonner la scène.
+2. **`app::ROUTES` est périmé** : il fige 19 routes et `tests/routes.rs` épingle
+   `ROUTES.len() == 19`. Les 7 routes d'Aphrody y manquaient déjà, les 12 de la 3D aussi. Une
+   liste de routes qui ne suit pas le routeur est un inventaire faux, pas une garde.
+3. **Le rendu serveur reste CPU.** `nie-render3d` a bien une feature `gpu` (wgpu) mais elle est
+   éteinte, et ce VPS n'a pas de GPU. C'est le navigateur qui gagne le **WebGPU**, pas le
+   serveur — et cette asymétrie doit rester écrite, sans quoi on la redécouvrira.
+4. **Le viewport 3D n'a pas été vu rendre le vrai modèle, en pixels.** Dans Chrome headless
+   avec SwiftShader, un canevas WebGPU n'est **jamais composité** : un témoin de vingt lignes
+   sans une ligne du fichier relit lui aussi `0,0,0,0`. Ce qui est prouvé (géométrie,
+   projection, profondeur, ombrage) l'est par lecture hors écran ; le trajet canevas →
+   compositeur, et la concordance fine viewport ↔ vignette (SSIM), restent à mesurer sur une
+   machine à GPU réel. Écart assumé et documenté : WebGPU n'a pas de `generateMipmap`, la
+   texture n'a donc qu'un niveau.
+5. **Un débordement horizontal** de la coquille (`packages/inacord-ui`), visible identiquement
+   sur `/textures` et sur `/modeles` : il préexiste aux deux lots.
+6. **Les huit favicons de `assets_de_marque`** ne sont pas branchées (cf. lot 5).
+7. **Le sas `apps/nie-web/src/legacy/`** reste à **87 fichiers**, exclu du `tsconfig` et importé
    nulle part, mais il porte encore `@rosegriffon/*` et `cdn.rosegriffon.fr` — ce que la
    décision du 2026-09-05 interdit côté Aphrody. C'est le plus gros résidu du dépôt côté front.
-4. **La page « Sons »** liste les `.awb` comme des sons individuels : `bgm_chronicle.awb` y
+8. **La page « Sons »** liste les `.awb` comme des sons individuels : `bgm_chronicle.awb` y
    apparaît avec un lecteur audio et **1 291,9 Mo**. Ce sont des banques, pas des pistes ; il
    faut cataloguer par ACB, comme le fait déjà Azalée.
 
@@ -334,6 +561,20 @@ déclarée « reste sur Azalée » **avec sa raison** (Azalée demeure le wiki d
 
 ## 7. Ce qui reste ouvert, et qui décide
 
+- **Couvrir tout le VFS en DOM et en slugs contredit une décision écrite de ce plan.**
+  L'utilisateur demande que « son DOM et tous les slugs couvrent tout le VFS ». Or `/f/` (les
+  octets bruts) et `/b/` (le parcours) sont **délibérément** exclus de `robots.txt` et du plan
+  de site, pour la raison consignée ici : 255 308 fichiers noient n'importe quel robot. Les deux
+  positions sont défendables et je ne les arbitre pas seul. La forme praticable, si l'on veut la
+  couverture : un **index de plans de site** découpé par tranches de 50 000 URL, des **pages**
+  rendues côté serveur par entrée, et `/f/` — qui ne rend que des octets, jamais un document —
+  maintenu hors index. C'est ce que je propose ; l'inverse (tout exposer, `/f/` compris) reste
+  la décision de l'utilisateur.
+- **Le préchargement du VFS par nginx** touche le vhost `aphrody.com` : c'est l'un des six
+  gestes de production. La commande et son retour arrière se préparent ; l'application attend
+  le go explicite. Noter que le serveur monte **déjà** le VFS en fond
+  (`EtatSite::monter_vfs_en_fond`, 255 308 entrées) — l'étage nginx est une optimisation du
+  premier octet, pas la condition du chargement.
 - **La base légale** de la diffusion des assets LEVEL-5 sur un site `aphrody-dev` : l'accord
   N° RG-L5-VR-2026-001 est signé par Rose Griffon. Aucun agent ne tranche cela.
 - **Le glossaire de traduction** (2,9 Mo, hors index git) : base, dépôt, ou absence bruyante —
@@ -343,7 +584,22 @@ déclarée « reste sur Azalée » **avec sa raison** (Azalée demeure le wiki d
 
 ## 8. Ce que « fini » veut dire
 
-`manquant = 0` dans la matrice, publiée sur `/couverture` et régénérée par une commande. Chaque
-capacité du dépôt est soit servie et comptée par un test, soit classée `interne` avec sa
-raison. L'UI a, pour chaque écran couvert, ses trois nombres (blocs, écart max, SSIM). Le sas
-`legacy/` est vide. Et le site tourne — vérifié en le lançant, pas en relisant le diff.
+**Six conditions, toutes chiffrées, aucune déclarative.**
+
+1. **`manquant = 0` et `partiel = 0`** dans la matrice, publiée sur `/couverture` et régénérée
+   par une commande — jamais tenue à la main. Chaque capacité est servie et **comptée par un
+   test**, ou classée `interne` **avec sa raison**.
+2. **Les 255 308 fichiers du VFS sont classés**, aucun non identifié : ni `inconnu`, ni
+   silencieux. `bloqué` reste un état légitime — mais il est **chiffré et visible**, avec le
+   format qui manque, pas noyé dans « manquant ».
+3. **Chaque corpus est prouvé par une requête qui rend un total et un code HTTP.** Un statut
+   seul ne prouve rien : `/chara` a rendu 200 en 87 ms avec **0 lien** pendant une journée.
+4. **`écrans servis / 475`** est publié, et chaque écran couvert porte ses trois nombres —
+   objets, objets positionnés, objets muets — plus, quand elle existe, sa SSIM.
+5. Le sas `legacy/` est vide.
+6. **Le site tourne** — vérifié en le lançant, pas en relisant le diff.
+
+Et une clause de véracité, parce que ce plan s'est déjà trompé sur ses propres chiffres
+(440 écrans au lieu de 475, 99 `pub fn` au lieu de 34, 24 objets non positionnés au lieu de 0) :
+**tout compte cité ici porte la commande qui le produit et la date où elle a tourné.** Un nombre
+sans commande n'est pas une mesure, c'est un souvenir.

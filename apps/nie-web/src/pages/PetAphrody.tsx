@@ -40,6 +40,7 @@
  * prend le relais dès que l'atlas est décodé, sans saut visible — la pose de repos est justement
  * ce que la boucle affiche au repos.
  */
+import type { CSSProperties } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 /** Une frame : son coin dans l'atlas, sa durée, sa direction. */
@@ -306,7 +307,9 @@ export function PetAphrody({
 				// redimensionné est interpolé au plus vite et le sprite crénelle. `high-quality`
 				// demande le meilleur filtrage disponible — c'est le seul réglage qui porte sur
 				// une image de FOND, `imageRendering` sur un `<img>` ne s'appliquerait pas ici.
-				imageRendering: "high-quality",
+				// `high-quality` est dans la spec CSS Images 3 mais absent des types React :
+				// la valeur est correcte, c'est la table de types qui est en retard.
+				imageRendering: "high-quality" as CSSProperties["imageRendering"],
 				// Le personnage n'est pas un bouton de formulaire : il ne doit pas hériter d'un
 				// contour de focus rectangulaire autour de sa cellule transparente.
 				outline: "none",

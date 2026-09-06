@@ -9,6 +9,13 @@ Droits exclusifs de reverse-engineering, développement de mods, portage et outi
 
 Claude Code et Codex y codent **en même temps**. Avant d'écrire une ligne, lire
 **`AGENTS.md`** (contexte commun à tous les agents) et **`docs/A2A-CODEX.md`** (le protocole).
+**Périmètre ≠ compilation.** Un agent peut respecter son périmètre à la lettre et casser
+quatre fichiers qui ne sont pas à lui : changer la **signature** d'une fonction partagée
+(`IndexVfs::page_filtree` passée à 7 paramètres) casse tous ses appelants, y compris ceux
+qu'écrivent d'autres agents au même instant. Une signature partagée s'étend par un **struct
+d'options** (`#[derive(Default)]`) en conservant la forme courte qui délègue — les appelants
+existants compilent sans être touchés.
+
 En bref : annoncer son périmètre avant d'écrire, ne rien toucher en dehors, un seul auteur de
 commits, et se parler par `aphrody a2a tick` — dont **`--kind` n'accepte que `fact` et `ping`**
 (`claim`, `done`, `goal`, `block` retombent sur `ping` en silence, d'où le type codé dans le
@@ -69,6 +76,7 @@ qui ne respecte pas `.gitignore` s'y noie. Mesures faites à la racine :
 | Recherche depuis le harnais | outils **Grep/Glob** dédiés | même moteur que `rg`, sortie déjà structurée ; le Bash sert quand il faut composer (pipe, `--json`, comptage) |
 | Recherche **récurrente**, du domaine | **`niers find` / `niers grep`** | embarquent le moteur `ignore`/ripgrep. Une recherche qui mérite d'être rejouée s'écrit en Rust dans `nie-cli` ; `rg` en direct ne vaut que pour l'exploration jetable d'une session |
 | Fichiers **du jeu** | **`niers vfs find`** | le VFS n'est pas sur le disque : `rg`/`fdfind` sur `data/` ne voient pas l'intérieur des CPK |
+| **Énumérer TOUT** le VFS | `niers vfs find 'data/' -n 300000` | rend les **255 308** entrées (chemin, taille, CPK) en **1,9 s**. `-n` vaut 100 par défaut : sans lui on croit le VFS minuscule |
 | Contenu reversé de `nie.exe` | `sqlite3 var/niers.sqlite` | la base fait **15,5 Go** : toujours un `WHERE` indexé et un `LIMIT`, jamais un `SELECT *` |
 | Données de jeu (perso, skill, item) | façade `@niers/catalog`, `niers wiki` | § *Les quatre gisements* |
 | Qui appelle quoi / définition d'un symbole | outil **LSP**, ou la KB | `rg` sur un identifiant courant rend des centaines de faux positifs |
@@ -251,6 +259,8 @@ bun run lint
   l'autre fait déjà.
 - Régénérer les bindings Tauri sans ouvrir de fenêtre :
   `cd apps/inacord/src-tauri && cargo run --bin export-bindings --features dev-bindings`.
+- **`bunx tsc --noEmit` échoue sur `apps/nie-web`** (`TS5101: 'baseUrl' is deprecated`) : le `tsc`
+  global n'est pas celui du workspace. Le portail est `bun run --filter '*nie-web*' typecheck`.
 - **`nie` est aussi un paquet du registre npm.** Sans `bun install` à la racine, `import … from "nie"`
   résout vers `nie@1.2.7` du cache et non vers `packages/nie` — erreur trompeuse
   `Export named 'decode' not found`. Le `dlopen` de `nie_ffi.dll` n'est que la cause *suivante*.
@@ -692,6 +702,36 @@ alors que 77 `.py` versionnés existent déjà.
 
 ## Pièges d’édition
 
+- **Un paramètre accepté doit être honoré.** `/b` déclarait `q` dans son type de query et ne
+  l'appliquait jamais : un client qui filtre croit filtrer, et la liste entière passe pour un
+  résultat. Pire qu'un paramètre refusé. Corollaire vécu le même jour : une garde écrite dans
+  UN chemin de code ne couvre pas les autres — `?ext=inexistante` rendait le dossier entier en
+  annonçant pourtant `ext_inconnue: true`.
+- **Un nom de fonction ne dit pas si elle LIT ou si elle EXÉCUTE.** `discover_host_calls` et
+  `enumerate_header_tabs` de `nie-lua` sonnent comme de l'introspection ; elles posent une
+  métatable sur `_G` puis **appellent la fonction principale** du script, sur un
+  `Lua::unsafe_new`. Les router aurait ouvert un interpréteur sur un site public. Lire le corps,
+  pas le nom — et rendre le refus **structurel** (`default-features = false` + un
+  `const { assert!(…) }`) plutôt que déclaratif : une politique qui tient par la discipline du
+  prochain appelant n'en est pas une.
+- **Un changement de palette est un changement de CONTRASTE.** Un personnage en tenue blanche
+  posé sur un ciel passé au crème : DOM juste, URL juste, PNG juste, **rien à l'écran**. Deux
+  corrections justes prises séparément peuvent s'annuler. Ce qui se vérifie est l'écran.
+- **Une sonde unique ne mesure pas un état qui change.** `useEffect` à dépendances vides sur
+  `/api/v1/health` alors que le VFS se monte en fond : l'écran d'attente n'aurait jamais
+  basculé. Un état asynchrone se reboucle jusqu'à une valeur tranchée.
+- **Chrome headless ne composite JAMAIS un canevas WebGPU** (SwiftShader) : un témoin de vingt
+  lignes relit `0,0,0,0`. Ne pas accuser le nuanceur — prouver hors écran par une passe
+  `copyTextureToBuffer`. Et en traduisant GLSL → WGSL, adapter la profondeur : WebGPU a un NDC
+  **z ∈ [0,1]**, pas [-1,1] ; avec la forme OpenGL le modèle est écrêté sans qu'aucune valeur
+  ne paraisse fausse.
+- **Une découpe de corpus se COMPTE, elle ne se déclare pas.** Six lots du VFS annoncés
+  disjoints : `data/dx11/effect/` figurait dans deux. Vérifier par `sort -u` sur la réunion et
+  par la somme, avant d'envoyer six agents travailler dessus.
+- **Un compte cité dans un document porte sa commande et sa date.** Ce dépôt s'est trompé sur
+  ses propres chiffres : 440 écrans au lieu de **475**, 99 `pub fn` de `nie-lua` au lieu de
+  **34**, « 24 objets non positionnés » au lieu de **0**. Un nombre sans commande est un
+  souvenir, pas une mesure.
 - **Un test qui ne PEUT PAS échouer est pire qu'une suite absente : il rassure.** Un contrôle de
   gamut écrit sur `palette::FromColor::from_color` était vert quoi qu'on lui donne — cette
   conversion écrête elle-même (`from_color_unclamped(t).clamp()`), si bien qu'aucune couleur

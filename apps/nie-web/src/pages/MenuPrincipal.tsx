@@ -39,7 +39,6 @@ import {
 	BOITES,
 	CanvasItem,
 	ECART_TUILE,
-	FOND_MENU,
 	GameCanvas,
 	GLYPHES,
 	HeroPanel,
@@ -93,11 +92,27 @@ const Y_RANGEE = Math.round(
  *
  * La quantification par région rend `#f9fdf9` — la teinte dominante, celle de `FOND_MENU`. Mais
  * la référence n'est pas un aplat : elle s'éclaire en bleu vers le haut à droite, derrière le
- * logo. Un aplat seul donne un écran plat que rien ne rattache à la capture ; le dégradé part
- * de la teinte mesurée et ne fait que retrouver cette montée, sans inventer de troisième
- * couleur — `--jeu-ciel-brume` est elle aussi une valeur relevée.
+ * logo. Un aplat seul donne un écran plat que rien ne rattache à la capture ; le dégradé ne
+ * fait que retrouver cette montée, sans inventer de troisième couleur — `--jeu-ciel-brume` est
+ * elle aussi une valeur relevée.
+ *
+ * Le point de départ n'est plus `FOND_MENU` mais `--jeu-ciel-clair`. Les deux disent la même
+ * chose à un cheveu près (`#f9fdf9` verdâtre contre `#f9f6f4` crème), et c'est justement le
+ * problème : le canevas portait l'un, le `<body>` l'autre, et la démarcation se voyait en bas
+ * d'écran sous la forme d'une bande d'une autre teinte. La palette de `nie-aphrody` est la
+ * source unique des couleurs du site ; une constante de géométrie n'a pas à en porter une
+ * seconde.
  */
-const CIEL = `radial-gradient(70% 55% at 88% -8%, var(--jeu-ciel-brume) 0%, ${FOND_MENU} 70%)`;
+/**
+ * Diamètre du halo posé derrière le personnage, en pixels du canevas.
+ *
+ * 288 : la cellule du sprite fait 208 px de haut, le halo doit donc déborder d'environ 40 px de
+ * chaque côté pour que le dégradé s'éteigne AVANT le bord du dessin — sinon la coupure du
+ * cercle se voit derrière les pieds.
+ */
+const HALO = 288;
+
+const CIEL = `radial-gradient(70% 55% at 88% -8%, var(--jeu-ciel-brume) 0%, var(--jeu-ciel-clair) 70%)`;
 
 /**
  * L'échelle du personnage sur le canevas du menu.
@@ -179,6 +194,29 @@ export function MenuPrincipal({
 			    son logo, et un sous-titre qui répétait la description déjà servie dans l'en-tête
 			    du document. Le personnage dont le site porte le nom dit la même chose sans
 			    l'écrire, et il réagit à l'état réel du service. */}
+			{/* Le halo. Le personnage porte une tenue CLAIRE — mesuré sur la pose servie : sa
+			    dominante est un blanc cassé — et le ciel du menu est passé au crème de la palette.
+			    Posé tel quel, il disparaissait purement et simplement : le DOM était juste, la
+			    capture vide, et rien dans le code n'était faux. Le halo n'est pas une décoration,
+			    c'est ce qui le rend visible. Il est `aria-hidden` : il ne dit rien. */}
+			<CanvasItem
+				x={BOITES.titre.x + BOITES.titre.l / 2}
+				y={BOITES.titre.y + Math.round((BOITES.titre.h - HALO) / 2)}
+				ancreX={0.5}
+				z={9}
+			>
+				<div
+					aria-hidden="true"
+					style={{
+						width: HALO,
+						height: HALO,
+						borderRadius: "50%",
+						background:
+							"radial-gradient(circle, var(--jeu-ciel-brume) 0%, var(--jeu-surface-glace) 48%, transparent 70%)",
+					}}
+				/>
+			</CanvasItem>
+
 			<CanvasItem
 				x={BOITES.titre.x + BOITES.titre.l / 2}
 				y={BOITES.titre.y + Math.round((BOITES.titre.h - 208 * ECHELLE_PET) / 2)}
