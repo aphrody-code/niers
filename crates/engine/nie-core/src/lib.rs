@@ -16,6 +16,7 @@
 //! - [`keeper`] — Calcul d'arrêt du gardien (`game::SoccerCalcKeeperSaveComponent`)
 //! - [`tactics`] — IA tactique par joueur (`game::SoccerCharaTacticsAI`)
 //! - [`stats`] — Courbe d'interpolation 3-segments des statistiques
+//! - [`optimisation`] — Builds BASARA et synergie d'équipe (port inagle)
 //! - [`comparaison`] — Comparaison des variantes d'un personnage (port inagle)
 //! - [`growth`] — Tables de croissance + lookup à fallback + `calculate_stats`
 //! - [`exp`] — Table d'XP par niveau + multiplicateur de rareté
@@ -94,6 +95,7 @@ pub mod match_fsm;
 pub mod match_sim;
 pub mod match_state;
 pub mod menu_setting;
+pub mod optimisation;
 pub mod play_cmd_manager;
 pub mod quat;
 pub mod scene;
