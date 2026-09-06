@@ -18,6 +18,7 @@
 //! le bytecode reste exécuté par la vraie VM, avec ses bibliothèques.
 
 use std::cell::RefCell;
+use std::collections::BTreeMap;
 use std::rc::Rc;
 
 use mlua::{Lua, MultiValue, Value, Variadic};
@@ -25,6 +26,45 @@ use mlua::{Lua, MultiValue, Value, Variadic};
 use crate::{LuaError, is_lua52_bytecode};
 
 type IncludeResolver = Box<dyn Fn(&str) -> Option<Vec<u8>>>;
+
+/// Valeurs natives primitives injectées dans la VM avant un chunk et ses includes.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct RuntimeContext {
+    numbers: BTreeMap<String, f64>,
+    booleans: BTreeMap<String, bool>,
+    strings: BTreeMap<String, String>,
+}
+
+impl RuntimeContext {
+    /// Pose un global numérique (indice, coordonnée ou enum natif).
+    pub fn set_number(&mut self, name: impl Into<String>, value: f64) {
+        self.numbers.insert(name.into(), value);
+    }
+
+    /// Pose un global booléen fourni par le moteur.
+    pub fn set_boolean(&mut self, name: impl Into<String>, value: bool) {
+        self.booleans.insert(name.into(), value);
+    }
+
+    /// Pose un global texte fourni par le moteur.
+    pub fn set_string(&mut self, name: impl Into<String>, value: impl Into<String>) {
+        self.strings.insert(name.into(), value.into());
+    }
+
+    pub(crate) fn apply(&self, lua: &Lua) -> mlua::Result<()> {
+        let globals = lua.globals();
+        for (name, value) in &self.numbers {
+            globals.set(name.as_str(), *value)?;
+        }
+        for (name, value) in &self.booleans {
+            globals.set(name.as_str(), *value)?;
+        }
+        for (name, value) in &self.strings {
+            globals.set(name.as_str(), value.as_str())?;
+        }
+        Ok(())
+    }
+}
 
 /// Options d'exécution.
 #[derive(Debug, Clone)]
@@ -37,6 +77,8 @@ pub struct ExecOptions {
     /// Installe l'hôte de menu du moteur ([`crate::install_menu_host`]) avant l'exécution — permet
     /// aux vrais scripts de menu d'aller au-delà du premier appel hôte.
     pub with_menu_host: bool,
+    /// Globals primitifs fournis par le contexte save/scène du moteur.
+    pub context: RuntimeContext,
 }
 
 impl Default for ExecOptions {
@@ -47,6 +89,7 @@ impl Default for ExecOptions {
             // ~10⁵ instructions), assez bas pour couper une boucle infinie en une seconde.
             instruction_limit: Some(20_000_000),
             with_menu_host: false,
+            context: RuntimeContext::default(),
         }
     }
 }
@@ -247,6 +290,7 @@ fn execute_inner(
         crate::install_menu_host(&lua)?;
     }
     install_host_stubs(&lua)?;
+    options.context.apply(&lua)?;
 
     if let Some(limit) = options.instruction_limit {
         // Le hook VM est le seul moyen d'interrompre un chunk qui boucle : `mlua` ne préempte pas.
@@ -454,6 +498,25 @@ mod tests {
         let out = execute(b"error('boum')", &ExecOptions::default()).expect("exécution");
         let msg = out.error.expect("une erreur était attendue");
         assert!(msg.contains("boum"), "message : {msg}");
+    }
+
+    #[test]
+    fn execute_applique_le_contexte_type_avant_le_chunk() {
+        let mut context = RuntimeContext::default();
+        context.set_number("x", 12.5);
+        context.set_boolean("isGrayout", false);
+        context.set_string("MENU_LINIT_NONE", "none");
+        let options = ExecOptions {
+            context,
+            ..Default::default()
+        };
+        let out = execute(
+            br#"assert(x == 12.5); assert(not isGrayout); assert(MENU_LINIT_NONE == "none")"#,
+            &options,
+        )
+        .expect("exécution avec contexte");
+        assert!(out.error.is_none(), "erreur inattendue : {:?}", out.error);
+        assert!(out.missing_host_reads.is_empty());
     }
 
     /// Une boucle infinie doit être coupée par la limite d'instructions, pas figer l'appelant.

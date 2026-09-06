@@ -89,6 +89,7 @@ pub fn run(
             chunk_name: path.clone(),
             instruction_limit: (instruction_limit != 0).then_some(instruction_limit),
             with_menu_host: menu_host,
+            context: Default::default(),
         };
         let resolver_vfs = Rc::clone(&vfs);
         let resolver_base = Rc::clone(&by_base);

@@ -55,6 +55,9 @@ natif pose avant un callback (nombres, booléens, chaînes). Le contexte est
 appliqué après les stubs, conservé par la session et réappliqué au `reload()` ;
 il permet donc de fournir les valeurs de scène/save réellement connues sans
 transformer un manque de contexte en table Lua truthy.
+Le même type est désormais porté par `ExecOptions` : `execute` et
+`execute_with_include` utilisent ainsi ce contexte sur le chunk principal comme
+sur les modules VFS inclus.
 
 Le driver `nie-game --runtime` utilise maintenant cette session persistante
 plutôt qu’une VM et des index d’include reconstruits à la main. La vérification
@@ -84,7 +87,7 @@ non prouvé.
 
 ```text
 cargo test -p nie-lua --lib
-93 passed, 0 failed, 1 ignored
+94 passed, 0 failed, 1 ignored
 
 cargo clippy -p nie-lua --lib --tests -- -D warnings
 cargo clippy -p nie-game --bins --tests -- -D warnings

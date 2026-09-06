@@ -31,7 +31,6 @@
 //! c'est la liste de travail du portage moteur, produite par l'exécution elle-même.
 
 use std::cell::RefCell;
-use std::collections::BTreeMap;
 use std::rc::Rc;
 
 use mlua::{Lua, MultiValue, Table, Value};
@@ -39,7 +38,8 @@ use mlua::{Lua, MultiValue, Table, Value};
 use crate::host::{HostRegistry, LogEntry, LogSink};
 use crate::menu_host::{DriveReport, MenuState};
 use crate::runtime::{
-    GlobalEntry, install_host_stubs, install_print_capture, list_globals, value_to_string,
+    GlobalEntry, RuntimeContext, install_host_stubs, install_print_capture, list_globals,
+    value_to_string,
 };
 use crate::{ChunkMode, LuaError, index_script_paths, is_lua52_bytecode, resolve_script_path};
 
@@ -114,49 +114,6 @@ impl ApiReport {
             return 100;
         }
         ((self.provided.len() * 100) / total) as u32
-    }
-}
-
-/// Valeurs natives primitives injectées avant l'exécution d'un chunk ou d'un menu.
-///
-/// Le manager C++ pose certains globals de contexte (`x`, `pieceIdx`, `MENU_LINIT_NONE`, …)
-/// avant d'appeler Lua. Les laisser au stub générique les transforme en tables truthy ; cette
-/// structure permet au lecteur VFS d'injecter les valeurs connues sans en inventer le contenu.
-#[derive(Debug, Clone, Default, PartialEq)]
-pub struct RuntimeContext {
-    numbers: BTreeMap<String, f64>,
-    booleans: BTreeMap<String, bool>,
-    strings: BTreeMap<String, String>,
-}
-
-impl RuntimeContext {
-    /// Pose un global numérique (indice, coordonnée ou enum natif).
-    pub fn set_number(&mut self, name: impl Into<String>, value: f64) {
-        self.numbers.insert(name.into(), value);
-    }
-
-    /// Pose un global booléen fourni par le moteur.
-    pub fn set_boolean(&mut self, name: impl Into<String>, value: bool) {
-        self.booleans.insert(name.into(), value);
-    }
-
-    /// Pose un global texte fourni par le moteur.
-    pub fn set_string(&mut self, name: impl Into<String>, value: impl Into<String>) {
-        self.strings.insert(name.into(), value.into());
-    }
-
-    fn apply(&self, lua: &Lua) -> mlua::Result<()> {
-        let globals = lua.globals();
-        for (name, value) in &self.numbers {
-            globals.set(name.as_str(), *value)?;
-        }
-        for (name, value) in &self.booleans {
-            globals.set(name.as_str(), *value)?;
-        }
-        for (name, value) in &self.strings {
-            globals.set(name.as_str(), value.as_str())?;
-        }
-        Ok(())
     }
 }
 

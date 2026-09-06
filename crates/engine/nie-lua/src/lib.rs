@@ -35,7 +35,7 @@ pub mod runtime;
 #[cfg(feature = "vm")]
 pub mod session;
 #[cfg(feature = "vm")]
-pub use session::RuntimeContext;
+pub use runtime::RuntimeContext;
 /// Analyse statique des **sources** Lua (tree-sitter) — feature `analysis`, active par défaut.
 ///
 /// Elle est optionnelle parce qu'elle tire `tree-sitter` (code C) : `nie-formats`, qui n'a

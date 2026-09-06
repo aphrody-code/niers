@@ -50,6 +50,7 @@ pub fn run(
         chunk_name: name.clone(),
         instruction_limit: (instruction_limit != 0).then_some(instruction_limit),
         with_menu_host,
+        context: Default::default(),
     };
     let decoded = nie_lua::bytecode::parse(&bytes);
     let decoded_instructions = decoded
