@@ -61,6 +61,9 @@ ainsi dans le menu suivant.
 Le même type est désormais porté par `ExecOptions` : `execute` et
 `execute_with_include` utilisent ainsi ce contexte sur le chunk principal comme
 sur les modules VFS inclus.
+`LuaSession::call_menu_callback` expose aussi les événements host→Lua de
+navigation (`OnSetupLayer`, `OnOpenLayer`, `OnCloseLayer`, `OnCloseEndLayer`,
+`OnChangeLayerGroup`) sur la même VM, avec injection de contexte par événement.
 
 `execute_with_script_paths` centralise désormais le chemin brut VFS → index des
 scripts → résolution logique/versionnée → VM. `lua-run` et `lua-audit` l’utilisent
@@ -98,7 +101,7 @@ non prouvé.
 
 ```text
 cargo test -p nie-lua --lib
-96 passed, 0 failed, 1 ignored
+97 passed, 0 failed, 1 ignored
 
 cargo clippy -p nie-lua --lib --tests -- -D warnings
 cargo clippy -p nie-game --bins --tests -- -D warnings

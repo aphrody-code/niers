@@ -344,6 +344,33 @@ impl LuaSession {
         )
     }
 
+    /// Appelle un callback host→Lua sur la VM persistante, comme le manager de menu natif.
+    ///
+    /// `args` sont convertis en nombres Lua (les IDs de layer/groupe et indices du moteur sont
+    /// transportés ainsi). Si `context` est fourni, il remplace le contexte de scène avant
+    /// l'appel ; cela permet d'associer les globals natifs au même événement que le jeu.
+    /// Retourne `false` quand le callback n'est pas défini, sans considérer cela comme une erreur.
+    pub fn call_menu_callback(
+        &mut self,
+        callback: &str,
+        args: &[f64],
+        context: Option<RuntimeContext>,
+    ) -> Result<bool, LuaError> {
+        if let Some(context) = context {
+            self.set_context(context)?;
+        }
+        let Ok(Value::Function(function)) = self.lua.globals().raw_get::<Value>(callback) else {
+            return Ok(false);
+        };
+        let values = args
+            .iter()
+            .copied()
+            .map(Value::Number)
+            .collect::<MultiValue>();
+        function.call::<MultiValue>(values)?;
+        Ok(true)
+    }
+
     /// Lignes de `print` accumulées depuis le dernier [`Self::take_output`].
     #[must_use]
     pub fn take_output(&self) -> Vec<String> {
@@ -603,6 +630,36 @@ mod tests {
             br#"assert(pieceIdx == 3); assert(isGrayout == true); assert(MENU_LINIT_NONE == "native-sentinel")"#,
         )
         .expect("contexte après reload");
+    }
+
+    #[test]
+    fn les_evenements_host_lua_reutilisent_la_vm_et_le_contexte() {
+        let mut s = session();
+        s.exec(
+            "events",
+            br#"
+                calls = {}
+                function OnOpenLayer(layer, index)
+                    calls[#calls + 1] = layer + index + pieceIdx
+                end
+                function OnCloseEndLayer(layer, index)
+                    calls[#calls + 1] = layer + index + pieceIdx
+                end
+            "#,
+        )
+        .expect("callbacks");
+        let mut context = RuntimeContext::default();
+        context.set_number("pieceIdx", 4.0);
+        assert!(s
+            .call_menu_callback("OnOpenLayer", &[10.0, 2.0], Some(context.clone()))
+            .expect("OnOpenLayer"));
+        assert!(s
+            .call_menu_callback("OnCloseEndLayer", &[20.0, 1.0], Some(context))
+            .expect("OnCloseEndLayer"));
+        assert!(!s
+            .call_menu_callback("OnChangeFocus", &[0.0, 0.0], None)
+            .expect("callback absent"));
+        assert_eq!(s.eval("calls[1] .. ',' .. calls[2]").unwrap(), "16,25");
     }
 
     #[test]
