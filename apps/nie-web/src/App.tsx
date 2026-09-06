@@ -1,7 +1,13 @@
 import { creerWebSource, type VueCatalogue } from "@niers/asset-source";
 import { type SanteApi, sante } from "@niers/asset-source/nie-site";
-import { AssetSourceProvider, useCapacites, useErreurSource } from "@niers/inacord-ui";
+import {
+	AssetSourceProvider,
+	FournisseurNavigation,
+	useCapacites,
+	useErreurSource,
+} from "@niers/inacord-ui";
 import "@niers/inacord-ui/shell/game-tokens.css";
+import * as React from "react";
 import { useEffect, useMemo, useState } from "react";
 import { ALIAS, EXPLORATEUR, MEDIAS, entreesMenu, routesReconnues } from "./entrees";
 import { Catalogue } from "./pages/Catalogue";
@@ -67,6 +73,29 @@ function Site() {
 		url.pathname = cheminPourEntree(prefixe, suivante);
 		window.history.pushState({ vue: suivante }, "", url);
 	};
+
+	/**
+	 * La navigation que les composants portés du wiki utilisent.
+	 *
+	 * Ils appelaient `next/link`, qui n'existe pas ici : l'adaptateur du paquet partagé rend un
+	 * vrai `<a href>` et ne détourne le clic simple **que** si l'hôte sait faire mieux. Cet
+	 * hôte sait : il change d'écran sans recharger. Un chemin qui ne désigne aucune entrée
+	 * connue est laissé au navigateur — le détourner mènerait à un écran vide au lieu d'une
+	 * page servie.
+	 */
+	const naviguer = React.useCallback(
+		(href: string) => {
+			const route = separerLangue(new URL(href, window.location.origin).pathname).route.replace(
+				/^\//,
+				"",
+			);
+			if (route && DEPART.includes(route)) setVue(route);
+			else window.location.assign(href);
+		},
+		// `setVue` est recréé à chaque rendu et ne dépend que de `prefixe` : le suivre ferait
+		// remonter un contexte neuf à chaque frappe, et remonterait tout l'arbre porté.
+		[prefixe],
+	);
 
 	// Le bouton « precedent » doit ramener a la vue precedente, pas sortir du site. Une URL qui
 	// ne designe aucune entree est l'accueil — c'est aussi ce qui ramene au menu depuis un
@@ -142,7 +171,8 @@ function Site() {
 	}
 
 	return (
-		<EcranSecondaire vue={vue} onChoisir={setVue} etat={etat}>
+		<FournisseurNavigation naviguer={naviguer}>
+			<EcranSecondaire vue={vue} onChoisir={setVue} etat={etat}>
 			{erreurSource ? (
 				// Le detail technique de la panne ne s'affiche pas : il ne dit rien a qui consulte
 				// le site, et le seul geste utile — reessayer — ne depend pas de lui.
@@ -164,7 +194,8 @@ function Site() {
 				// quelque chose sans qu'on ait rien reglé.
 				<Catalogue vue={(vue === MEDIAS ? "textures" : vue) as VueCatalogue} />
 			)}
-		</EcranSecondaire>
+			</EcranSecondaire>
+		</FournisseurNavigation>
 	);
 }
 

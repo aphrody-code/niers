@@ -102,3 +102,19 @@ export {
 	type ProprietesLayout,
 	useEchelleCanvas,
 } from "./shell/layout-render";
+
+// --- La compatibilite Next, pour les composants venus du wiki ------------------------------
+//
+// 136 composants d'Azalee ont ete migres ici le 2026-09-06. Ils portaient 143 imports de
+// `next/*` — mesures : `next/link` 61 fois, `next/image` 53, `next/navigation` 27 — et ce
+// paquet est monte par DEUX hotes dont aucun n'est Next. Trois adaptateurs les remplacent, et
+// `FournisseurNavigation` est ce que l'hote installe pour que `Link` navigue a sa maniere :
+// par etat sous Aphrody, par le navigateur ailleurs.
+export {
+	FournisseurNavigation,
+	Image,
+	Link,
+	usePathname,
+	useRouter,
+	useSearchParams,
+} from "./compat/next";
