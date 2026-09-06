@@ -445,6 +445,30 @@ pub fn parse(data: &[u8]) -> Result<Chunk, BytecodeError> {
         number_is_integral: data[11] != 0,
     };
 
+    if header.format != 0 {
+        return Err(BytecodeError::UnsupportedHeader(format!(
+            "format = {} (attendu 0)",
+            header.format
+        )));
+    }
+    if data[6] > 1 {
+        return Err(BytecodeError::UnsupportedHeader(format!(
+            "endianness = {} (attendu 0 ou 1)",
+            data[6]
+        )));
+    }
+    if !matches!(header.size_int, 4 | 8) {
+        return Err(BytecodeError::UnsupportedHeader(format!(
+            "sizeof(int) = {}",
+            header.size_int
+        )));
+    }
+    if !matches!(header.size_size_t, 4 | 8) {
+        return Err(BytecodeError::UnsupportedHeader(format!(
+            "sizeof(size_t) = {}",
+            header.size_size_t
+        )));
+    }
     if header.size_instruction != 4 {
         return Err(BytecodeError::UnsupportedHeader(format!(
             "sizeof(Instruction) = {}",
@@ -777,6 +801,30 @@ mod tests {
         assert!(matches!(
             parse(b"-- juste du texte Lua\nreturn 1\n"),
             Err(BytecodeError::BadSignature)
+        ));
+    }
+
+    #[test]
+    fn rejette_un_en_tete_lua_incoherent_sans_paniquer() {
+        let lua = crate::new_vm();
+        let dumped = lua
+            .load("return 1")
+            .into_function()
+            .expect("compilation")
+            .dump(false);
+
+        let mut bad_format = dumped.clone();
+        bad_format[5] = 1;
+        assert!(matches!(
+            parse(&bad_format),
+            Err(BytecodeError::UnsupportedHeader(message)) if message.contains("format")
+        ));
+
+        let mut bad_size = dumped;
+        bad_size[8] = 3;
+        assert!(matches!(
+            parse(&bad_size),
+            Err(BytecodeError::UnsupportedHeader(message)) if message.contains("size_t")
         ));
     }
 

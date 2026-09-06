@@ -55,6 +55,8 @@ locale du jeu, sans chemin machine écrit dans le code ou dans ce rapport.
 Le désassembleur résout aussi les cibles de saut avec la règle Lua
 `pc + 1 + sBx` et affiche les arités réelles de `CALL`, `TAILCALL` et `RETURN`
 (`B-1`/`C-1`, `vararg` et `multret` inclus). Un test VM généré vérifie ce listing.
+Il rejette désormais explicitement les formats, tailles C et endianess d’en-tête
+incohérents, au lieu de tenter un décodage ambigu.
 
 ## Limites connues
 
