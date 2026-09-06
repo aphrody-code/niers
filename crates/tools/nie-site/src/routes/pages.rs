@@ -151,6 +151,23 @@ const ENTREES: [Entree; 6] = [
 /// client contredit à l'écran.
 const ALIAS: [&str; 2] = ["recherche", "donnees"];
 
+/// La route canonique d'une route servie.
+///
+/// `/recherche` et `/donnees` sont les deux adresses héritées des écrans fusionnés dans
+/// l'explorateur : elles montrent la MÊME page. Servies telles quelles, elles sortaient avec
+/// leur segment brut en titre (« donnees — Aphrody ») et un canonique sur elles-mêmes — trois
+/// URL pour une page, c'est-à-dire la dilution que le plan du site évite en ne les annonçant
+/// pas. Le canonique les ramène donc à `/explorateur`.
+#[must_use]
+pub fn route_canonique(route: &str) -> String {
+    let nu = route.trim_start_matches('/').trim_end_matches('/');
+    let premier = nu.split('/').next().unwrap_or("");
+    if ALIAS.contains(&premier) {
+        return "/explorateur".to_owned();
+    }
+    route.to_owned()
+}
+
 /// La route est-elle une page que ce site sert réellement ?
 ///
 /// La question a une conséquence mesurable : `nie-site` rendait la coquille en **200** pour
@@ -587,7 +604,10 @@ pub fn construire(
     script: Option<String>,
     catalogue: Option<Catalogue>,
 ) -> Coquille {
-    let (titre, description, type_og) = metadonnees(route, langue);
+    // Les metadonnees, le canonique et le groupe `hreflang` decrivent la page CANONIQUE ;
+    // `data-route` garde la route demandee, pour que le bundle se comporte a l'identique.
+    let canonique = route_canonique(route);
+    let (titre, description, type_og) = metadonnees(&canonique, langue);
     let noindex = !route_servie(route);
     let i = rang(langue);
     let catalogues = ENTREES
@@ -637,8 +657,8 @@ pub fn construire(
     // La page courante fait partie de l'identite de l'URL : sans `?page=` au canonique, les
     // pages 2 et suivantes se declarent toutes copies de la premiere et disparaissent.
     let url = match catalogue.as_ref().map(|c| c.page) {
-        Some(n) if n > 1 => format!("{}?page={n}", langue.url(origine, route)),
-        _ => langue.url(origine, route),
+        Some(n) if n > 1 => format!("{}?page={n}", langue.url(origine, &canonique)),
+        _ => langue.url(origine, &canonique),
     };
     Coquille {
         lang: langue.code(),
@@ -646,7 +666,7 @@ pub fn construire(
         noindex,
         jsonld: donnees_structurees(
             origine,
-            route,
+            &canonique,
             langue,
             &titre,
             &description,
@@ -659,7 +679,7 @@ pub fn construire(
             .filter(|l| **l != langue)
             .map(|l| l.og_locale())
             .collect(),
-        alternatives: alternatives(origine, route),
+        alternatives: alternatives(origine, &canonique),
         // Absolue : une plateforme sociale ne resout pas les URL relatives.
         image: Some(format!("{origine}{VIGNETTE}")),
         vignette_l: VIGNETTE_L,
@@ -838,6 +858,21 @@ mod tests {
             precedent: (page > 1).then(|| format!("/textures?page={}", page - 1)),
             suivant: (page < pages).then(|| format!("/textures?page={}", page + 1)),
         }
+    }
+
+    #[test]
+    fn alias_canonique_vers_explorateur() {
+        // Les deux alias montrent la page de l'explorateur : ils doivent la DESIGNER, sinon
+        // trois URL se declarent trois pages pour un seul ecran.
+        for alias in ["/recherche", "/donnees"] {
+            let c = construire("https://aphrody.com", alias, Langue::Fr, None, None, None);
+            assert_eq!(c.url, "https://aphrody.com/explorateur", "{alias}");
+            assert_eq!(c.titre, "Explorer — Aphrody", "{alias}");
+            assert!(!c.noindex, "{alias} est servie");
+            assert_eq!(c.route, alias, "le bundle garde la route demandee");
+        }
+        let inconnue = construire("https://aphrody.com", "/gallery", Langue::Fr, None, None, None);
+        assert!(inconnue.noindex, "une route inventee ne s'indexe pas");
     }
 
     #[test]
