@@ -54,21 +54,24 @@ const fn interne(raison: &'static str) -> Etat {
 /// silence, et ce dépôt l'a déjà payé avec `app::ROUTES` figé à 19 sur un routeur qui en
 /// montait 37.
 pub static MODULES_TYPES: &[&str] = &[
-    "ai", "ai_type", "aura", "banner", "basara", "belong_team", "boost_grp", "capsule", 
+    "ability_learning", "academic_year", "activity", "add_content_equip", "add_model", "ai", 
+    "ai_type", "aura", "banner", "basara", "belong_team", "boost_grp", "capsule", 
     "change_aura_skill_config", "chara_bank", "chara_base", "chara_costume", "chara_description", 
     "chara_details", "chara_edit", "chara_menu_resource", "chara_param", "chara_series", 
     "chat_emote", "chronicle_top", "command", "craft", "ctrl_chara", "dictionary", "dungeon", 
     "emblems", "enjoy_mode_team", "event_bustup", "event_map_tag", "event_subtitle", "exp", 
     "extend_story", "fast_travel", "flag_config", "font_color", "formation", "friendmap", 
-    "gallery", "game_quest", "happen_event_npc", "help", "inacode", "input", "item", 
+    "gallery", "game_quest", "growth", "happen_event_npc", "help", "inacode", "input", "item", 
     "item_emission", "light", "menu_setting", "mission", "movie", "music_app", "nfc", 
     "opponent_team", "override_skill", "party", "passive", "phase", "phase_set", "photo_mode", 
     "players_universe", "post", "quest", "real_skill_config", "record", "rpg_battle", 
     "scene_archive", "search_word", "setting_menu", "shop", "skill", "skill_technic", "skill_view", 
-    "soccer", "soccer_drop", "soccer_fixed_reward", "soccer_map_env", "soccer_opponent", 
-    "soccer_placement", "soccer_player_record", "soccer_rank", "soccer_suggest", "system_unlock", 
-    "talk_select", "trial_take_over", "trigger", "trophy", "uniform", "update_notice", 
-    "user_name_plate", "vsroute", "weather",
+    "soccer", "soccer_chara_unique_rarity", "soccer_drop", "soccer_fixed_reward", "soccer_map_env", 
+    "soccer_opponent", "soccer_performance", "soccer_placement", "soccer_player_record", 
+    "soccer_rank", "soccer_suggest", "special_tactics", "stadium", "super_tactics", 
+    "system_unlock", "talk_select", "team_build_config", "telop_waza", "trial_take_over", "trick", 
+    "trigger", "trophy", "uniform", "update_notice", "user_name_plate", "video_waza", "vsroute", 
+    "weather", "win_treasure",
 ];
 
 /// Toutes les décisions de classement, source par source.
@@ -222,6 +225,9 @@ pub static REGLES: &[Regle] = &[
     // l'expose. C'est la mesure qui a motivé le plan : le dépôt sait faire dix fois ce qu'il
     // montre.
     r!("data-typees", NieData, Motif::Parmi(MODULES_TYPES), servi("/api/v1/donnees/{*chemin}")),
+    // Deux modules que la facade ne peut PAS porter telle quelle, et il faut le dire :
+    r!("data-passives", NieData, Motif::Exact("passives"), manquant("`parse_player_passives(root, text_fr, text_en)` prend DEUX tables de texte en plus du conteneur : la facade `decode_by_key(cle, root)` ne les a pas")),
+    r!("data-team", NieData, Motif::Exact("team"), manquant("`team::parse_enjoy_mode_team_config` fait doublon avec `enjoy_mode_team`, deja servi — c'est une fusion a faire, pas une route")),
     r!("data-familles", NieData, Motif::Tout, manquant("crates/engine/nie-data/src/<module>.rs — parseur typé, golden testé, sans route")),
 
     // ---------------------------------------------------------------- nie-formats (modules)

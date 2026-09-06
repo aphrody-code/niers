@@ -30,8 +30,9 @@ pub fn family_key(path: &str) -> String {
 
 /// Dispatche un `root` (forme iecode `lists`/`entries`) vers le parseur typé de la famille
 /// `key`, et renvoie `(label, json)`. `None` si aucune famille typée ne correspond (le caller
-/// renvoie alors le générique). Couvre 93 familles game-data (37 d'origine + 56 rapatriées
-/// de nie-model-serve le 2026-06-21), parseurs validés golden byte-exact.
+/// renvoie alors le générique). Couvre 109 familles game-data (37 d'origine, 56 rapatriées
+/// de nie-model-serve le 2026-06-21, 16 ajoutées le 2026-09-06 sur mesure de la matrice de
+/// couverture), parseurs validés golden byte-exact.
 #[must_use]
 #[allow(clippy::too_many_lines)]
 pub fn decode_by_key(key: &str, root: &Value) -> Option<(&'static str, Value)> {
@@ -468,6 +469,58 @@ pub fn decode_by_key(key: &str, root: &Value) -> Option<(&'static str, Value)> {
                 crate::event_map_tag::parse_event_map_tag_config(root)
             )
         }
+        // Seize familles ajoutees le 2026-09-06, apres que la matrice de couverture d'Aphrody
+        // (`docs/PLAN-SITE-ULTIME.md` § 4) eut chiffre ce qui manquait : chacune a son parseur
+        // ecrit et golden-teste dans ce crate, sa cle presente dans le VFS du jeu, et n'etait
+        // atteignable par AUCUN des trois consommateurs de cette facade (nie-model-serve,
+        // nie-wasm, nie-site). L'ajout leur profite aux trois — c'est ce que « source unique »
+        // veut dire.
+        "ability_learning_config" => t!(
+            "ability_learning",
+            crate::ability_learning::parse_ability_learning_config(root)
+        ),
+        "academic_year_config" => t!(
+            "academic_year",
+            crate::academic_year::parse_academic_year_config(root)
+        ),
+        "activity_config" => t!("activity", crate::activity::parse_activity_config(root)),
+        "add_content_equip_config" => t!(
+            "add_content_equip",
+            crate::add_content_equip::parse_add_content_equip_config(root)
+        ),
+        "add_model_config" => t!("add_model", crate::add_model::parse_add_model_config(root)),
+        "growth_table_config" => t!("growth", crate::growth::parse_growth_tables(root)),
+        "soccer_chara_unique_rarity_config" => t!(
+            "soccer_chara_unique_rarity",
+            crate::soccer_chara_unique_rarity::parse_hero_config(root)
+        ),
+        "performance_config" => t!(
+            "soccer_performance",
+            crate::soccer_performance::parse_performance_config(root)
+        ),
+        "special_tactics_config" => t!(
+            "special_tactics",
+            crate::special_tactics::parse_special_tactics(root)
+        ),
+        "super_tactics_config" => t!(
+            "super_tactics",
+            crate::super_tactics::parse_super_tactics(root)
+        ),
+        "soccer_game_option" => t!("stadium", crate::stadium::parse_stadium_config(root)),
+        "team_build_config" => t!(
+            "team_build_config",
+            crate::team_build_config::parse_team_build_config(root)
+        ),
+        "skill_telop_info_config" => t!(
+            "telop_waza",
+            crate::telop_waza::parse_telop_waza_config(root)
+        ),
+        "trick_config" => t!("trick", crate::trick::parse_trick_config(root)),
+        "event_movie_config" => t!("video_waza", crate::video_waza::parse_video_waza(root)),
+        "win_treasure_lot_table_config" => t!(
+            "win_treasure",
+            crate::win_treasure::parse_win_treasure(root)
+        ),
         _ => None,
     }
 }
