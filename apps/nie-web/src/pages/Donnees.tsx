@@ -39,6 +39,20 @@ interface TableServie {
 	lignes: number;
 }
 
+/** Une valeur d'une facette, telle que `?facets=` la rend. `value: null` = vide ou nul. */
+interface FacetValeur {
+	value: string | null;
+	count: number;
+}
+
+/** Les valeurs d'une colonne et leur compte, sous les filtres en cours. */
+interface Facet {
+	column: string;
+	distinct: number;
+	truncated: boolean;
+	values: FacetValeur[];
+}
+
 /** Une page de lignes, telle que `/api/v1/entites/{table}` la rend. */
 interface PageLignes {
 	elements: Record<string, unknown>[];
@@ -48,6 +62,8 @@ interface PageLignes {
 	gisement: string;
 	table: string;
 	cle: string;
+	/** Absent quand `?facets` l'est — le serveur ne publie pas une clé toujours vide. */
+	facets?: Facet[];
 }
 
 /** Les tailles de page proposées — le serveur plafonne à 200. */
@@ -55,6 +71,18 @@ const TAILLES_PAGE = [25, 50, 100, 200] as const;
 
 /** Le jeton qui demande les lignes où une colonne est renseignée. */
 const PRESENT = "__present__";
+
+/** Le jeton qui demande les lignes où une colonne est vide ou nulle. */
+const ABSENT = "__absent__";
+
+/**
+ * Combien de colonnes on peut faceter d'un coup — la borne du serveur, recopiée ici.
+ *
+ * Elle est recopiée plutôt que devinée : au-delà, le serveur rend un `400` qui nomme la limite.
+ * Une interface qui laisserait cocher une treizième colonne ferait échouer la requête entière,
+ * donc disparaître la liste — un clic qui casse l'écran est pire qu'un bouton désactivé.
+ */
+const FACETS_MAX = 12;
 
 /**
  * L'état de la page, tel qu'il vit dans l'URL.
@@ -71,7 +99,21 @@ type Etat = {
 	parPage: number;
 	page: number;
 	filtres: [string, string][];
+	/**
+	 * Les colonnes dont on veut les valeurs comptées.
+	 *
+	 * **Demandées, jamais devinées.** Le serveur seul sait ce que porte une colonne ; choisir
+	 * ici « les colonnes qui ont l'air d'être des catégories » reviendrait à inventer un schéma
+	 * — et une table de 40 colonnes rendrait 40 `GROUP BY` pour trois utiles. C'est donc un
+	 * geste : on ouvre une colonne, et elle se compte.
+	 */
+	facettes: string[];
 };
+
+/** L'état d'une table fraîchement choisie : tout est remis à zéro sauf le nom. */
+function etatNeuf(table: string): Etat {
+	return { table, q: "", tri: "", ordre: "asc", parPage: 50, page: 1, filtres: [], facettes: [] };
+}
 
 /** Les clés que la page se réserve : tout le reste de l'URL est un filtre de colonne. */
 const RESERVES = new Set(["vue", "table", "q", "tri", "ordre", "par_page", "page"]);
@@ -88,6 +130,12 @@ function etatDeLUrl(): Etat {
 		parPage: TAILLES_PAGE.includes(parPage as (typeof TAILLES_PAGE)[number]) ? parPage : 50,
 		page: Number.isFinite(page) && page >= 1 ? page : 1,
 		filtres: [...p.entries()].filter(([c]) => !RESERVES.has(c)),
+		// Les colonnes déjà filtrées s'ouvrent d'office : une adresse partagée montre alors
+		// POURQUOI la liste est réduite, et quelles autres valeurs existaient.
+		facettes: [...p.entries()]
+			.map(([c]) => c)
+			.filter((c) => !RESERVES.has(c) && !c.endsWith("__min") && !c.endsWith("__max"))
+			.slice(0, FACETS_MAX),
 	};
 }
 
@@ -104,6 +152,9 @@ function query(e: Etat, pourLUrl: boolean): URLSearchParams {
 	for (const [colonne, valeur] of e.filtres) {
 		if (valeur.trim()) p.set(colonne, valeur.trim());
 	}
+	// Jamais dans l'URL : `facets` ne change pas ce qui est affiché dans la liste, seulement ce
+	// que le serveur compte à côté. L'écrire ferait deux adresses pour le même écran.
+	if (!pourLUrl && e.facettes.length > 0) p.set("facets", e.facettes.join(","));
 	return p;
 }
 
@@ -230,6 +281,16 @@ export function PanneauDonnees({ contexte }: { contexte?: string }) {
 	const valeurDe = (colonne: string) =>
 		etat.filtres.find(([c]) => c === colonne)?.[1] ?? "";
 
+	/** Ouvre ou referme le comptage des valeurs d'une colonne. */
+	const basculerFacette = (colonne: string) => {
+		setEtat((e) => ({
+			...e,
+			facettes: e.facettes.includes(colonne)
+				? e.facettes.filter((c) => c !== colonne)
+				: [...e.facettes, colonne].slice(0, FACETS_MAX),
+		}));
+	};
+
 	// L'asset sélectionné dans la liste devient la recherche du panneau. Le geste qu'on faisait
 	// à la main entre deux onglets — copier un code de fichier, le coller dans une table — est
 	// désormais le comportement par défaut.
@@ -253,17 +314,7 @@ export function PanneauDonnees({ contexte }: { contexte?: string }) {
 					Table
 					<select
 						value={etat.table}
-						onChange={(e) =>
-							setEtat({
-								table: e.target.value,
-								q: "",
-								tri: "",
-								ordre: "asc",
-								parPage: 50,
-								page: 1,
-								filtres: [],
-							})
-						}
+						onChange={(e) => setEtat(etatNeuf(e.target.value))}
 						style={{ ...CHAMP, maxWidth: "22rem" }}
 					>
 						<option value="">Choisir…</option>
@@ -293,7 +344,7 @@ export function PanneauDonnees({ contexte }: { contexte?: string }) {
 							</select>
 						</label>
 						<a
-							href={`/api/v1/entites/${etat.table}?${query({ ...etat, parPage: 200 }, false)}&format=csv`}
+							href={`/api/v1/entites/${etat.table}?${query({ ...etat, parPage: 200, facettes: [] }, false)}&format=csv`}
 							style={{ ...ETIQUETTE, textDecoration: "underline" }}
 						>
 							Exporter cette page en CSV
@@ -330,6 +381,73 @@ export function PanneauDonnees({ contexte }: { contexte?: string }) {
 					</form>
 
 					{/*
+					  * Les valeurs d'une colonne, comptées par le serveur sous les filtres en
+					  * cours. C'est la différence entre un filtre qu'on devine et un filtre
+					  * qu'on lit : sans les comptes, il faut connaître l'orthographe exacte de
+					  * « Forêt » pour l'écrire dans un champ libre.
+					  *
+					  * Le compte d'une facette exclut le filtre de SA propre colonne : c'est ce
+					  * qui permet d'en choisir une seconde. Sous `element=Feu`, la facette
+					  * `element` continue d'afficher `Forêt 1 600`, pendant que `position` est
+					  * bien recalculée sous `Feu`.
+					  */}
+					{(page?.facets?.length ?? 0) > 0 ? (
+						<div style={{ margin: "0 0 var(--jeu-espace-m)", display: "grid", gap: "var(--jeu-espace-s)" }}>
+							{page?.facets?.map((f) => (
+								<div key={f.column}>
+									<div style={{ display: "flex", alignItems: "baseline", gap: "var(--jeu-espace-xs)", flexWrap: "wrap" }}>
+										<strong style={{ fontSize: "0.85rem" }}>{f.column}</strong>
+										<span style={{ fontSize: "0.78rem", opacity: 0.7 }}>
+											{f.truncated
+												? `${f.values.length} des ${f.distinct.toLocaleString("fr")} valeurs, les plus fournies`
+												: accorde(f.distinct, "valeur")}
+										</span>
+										<button
+											type="button"
+											onClick={() => basculerFacette(f.column)}
+											style={{ ...CHAMP, cursor: "pointer", padding: "0 var(--jeu-espace-xs)", fontSize: "0.78rem" }}
+											aria-label={`Masquer les valeurs de ${f.column}`}
+										>
+											masquer
+										</button>
+									</div>
+									<div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
+										{f.values.map((v) => {
+											// Une valeur nulle se filtre par le jeton de présence, pas par une
+											// chaîne vide : le serveur refuse `?colonne=` — et il a raison, un
+											// filtre vide ne veut rien dire.
+											const jeton = v.value ?? ABSENT;
+											const actif = valeurDe(f.column) === jeton;
+											return (
+												<button
+													key={jeton}
+													type="button"
+													aria-pressed={actif}
+													onClick={() => poserFiltre(f.column, actif ? "" : jeton)}
+													style={{
+														...CHAMP,
+														cursor: "pointer",
+														fontSize: "0.8rem",
+														padding: "2px var(--jeu-espace-xs)",
+														background: actif ? "var(--jeu-surface-glace)" : "#fff",
+														borderColor: actif
+															? "var(--jeu-nuit-profonde)"
+															: "var(--jeu-tuile-bord)",
+														fontWeight: actif ? 800 : 400,
+													}}
+												>
+													{v.value ?? "vide"}{" "}
+													<span style={{ opacity: 0.65 }}>{v.count.toLocaleString("fr")}</span>
+												</button>
+											);
+										})}
+									</div>
+								</div>
+							))}
+						</div>
+					) : null}
+
+					{/*
 					  * Une commande par colonne MESURÉE, jamais par facette devinée. Les bornes
 					  * ne sont proposées que sur les colonnes non textuelles : le serveur refuse
 					  * une fourchette sur du texte, et une commande qui mène à un 400 est pire
@@ -349,8 +467,45 @@ export function PanneauDonnees({ contexte }: { contexte?: string }) {
 						>
 							{table.colonnes.map((c) => (
 								<label key={c.nom} style={{ ...ETIQUETTE, alignItems: "stretch", flexDirection: "column", gap: 2 }}>
-									<span style={{ fontSize: "0.8rem", opacity: 0.75 }}>
-										{c.nom} · {c.type_sql || "?"}
+									<span style={{ display: "flex", alignItems: "baseline", gap: 4, fontSize: "0.8rem", opacity: 0.75 }}>
+										<span style={{ flex: 1, minWidth: 0 }}>
+											{c.nom} · {c.type_sql || "?"}
+										</span>
+										{/*
+										  * « Valeurs » demande au serveur de compter cette colonne. Le
+										  * bouton se désactive à la douzième — au-delà le serveur rend un
+										  * 400 qui ferait disparaître la liste entière, et un clic qui
+										  * casse l'écran est pire qu'un bouton éteint.
+										  */}
+										<button
+											type="button"
+											onClick={() => basculerFacette(c.nom)}
+											disabled={
+												!etat.facettes.includes(c.nom) && etat.facettes.length >= FACETS_MAX
+											}
+											aria-pressed={etat.facettes.includes(c.nom)}
+											title={
+												etat.facettes.includes(c.nom)
+													? "Masquer les valeurs"
+													: etat.facettes.length >= FACETS_MAX
+														? `${FACETS_MAX} colonnes comptées au maximum`
+														: "Compter les valeurs de cette colonne"
+											}
+											style={{
+												border: "none",
+												background: "none",
+												padding: 0,
+												font: "inherit",
+												cursor: "pointer",
+												textDecoration: "underline",
+												opacity:
+													!etat.facettes.includes(c.nom) && etat.facettes.length >= FACETS_MAX
+														? 0.4
+														: 1,
+											}}
+										>
+											{etat.facettes.includes(c.nom) ? "valeurs ✓" : "valeurs"}
+										</button>
 									</span>
 									<input
 										type="text"
