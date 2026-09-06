@@ -7,10 +7,18 @@ moteur. Il tient sur un écran : le détail est ailleurs, et dit où.
 | Pour | Lire |
 |---|---|
 | Les règles complètes du dépôt | `CLAUDE.md` — vaut pour **tous** les agents, pas seulement Claude |
+| **La mission en cours** | **`docs/CODEX-JOUR-UNIQUE.md`** — tout le plan en une journée |
 | Le protocole de coexistence | `docs/A2A-CODEX.md` |
 | La carte machine (A2A v1.0) | `ai.json` à la racine |
 
 Communiquer en **français**.
+
+> **Mission en cours — consigne de l'utilisateur du 2026-09-06.** Codex prend en charge
+> **tout** `/PLAN.md` (J1 → J7) et l'exécute **en une journée**, en raisonnement maximal et en
+> exécution proactive. Cela **remplace** la frontière du 2026-09-05 (« Codex dans `rg`, Claude
+> dans `niers` ») : Codex écrit désormais dans `niers`, et y committe ses propres lots. L'ordre
+> des blocs, les huit gates chiffrées et les six gestes qui exigent un go sont dans
+> [`docs/CODEX-JOUR-UNIQUE.md`](docs/CODEX-JOUR-UNIQUE.md).
 
 ---
 
@@ -37,9 +45,13 @@ tail -5 .coord/inbox-from-<lui>.jsonl | jq -c '{ts,topic,body}'
 
 1. **Annoncer son périmètre avant d'écrire** (`claim:`), et n'écrire rien en dehors.
 2. **Fichiers d'arbitrage réservés à Claude** : `CLAUDE.md`, `AGENTS.md`, `.gitignore`,
-   `justfile`, manifestes racine, `docs/`. Besoin d'un changement ? Envoyer un `block:`.
-3. **Un seul auteur de commits.** Les autres agents laissent l'arbre modifié et rendent un
-   `done:` avec la liste des fichiers et la mesure de vérification.
+   `justfile`, manifestes racine, `/PLAN.md`, `docs/CODEX-JOUR-UNIQUE.md`. Besoin d'un
+   changement ? Envoyer un `block:`. Le reste de `docs/` est ouvert pendant la mission.
+3. **Un auteur par lot** (amendé le 2026-09-06 ; c'était « un seul auteur de commits »). Un
+   lot = un commit, par celui qui l'a écrit, avec le compte de sa gate dans le message. La
+   règle d'origine supposait un seul agent en écriture ; à deux, elle transforme le travail de
+   l'un en commit anonyme de l'autre — c'est arrivé ici même, `188e409` a capté trois fichiers
+   à mi-course. La contrepartie est que `claim:` avant d'écrire n'a plus d'exception.
 4. **Rien de destructif ni de production sans accord** : pas de `rm -rf`, pas de
    `git reset --hard`, pas de redémarrage de service, pas d'écriture hors du dépôt.
    **`pkill -f` est interdit** — il tue les sessions d'agent. Cibler un PID.

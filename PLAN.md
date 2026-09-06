@@ -11,6 +11,15 @@ La stack est **gelée** : [`docs/stack/`](docs/stack/README.md) (décisions, ver
 alternatives rejetées, gates). Ce fichier est le plan d'exécution de cette semaine ; le plan
 maître du moteur et de la forge reste [`docs/PLAN.md`](docs/PLAN.md).
 
+> **Amendement du 2026-09-06 — la semaine est compressée en une journée.** L'utilisateur confie
+> **tout** ce plan à **Codex**, qui l'exécute en un jour, en raisonnement maximal et en
+> exécution proactive. La frontière du 2026-09-05 (« Codex dans `rg`, Claude dans `niers` ») ne
+> vaut plus : Codex écrit dans `niers` et y committe ses lots. L'ordre d'exécution, les huit
+> gates chiffrées, l'état mesuré du 2026-09-06 et les six gestes qui exigent un go sont dans
+> [`docs/CODEX-JOUR-UNIQUE.md`](docs/CODEX-JOUR-UNIQUE.md). Le tableau ci-dessous décrit la
+> répartition d'origine ; il est conservé parce que les gates et les rollbacks de chaque
+> journée restent valables tels quels, quel que soit celui qui les exécute.
+
 ## Les trois agents
 
 | Agent | Moteur | Dépôt en écriture | Mission | Commits |

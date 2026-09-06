@@ -117,9 +117,14 @@ export function cheminVfsSprite(logicalPath: string): string {
  * priorite gardent l'ordre de declaration, qui est leur seule identite relative.
  */
 export function objetsTries<T extends { drawPriority: number }>(objets: readonly T[]): T[] {
+	// `sort` et non `toSorted` : ce paquet est monte par DEUX hotes, et `apps/inacord` cible
+	// ES2022 (`tsconfig.json`), ou `toSorted` n'existe pas. Le typecheck de `nie-web` (ESNext) et
+	// celui d'`inacord-ui` passaient tous les deux — seul `bun run typecheck` complet voyait
+	// l'erreur, dans le troisieme paquet. Une bibliotheque partagee tient au denominateur commun
+	// de ses hotes. Le tableau vient d'un `map`, donc la mutation ne touche rien de partage.
 	return objets
 		.map((objet, index) => ({ objet, index }))
-		.toSorted((a, b) => a.objet.drawPriority - b.objet.drawPriority || a.index - b.index)
+		.sort((a, b) => a.objet.drawPriority - b.objet.drawPriority || a.index - b.index)
 		.map(({ objet }) => objet);
 }
 
@@ -269,7 +274,7 @@ export function bilanLayout(layout: LayoutJeu): BilanLayout {
 		muets,
 		horsCanvas,
 		auCentre,
-		textures: [...textures].toSorted(),
+		textures: [...textures].sort(),
 	};
 }
 
