@@ -69,6 +69,8 @@ const lib = dlopen(SO_PATH, {
   nie_detect:           { args: [FFIType.ptr, FFIType.u64], returns: FFIType.u32 },
   nie_format_name:      { args: [FFIType.u32],              returns: FFIType.ptr  },
   nie_decode_json_out:  { args: [FFIType.ptr, FFIType.u64, FFIType.ptr], returns: FFIType.void },
+  nie_menu_setting_json_out:
+                        { args: [FFIType.ptr, FFIType.u64, FFIType.ptr], returns: FFIType.void },
   nie_g4tx_to_png_out:  { args: [FFIType.ptr, FFIType.u64, FFIType.ptr], returns: FFIType.void },
   nie_vfs_open:         { args: [FFIType.cstring],          returns: FFIType.ptr  },
   nie_vfs_read_out:     { args: [FFIType.ptr, FFIType.cstring, FFIType.ptr], returns: FFIType.void },
@@ -269,6 +271,22 @@ export function decode(bytes: Uint8Array): unknown | null {
 }
 
 /**
+ * Décode un `*_menu_setting.cfg.bin` en structure sémantique de menu.
+ *
+ * Contrairement à {@link decode}, cette fonction active le parseur `nie-data` et retourne
+ * directement les layers, ressources, commandes et groupes de focus. `null` indique un tampon
+ * vide, un T2B invalide ou un fichier qui ne contient pas de structure exploitable.
+ */
+export function decodeMenuSetting(bytes: Uint8Array): MenuSetting | null {
+  if (bytes.byteLength === 0) return null;
+  const json = callOut((outPtr) => {
+    symbols.nie_menu_setting_json_out(ptr(bytes), BigInt(bytes.byteLength), outPtr);
+  });
+  if (json === null) return null;
+  return JSON.parse(_dec.decode(json)) as MenuSetting;
+}
+
+/**
  * Lit un fichier et décode son format en objet JSON.
  */
 export async function decodeFile(path: string): Promise<unknown | null> {
@@ -306,6 +324,32 @@ export interface VfsEntry {
   size: number;
 }
 
+/** Structure sémantique d'un écran `*_menu_setting.cfg.bin` produite par `nie-data`. */
+export interface MenuSetting {
+  layers: Array<{
+    layer_id: number;
+    name: string;
+    objbin_path: string;
+    params: number[];
+  }>;
+  resources: Array<{ logical_path: string; kind: number }>;
+  commands: Array<{
+    layer_id: number;
+    command_hash: number;
+    name: string;
+    args: number[];
+  }>;
+  layer_groups: Array<{ layer_id: number; flags: number[] }>;
+  groups: Array<{ group_id: number; name: string; flags: number[] }>;
+  group_refs: Array<{ start: number; count: number }>;
+  focus_base_infos: Array<{ role: number; param: number; param2: number }>;
+  focus_groups: Array<{ layer_id: number; flags: number[] }>;
+  focus_group_refs: Array<{ start: number; count: number }>;
+  focus_shift_base_infos: Array<{ values: number[] }>;
+  focus_shifts: number[];
+  focus_shift_refs: Array<{ start: number; count: number }>;
+}
+
 /**
  * Handle RAII sur le VFS monté.
  *
@@ -335,6 +379,12 @@ export class VfsHandle {
     return callOut((outPtr) => {
       symbols.nie_vfs_read_out(h, pathBuf, outPtr);
     });
+  }
+
+  /** Lit et décode directement un écran `*_menu_setting.cfg.bin` du VFS. */
+  menuSetting(internalPath: string): MenuSetting | null {
+    const bytes = this.read(internalPath);
+    return bytes === null ? null : decodeMenuSetting(bytes);
   }
 
   /** Liste des entrées VFS (plafonnée à 50 000). Préférer {@link listAll} ou {@link listRange}. */

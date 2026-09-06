@@ -26,6 +26,7 @@
 //! | `nie_format_name`          | Nom court du format (C-string statique)                          |
 //! | `nie_decode_json`          | Auto-détection → JSON UTF-8 ; `NieBytes::empty` si non supporté |
 //! | `nie_decode_json_out`      | Idem, via paramètre de sortie `*mut NieBytes` (Bun FFI-friendly)|
+//! | `nie_menu_setting_json_out`| `*_menu_setting.cfg.bin` → structure de menu typée       |
 //! | `nie_g4tx_to_png`          | Première texture G4TX → octets PNG ; empty sur erreur            |
 //! | `nie_g4tx_to_png_out`      | Idem, via `*mut NieBytes`                                        |
 //! | `nie_vfs_open`             | Monte le VFS (AES-256-CBC cpk_list) ; null sur erreur            |
@@ -466,6 +467,28 @@ fn decode_json_impl(data: &[u8]) -> NieBytes {
     }
 }
 
+/// Parse un `*_menu_setting.cfg.bin` T2B vers la structure de menu sémantique de `nie-data`.
+///
+/// Le résultat JSON contient les douze collections de [`nie_data::menu_setting::MenuSetting`]
+/// (`layers`, `resources`, `commands`, groupes et focus), plutôt que l'arbre T2B brut. La
+/// fonction est volontairement spécialisée : le nom de fichier n'est pas nécessaire pour
+/// décoder et la même ABI sert donc les appels directs et le VFS Bun.
+fn menu_setting_json_impl(data: &[u8]) -> NieBytes {
+    let parsed = match nie_formats::cfgbin::cfgbin_parse(data) {
+        Ok(value) => value,
+        Err(_) => return NieBytes::empty(),
+    };
+    let root = match serde_json::to_value(parsed) {
+        Ok(value) => value,
+        Err(_) => return NieBytes::empty(),
+    };
+    let setting = nie_data::menu_setting::parse(&root);
+    match serde_json::to_vec(&setting) {
+        Ok(value) => NieBytes::from_vec(value),
+        Err(_) => NieBytes::empty(),
+    }
+}
+
 /// Auto-détecte le format d'un tampon et le sérialise en JSON UTF-8.
 ///
 /// Retourne [`NieBytes::empty`] si le format est non supporté ou si le parse échoue.
@@ -507,6 +530,32 @@ pub unsafe extern "C" fn nie_decode_json_out(ptr: *const u8, len: usize, out: *m
         // SAFETY: l'appelant garantit ptr..len valides.
         let data = unsafe { core::slice::from_raw_parts(ptr, len) };
         decode_json_impl(data)
+    };
+    // SAFETY: out est non-null et aligné (l'appelant alloue 24 octets alignés).
+    unsafe { out.write(result) };
+}
+
+/// Variante Bun-FFI-friendly du parseur de menu typé.
+///
+/// `out` doit pointer vers un `NieBytes` de 24 octets alloué par l'appelant. Un pointeur nul,
+/// un tampon vide ou un T2B invalide produisent un résultat vide ; aucun détail d'erreur n'est
+/// exposé par cette ABI C, conformément aux autres décodeurs `_out`.
+///
+/// # Safety
+///
+/// - Si `len > 0`, `ptr` doit pointer vers `len` octets valides et contigus.
+/// - `out` doit être non nul, aligné et inscriptible pour un [`NieBytes`].
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn nie_menu_setting_json_out(ptr: *const u8, len: usize, out: *mut NieBytes) {
+    if out.is_null() {
+        return;
+    }
+    let result = if ptr.is_null() || len == 0 {
+        NieBytes::empty()
+    } else {
+        // SAFETY: l'appelant garantit ptr..len valides.
+        let data = unsafe { core::slice::from_raw_parts(ptr, len) };
+        menu_setting_json_impl(data)
     };
     // SAFETY: out est non-null et aligné (l'appelant alloue 24 octets alignés).
     unsafe { out.write(result) };

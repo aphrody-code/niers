@@ -14,7 +14,7 @@
 
 import { test, expect, describe } from "bun:test";
 import { existsSync } from "node:fs";
-import { vfsOpen, decode, decodeToPng, detectFormat } from "./index.ts";
+import { vfsOpen, decode, decodeMenuSetting, decodeToPng, detectFormat } from "./index.ts";
 
 const GAME_DIR = process.env["NIE_GAME_DIR"] ?? "/home/aphrody/niers";
 const DATA_DIR = `${GAME_DIR}/data`;
@@ -65,6 +65,30 @@ describe("décodage intégration (VFS + FFI)", () => {
     expect(Array.isArray(obj!.entries)).toBe(true);
     // la liste des layers de menu commence par MENU_LAYER_INFO_LIST_BEG
     expect(obj!.entries[0]!.name).toBe("MENU_LAYER_INFO_LIST_BEG");
+  });
+
+  test.skipIf(!HAS_GAME)("cfg.bin réel → menu_setting typé (nie-data)", () => {
+    using vfs = vfsOpen(DATA_DIR)!;
+    const raw = vfs.read(SETTING);
+    expect(raw).not.toBeNull();
+    const direct = decodeMenuSetting(raw!);
+    const setting = vfs.menuSetting(SETTING);
+    expect(setting).not.toBeNull();
+    expect(direct).toEqual(setting);
+    expect(setting!.layers.length).toBe(13);
+    expect(setting!.layers[0]!.name).toBe("mainmenu90_00_background");
+    expect(setting!.layers[0]!.layer_id).toBe(367379312);
+    expect(setting!.layers[0]!.objbin_path).toBe(
+      "common/gamedata/menu/obj/mainmenu90_00_background.objbin",
+    );
+    expect(setting!.resources.length).toBe(3);
+    expect(setting!.commands.length).toBe(4);
+    expect(setting!.commands.map((command) => command.name)).toEqual([
+      "CMD_FCS_BACK",
+      "CMD_FCS_NEXT",
+      "CMD_FUNCTION",
+      "CMD_FUNCTION",
+    ]);
   });
 
   test.skipIf(!HAS_GAME)("police : renderText('A') → PNG 39×71", () => {

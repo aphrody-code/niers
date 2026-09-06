@@ -17,6 +17,7 @@ workspace = true
 [dependencies]
 # `serde` : sérialise `TeamSetup` / `MatchResult`, requis par `nie_match_simulate_json_out`.
 nie-core = { workspace = true, features = ["serde"] }
+nie-data = { workspace = true, features = ["serde"] }
 # serde feature : active serde::Serialize sur G4tx, CfgBinFile, RdbnData, G4pkmLayout,
 # G4md, LipSync, MevbinDocument, MenuObject, CpkHeader, G4pk — requis par nie_decode_json.
 # Feature `textures` = décodeur G4TX/DDS → RGBA8/PNG partagé (`nie_formats::g4tx_decode`),
