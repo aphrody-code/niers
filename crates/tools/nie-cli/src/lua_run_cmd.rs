@@ -57,10 +57,9 @@ pub fn run(
         .ok()
         .map(|chunk| chunk.main.total_instructions());
     let decode_error = decoded.as_ref().err().map(ToString::to_string);
-    let output = execute_with_script_paths(&bytes, &options, paths, move |path| {
-        vfs.read(path).ok()
-    })
-    .map_err(|error| anyhow::anyhow!("exécution Lua de {name} : {error}"))?;
+    let output =
+        execute_with_script_paths(&bytes, &options, paths, move |path| vfs.read(path).ok())
+            .map_err(|error| anyhow::anyhow!("exécution Lua de {name} : {error}"))?;
     let disassembly = if disassemble {
         Some(nie_lua::bytecode::disassemble(
             &nie_lua::bytecode::parse(&bytes)
@@ -78,6 +77,8 @@ pub fn run(
             "decoded": decoded_instructions.is_some(),
             "decodedInstructions": decoded_instructions,
             "liveDecodedInstructions": output.decoded_instructions,
+            "liveDecodedIncludeInstructions": output.decoded_include_instructions,
+            "liveDecodedInstructionsTotal": output.decoded_instructions_total,
             "decodeError": decode_error,
             "stdout": output.stdout,
             "returned": output.returned,

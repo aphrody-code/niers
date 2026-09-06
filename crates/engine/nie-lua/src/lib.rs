@@ -58,6 +58,12 @@ pub use menu_host::{
 };
 
 #[cfg(feature = "vm")]
+use std::cell::RefCell;
+#[cfg(feature = "vm")]
+use std::collections::BTreeMap;
+#[cfg(feature = "vm")]
+use std::rc::Rc;
+#[cfg(feature = "vm")]
 use thiserror::Error;
 
 /// Signature d'un chunk de bytecode Lua 5.2 PUC-Rio : `1B 4C 75 61` (`\x1bLua`) + `0x52`.
@@ -171,6 +177,20 @@ pub fn install_include<F>(lua: &mlua::Lua, resolver: F) -> mlua::Result<()>
 where
     F: Fn(&str) -> Option<Vec<u8>> + 'static,
 {
+    install_include_with_trace(lua, resolver, None)
+}
+
+/// Variante interne de [`install_include`] qui mesure les instructions des includes binaires
+/// effectivement décodés avant leur exécution.
+#[cfg(feature = "vm")]
+pub(crate) fn install_include_with_trace<F>(
+    lua: &mlua::Lua,
+    resolver: F,
+    decoded_includes: Option<Rc<RefCell<BTreeMap<String, usize>>>>,
+) -> mlua::Result<()>
+where
+    F: Fn(&str) -> Option<Vec<u8>> + 'static,
+{
     let f = lua.create_function(move |lua, name: String| {
         let Some(bytes) = resolver(&name) else {
             return Ok(mlua::MultiValue::new()); // introuvable → vide (comme iecode)
@@ -180,10 +200,18 @@ where
             // Même garde que pour le chunk principal : un include binaire est décodé avant son
             // exécution dans la VM persistante. L'erreur est remontée comme erreur Lua de
             // callback, avec le nom logique pour rendre le défaut actionnable.
-            if let Err(error) = crate::bytecode::parse(&bytes) {
-                return Err(mlua::Error::RuntimeError(format!(
-                    "décodage de l'include {name} : {error}"
-                )));
+            match crate::bytecode::parse(&bytes) {
+                Ok(chunk) => {
+                    if let Some(trace) = &decoded_includes {
+                        *trace.borrow_mut().entry(name.clone()).or_default() +=
+                            chunk.main.total_instructions();
+                    }
+                }
+                Err(error) => {
+                    return Err(mlua::Error::RuntimeError(format!(
+                        "décodage de l'include {name} : {error}"
+                    )));
+                }
             }
             mlua::ChunkMode::Binary
         } else {
@@ -502,10 +530,8 @@ mod tests {
             Err(LuaError::Decode(_))
         ));
 
-        install_include(&lua, move |name| {
-            (name == "BAD").then(|| malformed.clone())
-        })
-        .expect("install include");
+        install_include(&lua, move |name| (name == "BAD").then(|| malformed.clone()))
+            .expect("install include");
         let error = lua
             .load(r#"INCLUDE("BAD")"#)
             .exec()

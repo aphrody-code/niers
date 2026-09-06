@@ -38,6 +38,8 @@ pub fn run(
     let mut decoded = 0usize;
     let mut decode_errors = 0usize;
     let mut decoded_instructions = 0usize;
+    let mut live_decoded_include_instructions = 0usize;
+    let mut live_decoded_instructions_total = 0usize;
     let mut ok = 0usize;
     let mut errors = 0usize;
     let mut missing_includes: BTreeMap<String, usize> = BTreeMap::new();
@@ -99,6 +101,9 @@ pub fn run(
                 for include in output.loaded_includes {
                     *loaded_includes.entry(include).or_default() += 1;
                 }
+                live_decoded_include_instructions +=
+                    output.decoded_include_instructions.values().sum::<usize>();
+                live_decoded_instructions_total += output.decoded_instructions_total.unwrap_or(0);
                 for host in output.missing_host_calls {
                     *missing_hosts.entry(host.clone()).or_default() += 1;
                     let scripts = missing_host_scripts.entry(host).or_default();
@@ -153,6 +158,8 @@ pub fn run(
             "decoded": decoded,
             "decodeErrors": decode_errors,
             "decodedInstructions": decoded_instructions,
+            "liveDecodedIncludeInstructions": live_decoded_include_instructions,
+            "liveDecodedInstructionsTotal": live_decoded_instructions_total,
             "ok": ok,
             "errors": errors,
             "missingIncludes": missing_includes,

@@ -34,6 +34,13 @@ numériquement, afin qu’un fichier `..._10...` ne soit pas devancé par
 `..._9...` selon l’ordre ASCII.
 
 `ExecOutput` expose désormais `loaded_includes`, dans l’ordre réel de chargement.
+
+Le décodage live est maintenant mesuré sur toute la chaîne : `decoded_instructions` compte le
+chunk principal, `decoded_include_instructions` agrège les instructions de chaque include binaire
+effectivement validé dans la VM, et `decoded_instructions_total` additionne les deux (pour un
+chunk principal binaire). Le CLI expose ces valeurs sous `liveDecodedIncludeInstructions` et
+`liveDecodedInstructionsTotal`, afin qu’un audit ne puisse pas déclarer un succès en ne mesurant
+que l’entrée principale.
 `lua-run` le rend dans `loadedIncludes` et `lua-audit` l’agrège par nom de module,
 ce qui rend la résolution VFS observable et vérifiable.
 

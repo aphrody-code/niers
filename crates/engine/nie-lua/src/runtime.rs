@@ -141,6 +141,12 @@ pub struct ExecOutput {
     /// Nombre d'instructions du chunk principal effectivement décodé avant son chargement VM.
     /// `None` pour un chunk source texte.
     pub decoded_instructions: Option<usize>,
+    /// Instructions des includes binaires effectivement décodés, groupées par nom logique.
+    /// Une ré-exécution du même include additionne ses instructions, comme le fait la VM.
+    pub decoded_include_instructions: BTreeMap<String, usize>,
+    /// Total binaire décodé par le chemin live (chunk principal + includes). `None` si le chunk
+    /// principal est du texte ; les includes binaires restent alors visibles séparément ci-dessus.
+    pub decoded_instructions_total: Option<usize>,
     /// Durée d'exécution en millisecondes.
     pub duration_ms: u64,
 }
@@ -329,19 +335,24 @@ fn execute_inner(
 
     let missing_includes = Rc::new(RefCell::new(Vec::<String>::new()));
     let loaded_includes = Rc::new(RefCell::new(Vec::<String>::new()));
+    let decoded_include_instructions = Rc::new(RefCell::new(BTreeMap::new()));
     if let Some(resolver) = resolver {
         let missing = Rc::clone(&missing_includes);
         let loaded = Rc::clone(&loaded_includes);
-        crate::install_include(&lua, move |name| match resolver(name) {
-            Some(bytes) => {
-                loaded.borrow_mut().push(name.to_string());
-                Some(bytes)
-            }
-            None => {
-                missing.borrow_mut().push(name.to_string());
-                None
-            }
-        })?;
+        crate::install_include_with_trace(
+            &lua,
+            move |name| match resolver(name) {
+                Some(bytes) => {
+                    loaded.borrow_mut().push(name.to_string());
+                    Some(bytes)
+                }
+                None => {
+                    missing.borrow_mut().push(name.to_string());
+                    None
+                }
+            },
+            Some(Rc::clone(&decoded_include_instructions)),
+        )?;
     }
 
     if options.with_menu_host {
@@ -382,9 +393,13 @@ fn execute_inner(
     let mut out = ExecOutput {
         duration_ms: started.elapsed().as_millis() as u64,
         decoded_instructions,
+        decoded_include_instructions: decoded_include_instructions.borrow().clone(),
         stdout: stdout.borrow().clone(),
         ..Default::default()
     };
+    out.decoded_instructions_total = out
+        .decoded_instructions
+        .map(|main| main + out.decoded_include_instructions.values().sum::<usize>());
 
     match result {
         Ok(values) => out.returned = values.iter().map(value_to_string).collect(),
@@ -602,6 +617,35 @@ mod tests {
         assert!(out.error.is_none(), "erreur inattendue : {:?}", out.error);
         assert_eq!(out.decoded_instructions, None);
         assert_eq!(out.loaded_includes, vec!["LUA_MODULE"]);
+    }
+
+    #[test]
+    fn mesure_le_decodage_live_des_includes_binaires() {
+        // Fabrique un chunk Lua 5.2 avec la même VM que celle qui chargera l'include. Cela évite
+        // de dépendre d'un fichier d'asset pour tester le contrat de mesure et couvre le format
+        // réellement remis à `install_include_with_trace`.
+        let lua = crate::new_vm();
+        let include = lua
+            .load("included_value = 41")
+            .into_function()
+            .expect("compilation de l'include");
+        let include_bytes = include.dump(false);
+        let expected = crate::bytecode::parse(&include_bytes)
+            .expect("le dump Lua 5.2 doit être lisible par le décodeur Rust")
+            .main
+            .total_instructions();
+        let out = execute_with_include(
+            b"INCLUDE('COMMON'); return included_value",
+            &ExecOptions::default(),
+            move |name| (name == "COMMON").then(|| include_bytes.clone()),
+        )
+        .expect("exécution avec include binaire");
+        assert_eq!(out.returned, vec!["41"]);
+        assert_eq!(
+            out.decoded_include_instructions.get("COMMON"),
+            Some(&expected)
+        );
+        assert_eq!(out.decoded_instructions_total, None);
     }
 
     /// Une boucle infinie doit être coupée par la limite d'instructions, pas figer l'appelant.
