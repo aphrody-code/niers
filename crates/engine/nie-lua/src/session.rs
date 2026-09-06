@@ -514,6 +514,9 @@ impl LuaSession {
         let mut result = result;
         if let Ok(report) = &mut result {
             report.decoded_include_instructions = decoded_include_instructions;
+            report.decoded_instructions_total = report.decoded_instructions.map(|main| {
+                main + report.decoded_include_instructions.values().sum::<usize>()
+            });
         }
         if instruction_limit.is_some() {
             self.lua.remove_hook();
@@ -1111,6 +1114,13 @@ mod tests {
             .copied()
             .unwrap_or(0)
             > 0);
+        assert_eq!(
+            report.decoded_instructions_total,
+            Some(
+                report.decoded_instructions.unwrap()
+                    + report.decoded_include_instructions["LUA_INC"]
+            )
+        );
         assert_eq!(report.on_init, Some(true));
         assert_eq!(session.eval("menu_ready").unwrap(), "true");
         assert_eq!(session.take_loaded_includes(), vec!["LUA_INC"]);

@@ -2101,6 +2101,9 @@ pub struct DriveReport {
     pub decoded_instructions: Option<usize>,
     /// Instructions des includes binaires décodés pendant cet appel, par nom logique.
     pub decoded_include_instructions: BTreeMap<String, usize>,
+    /// Total des instructions binaires décodées sur le chemin live (principal + includes).
+    /// `None` lorsque le chunk principal est une source texte.
+    pub decoded_instructions_total: Option<usize>,
     /// Erreur top-level éventuelle (1ʳᵉ ligne), si `top_level_ok == false`.
     pub top_level_err: Option<String>,
     /// `OnInit()` : `None` = absent ; `Some(true)` = appelé OK ; `Some(false)` = erreur Lua.
