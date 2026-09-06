@@ -1,7 +1,7 @@
 //! Dispatch **typé** des `cfg.bin` : d'une `Value` au format iecode (`lists`/`entries`) +
 //! d'une clé de famille (dérivée du nom de fichier), vers la structure de jeu nommée
 //! correspondante sérialisée en JSON. Partagé entre `nie-model-serve` (route `/typed`) et
-//! `nie-wasm` (décodage in-browser) — **source unique** des 93 familles couvertes.
+//! `nie-wasm` (décodage in-browser) — **source unique** des familles couvertes.
 //!
 //! `no_std + alloc` : `serde_json::to_value` fonctionne en mode `alloc`. Gated `serde`
 //! (les structures de famille ne dérivent `Serialize` que sous cette feature).
@@ -32,7 +32,7 @@ pub fn family_key(path: &str) -> String {
 /// `key`, et renvoie `(label, json)`. `None` si aucune famille typée ne correspond (le caller
 /// renvoie alors le générique). Couvre 109 familles game-data (37 d'origine, 56 rapatriées
 /// de nie-model-serve le 2026-06-21, 16 ajoutées le 2026-09-06 sur mesure de la matrice de
-/// couverture), parseurs validés golden byte-exact.
+/// couverture, plus le dispatch générique `*_text` le 2026-09-06), parseurs validés golden byte-exact.
 #[must_use]
 #[allow(clippy::too_many_lines)]
 pub fn decode_by_key(key: &str, root: &Value) -> Option<(&'static str, Value)> {
@@ -456,6 +456,25 @@ pub fn decode_by_key(key: &str, root: &Value) -> Option<(&'static str, Value)> {
         // Setup de phases de match (~182 fichiers `*_phase_set` : fbtl_cro/fbtl_qs) — DATA_ITEM
         // (ints + conditions décodées). Dispatch par SUFFIXE.
         k if k.ends_with("_phase_set") => t!("phase_set", crate::phase_set::parse_phase_set(root)),
+        // Texte localisé (`common/text/<locale>/<fichier>.cfg.bin`) : les ~40 fichiers de
+        // `crate::text::TEXT_FILES` (`menu_text`, `item_text`, `skill_text`, `chara_text`…), plus
+        // tout `*_text` de même forme. `parse_text_file` couvre les deux familles de noeuds
+        // (`TEXT_INFO` index 2, `NOUN_INFO` index 5) — c'est le MÊME parseur pour tous, d'où le
+        // dispatch par suffixe plutôt que quarante bras.
+        //
+        // Ordre du match : les familles de texte à parseur PROPRE (`chara_description_text`) ont
+        // leur bras exact plus haut et gagnent. Les deux `*_roma` (`chara_text_roma`,
+        // `map_text_roma`) ne finissent pas par `_text` : le catalogue les rattrape.
+        //
+        // Rendu en objets `{hash, texte}` : `Vec<(HashId, String)>` se sérialiserait en couples
+        // anonymes `[[123,"…"]]`, illisibles pour un consommateur de l'API.
+        k if k.ends_with("_text") || crate::text::TEXT_FILES.iter().any(|(_, f)| *f == k) => {
+            let lignes: alloc::vec::Vec<Value> = crate::text::parse_text_file(root)
+                .into_iter()
+                .map(|(h, t)| serde_json::json!({ "hash": h, "texte": t }))
+                .collect();
+            Some(("text", Value::Array(lignes)))
+        }
         // Portraits de dialogue par chapitre (~34 fichiers `event_bustup_talk_data_config_c<NN>`).
         k if k.starts_with("event_bustup_talk_data_config") => {
             t!(

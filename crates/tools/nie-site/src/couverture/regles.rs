@@ -69,7 +69,8 @@ pub static MODULES_TYPES: &[&str] = &[
     "soccer", "soccer_chara_unique_rarity", "soccer_drop", "soccer_fixed_reward", "soccer_map_env", 
     "soccer_opponent", "soccer_performance", "soccer_placement", "soccer_player_record", 
     "soccer_rank", "soccer_suggest", "special_tactics", "stadium", "super_tactics", 
-    "system_unlock", "talk_select", "team_build_config", "telop_waza", "trial_take_over", "trick", 
+    "system_unlock", "talk_select", "team_build_config", "telop_waza", "text", "trial_take_over",
+    "trick",
     "trigger", "trophy", "uniform", "update_notice", "user_name_plate", "video_waza", "vsroute", 
     "weather", "win_treasure",
 ];
