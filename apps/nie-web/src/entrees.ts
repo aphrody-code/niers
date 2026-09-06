@@ -32,6 +32,15 @@ export const EXPLORATEUR = "explorateur";
 export const DONNEES = "donnees";
 
 /**
+ * La recherche qui traverse l'arbre entier.
+ *
+ * Distincte de l'explorateur, et la distinction est la raison d'être des deux : l'explorateur
+ * répond à « qu'y a-t-il **ici** », cette page à « où est **ceci** ». Les fondre donnerait un
+ * préfixe qu'on navigue *et* un préfixe qu'on tape, sur le même écran.
+ */
+export const RECHERCHE = "recherche";
+
+/**
  * Les catalogues que le serveur publie sous forme d'URL, dans son document d'accueil.
  *
  * Ce ne sont pas des noms devinés : `nie-site` sert `/textures`, `/modeles`, `/sons` et
@@ -62,6 +71,7 @@ const HABILLAGE: Record<string, { libelle: string; glyphe: NomGlyphe }> = {
 	videos: { libelle: "Vidéos", glyphe: "film" },
 	[EXPLORATEUR]: { libelle: "Explorer", glyphe: "arbre" },
 	[DONNEES]: { libelle: "Données", glyphe: "arbre" },
+	[RECHERCHE]: { libelle: "Rechercher", glyphe: "arbre" },
 };
 
 /** Le libellé d'une entrée, ou son nom brut si le site ne la connaît pas. */
@@ -81,7 +91,7 @@ export function entreesMenu(etat: SanteApi | null): EntreeMenu[] {
 	const noms = etat?.vues.length
 		? etat.vues.map((v) => v.nom)
 		: [...CATALOGUES];
-	return [...noms, EXPLORATEUR, DONNEES].map((vue) => ({
+	return [...noms, EXPLORATEUR, RECHERCHE, DONNEES].map((vue) => ({
 		vue,
 		libelle: libelleEntree(vue),
 		glyphe: HABILLAGE[vue]?.glyphe ?? "arbre",

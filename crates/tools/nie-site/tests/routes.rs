@@ -374,15 +374,15 @@ async fn documents_well_known() {
     );
     let texte = String::from_utf8(corps).unwrap();
     assert!(texte.starts_with("<?xml"));
-    // 7 routes x 3 langues, et chaque entree porte le groupe complet de ses traductions.
-    assert_eq!(texte.matches("<url>").count(), 21);
-    assert_eq!(texte.matches("<loc>").count(), 21);
+    // 8 routes x 3 langues, et chaque entree porte le groupe complet de ses traductions.
+    assert_eq!(texte.matches("<url>").count(), 24);
+    assert_eq!(texte.matches("<loc>").count(), 24);
     assert_eq!(
         texte.matches("xhtml:link").count(),
-        84,
+        96,
         "4 alternates par entree"
     );
-    assert_eq!(texte.matches(r#"hreflang="x-default""#).count(), 21);
+    assert_eq!(texte.matches(r#"hreflang="x-default""#).count(), 24);
     // Sans la declaration de l'espace de noms, les `xhtml:link` ne sont que du bruit.
     assert!(texte.contains(r#"xmlns:xhtml="http://www.w3.org/1999/xhtml""#));
     for attendu in [

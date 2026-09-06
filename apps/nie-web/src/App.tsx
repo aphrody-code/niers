@@ -3,13 +3,14 @@ import { type SanteApi, sante } from "@niers/asset-source/nie-site";
 import { AssetSourceProvider, useCapacites, useErreurSource } from "@niers/inacord-ui";
 import "@niers/inacord-ui/shell/game-tokens.css";
 import { useEffect, useMemo, useState } from "react";
-import { DONNEES, EXPLORATEUR, entreesMenu } from "./entrees";
+import { DONNEES, EXPLORATEUR, RECHERCHE, entreesMenu } from "./entrees";
 import { Catalogue } from "./pages/Catalogue";
 import { Chargement } from "./pages/Chargement";
 import { EcranSecondaire, Note } from "./pages/Ecran";
 import { Donnees } from "./pages/Donnees";
 import { Explorateur } from "./pages/Explorateur";
 import { MenuPrincipal } from "./pages/MenuPrincipal";
+import { Recherche } from "./pages/Recherche";
 import { ACCUEIL, cheminPourEntree, entreeDemandee, separerLangue } from "./routage";
 
 /**
@@ -159,6 +160,8 @@ function Site() {
 				<Note>Le catalogue est en cours de préparation. Il s'affichera dès qu'il sera prêt.</Note>
 			) : vue === EXPLORATEUR ? (
 				<Explorateur />
+			) : vue === RECHERCHE ? (
+				<Recherche />
 			) : (
 				// La vue vient de l'URL, et l'URL n'a ete acceptee que parce qu'elle figure dans
 				// les entrees connues — celles du serveur, ou les quatre catalogues qu'il publie

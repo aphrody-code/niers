@@ -279,6 +279,9 @@ bun run typecheck                          # TypeScript side
   `pub` item.
 - Golden tests: `cargo test -p nie-data --test <family>_golden`.
 - **A suite printing `0 passed` is never a success**: it is a suite that did not run.
+- **`dataset::Gisement` opens SQLite READ-ONLY**: a test that seeds rows through it fails, and
+  `.ok()` on that failure gives a green test on an empty table. Seed with a separate
+  `Connection::open(dir.path().join(…))` before the gisement reads.
 - **`nie-formats` enables only `std` and `lua` by default**; `serde`, `textures` and `images` are
   optional. A test gated `#![cfg(all(…))]` on a disabled feature prints "ok. 0 passed" — a **false
   green**, hit twice. Declare `[[test]] required-features = […]` (the harness then says why it
@@ -760,6 +763,15 @@ bun --bun packages/nie-catalog/src/cli.ts cherche "Mark"
   the `0 passed` and the piped `$?`: the suite runs, passes, and verifies nothing. **Prove a test by
   falsification** — deliberately break the value it guards and watch it go red — before relying on
   it.
+- **To falsify a guard, copy the file — NEVER `git checkout` it back.** The falsification ritual
+  above (break the guard, watch it go red) ends with a restore, and `git checkout <file>` restores
+  the file to HEAD: it silently threw away an entire uncommitted patch on 2026-09-06. Use
+  `cp X /tmp/X.sauv`, break, run, `cp /tmp/X.sauv X`.
+- **A witness corpus must be able to make the test fail.** The same day, a test on
+  `prefixe` + `ext` stayed green with the guard removed: the fixture's only two `.bin` lived in
+  the same subtree, so `ext=bin` already returned the right count. Falsification does not only
+  check the guard — it checks that the FIXTURE discriminates. Same defect on a measurement script
+  whose search pattern matched 0 lines: a filter that finds nothing proves nothing.
 - **A screenshot does not prove an ABSENCE.** A page rendered by headless Chrome showed everything
   but one sprite; the component was blamed for an hour. The DOM (`--dump-dom`) carried the element,
   its size and the right background position: it was the 1.5 MB atlas that was not decoded within
@@ -886,13 +898,33 @@ no SQLx. It listens **only** on `127.0.0.1:8085`, behind nginx which terminates 
 with no infrastructure detail; `nie-model-serve` is reached **only** through its proxy. Route tests
 that **count**, plus clippy with no warnings, before enabling nginx. Frozen stack: `docs/stack/`.
 
-**State — these packages EXIST, they are not to be built.** `nie-site` serves **56 routes** with
-**220 green tests** and clippy at 0 (re-measured 2026-09-06: `rg -c '^    "/' …/app.rs`,
-`cargo test -p nie-site`; it was 13 routes and 44 tests on 2026-09-05, which is how fast this
-number goes stale). `scripts/e2e-site.sh` runs 65 checks with no failure against the real binary,
-and Aphrody mounts the shared interface: 4 searchable catalogues over 143 246 files, `/b`
-navigation, audio and video playback, `/api/v1/episodes`. Two rules follow for whoever picks it up:
+**State — these packages EXIST, they are not to be built.** `nie-site` serves **80 mounted
+routes** with **316 green tests** and clippy at 0 (re-measured 2026-09-06 evening:
+`curl …/api/v1/couverture | jq .routes_montees`, `cargo test -p nie-site`; it was 13 routes and
+44 tests on 2026-09-05, and 56/220 the same morning — which is how fast this number goes stale).
+`scripts/e2e-site.sh` runs 65 checks with no failure against the real binary, and Aphrody mounts
+the shared interface: 4 searchable catalogues, `/b` navigation with filters, `/recherche` over the
+255 308 entries, `/donnees` over the **224 tables of two datasets**, audio and video playback.
+The filter matrix is **measured, not maintained**: `scripts/validation/mesurer-matrice-filtres.sh`
+(41 served / 5 absent / 2 client-side) and `scripts/validation/mesurer-filtres.sh` (14/14 applied
+**and** republished). Two rules follow for whoever picks it up:
 
+- **The deploy loop, in this order** (a front-only change skips the first two):
+  `cargo build --release -p nie-site` → `sudo systemctl restart nie-site` → **wait for
+  `curl …/api/v1/health | jq -r .capacites.vfs` to read `pret`** (≈20 s; measuring before that
+  reads a service that is up and an index that is empty) → interrogate and count.
+  `bun run --filter '*nie-web*' build` writes `apps/nie-web/dist`, which `nie-site` serves
+  **immediately** — no restart, and the asset hash in the served HTML is how you check the bundle
+  actually changed.
+- **Verify a page with `chromium --headless --dump-dom`, and compare it to the API.** The useful
+  assertion is not "the page rendered" but "its first row is the one the sorted API returns".
+  Two traps paid on 2026-09-06: a page listing 200 thumbnails times out and dumps an **empty**
+  file (lower `par_page`, budget 6000–9000 ms), and the rendered count uses a narrow no-break
+  space — `54 203` does not match a `[0-9 ]+` grep, which silently reads `203`.
+- **Adding one page to the site turns SIX independent count assertions red**, across
+  `routes/well_known.rs` (`PLAN: [UrlPlan; N]`, `<url>`, `xhtml:link` ×4, `x-default`, `lastmod`,
+  `Allow:` under two regimes) and `tests/routes.rs`. That is the design working: a page added
+  half-way cannot pass.
 - **Never write a host condition inside a component** (see § *Polyglot doctrine*).
 - **`apps/nie-web/src/legacy/` is an airlock, not a library.** Excluded from `tsconfig`, it holds
   code pulled out of the wiki until it is rewritten against `/f`, `/b` and `/api/v1`. Its Rose
