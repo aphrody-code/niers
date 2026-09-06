@@ -1,0 +1,77 @@
+{
+  "schema": "niers.oc.catalog/v1",
+  "root": "data/oc",
+  "policy": {
+    "game_assets_are_not_copied_here": true,
+    "game_paths_must_start_with_data": true,
+    "unresolved_ids_are_null": true,
+    "source_files_are_originals": true
+  },
+  "contracts": [
+    {
+      "path": "data/oc/astro-lor/game/character-contract.json",
+      "schema": "niers.oc.character-contract/v1",
+      "character_slug": "astro-lor",
+      "variants": [
+        "c99019010",
+        "c99019020"
+      ],
+      "required_cfgbin_tables": [
+        "chara_base",
+        "chara_costume",
+        "chara_face",
+        "chara_model",
+        "chara_motion",
+        "chara_name_tag",
+        "chara_param",
+        "chara_parts",
+        "chara_scale"
+      ],
+      "lua": "no_oc_script_declared"
+    }
+  ],
+  "files": [
+    {
+      "path": "data/oc/astro-lor/game/character-contract.json",
+      "bytes": 9684,
+      "sha256": "f598ba83aa3e268fde90c02102fa25f8ff40a36b80425dce056bcd0ad603a3ea",
+      "class": "game_metadata"
+    },
+    {
+      "path": "data/oc/astro-lor/game/README.md",
+      "bytes": 1092,
+      "sha256": "08eb8dc4155e8ded08fc5c460046beab1eed9380aa7d4dfe8114554ff74563dd",
+      "class": "game_metadata"
+    },
+    {
+      "path": "data/oc/astro-lor/manifest.json",
+      "bytes": 15770,
+      "sha256": "19ee58e7ca4e4fc5b3b63d9e8a2703faf7c3c58832b09a17bd5d27c5037fa688",
+      "class": "metadata"
+    },
+    {
+      "path": "data/oc/astro-lor/provenance/discord-1545590117895250101.json",
+      "bytes": 3604,
+      "sha256": "2316a1b5c0843e0de2dcfedfc1bdf3f82e85ac08cc9003684d778551a2ba4d48",
+      "class": "provenance"
+    },
+    {
+      "path": "data/oc/astro-lor/provenance/SHA256SUMS",
+      "bytes": 1122,
+      "sha256": "5bbb34ba015a473d6cf3e86b5b9a4991462f61d9d0018244e458396f49baefa2",
+      "class": "provenance"
+    },
+    {
+      "path": "data/oc/astro-lor/README.md",
+      "bytes": 4885,
+      "sha256": "e29538f873e42c10ffdcd4ebf2d24bdf6a7eeb508389bf93c063d2ef6d1b2eca",
+      "class": "metadata"
+    },
+    {
+      "path": "data/oc/README.md",
+      "bytes": 1997,
+      "sha256": "55efb798d8d9e5664218bda55fd67758d9710b497d28f4548c80ee895632cf3c",
+      "class": "metadata"
+    }
+  ]
+}

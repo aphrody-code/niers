@@ -1,0 +1,143 @@
+{
+  "schema": "niers.oc.character-contract/v1",
+  "character_slug": "astro-lor",
+  "game": {
+    "title": "Inazuma Eleven Victory Road",
+    "binary": "nie.exe",
+    "binary_path": "nie.exe",
+    "image_base": "0x140000000",
+    "binary_role": "runtime_consumer",
+    "evidence": [
+      "docs/ASTRO-LOR.md",
+      "docs/vfs/05-personnages.md",
+      "docs/game-data/gamedata-rest.md",
+      "crates/engine/nie-formats/src/lib.rs",
+      "crates/engine/nie-lua/src/bytecode.rs"
+    ]
+  },
+  "namespace": {
+    "internal_code_prefix": "c",
+    "folder_prefix": "_face",
+    "allowed_series_groups": [
+      "01_IE1",
+      "02_IE2",
+      "03_IE3",
+      "04_GO1",
+      "05_GO2",
+      "06_GO3",
+      "07_ARES",
+      "08_ORION",
+      "11_VICTORY",
+      "20_EDIT",
+      "21_MANNEQUIN",
+      "22_COMBO"
+    ]
+  },
+  "formats": {
+    "cfg.bin": {
+      "container_variants": ["T2B", "RDBN"],
+      "rust_detector": "nie_formats::detect",
+      "write_policy": "preserve_variant_and_validate_against_target_game"
+    },
+    "lua.bin": {
+      "format": "Lua 5.2 bytecode",
+      "magic_hex": "1B4C7561",
+      "version_hex": "52",
+      "rust_reader": "nie_lua::bytecode",
+      "write_policy": "do_not_add_per_character_script_without_runtime_requirement"
+    },
+    "G4MD": {"magic": "G4MD", "role": "model_metadata"},
+    "G4MG": {"magic": "G4MG", "role": "skinned_mesh"},
+    "G4TX": {"magic": "G4TX", "role": "texture"},
+    "ACB": {"role": "voice_bank", "optional": true},
+    "AWB": {"magic": "AFS2", "role": "voice_stream", "optional": true}
+  },
+  "variants": [
+    {
+      "internal_code": "c99019010",
+      "display_name": "Astro Lor — Inazuma Eleven",
+      "series_group": "01_IE1",
+      "chara_param_id": "0x9983CCE2",
+      "status": "metadata_ready_rows_pending",
+      "identity": {
+        "chara_id": null,
+        "name_hash": null,
+        "last_name_hash": null,
+        "series_id": null,
+        "belong_team_id": null,
+        "description_hash": null,
+        "source_of_missing_values": "target_chara_base_cfgbin"
+      },
+      "tables": [
+        {"table": "chara_base", "format": "T2B", "vfs_path": "data/common/gamedata/character/chara_base_1.03.98.00.cfg.bin", "node_prefixes": ["CHARA_BASE_INFO", "CHARA_BASE_BATTLE"], "required": true, "status": "row_pending"},
+        {"table": "chara_param", "format": "T2B", "vfs_path": "data/common/gamedata/character/chara_param_1.03.66.00.cfg.bin", "node_prefixes": ["CHARA_PARAM_INFO"], "required": true, "status": "row_pending"},
+        {"table": "chara_model", "format": "T2B", "vfs_path": "data/common/gamedata/character/chara_model_1.03.49.00.cfg.bin", "node_prefixes": ["CHARA_MODEL_INFO", "CHARA_BODY_INFO"], "required": true, "status": "row_pending"},
+        {"table": "chara_parts", "format": "T2B", "vfs_path": "data/common/gamedata/character/chara_parts_0.07.22.cfg.bin", "node_prefixes": ["CHARA_PARTS_"], "required": true, "status": "shared_or_row_pending"},
+        {"table": "chara_scale", "format": "RDBN", "vfs_path": "data/common/gamedata/character/chara_scale_0.11.12.cfg.bin", "node_prefixes": ["m_charaScaleList", "CHARA_SCALE_INFO"], "required": true, "status": "row_pending"},
+        {"table": "chara_motion", "format": "T2B", "vfs_path": "data/common/gamedata/character/chara_motion_1.02.91.00.cfg.bin", "node_prefixes": ["CHARA_MOTION_INFO", "CHARA_MOTION_PRESET_INFO"], "required": true, "status": "row_pending"},
+        {"table": "chara_face", "format": "T2B", "vfs_path": "data/common/gamedata/character/chara_face_1.03.00.00.cfg.bin", "node_prefixes": ["CHARA_FACIAL_"], "required": true, "status": "row_pending"},
+        {"table": "chara_name_tag", "format": "RDBN", "vfs_path": "data/common/gamedata/character/chara_name_tag_1.03.38.00.cfg.bin", "node_prefixes": ["m_charaNameTagConfigList", "CHARA_NAME_TAG_CONFIG"], "required": true, "status": "row_pending"},
+        {"table": "chara_costume", "format": "T2B", "vfs_path": "data/common/gamedata/character/chara_costume_1.02.28.00.cfg.bin", "node_prefixes": ["CHARA_COSTUME_"], "required": true, "status": "shared_or_row_pending"}
+      ],
+      "assets": [
+        {"role": "head_model_metadata", "format": "G4MD", "vfs_path": "data/common/chr/_face/01_IE1/c99019010/c99019010.g4md", "required": true, "status": "missing"},
+        {"role": "head_mesh", "format": "G4MG", "vfs_path": "data/common/chr/_face/01_IE1/c99019010/c99019010.g4mg", "required": true, "status": "missing"},
+        {"role": "head_texture", "format": "G4TX", "vfs_path": "data/dx11/chr/_face/01_IE1/c99019010/c99019010.g4tx", "required": true, "status": "missing"},
+        {"role": "portrait_icon", "format": "G4TX", "vfs_path": "data/dx11/menu/200_icon/10_icon_chr/face/c99019010_l.g4tx", "required": true, "source": "apps/azalee/public/oc/astro-lor/face-og.webp", "status": "source_ready"},
+        {"role": "voice_bank", "format": "ACB", "vfs_path": "data/common/sound_asset/ja/c99019010.acb", "required": false, "status": "optional_missing"},
+        {"role": "voice_stream", "format": "AWB", "vfs_path": "data/common/sound_asset/ja/c99019010.awb", "required": false, "status": "optional_missing"}
+      ]
+    },
+    {
+      "internal_code": "c99019020",
+      "display_name": "Astro Lor — Victory Road",
+      "series_group": "11_VICTORY",
+      "chara_param_id": "0x0C78B74B",
+      "status": "metadata_ready_rows_pending",
+      "identity": {
+        "chara_id": null,
+        "name_hash": null,
+        "last_name_hash": null,
+        "series_id": null,
+        "belong_team_id": null,
+        "description_hash": null,
+        "source_of_missing_values": "target_chara_base_cfgbin"
+      },
+      "tables": [
+        {"table": "chara_base", "format": "T2B", "vfs_path": "data/common/gamedata/character/chara_base_1.03.98.00.cfg.bin", "node_prefixes": ["CHARA_BASE_INFO", "CHARA_BASE_BATTLE"], "required": true, "status": "row_pending"},
+        {"table": "chara_param", "format": "T2B", "vfs_path": "data/common/gamedata/character/chara_param_1.03.66.00.cfg.bin", "node_prefixes": ["CHARA_PARAM_INFO"], "required": true, "status": "row_pending"},
+        {"table": "chara_model", "format": "T2B", "vfs_path": "data/common/gamedata/character/chara_model_1.03.49.00.cfg.bin", "node_prefixes": ["CHARA_MODEL_INFO", "CHARA_BODY_INFO"], "required": true, "status": "row_pending"},
+        {"table": "chara_parts", "format": "T2B", "vfs_path": "data/common/gamedata/character/chara_parts_0.07.22.cfg.bin", "node_prefixes": ["CHARA_PARTS_"], "required": true, "status": "shared_or_row_pending"},
+        {"table": "chara_scale", "format": "RDBN", "vfs_path": "data/common/gamedata/character/chara_scale_0.11.12.cfg.bin", "node_prefixes": ["m_charaScaleList", "CHARA_SCALE_INFO"], "required": true, "status": "row_pending"},
+        {"table": "chara_motion", "format": "T2B", "vfs_path": "data/common/gamedata/character/chara_motion_1.02.91.00.cfg.bin", "node_prefixes": ["CHARA_MOTION_INFO", "CHARA_MOTION_PRESET_INFO"], "required": true, "status": "row_pending"},
+        {"table": "chara_face", "format": "T2B", "vfs_path": "data/common/gamedata/character/chara_face_1.03.00.00.cfg.bin", "node_prefixes": ["CHARA_FACIAL_"], "required": true, "status": "row_pending"},
+        {"table": "chara_name_tag", "format": "RDBN", "vfs_path": "data/common/gamedata/character/chara_name_tag_1.03.38.00.cfg.bin", "node_prefixes": ["m_charaNameTagConfigList", "CHARA_NAME_TAG_CONFIG"], "required": true, "status": "row_pending"},
+        {"table": "chara_costume", "format": "T2B", "vfs_path": "data/common/gamedata/character/chara_costume_1.02.28.00.cfg.bin", "node_prefixes": ["CHARA_COSTUME_"], "required": true, "status": "shared_or_row_pending"}
+      ],
+      "assets": [
+        {"role": "head_model_metadata", "format": "G4MD", "vfs_path": "data/common/chr/_face/11_VICTORY/c99019020/c99019020.g4md", "required": true, "status": "missing"},
+        {"role": "head_mesh", "format": "G4MG", "vfs_path": "data/common/chr/_face/11_VICTORY/c99019020/c99019020.g4mg", "required": true, "status": "missing"},
+        {"role": "head_texture", "format": "G4TX", "vfs_path": "data/dx11/chr/_face/11_VICTORY/c99019020/c99019020.g4tx", "required": true, "status": "missing"},
+        {"role": "portrait_icon", "format": "G4TX", "vfs_path": "data/dx11/menu/200_icon/10_icon_chr/face/c99019020_l.g4tx", "required": true, "source": "apps/azalee/public/oc/astro-lor/face-go.webp", "status": "source_ready"},
+        {"role": "voice_bank", "format": "ACB", "vfs_path": "data/common/sound_asset/ja/c99019020.acb", "required": false, "status": "optional_missing"},
+        {"role": "voice_stream", "format": "AWB", "vfs_path": "data/common/sound_asset/ja/c99019020.awb", "required": false, "status": "optional_missing"}
+      ]
+    }
+  ],
+  "lua_runtime": {
+    "per_character_script_required": false,
+    "vfs_root": "data/common/script/lua",
+    "path_template": "data/common/script/lua/<category>/<name>_<version>.lua.bin",
+    "version_rule": "versioned_filename_required",
+    "bytecode": "Lua 5.2",
+    "magic_hex": "1B4C7561",
+    "runtime_consumer": "nie.exe",
+    "status": "no_oc_script_declared"
+  },
+  "integration_gates": [
+    {"id": "cfgbin_rows", "proof": "each required table decodes, re-encodes and is accepted by the target game", "status": "blocked_by_target_vfs_and_game_probe"},
+    {"id": "assets", "proof": "G4MD/G4MG/G4TX paths exist and load for both codes", "status": "missing"},
+    {"id": "lua", "proof": "only required if a measured runtime feature references an OC script", "status": "not_required"},
+    {"id": "nie_runtime", "proof": "nie.exe starts and exposes both variants in a real game flow", "status": "not_run"}
+  ]
+}

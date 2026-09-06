@@ -10,6 +10,7 @@ data/oc/
 └── <slug>/
     ├── README.md        ce que le personnage est, d'où il vient, ce qui manque
     ├── manifest.json    ce qu'il faut produire pour que le JEU le connaisse — généré, jamais écrit à la main
+    ├── game/            contrat machine : préfixes, formats, tables et runtime
     ├── provenance/      d'où vient chaque original — versionné
     │   ├── SHA256SUMS   les empreintes, vérifiables par `sha256sum -c`
     │   └── *.json       journaux de récupération (ids, empreintes, dimensions)
@@ -17,6 +18,12 @@ data/oc/
 ```
 
 Personnages présents : [`astro-lor/`](astro-lor/README.md).
+
+Chaque personnage peut porter `game/character-contract.json`. Ce contrat ne remplace pas les
+fichiers du jeu : il décrit les chemins VFS versionnés, les formats/magics vérifiés, les nœuds de
+tables attendus et les valeurs encore à mesurer. `catalog.json`, produit par
+`uv run scripts/donnees/oc-catalog.py --write`, inventorie récursivement les fichiers réellement
+présents sous `data/oc`.
 
 ## Pourquoi ici, alors que `data/` est ignoré
 

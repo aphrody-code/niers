@@ -2,6 +2,7 @@
   "personnage": "Astro Lor",
   "nature": "personnage original (OC) — n'existe pas dans les données du jeu",
   "auteur_des_planches": "@Karumina_san",
+  "game_contract": "data/oc/astro-lor/game/character-contract.json",
   "gabarit": {
     "code_interne": "c02023290",
     "pourquoi": "gardien déjà présent dans le jeu ; ses fichiers donnent la forme exacte de ce qu'un personnage possède en propre",

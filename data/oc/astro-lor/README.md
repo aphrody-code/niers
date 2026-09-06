@@ -14,6 +14,9 @@ dérivés publiés, ni les données, ni le plan — chacun a sa place, dite plus
 data/oc/astro-lor/
 ├── README.md                      ce fichier
 ├── manifest.json                  ce qu'il faut produire pour que le jeu le connaisse
+├── game/                          contrat VFS/cfg.bin/Lua/nie.exe machine-lisible
+│   ├── character-contract.json    préfixes, formats, chemins et gates d'intégration
+│   └── README.md                  règles de séparation source / jeu
 ├── provenance/                    d'où vient chaque original — versionné
 │   ├── SHA256SUMS                 les 12 originaux, vérifiables
 │   └── discord-<id message>.json  journal de récupération : ids, empreintes, dimensions
@@ -74,7 +77,7 @@ URL publiées.
 
 ```bash
 # Régénérer le manifeste d'assets (interroge le VFS ; quelques minutes)
-uv run scripts/donnees/astro-lor-manifeste.py
+uv run scripts/donnees/astro-lor-manifest.py
 jq '.resume' data/oc/astro-lor/manifest.json
 
 # Vérifier l'intégrité des originaux
@@ -104,3 +107,8 @@ qu'un personnage du jeu.
 
 Le jeu, lui, ne le connaît pas. `manifest.json` dit ce qui manque, et
 `docs/ASTRO-LOR.md` pourquoi — les deux affirmations sont vraies en même temps.
+
+Le contrat d'intégration séparé dans [`game/character-contract.json`](game/character-contract.json)
+nomme les deux codes internes (`c99019010`, `c99019020`), leurs chemins VFS et les formats
+attendus par le runtime. Les hashes encore inconnus restent `null` jusqu'à lecture des tables
+réelles ; aucun zéro de remplissage n'est une identité de personnage.
