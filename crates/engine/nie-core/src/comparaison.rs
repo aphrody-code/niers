@@ -106,8 +106,16 @@ impl Classification {
 }
 
 /// Écart d'une statistique entre la variante de base et la variante comparée.
+///
+/// **`Serialize` seul, jamais `Deserialize`** : le champ `stat` est un `&'static str` pris
+/// dans [`NOMS_STATS_COMPAREES`], et `serde` ne sait pas produire une référence `'static`
+/// depuis une entrée de durée de vie quelconque. Le `derive(Deserialize)` qui figurait ici
+/// **cassait la compilation** de `nie-core --features serde`, donc de `nie-ffi` et de
+/// `nie-wasm` qui l'activent tous deux (`error: lifetime may not live long enough`, mesuré le
+/// 2026-09-06). Un type qui ne se relit pas se sérialise quand même : c'est un résultat de
+/// calcul, il se recalcule, il ne se recharge pas.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct EcartStat {
     /// Nom de la stat, parmi [`NOMS_STATS_COMPAREES`].
     pub stat: &'static str,
@@ -122,8 +130,10 @@ pub struct EcartStat {
 /// Résultat complet de la comparaison d'une variante à sa base.
 ///
 /// Reproduit `VariantComparisonResult` (`comparison-engine.ts:11-25`).
+///
+/// `Serialize` seul, pour la raison écrite sur [`EcartStat`] : il en porte un `Vec`.
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct ResultatComparaison {
     /// `charaParamId` de la variante comparée.
     pub variante_id: String,
