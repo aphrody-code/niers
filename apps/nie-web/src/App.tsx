@@ -3,10 +3,11 @@ import { type SanteApi, sante } from "@niers/asset-source/nie-site";
 import { AssetSourceProvider, useCapacites, useErreurSource } from "@niers/inacord-ui";
 import "@niers/inacord-ui/shell/game-tokens.css";
 import { useEffect, useMemo, useState } from "react";
-import { EXPLORATEUR, entreesMenu } from "./entrees";
+import { DONNEES, EXPLORATEUR, entreesMenu } from "./entrees";
 import { Catalogue } from "./pages/Catalogue";
 import { Chargement } from "./pages/Chargement";
 import { EcranSecondaire, Note } from "./pages/Ecran";
+import { Donnees } from "./pages/Donnees";
 import { Explorateur } from "./pages/Explorateur";
 import { MenuPrincipal } from "./pages/MenuPrincipal";
 import { ACCUEIL, cheminPourEntree, entreeDemandee, separerLangue } from "./routage";
@@ -149,6 +150,11 @@ function Site() {
 				</Note>
 			) : !capacites ? (
 				<Note>Chargement…</Note>
+			) : vue === DONNEES ? (
+				// AVANT la garde `pret` : cette page lit le gisement SQLite, pas l'index VFS.
+				// L'attendre la rendrait indisponible pendant tout le montage de l'index, pour
+				// une dépendance qu'elle n'a pas.
+				<Donnees />
 			) : !pret ? (
 				<Note>Le catalogue est en cours de préparation. Il s'affichera dès qu'il sera prêt.</Note>
 			) : vue === EXPLORATEUR ? (

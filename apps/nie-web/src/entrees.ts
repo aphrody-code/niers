@@ -23,6 +23,15 @@ import type { NomGlyphe } from "@niers/inacord-ui";
 export const EXPLORATEUR = "explorateur";
 
 /**
+ * Les données du jeu et de la série — 224 tables mesurées, pas une liste écrite ici.
+ *
+ * Ce n'est ni un catalogue (qui filtre l'espace VFS) ni l'explorateur (qui en montre la
+ * structure) : ce sont les **valeurs**, celles que `/api/v1/entites` sert avec la recherche, le
+ * tri, l'égalité, les intervalles et l'export. Elles n'avaient aucune porte dans l'interface.
+ */
+export const DONNEES = "donnees";
+
+/**
  * Les catalogues que le serveur publie sous forme d'URL, dans son document d'accueil.
  *
  * Ce ne sont pas des noms devinés : `nie-site` sert `/textures`, `/modeles`, `/sons` et
@@ -52,6 +61,7 @@ const HABILLAGE: Record<string, { libelle: string; glyphe: NomGlyphe }> = {
 	sons: { libelle: "Sons", glyphe: "onde" },
 	videos: { libelle: "Vidéos", glyphe: "film" },
 	[EXPLORATEUR]: { libelle: "Explorer", glyphe: "arbre" },
+	[DONNEES]: { libelle: "Données", glyphe: "arbre" },
 };
 
 /** Le libellé d'une entrée, ou son nom brut si le site ne la connaît pas. */
@@ -71,7 +81,7 @@ export function entreesMenu(etat: SanteApi | null): EntreeMenu[] {
 	const noms = etat?.vues.length
 		? etat.vues.map((v) => v.nom)
 		: [...CATALOGUES];
-	return [...noms, EXPLORATEUR].map((vue) => ({
+	return [...noms, EXPLORATEUR, DONNEES].map((vue) => ({
 		vue,
 		libelle: libelleEntree(vue),
 		glyphe: HABILLAGE[vue]?.glyphe ?? "arbre",
