@@ -155,53 +155,57 @@ const nextConfig: NextConfig = {
 	},
 
 	async redirects() {
-		// Les dix prefixes qui partent vers Aphrody.
+		// Ou vont les pages retirees du wiki. DEUX destinations, pas une.
 		//
-		// INACTIFS tant que `NEXT_PUBLIC_TOOLS_ORIGIN` n'est pas posee : sans elle la liste est
-		// vide, et le wiki continue de servir ses pages comme aujourd'hui. C'est ce qui rend le
-		// basculement reversible — une variable, pas un deploiement.
+		// 1. Les quatre catalogues media (`/textures`, `/modeles`, `/sons`, `/videos`) sont
+		//    SERVIS par Aphrody : `nie-site` leur rend un document propre, avec titre,
+		//    description et canonique, et le site les publie a son plan. Les y renvoyer mene a
+		//    la page demandee.
+		// 2. La galerie et les cinq outils sont partis dans l'explorateur de BUREAU
+		//    (`docs/MIGRATION-EXPLORATEUR.md`). Aphrody ne les sert pas : `apps/nie-web` ne
+		//    connait que `medias` et `explorateur`, toute autre route y retombe sur l'accueil.
+		//    Les renvoyer chez Aphrody afficherait donc son accueil sous l'URL d'un outil —
+		//    pire qu'un 404, qui au moins ne ment pas. Ils vont a `/tools/niers`, la page qui
+		//    dit ou est passe l'outil et permet de le telecharger.
 		//
-		// Des PREFIXES EXPLICITES, jamais une expression reguliere sur `/tools`. La nuance est
-		// tout sauf cosmetique : `/tools/niers/latest.json` est l'endpoint de mise a jour des
-		// Inacord deja installes. Une regle large l'attraperait, et les clients cesseraient de
-		// se mettre a jour sans qu'aucune page ne semble cassee. `/tools` lui-meme n'est donc
-		// PAS redirige, seulement les outils un par un.
-		const origineOutils = process.env.NEXT_PUBLIC_TOOLS_ORIGIN;
-		const versAphrody = origineOutils
-			? [
-					"/tools/translator",
-					"/tools/stats",
-					"/tools/compare",
-					"/tools/random-team",
-					"/tools/my-team",
-					"/gallery",
-					"/textures",
-					"/modeles",
-					"/sons",
-					"/videos",
-				].map((prefixe) => ({
-					// 308 et non 301 : la methode et le corps sont conserves, et le cache des
-					// navigateurs ne fige pas la redirection de facon irreversible.
-					destination: `${origineOutils}${prefixe}/:path*`,
-					permanent: true,
-					source: `${prefixe}/:path*`,
-				}))
-			: [];
-		// Les deux raccourcis historiques suivent les memes pages, mais sous un autre chemin :
-		// leur destination est mappee, pas recopiee.
-		const raccourcisOutils = origineOutils
-			? [
-					{ source: "/compare", cible: "/tools/compare" },
-					{ source: "/random-team", cible: "/tools/random-team" },
-				].map(({ source, cible }) => ({
-					destination: `${origineOutils}${cible}`,
-					permanent: true,
-					source,
-				}))
-			: [];
+		// Des PREFIXES EXPLICITES, jamais une expression reguliere sur `/tools` :
+		// `/tools/niers/latest.json` est l'endpoint de mise a jour des Inacord deja installes,
+		// et une regle large l'attraperait — les clients cesseraient de se mettre a jour sans
+		// qu'aucune page ne semble cassee.
+		//
+		// `NEXT_PUBLIC_TOOLS_ORIGIN` reste surchargeable, mais elle a desormais un DEFAUT :
+		// les pages sont supprimees du depot, laisser la liste vide ne rend plus le wiki
+		// d'avant, seulement dix 404.
+		const origineMedias = process.env.NEXT_PUBLIC_TOOLS_ORIGIN || "https://aphrody.com";
+		const versAphrody = ["/textures", "/modeles", "/sons", "/videos"].map((prefixe) => ({
+			// 308 et non 301 : la methode et le corps sont conserves, et le cache des
+			// navigateurs ne fige pas la redirection de facon irreversible.
+			destination: `${origineMedias}${prefixe}/:path*`,
+			permanent: true,
+			source: `${prefixe}/:path*`,
+		}));
+		const versExplorateur = [
+			"/gallery",
+			"/tools/translator",
+			"/tools/stats",
+			"/tools/compare",
+			"/tools/random-team",
+			"/tools/my-team",
+		].map((prefixe) => ({
+			destination: "/tools/niers",
+			permanent: true,
+			source: `${prefixe}/:path*`,
+		}));
+		// Les deux raccourcis historiques menaient aux memes outils, sous un autre chemin.
+		const raccourcisOutils = ["/compare", "/random-team"].map((source) => ({
+			destination: "/tools/niers",
+			permanent: true,
+			source,
+		}));
 
 		return [
 			...versAphrody,
+			...versExplorateur,
 			...raccourcisOutils,
 			{
 				destination: "/cross",

@@ -181,7 +181,10 @@ const APPS: Record<string, AppConfig> = {
 		siteConf: "/etc/nginx/conf.d/azalee.rosegriffon.conf",
 		upstreamOptions: "max_fails=3 fail_timeout=15s",
 		publicUrl: "https://azalee.rosegriffon.fr/",
-		probes: ["/api/health", "/", "/chara", "/skill", "/news", "/gallery"],
+		// `/gallery` a quitté le wiki (parti dans l'explorateur, cf.
+		// `docs/MIGRATION-EXPLORATEUR.md`) : la sonde suit la page vivante qui l'a remplacée
+		// dans le menu, pas l'URL qui ne fait plus que rediriger.
+		probes: ["/api/health", "/", "/chara", "/skill", "/news", "/tools/niers"],
 		extraDirs: [".next/static", "public", "data"],
 		// Le miroir SQLite est republié chaque nuit dans le dépôt (`nie-miroir.timer`,
 		// 04:10 UTC) et épinglé en absolu par `SQLITE_DB_PATH` : la version le vise par

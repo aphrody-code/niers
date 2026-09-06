@@ -301,7 +301,10 @@ bunx oxlint -c .oxlintrc.json -A style -A pedantic -A restriction apps/inacord/s
 * **Le glisser-déposer est natif** (`draggable` + `dragover`/`drop`), pas `@dnd-kit`. Suffisant
   pour des cases ; il n'y a ici ni liste triable ni capteur tactile. `@dnd-kit/core` est au
   catalogue de la racine si on veut la parité de geste.
-* **Le retrait côté `apps/azalee` est fait** (2026-09-06) — cf. §4. Restent ouverts, côté web :
-  les cinq URL retirées ne sont redirigées que si `NEXT_PUBLIC_TOOLS_ORIGIN` est posée ; sans
-  elle, `/gallery` et `/tools/{stats,compare,random-team,my-team,translator}` répondent 404,
-  comme `/textures`, `/modeles`, `/sons` et `/videos` avant elles.
+* **Le retrait côté `apps/azalee` est fait** (2026-09-06) — cf. §4. Les URL retirées sont
+  redirigées en 308 vers **deux destinations distinctes**, mesurées et non supposées :
+  `/textures`, `/modeles`, `/sons` et `/videos` vers `https://aphrody.com` (que `nie-site` sert
+  réellement, avec titre et canonique propres) ; `/gallery` et les cinq outils vers
+  **`/tools/niers`**, la page de téléchargement de l'explorateur — `apps/nie-web` ne connaît que
+  `medias` et `explorateur`, toute autre route y retombe sur l'accueil, et servir l'accueil
+  d'Aphrody sous l'URL d'un outil serait pire qu'un 404.

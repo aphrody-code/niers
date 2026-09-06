@@ -171,7 +171,7 @@ Généré le : ${nowStamp()}
 - [Passifs](https://azalee.rosegriffon.fr/passive) : compétences passives.
 - [Tactiques](https://azalee.rosegriffon.fr/tactic) : tactiques d'équipe.
 - [Actualités](https://azalee.rosegriffon.fr/news) : news et patch-notes du jeu.
-- [Outils](https://azalee.rosegriffon.fr/tools) : comparateur, équipe aléatoire, traducteur.
+- [Explorateur](https://azalee.rosegriffon.fr/tools/niers) : application de bureau — comparateur, équipe aléatoire, traducteur, galerie.
 
 ## Réseaux & liens
 
@@ -225,10 +225,9 @@ française de la communauté Inazuma Eleven.
 
 ## Outils
 
-- [Outils](https://azalee.rosegriffon.fr/tools)
-- [Comparateur](https://azalee.rosegriffon.fr/tools/compare)
-- [Équipe aléatoire](https://azalee.rosegriffon.fr/tools/random-team)
-- [Traducteur](https://azalee.rosegriffon.fr/tools/translator)
+- [Explorateur](https://azalee.rosegriffon.fr/tools/niers) : comparateur, équipe aléatoire,
+  traducteur, calculateur de stats et galerie d'illustrations vivent désormais dans
+  l'application de bureau ; leurs anciennes URL y redirigent.
 - [Recherche](https://azalee.rosegriffon.fr/search)
 
 ## API (pour les IA et outils)
