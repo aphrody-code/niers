@@ -227,6 +227,18 @@ pub struct DemandeChara {
     pub rarity: Option<String>,
     /// Série exacte (9).
     pub series: Option<String>,
+    /// Plusieurs éléments à la fois — `?element__in=Feu,Vent`.
+    #[serde(rename = "element__in")]
+    pub element_in: Option<String>,
+    /// Plusieurs postes à la fois.
+    #[serde(rename = "position__in")]
+    pub position_in: Option<String>,
+    /// Plusieurs raretés à la fois.
+    #[serde(rename = "rarity__in")]
+    pub rarity_in: Option<String>,
+    /// Plusieurs séries à la fois.
+    #[serde(rename = "series__in")]
+    pub series_in: Option<String>,
     /// Colonne de tri, prise dans [`TRI_CHARA`]. Inconnue : le tri par défaut.
     pub tri: Option<String>,
     /// Sens : `asc` (défaut) ou `desc`.
@@ -267,6 +279,8 @@ pub struct FiltresChara {
     pub tri: String,
     /// Sens appliqué.
     pub ordre: &'static str,
+    /// Choix multiples retenus, `colonne__in` → les valeurs acceptées.
+    pub listes: std::collections::BTreeMap<String, Vec<String>>,
 }
 
 /// Une page du catalogue de personnages, ses filtres et ses facettes chiffrées.
@@ -282,15 +296,76 @@ pub struct PageChara {
     pub facettes: std::collections::BTreeMap<String, Vec<Compte>>,
 }
 
+/// Une condition, et **la colonne dont elle vient**.
+///
+/// La colonne est retenue pour une seule raison : une facette se compte sans le filtre de sa
+/// PROPRE colonne. Sans ce découpage, `?element=Feu` faisait rendre à la facette `element` une
+/// unique valeur — mesuré en production le 2026-09-06, `Feu:1528` et les cinq autres éléments
+/// disparus — donc l'interface ne pouvait plus proposer d'en ajouter un second. La liste des
+/// choix se refermait sur le premier clic.
+struct ClauseChara {
+    /// La colonne visée, ou `None` pour la recherche libre — qui ne se retire jamais : elle ne
+    /// porte sur aucune colonne facetée, et l'exclure élargirait les comptes sans raison.
+    colonne: Option<&'static str>,
+    /// Le SQL, avec ses `?`.
+    sql: String,
+    /// Les valeurs à lier, dans l'ordre des `?`.
+    params: Vec<String>,
+}
+
+/// Assemble le `WHERE`, en retirant les conditions d'une colonne.
+///
+/// `sauf = None` rend la clause complète — celle de la page. `sauf = Some(colonne)` rend celle
+/// d'une facette.
+fn ou_chara(clauses: &[ClauseChara], sauf: Option<&str>) -> (String, Vec<String>) {
+    let retenues: Vec<&ClauseChara> = clauses
+        .iter()
+        .filter(|c| c.colonne.is_none() || c.colonne != sauf)
+        .collect();
+    let sql = if retenues.is_empty() {
+        String::new()
+    } else {
+        format!(
+            " WHERE {}",
+            retenues
+                .iter()
+                .map(|c| c.sql.clone())
+                .collect::<Vec<_>>()
+                .join(" AND ")
+        )
+    };
+    let params = retenues
+        .iter()
+        .flat_map(|c| c.params.iter().cloned())
+        .collect();
+    (sql, params)
+}
+
+/// Découpe un `?colonne__in=a,b` en valeurs, sans doublon ni vide.
+fn valeurs_in(brut: Option<&String>) -> Vec<String> {
+    let mut sorties: Vec<String> = Vec::new();
+    for v in brut
+        .map(String::as_str)
+        .unwrap_or_default()
+        .split(',')
+        .map(str::trim)
+        .filter(|v| !v.is_empty())
+    {
+        if !sorties.iter().any(|d| d == v) {
+            sorties.push(v.to_owned());
+        }
+    }
+    sorties
+}
+
 /// Traduit la demande en clauses SQL **paramétrées**. Aucune valeur du client n'entre dans le
 /// texte de la requête : seuls des `?` y entrent, et le nom de colonne vient de la liste
 /// blanche.
 fn clauses_chara(
     q: Option<&str>,
     d: &DemandeChara,
-) -> (String, Vec<String>, FiltresChara, &'static str) {
-    let mut ou = Vec::new();
-    let mut params: Vec<String> = Vec::new();
+) -> (Vec<ClauseChara>, FiltresChara, &'static str) {
+    let mut ou: Vec<ClauseChara> = Vec::new();
     let mut appl = FiltresChara::default();
 
     if let Some(m) = q.map(str::trim).filter(|m| !m.is_empty()) {
@@ -300,27 +375,29 @@ fn clauses_chara(
             "%{}%",
             m.replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_")
         );
-        ou.push(
-            "(name_fr LIKE ?  ESCAPE '\\' OR name_en LIKE ? ESCAPE '\\' \
-             OR name_ja LIKE ? ESCAPE '\\' OR base_slug LIKE ? ESCAPE '\\' \
-             OR internal_code LIKE ? ESCAPE '\\')"
+        ou.push(ClauseChara {
+            colonne: None,
+            sql: "(name_fr LIKE ?  ESCAPE '\\' OR name_en LIKE ? ESCAPE '\\' \
+                  OR name_ja LIKE ? ESCAPE '\\' OR base_slug LIKE ? ESCAPE '\\' \
+                  OR internal_code LIKE ? ESCAPE '\\')"
                 .to_owned(),
-        );
-        for _ in 0..5 {
-            params.push(motif.clone());
-        }
+            params: vec![motif; 5],
+        });
         appl.q = Some(m.to_owned());
     }
 
-    for (colonne, valeur) in [
-        ("element", &d.element),
-        ("position", &d.position),
-        ("rarity", &d.rarity),
-        ("series", &d.series),
+    for (colonne, valeur, liste) in [
+        ("element", &d.element, &d.element_in),
+        ("position", &d.position, &d.position_in),
+        ("rarity", &d.rarity, &d.rarity_in),
+        ("series", &d.series, &d.series_in),
     ] {
         if let Some(v) = valeur.as_deref().map(str::trim).filter(|v| !v.is_empty()) {
-            ou.push(format!("\"{colonne}\" = ?"));
-            params.push(v.to_owned());
+            ou.push(ClauseChara {
+                colonne: Some(colonne),
+                sql: format!("\"{colonne}\" = ?"),
+                params: vec![v.to_owned()],
+            });
             match colonne {
                 "element" => appl.element = Some(v.to_owned()),
                 "position" => appl.position = Some(v.to_owned()),
@@ -328,20 +405,28 @@ fn clauses_chara(
                 _ => appl.series = Some(v.to_owned()),
             }
         }
+        // Le choix multiple s'ajoute a l'egalite plutot que de la remplacer : les deux
+        // parametres sont distincts, et un client qui envoie les deux demande bien les deux.
+        let valeurs = valeurs_in(liste.as_ref());
+        if !valeurs.is_empty() {
+            let trous = std::iter::repeat_n("?", valeurs.len())
+                .collect::<Vec<_>>()
+                .join(", ");
+            ou.push(ClauseChara {
+                colonne: Some(colonne),
+                sql: format!("\"{colonne}\" IN ({trous})"),
+                params: valeurs.clone(),
+            });
+            appl.listes.insert(format!("{colonne}__in"), valeurs);
+        }
     }
-
-    let ou = if ou.is_empty() {
-        String::new()
-    } else {
-        format!(" WHERE {}", ou.join(" AND "))
-    };
 
     let ordre = match d.ordre.as_deref().map(str::trim) {
         Some("desc" | "decroissant" | "descendant") => "DESC",
         _ => "ASC",
     };
     appl.ordre = if ordre == "DESC" { "desc" } else { "asc" };
-    (ou, params, appl, ordre)
+    (ou, appl, ordre)
 }
 
 /// `GET /api/v1/chara` — une page du catalogue de personnages.
@@ -358,7 +443,8 @@ pub async fn chara(
     Query(facettes): Query<DemandeChara>,
 ) -> Result<Json<PageChara>, ErreurSite> {
     let p = demande.bornee();
-    let (ou, params, mut appl, sens) = clauses_chara(demande.q.as_deref(), &facettes);
+    let (clauses, mut appl, sens) = clauses_chara(demande.q.as_deref(), &facettes);
+    let (ou, params) = ou_chara(&clauses, None);
 
     // Le tri par défaut est celui du zukan, les non classés en dernier — c'est l'ordre du jeu.
     let tri_defaut =
@@ -388,13 +474,21 @@ pub async fn chara(
 
             let mut facettes = std::collections::BTreeMap::new();
             for colonne in FACETTES_CHARA {
+                // Sans le filtre de SA propre colonne : c'est ce qui laisse choisir une seconde
+                // valeur. Les autres filtres s'appliquent bien, donc les comptes correspondent
+                // toujours a ce que la page montrera.
+                let (ou_facette, params_facette) = ou_chara(&clauses, Some(colonne));
+                let lies_facette: Vec<&dyn rusqlite::ToSql> = params_facette
+                    .iter()
+                    .map(|s| s as &dyn rusqlite::ToSql)
+                    .collect();
                 let sql = format!(
-                    "SELECT \"{colonne}\", count(*) FROM \"{TABLE_CHARA}\"{ou} \
+                    "SELECT \"{colonne}\", count(*) FROM \"{TABLE_CHARA}\"{ou_facette} \
                      GROUP BY \"{colonne}\" ORDER BY count(*) DESC, \"{colonne}\""
                 );
                 let mut stmt = c.prepare(&sql)?;
                 let comptes = stmt
-                    .query_map(lies.as_slice(), |r| {
+                    .query_map(lies_facette.as_slice(), |r| {
                         let valeur: Option<String> = r.get(0)?;
                         let total: i64 = r.get(1)?;
                         Ok(Compte {
@@ -467,7 +561,8 @@ mod tests {
             ordre: Some("desc".to_owned()),
             ..DemandeChara::default()
         };
-        let (ou, params, appl, sens) = clauses_chara(Some("mark"), &d);
+        let (clauses, appl, sens) = clauses_chara(Some("mark"), &d);
+        let (ou, params) = ou_chara(&clauses, None);
         assert_eq!(sens, "DESC");
         assert_eq!(appl.ordre, "desc");
         assert_eq!(appl.element.as_deref(), Some("feu"));
@@ -481,17 +576,83 @@ mod tests {
 
     #[test]
     fn motif_chara_echappe_les_jokers() {
-        let (_, params, _, _) = clauses_chara(Some("100%_a"), &DemandeChara::default());
+        let (clauses, _, _) = clauses_chara(Some("100%_a"), &DemandeChara::default());
+        let (_, params) = ou_chara(&clauses, None);
         assert_eq!(params[0], "%100\\%\\_a%", "% et _ ne sont pas des jokers");
     }
 
     #[test]
     fn sans_filtre_aucune_clause() {
-        let (ou, params, appl, sens) = clauses_chara(None, &DemandeChara::default());
+        let (clauses, appl, sens) = clauses_chara(None, &DemandeChara::default());
+        let (ou, params) = ou_chara(&clauses, None);
         assert!(ou.is_empty());
         assert!(params.is_empty());
         assert_eq!(sens, "ASC");
         assert!(appl.q.is_none());
+    }
+
+    #[test]
+    fn une_facette_chara_se_compte_sans_le_filtre_de_sa_colonne() {
+        // Le defaut mesure en production le 2026-09-06 : `?element=Feu` faisait rendre a la
+        // facette `element` la seule valeur `Feu:1528`, les cinq autres elements disparus. Un
+        // choix fermait donc la liste des choix, et aucun second element n'etait atteignable.
+        //
+        // Les trois moities comptent. Sans la premiere, on ne verrait pas que la clause de la
+        // page garde bien le filtre ; sans la deuxieme, un `ou_chara` qui retirerait TOUT
+        // passerait ; sans la troisieme, un qui ne retirerait RIEN passerait aussi.
+        let d = DemandeChara {
+            element: Some("Feu".to_owned()),
+            position: Some("Milieu".to_owned()),
+            ..DemandeChara::default()
+        };
+        let (clauses, _, _) = clauses_chara(Some("mark"), &d);
+
+        let (page, p_page) = ou_chara(&clauses, None);
+        assert_eq!(page.matches('?').count(), 7, "5 pour le motif + element + position");
+        assert_eq!(p_page.len(), 7);
+
+        let (f_element, p_element) = ou_chara(&clauses, Some("element"));
+        assert_eq!(f_element.matches('?').count(), 6, "element retire, position gardee");
+        assert!(f_element.contains("\"position\""), "les AUTRES filtres restent : {f_element}");
+        assert!(!f_element.contains("\"element\""), "le sien part : {f_element}");
+        assert_eq!(p_element, ["%mark%"; 5].iter().map(|s| (*s).to_owned()).chain(["Milieu".to_owned()]).collect::<Vec<_>>());
+
+        // La recherche libre ne se retire jamais : elle ne porte sur aucune colonne facetee.
+        let (f_series, _) = ou_chara(&clauses, Some("series"));
+        assert_eq!(f_series.matches('?').count(), 7, "aucune colonne `series` n'etait filtree");
+    }
+
+    #[test]
+    fn un_choix_multiple_chara_devient_un_in() {
+        // L'affordance que les facettes dessinent : plusieurs valeurs a la fois. Le `IN` est
+        // parametre comme le reste, et les doublons ne le gonflent pas.
+        let d = DemandeChara {
+            element_in: Some("Feu, Vent ,Feu".to_owned()),
+            ..DemandeChara::default()
+        };
+        let (clauses, appl, _) = clauses_chara(None, &d);
+        let (ou, params) = ou_chara(&clauses, None);
+        assert_eq!(ou, " WHERE \"element\" IN (?, ?)", "deux trous, pas trois");
+        assert_eq!(params, ["Feu", "Vent"]);
+        assert_eq!(
+            appl.listes.get("element__in").map(Vec::as_slice),
+            Some(["Feu".to_owned(), "Vent".to_owned()].as_slice()),
+            "republie sous le nom que le client a envoye"
+        );
+
+        // Et il part avec sa colonne quand on compte cette colonne-la.
+        let (facette, _) = ou_chara(&clauses, Some("element"));
+        assert!(facette.is_empty(), "rien ne reste : {facette}");
+
+        // Une liste vide ne filtre pas — et surtout ne produit pas un `IN ()`, qui est une
+        // erreur de syntaxe SQLite et non un filtre vide.
+        let vide = DemandeChara {
+            element_in: Some(" , ".to_owned()),
+            ..DemandeChara::default()
+        };
+        let (clauses, appl, _) = clauses_chara(None, &vide);
+        assert!(ou_chara(&clauses, None).0.is_empty());
+        assert!(appl.listes.is_empty());
     }
 
     #[test]
