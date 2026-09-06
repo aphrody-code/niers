@@ -6,8 +6,7 @@ use std::rc::Rc;
 
 use anyhow::{Context, bail};
 use nie_formats::vfs::{Vfs, resolve_game_dir};
-use nie_lua::runtime::{ExecOptions, execute_with_include};
-use nie_lua::{index_script_paths, resolve_script_path};
+use nie_lua::runtime::{ExecOptions, execute_with_script_paths};
 use serde_json::json;
 
 /// Exécute les scripts `.lua.bin` du VFS et rend une mesure exploitable en CI/RE.
@@ -34,9 +33,6 @@ pub fn run(
     }
 
     let all_paths: Vec<String> = vfs.iter().map(|(path, _)| path.to_string()).collect();
-    let (by_base, by_logical) = index_script_paths(all_paths.iter().map(String::as_str));
-    let by_base = Rc::new(by_base);
-    let by_logical = Rc::new(by_logical);
     let vfs = Rc::new(vfs);
     let mut executed = 0usize;
     let mut decoded = 0usize;
@@ -92,11 +88,8 @@ pub fn run(
             context: Default::default(),
         };
         let resolver_vfs = Rc::clone(&vfs);
-        let resolver_base = Rc::clone(&by_base);
-        let resolver_logical = Rc::clone(&by_logical);
-        let result = execute_with_include(&bytes, &options, move |include| {
-            let resolved = resolve_script_path(include, &resolver_base, &resolver_logical)?;
-            resolver_vfs.read(resolved).ok()
+        let result = execute_with_script_paths(&bytes, &options, all_paths.clone(), move |path| {
+            resolver_vfs.read(path).ok()
         });
         match result {
             Ok(output) => {

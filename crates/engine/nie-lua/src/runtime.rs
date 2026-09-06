@@ -253,6 +253,33 @@ where
     execute_inner(data, options, Some(Box::new(resolver)))
 }
 
+/// Exécute un chunk avec un index VFS de scripts versionnés.
+///
+/// Le caller ne fournit que les chemins physiques et le reader brut ; la résolution des noms
+/// logiques `LUA_*`, des basenames et des versions numériques est identique à celle de
+/// [`crate::session::LuaSession::with_script_paths`]. Le chunk principal et chaque include
+/// restent exécutés dans la même VM instrumentée.
+pub fn execute_with_script_paths<I, F>(
+    data: &[u8],
+    options: &ExecOptions,
+    paths: I,
+    reader: F,
+) -> Result<ExecOutput, LuaError>
+where
+    I: IntoIterator<Item = String>,
+    F: Fn(&str) -> Option<Vec<u8>> + 'static,
+{
+    let paths = paths.into_iter().collect::<Vec<_>>();
+    let (by_name, by_logical) = crate::index_script_paths(paths.iter().map(String::as_str));
+    let by_name = Rc::new(by_name);
+    let by_logical = Rc::new(by_logical);
+    let reader = Rc::new(reader);
+    execute_with_include(data, options, move |name| {
+        let path = crate::resolve_script_path(name, &by_name, &by_logical)?;
+        reader(path)
+    })
+}
+
 fn execute_inner(
     data: &[u8],
     options: &ExecOptions,
@@ -527,6 +554,23 @@ mod tests {
         let error = execute(&malformed, &ExecOptions::default())
             .expect_err("un chunk binaire invalide doit échouer avant la VM");
         assert!(matches!(error, LuaError::Decode(_)));
+    }
+
+    #[test]
+    fn execute_avec_chemins_vfs_choisit_la_derniere_version_logique() {
+        let paths = vec![
+            "data/common/script/lua/menu/module_9.lua.bin".to_string(),
+            "data/common/script/lua/menu/module_10.lua.bin".to_string(),
+        ];
+        let out = execute_with_script_paths(
+            br#"INCLUDE("LUA_MODULE"); assert(vfs_version == 10)"#,
+            &ExecOptions::default(),
+            paths,
+            |path| (path.ends_with("module_10.lua.bin")).then(|| b"vfs_version = 10".to_vec()),
+        )
+        .expect("exécution VFS");
+        assert!(out.error.is_none(), "erreur inattendue : {:?}", out.error);
+        assert_eq!(out.loaded_includes, vec!["LUA_MODULE"]);
     }
 
     /// Une boucle infinie doit être coupée par la limite d'instructions, pas figer l'appelant.

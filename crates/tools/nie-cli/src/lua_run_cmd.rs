@@ -5,7 +5,7 @@ use std::rc::Rc;
 
 use anyhow::{Context, bail};
 use nie_formats::vfs::{Vfs, resolve_game_dir};
-use nie_lua::runtime::{ExecOptions, execute_with_include};
+use nie_lua::runtime::{ExecOptions, execute_with_script_paths};
 use nie_lua::{index_script_paths, resolve_script_path};
 use serde_json::json;
 
@@ -44,7 +44,6 @@ pub fn run(
     };
 
     let paths: Vec<String> = vfs.iter().map(|(path, _)| path.to_string()).collect();
-    let (by_base, by_logical) = index_script_paths(paths.iter().map(String::as_str));
     let vfs = Rc::new(vfs);
     let options = ExecOptions {
         chunk_name: name.clone(),
@@ -58,8 +57,7 @@ pub fn run(
         .ok()
         .map(|chunk| chunk.main.total_instructions());
     let decode_error = decoded.as_ref().err().map(ToString::to_string);
-    let output = execute_with_include(&bytes, &options, move |include| {
-        let path = resolve_script_path(include, &by_base, &by_logical)?;
+    let output = execute_with_script_paths(&bytes, &options, paths, move |path| {
         vfs.read(path).ok()
     })
     .map_err(|error| anyhow::anyhow!("exécution Lua de {name} : {error}"))?;

@@ -59,6 +59,11 @@ Le même type est désormais porté par `ExecOptions` : `execute` et
 `execute_with_include` utilisent ainsi ce contexte sur le chunk principal comme
 sur les modules VFS inclus.
 
+`execute_with_script_paths` centralise désormais le chemin brut VFS → index des
+scripts → résolution logique/versionnée → VM. `lua-run` et `lua-audit` l’utilisent
+directement, ce qui supprime leurs résolveurs divergents et vérifie la sélection
+numérique des versions au même endroit.
+
 Le driver `nie-game --runtime` utilise maintenant cette session persistante
 plutôt qu’une VM et des index d’include reconstruits à la main. La vérification
 Kizuna réelle termine avec `on_init=true`, `on_open=true`, 102 commandes
