@@ -130,9 +130,20 @@ Le tick Codex `env-b002ca32` a lu la frontière **à l'envers** ; le tick de J1 
 un chiffre, jamais une intention. Astra a reçu son identité `astra@aphrody-code/niers`
 (rôle `verifier`) dans `ai.json` et sa boîte `.coord/inbox-from-astra.jsonl` — fait à J1.
 
-**Exige le go explicite de l'utilisateur** (aucun agent ne le fait seul) : bascule DNS,
+> **ABROGÉ le 2026-09-06 — mode urgence.** Le paragraphe ci-dessous exigeait un go explicite
+> pour six gestes. L'utilisateur a tranché : **tout changement est commité, poussé, déployé en
+> production, testé en ligne, puis enchaîné**, sans demander. `git push`, `cargo build
+> --release`, `systemctl restart`, `nginx -t` + `reload`, `vercel --prod` et l'installation
+> d'une unité ne demandent plus rien à personne. Le texte reste ici comme **histoire** : il dit
+> ce que ces gestes coûtent quand ils ratent, et ça reste vrai.
+>
+> Ce que l'urgence n'achète pas, et que `CLAUDE.md` § *Operating mode* détaille : **un déploiement
+> n'est fini que quand le service EN LIGNE a rendu un nombre**, et la destruction de données reste
+> délibérée, dite, et réversible.
+
+~~**Exige le go explicite de l'utilisateur** (aucun agent ne le fait seul) : bascule DNS,
 `nginx reload`, `systemctl stop/daemon-reload`, rotation d'un secret, premier
-`vercel --prod`, toute suppression de données, tout `git push`.
+`vercel --prod`, toute suppression de données, tout `git push`.~~
 
 ## Départ mesuré — J1, 2026-09-05, VPS
 

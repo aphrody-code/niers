@@ -896,9 +896,16 @@ arithmétique ne la trouve.
 5. **Ce qui n'est pas exposé est classé, pas oublié.** `interne` exige une raison écrite.
 6. **La DA vient d'une mesure.** Couleurs sur la texture du VFS, positions sur le layout
    runtime quand il les porte, sur une capture sinon — et on dit laquelle.
-7. **Les six gestes de production** (DNS, `nginx reload`, `systemctl`, rotation de secret,
-   `vercel --prod`, suppression) restent soumis au go de l'utilisateur. Ils se **préparent** :
-   commande, vérification, retour arrière.
+7. **On livre.** ~~Les six gestes de production restent soumis au go de l'utilisateur.~~
+   **Abrogé le 2026-09-06** : chaque changement est commité, poussé, déployé en production,
+   **interrogé en ligne**, puis enchaîné. C'est un seul mouvement. `git push`, `build --release`,
+   `systemctl restart`, `nginx reload`, `vercel --prod` ne demandent plus rien.
+
+   Ce que ça ne change pas, et c'est le seul point qui compte : **un déploiement n'est fini que
+   quand le service EN LIGNE a rendu un nombre.** `systemctl is-active` n'est pas une mesure —
+   ce dépôt a déjà servi un binaire périmé sous une suite verte (§ 3). La destruction de données
+   et la rotation d'un secret restent délibérées : on les fait si le lot en a besoin, on le dit,
+   et on garde un retour arrière.
 
 ## 7. Ce qui reste ouvert, et qui décide
 
@@ -911,9 +918,9 @@ arithmétique ne la trouve.
   rendues côté serveur par entrée, et `/f/` — qui ne rend que des octets, jamais un document —
   maintenu hors index. C'est ce que je propose ; l'inverse (tout exposer, `/f/` compris) reste
   la décision de l'utilisateur.
-- **Le préchargement du VFS par nginx** touche le vhost `aphrody.com` : c'est l'un des six
-  gestes de production. La commande et son retour arrière se préparent ; l'application attend
-  le go explicite. Noter que le serveur monte **déjà** le VFS en fond
+- **Le préchargement du VFS par nginx** touche le vhost `aphrody.com`. ~~Il attend un go.~~
+  **Plus depuis le 2026-09-06** : il se fait, `nginx -t` puis `reload`, et on mesure le premier
+  octet avant et après. Noter que le serveur monte **déjà** le VFS en fond
   (`EtatSite::monter_vfs_en_fond`, 255 308 entrées) — l'étage nginx est une optimisation du
   premier octet, pas la condition du chargement.
 - **La base légale** de la diffusion des assets LEVEL-5 sur un site `aphrody-dev` : l'accord

@@ -20,6 +20,25 @@ it is not supposed to have any.
 
 ---
 
+## 0. Urgency mode — decided by the user on **2026-09-06**
+
+**Ship. Every change is committed, pushed, deployed to production, tested there, and chained
+straight into the next one.** One movement, not four decisions.
+
+No agent asks for a go any more before `git push`, `cargo build --release`, a `systemctl restart`
+of this repository's services, `nginx -t` + `reload`, or `vercel --prod`. The 2026-09-05 list of
+"six moves that need a go" is **repealed**; the plans keep it as history only.
+
+Two things urgency does not buy, because they are the ones it will try to skip — the full text is
+in [`CLAUDE.md`](CLAUDE.md) § *Operating mode*:
+
+1. **A deploy is finished when the LIVE service has returned a number**, not when `systemctl` says
+   `active`. Shipping fast never lowers a gate.
+2. **Destroying data stays deliberate.** Do it if the batch needs it, say so in the same breath,
+   and keep a way back. Never as a shortcut around a failing test.
+
+---
+
 ## 1. Language — English to name, French to answer
 
 Decided by the user on **2026-09-06**, and it binds every agent: `niers` is a **worldwide**
