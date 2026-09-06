@@ -46,8 +46,8 @@
     },
     {
       "path": "data/oc/astro-lor/game/evidence/reference-c02023290-live-scan.json",
-      "bytes": 6508,
-      "sha256": "440565368de537189a5632247b20238d225c6d43c917c75b39cec5fc607a6428",
+      "bytes": 8389,
+      "sha256": "2287c509b31daea8d9e0bf0429ef00e6c890ef060f7b11d803f76906c9ab359a",
       "class": "game_metadata"
     },
     {

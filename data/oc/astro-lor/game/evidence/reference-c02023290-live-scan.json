@@ -139,6 +139,45 @@
       "fallbacks": ["niers vfs", "nie-model-serve"]
     }
   },
+  "memory_tool_probes": {
+    "iecode_csharp": {
+      "command": "dotnet run --project csharp/IECODE.CLI/IECODE.CLI.csproj -- mem maps --pid 17768 --module nie.exe",
+      "result": "La commande mem est Linux-only (process_vm_readv).",
+      "exit_code": 0,
+      "read_attempted": false,
+      "implementation": "IECODE.Core.Runtime.WineMemory"
+    },
+    "rust_nie_cli": {
+      "commands": [
+        "niers mem maps --pid 17768 --module nie.exe",
+        "niers mem scan str:c02023290 --pid 17768 --all --limit 20"
+      ],
+      "result": "`niers mem` est Linux-only (process_vm_readv).",
+      "exit_code": 1,
+      "read_attempted": false,
+      "implementation": "nie-cli delegation to nie-trace Linux/Wine path"
+    },
+    "rust_nie_mem_windows": {
+      "binary": "target/release/nie-mem.exe",
+      "backend": "OpenProcess/ReadProcessMemory/VirtualQueryEx",
+      "find_pid": {"command": "nie-mem find-pid nie.exe", "pid": 17768, "exit_code": 0},
+      "maps": {"command": "nie-mem maps --pid 17768 --module nie.exe", "regions": 0, "bytes": 0, "exit_code": 0},
+      "base": {"command": "nie-mem base --pid 17768 --module nie.exe", "result": "module not found", "exit_code": 1},
+      "read": {"command": "nie-mem read 0x140000000 --pid 17768 --len 16", "result": "OpenProcess failed", "win32_error": 5, "meaning": "ERROR_ACCESS_DENIED", "exit_code": 1},
+      "scan": {"pattern": "str:c02023290", "all_regions": true, "hits": 0, "reason": "no readable regions"}
+    },
+    "windows_access_mask_matrix": {
+      "tested_masks": ["0x0010", "0x0410", "0x1010", "0x1410"],
+      "result": "OpenProcess returned NULL for every mask",
+      "win32_error": 5,
+      "read_attempted": false
+    },
+    "caller_token": {
+      "integrity": "S-1-16-8192 (medium)",
+      "administrators_group": "deny-only",
+      "SeDebugPrivilege": "not present in the caller token"
+    }
+  },
   "conclusion": {
     "verified": [
       "The real installed game contains the complete c02023290 reference asset chain and decodable character-table rows.",
