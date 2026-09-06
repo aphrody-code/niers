@@ -6,7 +6,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { resolveMirrorPath } from "@rosegriffon/azalee/server";
+import { resolveMirrorPath } from "@niers/azalee-tools/server/index";
 import { createRgMcpServer, DEFAULT_REPO_ROOT } from "../src/index.ts";
 import { MODERN_PROTOCOL_VERSION } from "../src/protocol/versions.ts";
 import { parseModernMeta } from "../src/protocol/meta.ts";

@@ -19,7 +19,7 @@
  *  3. `file:…?immutable=1` n'est pas une échappatoire : `bun:sqlite` 1.4 n'honore
  *     pas les noms de fichier URI, même avec `SQLITE_OPEN_URI` en `flags`.
  *
- * On passe donc par `@rosegriffon/azalee/remote`, un client HTTP typé (41 routes)
+ * On passe donc par `@niers/azalee-tools/remote`, un client HTTP typé (41 routes)
  * pointé sur `azalee-api.service` en loopback. Zéro descripteur SQLite, zéro
  * `-shm`, zéro modification du durcissement systemd — et la rotation nocturne
  * redémarre elle-même `azalee-api.service`, donc il n'y a aucun descripteur à
@@ -31,7 +31,7 @@
  * répondent 500). Une autocomplétion vide n'est donc pas la preuve que la
  * donnée n'existe pas : `ops_status azalee-api` reste le juge.
  *
- * ⚠ Ne JAMAIS importer `@rosegriffon/azalee/server` ici : c'est le sous-chemin
+ * ⚠ Ne JAMAIS importer `@niers/azalee-tools/server/index` ici : c'est le sous-chemin
  * qui ouvre `bun:sqlite`, précisément ce qu'on évite.
  */
 import {
@@ -39,7 +39,7 @@ import {
 	isAzaleeNotFound,
 	isAzaleeRemoteError,
 	type AzaleeClient,
-} from "@rosegriffon/azalee/remote";
+} from "@niers/azalee-tools/remote";
 
 /**
  * API Azalée en loopback. 3010 est déjà pris par un autre service du VPS : le

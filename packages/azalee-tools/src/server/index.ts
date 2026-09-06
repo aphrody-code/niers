@@ -12,6 +12,11 @@ export * from "../cpk";
 export * from "@rosegriffon/azalee/cross";
 export * from "../game-text";
 export { queryRag, type RagResult } from "@rosegriffon/azalee/rag";
+// `resolveTextAll` est une fonction SERVEUR (elle lit l'index de textes du jeu) :
+// `serve.ts` l'utilise pour la route `api/text/:hash`, mais la surface publique ne
+// l'exposait pas. Un consommateur legitime — le serveur MCP — echouait donc en TS2305
+// sur un symbole pourtant present dans le paquet.
+export { resolveTextAll } from "../wiki/game-text";
 export { createAzaleeServer, handleAzaleeRequest, type AzaleeServerOptions } from "./serve";
 export {
 	createAzaleeData,

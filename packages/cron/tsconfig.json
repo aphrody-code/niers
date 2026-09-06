@@ -14,14 +14,32 @@
 		"baseUrl": ".",
 		"rootDir": "..",
 		"paths": {
-			"@rosegriffon/db": ["../db/src/index.ts"],
-			"@rosegriffon/db/*": ["../db/src/*"],
-			"@rosegriffon/types": ["../types/src/index.ts"],
-			"@rosegriffon/types/*": ["../types/src/*"],
-			"@rosegriffon/auth": ["../auth/src/index.ts"],
-			"@rosegriffon/auth/*": ["../auth/src/*"]
+			"@rosegriffon/db": [
+				"../db/src/index.ts"
+			],
+			"@rosegriffon/db/*": [
+				"../db/src/*"
+			],
+			"@rosegriffon/types": [
+				"../types/src/index.ts"
+			],
+			"@rosegriffon/types/*": [
+				"../types/src/*"
+			],
+			"@rosegriffon/auth": [
+				"../auth/src/index.ts"
+			],
+			"@rosegriffon/auth/*": [
+				"../auth/src/*"
+			]
 		}
 	},
-	"include": ["src/**/*.ts"],
-	"exclude": ["node_modules", "dist"]
+	"include": [
+		"src/**/*.ts",
+		"types/**/*.d.ts"
+	],
+	"exclude": [
+		"node_modules",
+		"dist"
+	]
 }

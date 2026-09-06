@@ -13,7 +13,7 @@
  */
 
 import { Database } from "bun:sqlite";
-import { resolveMirrorPath } from "@rosegriffon/azalee/server";
+import { resolveMirrorPath } from "@niers/azalee-tools/server/index";
 import type { ResourceContents } from "./protocol/types.ts";
 import type { ResourceDefinition, ResourceSpec, ResourceTemplateSpec } from "./registry.ts";
 

@@ -1,7 +1,7 @@
 {
 	"name": "@rosegriffon/mcp",
 	"version": "1.0.0",
-	"description": "Serveur MCP du monorepo Rose Griffon — implémentation Bun native (zéro dépendance Node) de la révision 2026-07-28 et des révisions à handshake, exposant les données Azalée/IEVR et l'état du monorepo",
+	"description": "Serveur MCP du monorepo Rose Griffon \u2014 impl\u00e9mentation Bun native (z\u00e9ro d\u00e9pendance Node) de la r\u00e9vision 2026-07-28 et des r\u00e9visions \u00e0 handshake, exposant les donn\u00e9es Azal\u00e9e/IEVR et l'\u00e9tat du monorepo",
 	"type": "module",
 	"license": "MIT",
 	"bin": {
@@ -30,6 +30,7 @@
 		"typecheck": "bun --bun tsc --noEmit"
 	},
 	"dependencies": {
+		"@niers/azalee-tools": "workspace:*",
 		"@rosegriffon/azalee": "workspace:*",
 		"zod": "catalog:"
 	},

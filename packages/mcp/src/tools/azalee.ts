@@ -41,7 +41,7 @@ import {
 	searchText,
 	totalFiles,
 	wikiService,
-} from "@rosegriffon/azalee/server";
+} from "@niers/azalee-tools/server/index";
 import { z } from "zod";
 import { structured, text, toolError } from "../protocol/types.ts";
 import { defineTool, type RegisteredTool } from "../registry.ts";

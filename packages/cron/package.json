@@ -1,7 +1,7 @@
 {
 	"name": "@rosegriffon/cron",
 	"version": "0.1.0",
-	"description": "Daemon de tâches planifiées (cron) pour la maintenance DB, CDN et API",
+	"description": "Daemon de t\u00e2ches planifi\u00e9es (cron) pour la maintenance DB, CDN et API",
 	"private": true,
 	"type": "module",
 	"main": "./src/index.ts",
@@ -19,6 +19,7 @@
 		"@aphrody-code/bxc": "catalog:",
 		"@aphrody-code/x": "catalog:",
 		"@aphrody-code/zukan": "catalog:",
+		"@aphrody/bxc": "0.9.0",
 		"@aphrody/ietv": "workspace:*",
 		"@asteasolutions/zod-to-openapi": "catalog:",
 		"@rosegriffon/auth": "workspace:*",

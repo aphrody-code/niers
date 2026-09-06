@@ -375,6 +375,7 @@
         "@aphrody-code/bxc": "catalog:",
         "@aphrody-code/x": "catalog:",
         "@aphrody-code/zukan": "catalog:",
+        "@aphrody/bxc": "0.9.0",
         "@aphrody/ietv": "workspace:*",
         "@asteasolutions/zod-to-openapi": "catalog:",
         "@rosegriffon/auth": "workspace:*",
@@ -511,6 +512,7 @@
         "rg-mcp": "./src/cli.ts",
       },
       "dependencies": {
+        "@niers/azalee-tools": "workspace:*",
         "@rosegriffon/azalee": "workspace:*",
         "zod": "catalog:",
       },

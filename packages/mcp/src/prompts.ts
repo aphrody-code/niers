@@ -6,7 +6,7 @@
  * quels outils appeler, dans quel ordre, et ce qu'il ne faut pas inventer.
  */
 
-import { wikiService } from "@rosegriffon/azalee/server";
+import { wikiService } from "@niers/azalee-tools/server/index";
 import type { PromptMessage } from "./protocol/types.ts";
 import type { PromptSpec } from "./registry.ts";
 import { KNOWN_SERVICES } from "./tools/ops.ts";

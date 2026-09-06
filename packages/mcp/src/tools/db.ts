@@ -13,7 +13,7 @@
 
 import { Database } from "bun:sqlite";
 import { statSync } from "node:fs";
-import { resolveMirrorPath } from "@rosegriffon/azalee/server";
+import { resolveMirrorPath } from "@niers/azalee-tools/server/index";
 import { z } from "zod";
 import { structured, toolError } from "../protocol/types.ts";
 import { defineTool, type RegisteredTool } from "../registry.ts";
