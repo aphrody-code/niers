@@ -87,7 +87,20 @@ pub async fn proxy(
         .map_err(|_| ErreurSite::Interne("limiteur d'amont ferme".to_owned()))?;
 
     let reponse = etat.client.get(&url).send().await.map_err(|e| {
-        if e.is_timeout() || e.is_connect() && e.to_string().contains("timed out") {
+        // L'ordre des deux tests est le correctif : un echec de CONNEXION passe avant le
+        // delai, car `connect_timeout` (2 s) rend une erreur qui est A LA FOIS `is_connect`
+        // et `is_timeout`. Teste dans l'autre sens, elle devenait un `504` annoncant « pas
+        // repondu en 10s » — un message faux (le delai ecoule est 2 s, pas 10) sur un amont
+        // qui n'a jamais accepte la connexion. Mesure du 2026-09-06 sur le poste Windows :
+        // vers `127.0.0.1:1`, l'OS met ~2,03 s a rendre `ConnectionRefused` (10061) la ou
+        // Linux le rend immediatement — la course avec `connect_timeout(2 s)` faisait donc
+        // basculer le meme scenario entre 502 et 504 selon la plateforme et selon le jour.
+        // Un amont qu'on n'atteint pas est une PASSERELLE en defaut (502) ; le 504 reste
+        // reserve a un amont qui a accepte la connexion puis n'a pas repondu a temps.
+        if e.is_connect() {
+            tracing::warn!(erreur = %e, url = %url, "amont injoignable");
+            ErreurSite::Amont("nie-model-serve injoignable".to_owned())
+        } else if e.is_timeout() {
             ErreurSite::Delai(format!(
                 "nie-model-serve n'a pas repondu en {}s",
                 etat.config.delai_amont.as_secs()

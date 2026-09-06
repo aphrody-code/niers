@@ -594,6 +594,14 @@ async fn chara_lit_le_miroir_et_pagine() {
     assert_eq!(v["elements"][0]["internal_code"], "c01000006");
 
     // Le miroir disparaît : 503 avec un message, jamais un 500.
+    //
+    // `drop` avant `remove_file`, et ce n'est pas de la politesse : `Gisement` garde la
+    // `Connection` rusqlite ouverte dans son `Mutex<Option<Ouverture>>` (`src/dataset.rs:23`)
+    // une fois la première requête servie. Sous POSIX, `unlink` d'un fichier encore ouvert
+    // réussit et le test passait par accident ; sous Windows le verrou obligatoire fait
+    // échouer la suppression avec `Os { code: 32 }`. Le défaut était donc dans le test, pas
+    // dans le service — et la garde reste entière sur les deux plateformes.
+    drop(etat);
     std::fs::remove_file(&db).unwrap();
     let etat = etat_avec(|c| c.db = db.clone());
     let (statut, _, corps) = reponse(&etat, "/api/v1/chara").await;
@@ -1323,3 +1331,4 @@ async fn la_borne_de_debit_compte_par_ip_et_annonce_son_retour() {
     );
     assert!(etat.limiteur.is_some());
 }
+
