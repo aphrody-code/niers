@@ -374,21 +374,25 @@ async fn documents_well_known() {
     );
     let texte = String::from_utf8(corps).unwrap();
     assert!(texte.starts_with("<?xml"));
-    // 6 routes x 3 langues, et chaque entree porte le groupe complet de ses traductions.
-    assert_eq!(texte.matches("<url>").count(), 18);
-    assert_eq!(texte.matches("<loc>").count(), 18);
+    // 7 routes x 3 langues, et chaque entree porte le groupe complet de ses traductions.
+    assert_eq!(texte.matches("<url>").count(), 21);
+    assert_eq!(texte.matches("<loc>").count(), 21);
     assert_eq!(
         texte.matches("xhtml:link").count(),
-        72,
+        84,
         "4 alternates par entree"
     );
-    assert_eq!(texte.matches(r#"hreflang="x-default""#).count(), 18);
+    assert_eq!(texte.matches(r#"hreflang="x-default""#).count(), 21);
     // Sans la declaration de l'espace de noms, les `xhtml:link` ne sont que du bruit.
     assert!(texte.contains(r#"xmlns:xhtml="http://www.w3.org/1999/xhtml""#));
     for attendu in [
         "<loc>https://exemple.test/textures</loc>",
         "<loc>https://exemple.test/en/textures</loc>",
         "<loc>https://exemple.test/ja/textures</loc>",
+        // `/donnees` est une page du site : absente du plan, elle n'existerait que pour qui
+        // connait son URL.
+        "<loc>https://exemple.test/donnees</loc>",
+        "<loc>https://exemple.test/ja/donnees</loc>",
     ] {
         assert!(texte.contains(attendu), "{attendu} absent du plan");
     }
