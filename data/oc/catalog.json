@@ -16,6 +16,13 @@
         "c99019010",
         "c99019020"
       ],
+      "provenance_files": 3,
+      "source_files": 12,
+      "source_audit": {
+        "manifest_entries": 12,
+        "present": 12,
+        "missing": []
+      },
       "required_cfgbin_tables": [
         "chara_base",
         "chara_costume",
@@ -33,44 +40,134 @@
   "files": [
     {
       "path": "data/oc/astro-lor/game/character-contract.json",
-      "bytes": 9684,
-      "sha256": "f598ba83aa3e268fde90c02102fa25f8ff40a36b80425dce056bcd0ad603a3ea",
+      "bytes": 16200,
+      "sha256": "eb4296e0e0afc145a6c307ed49c69b5d2ac5d0fb38094ba81a5a0691586bd429",
+      "class": "game_metadata"
+    },
+    {
+      "path": "data/oc/astro-lor/game/evidence/reference-c02023290-live-scan.json",
+      "bytes": 6508,
+      "sha256": "440565368de537189a5632247b20238d225c6d43c917c75b39cec5fc607a6428",
+      "class": "game_metadata"
+    },
+    {
+      "path": "data/oc/astro-lor/game/evidence/reference-c02023290.json",
+      "bytes": 6183,
+      "sha256": "164ac4e49bd76a977209899f6b8f94cdb8e6f0f9ef78a1fe1a3c4a15b10c5549",
       "class": "game_metadata"
     },
     {
       "path": "data/oc/astro-lor/game/README.md",
-      "bytes": 1092,
-      "sha256": "08eb8dc4155e8ded08fc5c460046beab1eed9380aa7d4dfe8114554ff74563dd",
+      "bytes": 1864,
+      "sha256": "7cfed0816a453756d0c3f0d6d347d56fc4c1617014ab6d9545449cf591c3d025",
       "class": "game_metadata"
     },
     {
       "path": "data/oc/astro-lor/manifest.json",
-      "bytes": 15838,
-      "sha256": "f34874247ee978490788b688c373a71c8c5fabe894b66ce4f1e2b2d9a2afdfac",
+      "bytes": 24018,
+      "sha256": "470e50cc46f27f856772a35dae9e9d52c3645904d7e34419c453e3a30781b82e",
       "class": "metadata"
     },
     {
       "path": "data/oc/astro-lor/provenance/discord-1545590117895250101.json",
       "bytes": 3604,
-      "sha256": "2316a1b5c0843e0de2dcfedfc1bdf3f82e85ac08cc9003684d778551a2ba4d48",
+      "sha256": "f46801c269d1058f0994a561f541e67f14ad247b5815c7989e79e846718503a1",
+      "class": "provenance"
+    },
+    {
+      "path": "data/oc/astro-lor/provenance/google-doc-10a6b9.json",
+      "bytes": 1411,
+      "sha256": "9fc23bf8b70526b5943fc0cceb450cb8250574ee58160d54277e7f83ec390025",
       "class": "provenance"
     },
     {
       "path": "data/oc/astro-lor/provenance/SHA256SUMS",
-      "bytes": 1122,
-      "sha256": "5bbb34ba015a473d6cf3e86b5b9a4991462f61d9d0018244e458396f49baefa2",
+      "bytes": 1119,
+      "sha256": "ffeef92c76395d5bd522615f56097e4ae872ac2fd7d294c497065a2083d5a017",
       "class": "provenance"
     },
     {
       "path": "data/oc/astro-lor/README.md",
-      "bytes": 5505,
-      "sha256": "76f45196d47e6de301a08f9ac1efc8598eada9603b2b9eb62c5202e9f888fcba",
+      "bytes": 5717,
+      "sha256": "3997e3a87492a1365cbe37a895b1d423f77fb7b818da8bdf84fe54660c35a1e7",
       "class": "metadata"
     },
     {
+      "path": "data/oc/astro-lor/source/comic/page-1.webp",
+      "bytes": 661016,
+      "sha256": "04ed1ddc174d2d3d6eba4f35be13fb9a942d6578f789878effde7f0f69a6ee0f",
+      "class": "original"
+    },
+    {
+      "path": "data/oc/astro-lor/source/comic/page-2.webp",
+      "bytes": 257492,
+      "sha256": "59cf49620afb8f95fa65660aed6132c4cb9eec1d26617a2fb1d1fbcf8a507c12",
+      "class": "original"
+    },
+    {
+      "path": "data/oc/astro-lor/source/comic/page-3.webp",
+      "bytes": 203910,
+      "sha256": "76b19d8b38ece21b81bfd4cbaf84f3d598812d874d5c543869cf7762151155f9",
+      "class": "original"
+    },
+    {
+      "path": "data/oc/astro-lor/source/sheets/01-og-outfit-yellow.jpg",
+      "bytes": 478937,
+      "sha256": "939c4b6206260a80d2492384ceec3d8945eedf7ec52f962b1a53b65b78f74ba3",
+      "class": "original"
+    },
+    {
+      "path": "data/oc/astro-lor/source/sheets/02-og-outfit-soccer.jpg",
+      "bytes": 484704,
+      "sha256": "3618da6685be4f7db324f1124f2f182a121f5502b8150b374065ad4018bb9900",
+      "class": "original"
+    },
+    {
+      "path": "data/oc/astro-lor/source/sheets/03-og-anatomy.jpg",
+      "bytes": 349171,
+      "sha256": "bee44251ac35c60c412129faeefcc20a58c6513f25c41a43d6cbcae3a7bb53b7",
+      "class": "original"
+    },
+    {
+      "path": "data/oc/astro-lor/source/sheets/04-og-outfit-hakuren.jpg",
+      "bytes": 482861,
+      "sha256": "c304acd6b30049bd9ace1c5d3647f76ec84f40a37968988fcf869ff2995a85d2",
+      "class": "original"
+    },
+    {
+      "path": "data/oc/astro-lor/source/sheets/05-og-expressions.jpg",
+      "bytes": 540439,
+      "sha256": "eb9e969bb2b2f68298cb4aebaf4e919fa6a1f9d88d8ab956d8fa0474b1ec3618",
+      "class": "original"
+    },
+    {
+      "path": "data/oc/astro-lor/source/sheets/06-go-outfit-casual.jpg",
+      "bytes": 500063,
+      "sha256": "e399dd8abc23bf73b46af0bc0a111da11b3f7c17097c8637aa85472677859f17",
+      "class": "original"
+    },
+    {
+      "path": "data/oc/astro-lor/source/sheets/07-go-outfit-soccer.jpg",
+      "bytes": 512692,
+      "sha256": "c857bef7f7cff5b5b6d0a39fdf309ee916e1a935ad597b63455b4a7d0f370fb7",
+      "class": "original"
+    },
+    {
+      "path": "data/oc/astro-lor/source/sheets/08-go-anatomy.jpg",
+      "bytes": 355992,
+      "sha256": "9ec04b09fb15e8fd127dd1de338f52ea84a799b5a7ceb021a941dd12e667417f",
+      "class": "original"
+    },
+    {
+      "path": "data/oc/astro-lor/source/sheets/09-go-expressions.jpg",
+      "bytes": 514056,
+      "sha256": "ea86fce08fa43dd2feafefba45a759113a36b21ac6155bcdc9f1277699792ab3",
+      "class": "original"
+    },
+    {
       "path": "data/oc/README.md",
-      "bytes": 2482,
-      "sha256": "d81bf336c8bdfcf0b0b63c1e27e25e0365880bba3dcd32e9079cdf88f5aa448a",
+      "bytes": 2577,
+      "sha256": "739a1f46b94141261202ef175a7ce972ee5e98669537d18dce15b261df67b5d1",
       "class": "metadata"
     }
   ]

@@ -57,9 +57,10 @@ Trois branches du code étaient mortes pour **tous** les personnages :
 
 ## 2. Ce qui manque — le jeu
 
-Un personnage du jeu, c'est **six fichiers propres à son code interne**, plus une
+Un personnage du jeu, c'est **six fichiers cœur propres à son code interne**, plus une
 **ligne dans neuf tables**. Le reste — corps, uniformes, squelettes, animations —
-est partagé et ne le concerne pas.
+est partagé et ne le concerne pas. Certaines scènes de menu ajoutent une paire
+code-clé optionnelle pour une carte : un layout OBJBIN et une image G4TX par locale.
 
 Le gabarit est mesuré sur un gardien déjà présent (`c02023290`) :
 
@@ -72,6 +73,17 @@ Le gabarit est mesuré sur un gardien déjà présent (`c02023290`) :
 | Banque de voix | `data/common/sound_asset/ja/<code>.acb` | ACB | **absente** |
 | Flux audio | `data/common/sound_asset/ja/<code>.awb` | AWB | facultatif |
 
+Le gabarit de carte mesuré sur le même personnage est séparé des six fichiers cœur :
+
+| Rôle | Chemin | Format | Mesure de référence |
+|---|---|---|---|
+| Layout de carte mode-change | `data/common/gamedata/menu/obj/soccer10_01_mode_change_<code>.objbin` | OBJBIN | 784 octets, `gmdMenuObj`, 3 composants |
+| Image de carte localisée | `data/dx11/menu/220_img/telop_waza/<locale>/mode_change_<code>.g4tx` | G4TX | 9 locales, 1728×352, 1 sous-texture |
+
+L'icône portrait de référence est elle-même un atlas de **2 sous-textures 256×256** ; la
+texture de tête porte 12 sous-textures, dont l'atlas principal 2048×1024. Ces mesures et
+la liste exacte des locales sont dans `data/oc/astro-lor/game/evidence/reference-c02023290.json`.
+
 Codes retenus, dans un espace de noms qui ne peut pas entrer en collision avec les
 codes extraits du binaire : **`c99019010`** (Inazuma Eleven, groupe `01_IE1`) et
 **`c99019020`** (Victory Road, groupe `11_VICTORY`). Les douze groupes de
@@ -81,8 +93,11 @@ Tables où il doit être déclaré, toutes repérées dans le VFS avec leur chem
 versionné : `chara_base`, `chara_param`, `chara_model`, `chara_parts`,
 `chara_scale`, `chara_motion`, `chara_face`, `chara_name_tag`, `chara_costume`.
 
-État mesuré du manifeste : **12 assets — 0 présents, 2 sources prêtes, 10 à
-produire**, et 9 planches de référence disponibles.
+État mesuré du manifeste cœur : **12 assets — 0 présents, 2 sources prêtes, 10 à
+produire**, et 9 planches de référence disponibles. `optional_visual_assets` ajoute
+**20 sorties optionnelles — 0 présentes, 20 à produire** (un layout et neuf locales par
+variante), sans les compter dans les 12 assets cœur tant que leur usage runtime n'est pas
+établi.
 
 ---
 
@@ -99,21 +114,24 @@ d'une chaîne s'écrivent sur place, et `patch_verifie` relit derrière. C'est c
 qui rend le modding à taille constante possible aujourd'hui.
 
 Il **ne suffit pas ici** : ajouter un personnage, c'est ajouter une ligne, donc
-changer la taille du fichier. Il faut réencoder, et le réencodage n'est pas fidèle.
+changer la taille du fichier. Le pied de page T2B observé est maintenant réémis par
+`encode_t2b` et son test ciblé passe ; l'encodage complet reste à confronter aux tables
+cibles et au lecteur du jeu.
 
 #### Ce que l'écart vaut, mesuré
 
 `cargo run -p nie-formats --example t2b_roundtrip --release -- --vfs chara_`
 
-Sur les 152 `.cfg.bin` dont le nom porte `chara_` : **0 octet-identique**, 10 de
-même taille mais au contenu différent, 142 de taille différente, et un écart cumulé
-de **−65 398 octets** — le réencodage **rogne**.
+Sur les 152 `.cfg.bin` dont le nom porte `chara_` : **4 octet-identiques**, 10 de
+même taille mais au contenu différent, 138 de taille différente, et un écart cumulé
+de **−63 318 octets** — le réencodage **rogne encore**.
 
 #### La première cause est trouvée
 
-Le plus petit cas divergent, `chara_cloth_change_1.00.29.cfg.bin`, fait 48 octets,
-en perd exactement **16**, et diverge à l'**offset 32** : ses 32 premiers octets
-sont déjà rendus à l'identique. Il ne manque que les 16 derniers.
+Après émission du pied, le plus petit cas divergent est
+`data/common/gamedata/map/z01_debug/test_chara_change_win.cfg.bin` : 224 octets,
+perte de **12**, premier écart à l'**offset 22**. Le précédent cas de 48 octets
+reste le cas qui a permis d'isoler le pied de 16 octets.
 
 Ces 16 octets sont un **pied de page**, relevé sur tout le corpus par
 `cargo run -p nie-formats --example cfgbin_pied --release` :
@@ -126,7 +144,8 @@ Ces 16 octets sont un **pied de page**, relevé sur tout le corpus par
 
 Quinze octets sur seize sont **constants sur 70 798 fichiers**. Un seul varie, à
 l'offset 6, entre `0x00` et `0x01`. `encode_t2b` s'arrête après la table de clés et
-n'écrit rien de tout cela.
+n'écrivait historiquement rien de tout cela ; il émet désormais la variante conservatrice
+`0x00` à cet offset.
 
 #### Pourquoi les tests ne le voyaient pas
 
@@ -139,11 +158,13 @@ c'est un vert qui mesure notre cohérence interne, pas la conformité.
 
 1. Déterminer ce que vaut l'octet 6 — corréler ses deux valeurs avec le contenu
    (présence d'une table de clés, de chaînes, nombre d'entrées).
-2. Écrire le pied dans `encode_t2b`, et remesurer : le fichier de 48 octets doit
-   devenir octet-identique.
-3. Reprendre le corpus et traiter la cause suivante, s'il en reste.
+2. Reprendre le corpus et mesurer l'impact du pied désormais écrit : le fichier de 48
+   octets doit devenir octet-identique.
+3. Traiter la cause suivante, s'il en reste, puis confronter les tables aux exigences du jeu.
 
-Preuve d'arrêt : `t2b_roundtrip --vfs chara_` rend **152/152 octet-identiques**.
+Preuve actuelle : `t2b_roundtrip --vfs chara_` rend **4/152 octet-identiques** ;
+les 148 autres nécessitent encore l'analyse de leurs différences avant toute
+injection dans le jeu.
 
 ### V2 — Écrire un modèle · bloquant
 

@@ -1,0 +1,145 @@
+{
+  "schema": "niers.oc.reference-evidence/v1",
+  "reference_internal_code": "c02023290",
+  "source_kind": "local_json_dump",
+  "checkout_state": {
+    "meaning": "physical files in the repository checkout, not the configured VFS service",
+    "nie_exe_present": false,
+    "cpk_list_present": false,
+    "dx11_face_assets_present": false,
+    "lua_bin_tree_present": false
+  },
+  "live_vfs_probe": {
+    "tool": "niers vfs stat/find",
+    "available": true,
+    "captured_at": "2026-09-07T00:32:58.822853+02:00",
+    "reference_asset_count": 17,
+    "required_cfgbin_tables": [
+      {"table": "chara_base", "path": "data/common/gamedata/character/chara_base_1.03.98.00.cfg.bin", "format": "T2B", "bytes": 1381344},
+      {"table": "chara_param", "path": "data/common/gamedata/character/chara_param_1.03.66.00.cfg.bin", "format": "T2B", "bytes": 1238672, "cpk": "<loose>"},
+      {"table": "chara_model", "path": "data/common/gamedata/character/chara_model_1.03.49.00.cfg.bin", "format": "T2B", "bytes": 1511088},
+      {"table": "chara_parts", "path": "data/common/gamedata/character/chara_parts_0.07.22.cfg.bin", "format": "T2B", "bytes": 1996976},
+      {"table": "chara_scale", "path": "data/common/gamedata/character/chara_scale_0.11.12.cfg.bin", "format": "RDBN", "bytes": 150705},
+      {"table": "chara_motion", "path": "data/common/gamedata/character/chara_motion_1.02.91.00.cfg.bin", "format": "T2B", "bytes": 17952},
+      {"table": "chara_face", "path": "data/common/gamedata/character/chara_face_1.03.00.00.cfg.bin", "format": "T2B", "bytes": 7184},
+      {"table": "chara_name_tag", "path": "data/common/gamedata/character/chara_name_tag_1.03.38.00.cfg.bin", "format": "RDBN", "bytes": 9792},
+      {"table": "chara_costume", "path": "data/common/gamedata/character/chara_costume_1.02.28.00.cfg.bin", "format": "T2B", "bytes": 46864}
+    ],
+    "lua_reference_present": true,
+    "nie_exe_present": false
+  },
+  "game_installation_probe": {
+    "game_dir_environment": "NIE_GAME_DIR",
+    "binary_relative_path": "nie.exe",
+    "present": true,
+    "bytes": 33918464,
+    "sha256": "b1fa04ea365868e5c8933aca393366f82d0d446187e2187f2737dc4fa2acd40c",
+    "pe_signature": "PE/COFF",
+    "optional_header_magic_hex": "20B",
+    "image_base": "0x140000000",
+    "executed": false
+  },
+  "measured": {
+    "chara_base": {
+      "path": "data/common/gamedata/character/chara_base_1.03.98.00.cfg.bin.json",
+      "node": "CHARA_BASE_INFO_2458",
+      "internal_code": "c02023290",
+      "chara_id": "0x0B617925",
+      "variable_count": 34
+    },
+    "chara_param": {
+      "path": "data/common/gamedata/character/chara_param_1.03.66.00.cfg.bin.json",
+      "join_field": "charaBaseId",
+      "join_value": "0x0B617925",
+      "candidates": [
+        {"node": "CHARA_PARAM_INFO_1551", "chara_param_id": "0xA2957757", "element": 1, "main_position": 4, "sub_position": 3, "growth_pattern": 1},
+        {"node": "CHARA_PARAM_INFO_5766", "chara_param_id": "0x8AB17EED", "element": 1, "main_position": 4, "sub_position": 3, "growth_pattern": 1}
+      ]
+    },
+    "visual_assets": {
+      "face_model": {
+        "metadata": {
+          "path": "data/common/chr/_face/02_IE2/c02023290/c02023290.g4md",
+          "format": "G4MD",
+          "bytes": 2664,
+          "submeshes": 4,
+          "materials": 4,
+          "referenced_bones": 99
+        },
+        "mesh": {
+          "path": "data/common/chr/_face/02_IE2/c02023290/c02023290.g4mg",
+          "format": "G4MG",
+          "bytes": 141696,
+          "probe": "VFS stat identifies the path as raw/non-recognized; the extension and paired G4MD are the measured model contract"
+        },
+        "texture_atlases": [
+          {
+            "path": "data/dx11/chr/_face/02_IE2/c02023290/c02023290.g4tx",
+            "format": "G4TX",
+            "bytes": 5271872,
+            "subtextures": 12,
+            "largest_subtexture": {"name": "c02023290_10", "width": 2048, "height": 1024}
+          },
+          {
+            "path": "data/dx11/chr/_face/02_IE2/c02023290/c02023290_03.g4tx",
+            "format": "G4TX",
+            "bytes": 5271920,
+            "subtextures": 12,
+            "largest_subtexture": {"name": "c02023290_03_10", "width": 2048, "height": 1024}
+          }
+        ]
+      },
+      "portrait_icon": {
+        "path": "data/dx11/menu/200_icon/10_icon_chr/face/c02023290_l.g4tx",
+        "format": "G4TX",
+        "bytes": 131648,
+        "subtextures": [
+          {"name": "c02023290_1_l00", "width": 256, "height": 256},
+          {"name": "c02023290_2_l00", "width": 256, "height": 256}
+        ]
+      },
+      "mode_change_card": {
+        "layout": {
+          "path": "data/common/gamedata/menu/obj/soccer10_01_mode_change_c02023290.objbin",
+          "format": "OBJBIN",
+          "bytes": 784,
+          "name": "soccer10_01_wct0001",
+          "engine_type": "gmdMenuObj",
+          "components": 3
+        },
+        "localized_images": {
+          "format": "G4TX",
+          "width": 1728,
+          "height": 352,
+          "subtextures": 1,
+          "texture_name": "mode_change_c02023290",
+          "locales": ["de", "en", "es", "fr", "it", "ja", "pt", "zh_hans", "zh_hant"],
+          "path_template": "data/dx11/menu/220_img/telop_waza/<locale>/mode_change_c02023290.g4tx"
+        }
+      }
+    },
+    "lua_runtime": {
+      "path": "data/common/script/lua/menu/kizuna_town_mainmenu_5.00.11.00.lua.bin",
+      "format": "Lua 5.2 bytecode",
+      "bytes": 19068,
+      "magic_hex": "1B4C7561",
+      "version_hex": "52",
+      "category": "menu",
+      "host_call_count": 1,
+      "host_calls": ["INCLUDE"],
+      "probe_note": "the live nie-lua VM test loads a real game .lua.bin; nie.exe itself was not executed"
+    }
+  },
+  "not_resolved": [
+    {
+      "area": "chara_model_and_chara_texture",
+      "reason": "the local JSON dumps do not contain the reference internal code as a string",
+      "next_probe": "read the target VFS entries and resolve model/texture hashes from chara_model"
+    },
+    {
+      "area": "nie_runtime",
+      "reason": "nie.exe is absent from this checkout",
+      "next_probe": "run the contract against the real game installation"
+    }
+  ]
+}

@@ -15,6 +15,7 @@
       "crates/engine/nie-lua/src/bytecode.rs"
     ]
   },
+  "reference_evidence": "data/oc/astro-lor/game/evidence/reference-c02023290.json",
   "namespace": {
     "internal_code_prefix": "c",
     "folder_prefix": "_face",
@@ -50,14 +51,157 @@
     "G4MG": {"magic": "G4MG", "role": "skinned_mesh"},
     "G4TX": {"magic": "G4TX", "role": "texture"},
     "ACB": {"role": "voice_bank", "optional": true},
-    "AWB": {"magic": "AFS2", "role": "voice_stream", "optional": true}
+    "AWB": {"magic": "AFS2", "role": "voice_stream", "optional": true},
+    "OBJBIN": {"role": "menu_object_layout", "optional": true}
+  },
+  "visual_contract": {
+    "reference": "data/oc/astro-lor/game/evidence/reference-c02023290.json#/measured/visual_assets",
+    "per_variant_templates": [
+      {
+        "role": "face_model_metadata",
+        "format": "G4MD",
+        "path_template": "data/common/chr/_face/<series_group>/<code>/<code>.g4md",
+        "required": true
+      },
+      {
+        "role": "face_mesh",
+        "format": "G4MG",
+        "path_template": "data/common/chr/_face/<series_group>/<code>/<code>.g4mg",
+        "required": true
+      },
+      {
+        "role": "face_texture_atlas",
+        "format": "G4TX",
+        "path_template": "data/dx11/chr/_face/<series_group>/<code>/<code>.g4tx",
+        "required": true
+      },
+      {
+        "role": "portrait_icon_atlas",
+        "format": "G4TX",
+        "path_template": "data/dx11/menu/200_icon/10_icon_chr/face/<code>_l.g4tx",
+        "required": true,
+        "expected_subtextures": 2,
+        "expected_subtexture_size": "256x256"
+      }
+    ],
+    "code_keyed_menu_templates": [
+      {
+        "role": "mode_change_card_layout",
+        "format": "OBJBIN",
+        "path_template": "data/common/gamedata/menu/obj/soccer10_01_mode_change_<code>.objbin",
+        "required": false
+      },
+      {
+        "role": "mode_change_card_image",
+        "format": "G4TX",
+        "path_template": "data/dx11/menu/220_img/telop_waza/<locale>/mode_change_<code>.g4tx",
+        "locales": ["de", "en", "es", "fr", "it", "ja", "pt", "zh_hans", "zh_hant"],
+        "required": false,
+        "expected_dimensions": "1728x352"
+      }
+    ],
+    "generation_policy": "derive target paths from the variant code and series_group; do not copy the reference code or claim a visual asset exists until vfs find/stat and a decoder probe succeed"
+  },
+  "table_schemas": {
+    "chara_base": {
+      "format": "T2B",
+      "lists": ["CHARA_BASE_BATTLE_LIST_BEG", "CHARA_BASE_INFO_LIST_BEG"],
+      "node": "CHARA_BASE_INFO",
+      "fields": {
+        "0": "charaId",
+        "1": "internalCode",
+        "3": "nameHash",
+        "4": "lastNameHash",
+        "11": "gender",
+        "15": "seriesId",
+        "16": "belongTeamId",
+        "19": "descriptionHash"
+      },
+      "join_rule": "charaId is the base identity; internalCode is the c-prefixed VFS code"
+    },
+    "chara_param": {
+      "format": "T2B",
+      "lists": ["CHARA_PARAM_INFO_LIST_BEG"],
+      "node": "CHARA_PARAM_INFO",
+      "fields": {
+        "0": "charaParamId",
+        "1": "charaBaseId",
+        "2": "element",
+        "3": "mainPosition",
+        "4": "subPosition",
+        "8": "growthPattern",
+        "10+2*n": "skillLearnLevel",
+        "11+2*n": "skillId"
+      },
+      "skill_slots": 9,
+      "join_rule": "charaBaseId must resolve to chara_base.charaId"
+    },
+    "chara_name_tag": {
+      "format": "RDBN",
+      "lists": ["m_charaNameTagConfigList"],
+      "list": "m_charaNameTagConfigList",
+      "fields": ["tagId", "charaId", "overloadNameId"]
+    },
+    "chara_scale": {
+      "format": "RDBN",
+      "lists": ["m_charaScaleList"],
+      "list": "m_charaScaleList",
+      "fields": ["charaID", "field", "soccer", "menu", "menuLooksFirst", "follower", "offset", "addchara", "addchara_offset_y", "rpgBattle", "charaSize", "menuLooksVS", "addchara_offset_y_for_vs"]
+    },
+    "chara_model": {
+      "format": "T2B",
+      "lists": ["CHARA_MODEL_BASE_PATH_LIST_BEG", "CHARA_MODEL_INFO_LIST_BEG", "CHARA_BODY_INFO_LIST_BEG"],
+      "node": "CHARA_MODEL_INFO",
+      "body_node": "CHARA_BODY_INFO",
+      "join_rule": "CHARA_MODEL_INFO.var[10] resolves the face model; body and default clothing are resolved from the model/body fields"
+    },
+    "chara_parts": {
+      "format": "T2B",
+      "lists": [
+        "CHARA_PARTS_COLOR_LIST_BEG",
+        "CHARA_PARTS_CLOTHES_BASE_PATH_LIST_BEG",
+        "CHARA_PARTS_CLOTHES_INFO_LIST_BEG",
+        "CHARA_PARTS_CLOTHES_MODEL_LIST_BEG",
+        "CHARA_PARTS_SHOES_BASE_PATH_LIST_BEG",
+        "CHARA_PARTS_SHOES_INFO_LIST_BEG",
+        "CHARA_PARTS_SHOES_MODEL_LIST_BEG",
+        "CHARA_PARTS_GLOVE_BASE_PATH_LIST_BEG",
+        "CHARA_PARTS_GLOVE_INFO_LIST_BEG",
+        "CHARA_PARTS_GLOVE_MODEL_LIST_BEG",
+        "CHARA_PARTS_EXMESH_BASE_PATH_LIST_BEG",
+        "CHARA_PARTS_EXMESH_INFO_LIST_BEG",
+        "CHARA_PARTS_EXMESH_MODEL_LIST_BEG"
+      ],
+      "node_prefixes": ["CHARA_PARTS_COLOR", "CHARA_PARTS_CLOTHES_", "CHARA_PARTS_SHOES_", "CHARA_PARTS_GLOVE_", "CHARA_PARTS_EXMESH_"],
+      "join_rule": "model CRCs resolve into the clothes, shoes and glove model/info lists; paths are relative to common/chr"
+    },
+    "chara_motion": {
+      "format": "T2B",
+      "lists": ["CHARA_MOTION_BASE_PATH_LIST_BEG", "CHARA_MOTION_INFO_LIST_BEG", "CHARA_MOTION_PRESET_DATA_LIST_BEG", "CHARA_MOTION_PRESET_INFO_LIST_BEG"],
+      "node_prefixes": ["CHARA_MOTION_INFO", "CHARA_MOTION_PRESET_DATA", "CHARA_MOTION_PRESET_INFO"],
+      "join_rule": "motion rows select versioned g4pk paths and preset data; they are shared by character model rows"
+    },
+    "chara_face": {
+      "format": "T2B",
+      "lists": ["CHARA_FACIAL_DATA_LIST_BEG", "CHARA_FACIAL_MOTION_INFO_LIST_BEG", "CHARA_FACIAL_LIPSYNC_DATA_LIST_BEG", "FACIAL_MOT_GROUP_LIST_BEG", "CHARA_FACIAL_PRECEDE_DATA_LIST_BEG"],
+      "node_prefixes": ["CHARA_FACIAL_DATA", "CHARA_FACIAL_MOTION_INFO", "CHARA_FACIAL_LIPSYNC_DATA", "FACIAL_MOT_GROUP", "CHARA_FACIAL_PRECEDE_DATA"],
+      "join_rule": "facial rows are keyed by character facial resources and motion/lipsync groups; no row is assigned until the target cfg.bin is patched"
+    },
+    "chara_costume": {
+      "format": "T2B",
+      "lists": ["CHARA_COSTUME_MODEL_LIST_BEG", "CHARA_COSTUME_DATA_LIST_BEG", "CHARA_COSTUME_INFO_LIST_BEG"],
+      "node": "CHARA_COSTUME_MODEL",
+      "join_rule": "costume model IDs resolve the character's available costume entries; shared clothing geometry remains in chara_parts"
+    }
   },
   "variants": [
     {
       "internal_code": "c99019010",
       "display_name": "Astro Lor — Inazuma Eleven",
       "series_group": "01_IE1",
-      "chara_param_id": "0x9983CCE2",
+      "chara_param_id": null,
+      "declared_chara_param_id": "0x9983CCE2",
+      "chara_param_id_status": "declared_but_not_found_in_current_local_dump",
       "status": "metadata_ready_rows_pending",
       "identity": {
         "chara_id": null,
@@ -92,7 +236,9 @@
       "internal_code": "c99019020",
       "display_name": "Astro Lor — Victory Road",
       "series_group": "11_VICTORY",
-      "chara_param_id": "0x0C78B74B",
+      "chara_param_id": null,
+      "declared_chara_param_id": "0x0C78B74B",
+      "chara_param_id_status": "declared_but_not_found_in_current_local_dump",
       "status": "metadata_ready_rows_pending",
       "identity": {
         "chara_id": null,
@@ -131,6 +277,9 @@
     "version_rule": "versioned_filename_required",
     "bytecode": "Lua 5.2",
     "magic_hex": "1B4C7561",
+    "version_hex": "52",
+    "reference_path": "data/common/script/lua/menu/kizuna_town_mainmenu_5.00.11.00.lua.bin",
+    "reference_evidence": "data/oc/astro-lor/game/evidence/reference-c02023290.json#/measured/lua_runtime",
     "runtime_consumer": "nie.exe",
     "status": "no_oc_script_declared"
   },

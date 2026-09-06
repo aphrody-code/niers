@@ -1,0 +1,155 @@
+{
+  "schema": "niers.oc.live-scan-evidence/v1",
+  "reference_internal_code": "c02023290",
+  "captured_on_host": "Windows",
+  "scope": "read-only scan of the installed game VFS, decoded cfg.bin tables, reference assets, running process metadata, and visible game window",
+  "installed_game": {
+    "executable": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\INAZUMA ELEVEN Victory Road\\nie.exe",
+    "pid": 17768,
+    "responsive": true,
+    "process_access": {
+      "operation": "OpenProcess(PROCESS_QUERY_INFORMATION|PROCESS_VM_READ)",
+      "handle_acquired": false,
+      "win32_error": 5,
+      "meaning": "ERROR_ACCESS_DENIED",
+      "write_attempted": false,
+      "bypass_attempted": false
+    }
+  },
+  "computer_use": {
+    "window_id": 15926612,
+    "title": "INAZUMA ELEVEN: Victory Road",
+    "window_found": true,
+    "screenshot_captured": true,
+    "accessibility_text": null,
+    "limitation": "The exposed accessibility tree contains only the native window title; no in-game text or character row was available through this surface."
+  },
+  "decoded_cfgbin_scan": {
+    "source": "installed-game VFS asset_get JSON responses",
+    "tables": [
+      {
+        "table": "chara_base",
+        "path": "data/common/gamedata/character/chara_base_1.03.98.00.cfg.bin",
+        "bytes": 1381344,
+        "matching_node": "CHARA_BASE_INFO_2458",
+        "chara_id": "0x0B617925",
+        "variable_count": 34
+      },
+      {
+        "table": "chara_param",
+        "path": "data/common/gamedata/character/chara_param_1.03.66.00.cfg.bin",
+        "bytes": 1238672,
+        "join_field": "charaBaseId",
+        "join_value": "0x0B617925",
+        "matching_rows": [
+          {"node": "CHARA_PARAM_INFO_1551", "chara_param_id": "0xA2957757", "element": 1, "main_position": 4, "sub_position": 3, "growth_pattern": 1},
+          {"node": "CHARA_PARAM_INFO_5766", "chara_param_id": "0x8AB17EED", "element": 1, "main_position": 4, "sub_position": 3, "growth_pattern": 1}
+        ]
+      },
+      {
+        "table": "chara_name_tag",
+        "path": "data/common/gamedata/character/chara_name_tag_1.03.38.00.cfg.bin",
+        "bytes": 9792,
+        "matching_rows": 1,
+        "name_tag_id": "0xDFD71B7E"
+      },
+      {
+        "table": "chara_scale",
+        "path": "data/common/gamedata/character/chara_scale_0.11.12.cfg.bin",
+        "bytes": 150705,
+        "matching_rows": 1,
+        "values": {"field": 0.9799999595, "menu": 0, "menuLooksFirst": 0.9799999595, "rpgBattle": 0.9799999595}
+      },
+      {
+        "table": "chara_model",
+        "path": "data/common/gamedata/character/chara_model_1.03.49.00.cfg.bin",
+        "bytes": 1511088,
+        "matching_code_string": false,
+        "resolution": "reference model and texture entries were confirmed by paired VFS assets; the decoded JSON does not retain c02023290 as a string"
+      },
+      {
+        "table": "chara_parts",
+        "path": "data/common/gamedata/character/chara_parts_0.07.22.cfg.bin",
+        "bytes": 1996976,
+        "matching_code_string": false
+      },
+      {
+        "table": "chara_motion",
+        "path": "data/common/gamedata/character/chara_motion_1.02.91.00.cfg.bin",
+        "bytes": 17952,
+        "matching_code_string": false
+      },
+      {
+        "table": "chara_face",
+        "path": "data/common/gamedata/character/chara_face_1.03.00.00.cfg.bin",
+        "bytes": 7184,
+        "matching_code_string": false
+      },
+      {
+        "table": "chara_costume",
+        "path": "data/common/gamedata/character/chara_costume_1.02.28.00.cfg.bin",
+        "bytes": 46864,
+        "matching_code_string": false
+      }
+    ]
+  },
+  "reference_assets": {
+    "asset_count": 17,
+    "total_bytes": 16960586,
+    "cpk_count": 6,
+    "formats_and_sizes": {
+      "g4md": 2664,
+      "g4mg": 141696,
+      "face_g4tx": [5271872, 5271920],
+      "portrait_g4tx": 131648,
+      "mode_change_objbin": 784,
+      "mode_change_g4tx_each": 608608,
+      "voice_acb": 26848,
+      "voice_awb": 635682
+    },
+    "visual_contract": {
+      "face_g4md_submeshes": 4,
+      "face_g4md_materials": 4,
+      "face_g4md_referenced_bones": 99,
+      "face_atlas_subtextures": 12,
+      "face_atlas_largest_dimensions": "2048x1024",
+      "portrait_subtextures": 2,
+      "portrait_dimensions": "256x256",
+      "mode_change_layout_engine_type": "gmdMenuObj",
+      "mode_change_layout_components": 3,
+      "mode_change_image_dimensions": "1728x352",
+      "mode_change_locales": ["de", "en", "es", "fr", "it", "ja", "pt", "zh_hans", "zh_hant"]
+    }
+  },
+  "live_service_probes": {
+    "model_serve_health": {"url": "http://127.0.0.1:8790/health", "http_status": 200, "body_bytes": 2},
+    "reference_model_glb": {"endpoint": "/model-full/c02023290.glb", "http_status": 200, "bytes": 2543164, "format": "GLB"},
+    "reference_g4md": {"endpoint": "/raw/.../c02023290.g4md", "http_status": 200, "bytes": 2664},
+    "reference_g4mg": {"endpoint": "/raw/.../c02023290.g4mg", "http_status": 200, "bytes": 141696},
+    "decoded_reference_texture": {"endpoint": "/tex/.../c02023290.png", "http_status": 200, "format": "PNG", "bytes": 173123},
+    "astro_targets": {
+      "vfs_search": ["c99019010", "c99019020", "astro"],
+      "result": "no matches",
+      "model_full": {"c99019010": 404, "c99019020": 404},
+      "example_target_g4md": {"path": "data/common/chr/_face/01_IE1/c99019010/c99019010.g4md", "http_status": 404}
+    },
+    "niers_game_mcp": {
+      "available": false,
+      "startup_error": "target/debug/nie_ffi.dll does not export nie_menu_setting_json_out, required by packages/nie/src/index.ts",
+      "fallbacks": ["niers vfs", "nie-model-serve"]
+    }
+  },
+  "conclusion": {
+    "verified": [
+      "The real installed game contains the complete c02023290 reference asset chain and decodable character-table rows.",
+      "The reference character is goalkeeper-shaped in the parameter rows (element 1, main position 4, sub position 3).",
+      "The native game process and window are running and visible."
+    ],
+    "not_verified": [
+      "Astro Lor is not yet inserted into the live game tables or loose VFS.",
+      "An in-game Astro Lor menu or match appearance was not proven.",
+      "Live memory contents could not be read because Windows denied the process handle."
+    ],
+    "next_safe_step": "Produce byte-compatible cfg.bin/model/texture assets in a mod workspace, then validate through the supported mod-install and in-game probe path; do not write the protected process memory."
+  }
+}

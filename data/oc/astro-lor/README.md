@@ -19,7 +19,8 @@ data/oc/astro-lor/
 │   └── README.md                  règles de séparation source / jeu
 ├── provenance/                    d'où vient chaque original — versionné
 │   ├── SHA256SUMS                 les 12 originaux, vérifiables
-│   └── discord-<id message>.json  journal de récupération : ids, empreintes, dimensions
+│   ├── discord-<id message>.json  journal de récupération : ids, empreintes, dimensions
+│   └── google-doc-10a6b9.json     provenance du contexte de lore (métadonnées seulement)
 └── source/                        les originaux — JAMAIS versionnés
     ├── sheets/                    9 planches de character design (JPEG 4161×3000)
     └── comic/                     3 pages de bande dessinée (WebP 914×1280)
@@ -66,7 +67,8 @@ journal Discord — la chaîne se vérifie de bout en bout.
 | Dérivés publiés (portraits 512×512, planches 1600 px, pages BD) | `apps/azalee/public/oc/astro-lor/` | le site les sert ; sans eux les pages cassent, donc ils sont versionnés |
 | Données du wiki (personnage, techniques, esprit, Mixi Max) | `scripts/donnees/astro-lor-oc.py`, `astro-lor-auras.py` | scripts rejouables, en `ON CONFLICT DO UPDATE` |
 | Plan d'intégration au jeu et verrous | `docs/ASTRO-LOR.md` | c'est de la documentation, pas de la donnée |
-| Récupération Discord | `scripts/donnees/astro-lor-planches-discord.py` | le dépôt range ses scripts dans `scripts/` |
+| Récupération Discord | `scripts/donnees/astro-lor-sheets-discord.py` | le dépôt range ses scripts dans `scripts/` |
+| Contexte de lore | `provenance/google-doc-10a6b9.json` | URL et faits normalisés ; le corps privé n'est pas recopié |
 
 Les dérivés sont volontairement de basse résolution : ils suffisent à l'affichage
 et ne remplacent pas les originaux. Leurs noms de fichiers sont restés ceux que
@@ -84,7 +86,7 @@ jq '.resume' data/oc/astro-lor/manifest.json
 cd data/oc/astro-lor/source && sha256sum -c ../provenance/SHA256SUMS
 
 # Récupérer à nouveau depuis Discord — dans un dossier de TRAVAIL, pas dans source/
-uv run scripts/donnees/astro-lor-planches-discord.py /tmp/astro-brut
+uv run scripts/donnees/astro-lor-sheets-discord.py /tmp/astro-brut
 ```
 
 ## Deux pièges déjà payés

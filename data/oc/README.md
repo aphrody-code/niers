@@ -11,6 +11,7 @@ data/oc/
     ├── README.md        ce que le personnage est, d'où il vient, ce qui manque
     ├── manifest.json    ce qu'il faut produire pour que le JEU le connaisse — généré, jamais écrit à la main
     ├── game/            contrat machine : préfixes, formats, tables et runtime
+    │   └── evidence/    mesures issues des dumps locaux, jamais des valeurs devinées
     ├── provenance/      d'où vient chaque original — versionné
     │   ├── SHA256SUMS   les empreintes, vérifiables par `sha256sum -c`
     │   └── *.json       journaux de récupération (ids, empreintes, dimensions)

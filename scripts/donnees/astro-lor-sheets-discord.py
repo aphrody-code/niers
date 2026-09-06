@@ -1,4 +1,10 @@
 """Lecture unique du message autorisé avec la configuration existante du VPS."""
+
+# /// script
+# requires-python = ">=3.10"
+# dependencies = ["Pillow>=12", "python-dotenv>=1"]
+# ///
+
 import hashlib
 import io
 import json
@@ -27,8 +33,17 @@ if len(sys.argv) != 2:
         '         cf. data/oc/astro-lor/README.md)'
     )
 OUTPUT = Path(sys.argv[1])
-config = dotenv_values('/home/ubuntu/.config/niers/wonderbot.env', interpolate=False)
-token = next((config.get(k) for k in ('WONDERBOT_DISCORD_TOKEN', 'DISCORD_BOT_TOKEN', 'DISCORD_TOKEN') if config.get(k)), None)
+ENV_KEYS = ('WONDERBOT_DISCORD_TOKEN', 'DISCORD_BOT_TOKEN', 'DISCORD_TOKEN')
+configured_env = os.environ.get('NIERS_WONDERBOT_ENV')
+env_candidates = [
+    Path(configured_env) if configured_env else None,
+    Path.home() / '.config' / 'rgfr' / 'wonderbot.env',
+    Path('/home/ubuntu/.config/niers/wonderbot.env'),
+]
+env_path = next((path for path in env_candidates if path and path.is_file()), None)
+config = dotenv_values(env_path, interpolate=False) if env_path else {}
+token = next((os.environ.get(k) or config.get(k) for k in ENV_KEYS
+              if os.environ.get(k) or config.get(k)), None)
 if not token or token.startswith(('$', 'eyJ2Ijo')):
     raise SystemExit('CONFIG_BOT_VPS_ABSENTE_OU_INUTILISABLE')
 

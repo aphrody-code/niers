@@ -5,8 +5,9 @@ existante du jeu n'est touchée. Les identifiants sont dans un espace de noms r�
 aux OC (`c99…` pour les codes internes, préfixes `ocs/oco/ocd/ock` pour les techniques)
 qui ne peut pas entrer en collision avec les hachages extraits de `nie.exe`.
 
-Source des textes : document de présentation d'Astro Lor (Google Docs) et les deux
-planches de référence signées @Karumina_san. Les statistiques ne sont PAS inventées :
+Source des textes : document de présentation d'Astro Lor (Google Docs, provenance
+`data/oc/astro-lor/provenance/google-doc-10a6b9.json`) et les deux planches de référence
+signées @Karumina_san. Les statistiques ne sont PAS inventées :
 dans Victory Road elles ne dépendent que du couple (poste × rareté), et les blocs
 repris ici sont ceux, mesurés en base, de tous les gardiens Normal et Héros.
 
@@ -15,6 +16,10 @@ repris ici sont ceux, mesurés en base, de tous les gardiens Normal et Héros.
 """
 
 import json
+import sys
+
+if (sys.stdout.encoding or "").lower() != "utf-8":
+    sys.stdout.reconfigure(encoding="utf-8")
 
 # ---------------------------------------------------------------- identifiants
 

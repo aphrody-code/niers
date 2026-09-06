@@ -70,6 +70,23 @@ ROLES = [
      "outil": None, "note": "Facultatif : un personnage muet reste jouable."},
 ]
 
+OPTIONAL_VISUAL_TEMPLATES = [
+    {
+        "key": "mode_change_card_layout",
+        "gabarit": "common/gamedata/menu/obj/soccer10_01_mode_change_{code}.objbin",
+        "format": "OBJBIN",
+        "role": "Layout of the code-keyed mode-change menu card",
+    },
+    {
+        "key": "mode_change_card_image",
+        "gabarit": "dx11/menu/220_img/telop_waza/{locale}/mode_change_{code}.g4tx",
+        "format": "G4TX",
+        "role": "Localized code-keyed mode-change menu card image",
+        "locales": ["de", "en", "es", "fr", "it", "ja", "pt", "zh_hans", "zh_hant"],
+        "expected_dimensions": "1728x352",
+    },
+]
+
 # Les tables `cfg.bin` où un personnage doit être DÉCLARÉ. Sans une ligne dans chacune,
 # les assets ci-dessus ne sont jamais chargés.
 TABLES = [
@@ -126,17 +143,18 @@ for nom, role in TABLES:
     })
 
 cibles = []
+optional_visual_assets = []
 for v in VARIANTES:
     assets = []
     for r in ROLES:
         relatif = r["gabarit"].format(groupe=v["groupe"], code=v["code"])
         chemin = f"data/{relatif}" if not relatif.startswith("common/") else f"data/{relatif}"
-        present = bool(vfs(v["code"], 20))
+        present = any(item.get("path") == chemin for item in vfs(chemin, 20))
         source = None
         if r["cle"] == "icone_portrait":
             p = PUBLIC / v["portrait_source"]
             if p.is_file():
-                source = {"fichier": str(p.relative_to(RACINE)), "octets": taille_locale(p)}
+                source = {"fichier": p.relative_to(RACINE).as_posix(), "octets": taille_locale(p)}
         assets.append({
             "cle": r["cle"],
             "role": r["role"],
@@ -152,7 +170,7 @@ for v in VARIANTES:
     for nom in v["planches"]:
         p = PUBLIC / nom
         if p.is_file():
-            planches.append({"fichier": str(p.relative_to(RACINE)), "octets": taille_locale(p)})
+            planches.append({"fichier": p.relative_to(RACINE).as_posix(), "octets": taille_locale(p)})
     cibles.append({
         "code_interne": v["code"],
         "nom": v["nom"],
@@ -162,10 +180,33 @@ for v in VARIANTES:
         "references_artistiques": planches,
     })
 
+    visual_assets = []
+    for template in OPTIONAL_VISUAL_TEMPLATES:
+        locales = template.get("locales", [None])
+        for locale in locales:
+            relatif = template["gabarit"].format(code=v["code"], locale=locale)
+            chemin = f"data/{relatif}"
+            present = any(item.get("path") == chemin for item in vfs(chemin, 20))
+            asset = {
+                "key": template["key"],
+                "role": template["role"],
+                "format": template["format"],
+                "vfs_path": chemin,
+                "required": False,
+                "status": "present" if present else "to_produce",
+            }
+            if locale is not None:
+                asset["locale"] = locale
+            if "expected_dimensions" in template:
+                asset["expected_dimensions"] = template["expected_dimensions"]
+            visual_assets.append(asset)
+    optional_visual_assets.append({"code": v["code"], "assets": visual_assets})
+
 manifeste = {
     "personnage": "Astro Lor",
     "nature": "personnage original (OC) — n'existe pas dans les données du jeu",
     "auteur_des_planches": "@Karumina_san",
+    "game_contract": "data/oc/astro-lor/game/character-contract.json",
     "gabarit": {
         "code_interne": GABARIT,
         "pourquoi": "gardien déjà présent dans le jeu ; ses fichiers donnent la forme exacte "
@@ -174,22 +215,24 @@ manifeste = {
     },
     "groupes_de_dossier": GROUPES,
     "bandes_dessinees": [
-        {"page": i, "publie": str((PUBLIC / f"bd-page-{i}.webp").relative_to(RACINE)),
+        {"page": i, "publie": (PUBLIC / f"bd-page-{i}.webp").relative_to(RACINE).as_posix(),
          "octets": taille_locale(PUBLIC / f"bd-page-{i}.webp"),
-         "source": str((SOURCES / "comic" / f"page-{i}.webp").relative_to(RACINE)),
+         "source": (SOURCES / "comic" / f"page-{i}.webp").relative_to(RACINE).as_posix(),
          "octets_source": taille_locale(SOURCES / "comic" / f"page-{i}.webp")}
         for i in (1, 2, 3)
     ],
     "cibles": cibles,
+    "optional_visual_assets": optional_visual_assets,
     "tables_a_declarer": tables,
     "verrous": [
         {
             "nom": "Réencodage fidèle des cfg.bin",
             "bloquant": True,
-            "constat": "Un aller-retour à vide de cpk_list.cfg.bin change le sha et perd "
-                       "16 octets, sans qu'aucune modification ait été faite, et le jeu "
-                       "refuse le fichier. Sur game_param.cfg.bin, /entries/0/children "
-                       "retombe de 812 à 1 élément.",
+            "constat": "encode_t2b écrit maintenant le pied de page T2B observé de 16 octets "
+                       "et son test ciblé passe ; la preuve byte-exact sur les tables cibles "
+                       "et l'acceptation par le jeu restent à établir. Un aller-retour à vide "
+                       "de cpk_list.cfg.bin avait perdu 16 octets, et game_param.cfg.bin "
+                       "retombait de 812 à 1 enfant.",
             "consequence": "Ajouter une LIGNE à chara_base ou chara_param change la taille "
                            "du fichier : le patch d'octets en place, qui suffit pour un mod "
                            "à taille constante, ne suffit pas ici.",
@@ -229,15 +272,22 @@ compte = {"present": 0, "source_prete": 0, "a_produire": 0}
 for c in manifeste["cibles"]:
     for a in c["assets"]:
         compte[a["statut"]] += 1
+optional_compte = {"present": 0, "to_produce": 0}
+for group in manifeste["optional_visual_assets"]:
+    for asset in group["assets"]:
+        optional_compte["present" if asset["status"] == "present" else "to_produce"] += 1
 manifeste["resume"] = {
     "assets_total": sum(compte.values()),
     **compte,
     "tables_reperees": sum(1 for t in tables if t["trouve"]),
     "tables_total": len(tables),
     "references_artistiques": sum(len(c["references_artistiques"]) for c in manifeste["cibles"]),
+    "optional_visual_assets_total": sum(optional_compte.values()),
+    "optional_visual_assets_present": optional_compte["present"],
+    "optional_visual_assets_to_produce": optional_compte["to_produce"],
 }
 
 SORTIE.parent.mkdir(parents=True, exist_ok=True)
 SORTIE.write_text(json.dumps(manifeste, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 print(json.dumps(manifeste["resume"], ensure_ascii=False, indent=2))
-print(f"→ {SORTIE.relative_to(RACINE)}")
+print(f"-> {SORTIE.relative_to(RACINE)}")

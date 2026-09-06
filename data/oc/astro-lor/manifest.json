@@ -97,21 +97,21 @@
       "publie": "apps/azalee/public/oc/astro-lor/bd-page-1.webp",
       "octets": 373244,
       "source": "data/oc/astro-lor/source/comic/page-1.webp",
-      "octets_source": 652400
+      "octets_source": 661016
     },
     {
       "page": 2,
       "publie": "apps/azalee/public/oc/astro-lor/bd-page-2.webp",
       "octets": 255188,
       "source": "data/oc/astro-lor/source/comic/page-2.webp",
-      "octets_source": 258784
+      "octets_source": 257492
     },
     {
       "page": 3,
       "publie": "apps/azalee/public/oc/astro-lor/bd-page-3.webp",
       "octets": 199686,
       "source": "data/oc/astro-lor/source/comic/page-3.webp",
-      "octets_source": 204402
+      "octets_source": 203910
     }
   ],
   "cibles": [
@@ -310,6 +310,214 @@
       ]
     }
   ],
+  "optional_visual_assets": [
+    {
+      "code": "c99019010",
+      "assets": [
+        {
+          "key": "mode_change_card_layout",
+          "role": "Layout of the code-keyed mode-change menu card",
+          "format": "OBJBIN",
+          "vfs_path": "data/common/gamedata/menu/obj/soccer10_01_mode_change_c99019010.objbin",
+          "required": false,
+          "status": "to_produce"
+        },
+        {
+          "key": "mode_change_card_image",
+          "role": "Localized code-keyed mode-change menu card image",
+          "format": "G4TX",
+          "vfs_path": "data/dx11/menu/220_img/telop_waza/de/mode_change_c99019010.g4tx",
+          "required": false,
+          "status": "to_produce",
+          "locale": "de",
+          "expected_dimensions": "1728x352"
+        },
+        {
+          "key": "mode_change_card_image",
+          "role": "Localized code-keyed mode-change menu card image",
+          "format": "G4TX",
+          "vfs_path": "data/dx11/menu/220_img/telop_waza/en/mode_change_c99019010.g4tx",
+          "required": false,
+          "status": "to_produce",
+          "locale": "en",
+          "expected_dimensions": "1728x352"
+        },
+        {
+          "key": "mode_change_card_image",
+          "role": "Localized code-keyed mode-change menu card image",
+          "format": "G4TX",
+          "vfs_path": "data/dx11/menu/220_img/telop_waza/es/mode_change_c99019010.g4tx",
+          "required": false,
+          "status": "to_produce",
+          "locale": "es",
+          "expected_dimensions": "1728x352"
+        },
+        {
+          "key": "mode_change_card_image",
+          "role": "Localized code-keyed mode-change menu card image",
+          "format": "G4TX",
+          "vfs_path": "data/dx11/menu/220_img/telop_waza/fr/mode_change_c99019010.g4tx",
+          "required": false,
+          "status": "to_produce",
+          "locale": "fr",
+          "expected_dimensions": "1728x352"
+        },
+        {
+          "key": "mode_change_card_image",
+          "role": "Localized code-keyed mode-change menu card image",
+          "format": "G4TX",
+          "vfs_path": "data/dx11/menu/220_img/telop_waza/it/mode_change_c99019010.g4tx",
+          "required": false,
+          "status": "to_produce",
+          "locale": "it",
+          "expected_dimensions": "1728x352"
+        },
+        {
+          "key": "mode_change_card_image",
+          "role": "Localized code-keyed mode-change menu card image",
+          "format": "G4TX",
+          "vfs_path": "data/dx11/menu/220_img/telop_waza/ja/mode_change_c99019010.g4tx",
+          "required": false,
+          "status": "to_produce",
+          "locale": "ja",
+          "expected_dimensions": "1728x352"
+        },
+        {
+          "key": "mode_change_card_image",
+          "role": "Localized code-keyed mode-change menu card image",
+          "format": "G4TX",
+          "vfs_path": "data/dx11/menu/220_img/telop_waza/pt/mode_change_c99019010.g4tx",
+          "required": false,
+          "status": "to_produce",
+          "locale": "pt",
+          "expected_dimensions": "1728x352"
+        },
+        {
+          "key": "mode_change_card_image",
+          "role": "Localized code-keyed mode-change menu card image",
+          "format": "G4TX",
+          "vfs_path": "data/dx11/menu/220_img/telop_waza/zh_hans/mode_change_c99019010.g4tx",
+          "required": false,
+          "status": "to_produce",
+          "locale": "zh_hans",
+          "expected_dimensions": "1728x352"
+        },
+        {
+          "key": "mode_change_card_image",
+          "role": "Localized code-keyed mode-change menu card image",
+          "format": "G4TX",
+          "vfs_path": "data/dx11/menu/220_img/telop_waza/zh_hant/mode_change_c99019010.g4tx",
+          "required": false,
+          "status": "to_produce",
+          "locale": "zh_hant",
+          "expected_dimensions": "1728x352"
+        }
+      ]
+    },
+    {
+      "code": "c99019020",
+      "assets": [
+        {
+          "key": "mode_change_card_layout",
+          "role": "Layout of the code-keyed mode-change menu card",
+          "format": "OBJBIN",
+          "vfs_path": "data/common/gamedata/menu/obj/soccer10_01_mode_change_c99019020.objbin",
+          "required": false,
+          "status": "to_produce"
+        },
+        {
+          "key": "mode_change_card_image",
+          "role": "Localized code-keyed mode-change menu card image",
+          "format": "G4TX",
+          "vfs_path": "data/dx11/menu/220_img/telop_waza/de/mode_change_c99019020.g4tx",
+          "required": false,
+          "status": "to_produce",
+          "locale": "de",
+          "expected_dimensions": "1728x352"
+        },
+        {
+          "key": "mode_change_card_image",
+          "role": "Localized code-keyed mode-change menu card image",
+          "format": "G4TX",
+          "vfs_path": "data/dx11/menu/220_img/telop_waza/en/mode_change_c99019020.g4tx",
+          "required": false,
+          "status": "to_produce",
+          "locale": "en",
+          "expected_dimensions": "1728x352"
+        },
+        {
+          "key": "mode_change_card_image",
+          "role": "Localized code-keyed mode-change menu card image",
+          "format": "G4TX",
+          "vfs_path": "data/dx11/menu/220_img/telop_waza/es/mode_change_c99019020.g4tx",
+          "required": false,
+          "status": "to_produce",
+          "locale": "es",
+          "expected_dimensions": "1728x352"
+        },
+        {
+          "key": "mode_change_card_image",
+          "role": "Localized code-keyed mode-change menu card image",
+          "format": "G4TX",
+          "vfs_path": "data/dx11/menu/220_img/telop_waza/fr/mode_change_c99019020.g4tx",
+          "required": false,
+          "status": "to_produce",
+          "locale": "fr",
+          "expected_dimensions": "1728x352"
+        },
+        {
+          "key": "mode_change_card_image",
+          "role": "Localized code-keyed mode-change menu card image",
+          "format": "G4TX",
+          "vfs_path": "data/dx11/menu/220_img/telop_waza/it/mode_change_c99019020.g4tx",
+          "required": false,
+          "status": "to_produce",
+          "locale": "it",
+          "expected_dimensions": "1728x352"
+        },
+        {
+          "key": "mode_change_card_image",
+          "role": "Localized code-keyed mode-change menu card image",
+          "format": "G4TX",
+          "vfs_path": "data/dx11/menu/220_img/telop_waza/ja/mode_change_c99019020.g4tx",
+          "required": false,
+          "status": "to_produce",
+          "locale": "ja",
+          "expected_dimensions": "1728x352"
+        },
+        {
+          "key": "mode_change_card_image",
+          "role": "Localized code-keyed mode-change menu card image",
+          "format": "G4TX",
+          "vfs_path": "data/dx11/menu/220_img/telop_waza/pt/mode_change_c99019020.g4tx",
+          "required": false,
+          "status": "to_produce",
+          "locale": "pt",
+          "expected_dimensions": "1728x352"
+        },
+        {
+          "key": "mode_change_card_image",
+          "role": "Localized code-keyed mode-change menu card image",
+          "format": "G4TX",
+          "vfs_path": "data/dx11/menu/220_img/telop_waza/zh_hans/mode_change_c99019020.g4tx",
+          "required": false,
+          "status": "to_produce",
+          "locale": "zh_hans",
+          "expected_dimensions": "1728x352"
+        },
+        {
+          "key": "mode_change_card_image",
+          "role": "Localized code-keyed mode-change menu card image",
+          "format": "G4TX",
+          "vfs_path": "data/dx11/menu/220_img/telop_waza/zh_hant/mode_change_c99019020.g4tx",
+          "required": false,
+          "status": "to_produce",
+          "locale": "zh_hant",
+          "expected_dimensions": "1728x352"
+        }
+      ]
+    }
+  ],
   "tables_a_declarer": [
     {
       "table": "chara_base",
@@ -427,7 +635,7 @@
     {
       "nom": "Réencodage fidèle des cfg.bin",
       "bloquant": true,
-      "constat": "Un aller-retour à vide de cpk_list.cfg.bin change le sha et perd 16 octets, sans qu'aucune modification ait été faite, et le jeu refuse le fichier. Sur game_param.cfg.bin, /entries/0/children retombe de 812 à 1 élément.",
+      "constat": "encode_t2b écrit maintenant le pied de page T2B observé de 16 octets et son test ciblé passe ; la preuve byte-exact sur les tables cibles et l'acceptation par le jeu restent à établir. Un aller-retour à vide de cpk_list.cfg.bin avait perdu 16 octets, et game_param.cfg.bin retombait de 812 à 1 enfant.",
       "consequence": "Ajouter une LIGNE à chara_base ou chara_param change la taille du fichier : le patch d'octets en place, qui suffit pour un mod à taille constante, ne suffit pas ici.",
       "avant_de_conclure": "Ne rien déduire d'un fichier « relu correctement » : le parseur du dépôt est plus permissif que le jeu."
     },
@@ -460,6 +668,9 @@
     "a_produire": 10,
     "tables_reperees": 9,
     "tables_total": 9,
-    "references_artistiques": 9
+    "references_artistiques": 9,
+    "optional_visual_assets_total": 20,
+    "optional_visual_assets_present": 0,
+    "optional_visual_assets_to_produce": 20
   }
 }

@@ -1,0 +1,41 @@
+{
+  "source_type": "google_document",
+  "title": "Astro Lor Présentation (FR)",
+  "source_url": "https://docs.google.com/document/d/10a6B9QxHHCgl7qPAwFIo8HNDdFuZqIfjzdq_mHavyxk/edit?usp=drivesdk",
+  "retrieved_at": "2026-09-07T00:23:45+02:00",
+  "access": "authenticated_read_only",
+  "extraction": "Google Docs Markdown export",
+  "rights_note": "Source document supplied by the user; repository stores no document body.",
+  "stored_content": "metadata_and_normalized_facts_only",
+  "sections_used": [
+    "Identity",
+    "Statistics",
+    "Hissatsu",
+    "Professional life",
+    "Appearance",
+    "Personality",
+    "Mental and physical health",
+    "Clothing",
+    "Favorites",
+    "Relationships",
+    "Background",
+    "Gallery"
+  ],
+  "normalized_facts_used_by_script": {
+    "name": "Astro Lor",
+    "alternate_japanese_family_name": "Kin",
+    "pronouns": ["iel", "il"],
+    "birthday": "June 15",
+    "uniform_number": 19,
+    "element": "Forest",
+    "positions": ["goalkeeper", "libero", "manager"],
+    "og_age_range": "10-12",
+    "go_age_range": "20-21",
+    "og_height_cm": 162,
+    "go_height_cm": 168,
+    "technique_categories": ["shoot", "dribble", "defense", "catch"],
+    "signature_keshin": "Morpheus, God of Dreams",
+    "visual_reference_author": "@Karumina_san"
+  },
+  "privacy_note": "The private document body is not copied into the repository or published by the SQL generator."
+}
