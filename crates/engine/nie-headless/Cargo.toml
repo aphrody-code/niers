@@ -16,6 +16,7 @@ workspace = true
 
 [dependencies]
 nie-formats.workspace = true
+nie-data.workspace = true
 nie-core.workspace = true
 clap.workspace = true
 anyhow.workspace = true

@@ -20,6 +20,16 @@ fn fichier_temp(contenu: &[u8]) -> tempfile::NamedTempFile {
     f
 }
 
+/// Crée un fichier JSON temporaire dont l'extension active le chemin de lecture JSON.
+fn fichier_json_temp(contenu: &[u8]) -> tempfile::NamedTempFile {
+    let mut f = tempfile::Builder::new()
+        .suffix(".json")
+        .tempfile()
+        .expect("tempfile JSON");
+    f.write_all(contenu).expect("écriture temp JSON");
+    f
+}
+
 /// Retourne une commande nie-headless prête à l'usage.
 fn cmd() -> Command {
     Command::cargo_bin("nie-headless").expect("binaire nie-headless")
@@ -145,6 +155,45 @@ fn build_cpk_minimal() -> Vec<u8> {
     out.extend_from_slice(&[0u8; 12]);
     out.extend_from_slice(&utf);
     out
+}
+
+#[test]
+fn menu_json_resume_la_definition() {
+    let fixture = br#"{
+        "entries": [
+            {
+                "name": "MENU_LAYER_INFO_0",
+                "variables": [
+                    { "type": "Int", "value": "1" },
+                    { "type": "String", "value": "sample_layer" },
+                    { "type": "String", "value": "common/gamedata/menu/obj/sample_layer.objbin" }
+                ],
+                "children": []
+            }
+        ]
+    }"#;
+    let f = fichier_json_temp(fixture);
+    let sortie = cmd()
+        .arg("menu")
+        .arg(f.path())
+        .arg("--indent=0")
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let json: serde_json::Value = serde_json::from_slice(&sortie).expect("JSON valide");
+    assert_eq!(json["layers"], 1);
+    assert_eq!(json["resources"], 0);
+    assert_eq!(json["commands"], 0);
+    assert_eq!(json["focus"], 0);
+    assert_eq!(json["layer_hashes_consistent"], false);
+}
+
+#[test]
+fn menu_fichier_invalide_renvoie_erreur() {
+    let f = fichier_temp(b"not-a-menu");
+    cmd().arg("menu").arg(f.path()).assert().failure();
 }
 
 // ---------------------------------------------------------------------------

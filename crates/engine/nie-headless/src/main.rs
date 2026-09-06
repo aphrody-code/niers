@@ -4,6 +4,7 @@
 //!
 //! ```text
 //! nie-headless detect <FICHIER> [--indent N]
+//! nie-headless menu <FICHIER> [--indent N]
 //! nie-headless match [--home NOM] [--away NOM] [--seed N] [--home-stats Kc:Cr:Tc:Pr:Ps:Ag:It] [--away-stats ...]
 //! ```
 //!
@@ -16,6 +17,12 @@
 //!
 //! Simule un match de football complet (kickoff → 90 minutes → résultat) de façon
 //! déterministe et affiche le score en 1 ligne terse (`clé=val`).
+//!
+//! ### `menu`
+//!
+//! Lit une définition `*_menu_setting.cfg.bin` ou son JSON `entries`, puis affiche les
+//! compteurs et invariants de navigation issus de `nie-data`. Le chemin peut être un fichier
+//! local ou un chemin logique du VFS (`data/common/...`).
 //!
 //! Les stats par défaut sont les stats FW UR lv99 confirmées depuis les tables de
 //! croissance embarquées de nie-core (golden test `growth::golden_fw_ur`) :
@@ -77,6 +84,14 @@ enum Commande {
         #[arg(long, default_value = "2")]
         indent: usize,
     },
+    /// Résume une définition typée d'écran de menu (`cfg.bin` ou JSON `entries`).
+    Menu {
+        /// Fichier local, ou chemin logique VFS, `*_menu_setting.cfg.bin` / JSON `entries`.
+        fichier: PathBuf,
+        /// Indentation JSON (0 = compact, N = lisible avec N espaces de base).
+        #[arg(long, default_value = "2")]
+        indent: usize,
+    },
     /// Simule un match de football complet (headless, déterministe).
     ///
     /// Affiche sur stdout : `home=<NOM> away=<NOM> résultat=<H>-<A> horloge=<CLOCK>`
@@ -116,6 +131,7 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
     match cli.commande {
         Commande::Detect { fichier, indent } => cmd_detect(fichier, indent),
+        Commande::Menu { fichier, indent } => cmd_menu(fichier, indent),
         Commande::SimulerMatch {
             home,
             away,
@@ -124,6 +140,101 @@ fn main() -> Result<()> {
             away_stats,
         } => cmd_match(home, away, seed, home_stats, away_stats),
     }
+}
+
+// ---------------------------------------------------------------------------
+// Sous-commande `menu`
+// ---------------------------------------------------------------------------
+
+/// Résumé stable d'une définition d'écran de menu.
+#[derive(Debug, Serialize)]
+struct MenuSummary {
+    /// Chemin du fichier tel que passé en argument.
+    path: String,
+    /// Taille du fichier lu.
+    bytes: usize,
+    /// Nombre de layers composant l'écran.
+    layers: usize,
+    /// Nombre de ressources g4tx partagées.
+    resources: usize,
+    /// Nombre de commandes liées aux layers.
+    commands: usize,
+    /// Nombre d'états de groupe par layer.
+    layer_groups: usize,
+    /// Nombre de groupes nommés.
+    groups: usize,
+    /// Nombre d'éléments focusables.
+    focus: usize,
+    /// Identifiant CRC du layer interactif, s'il est déclaré.
+    interactive_layer_id: Option<u32>,
+    /// Invariant CRC32 des noms de layers.
+    layer_hashes_consistent: bool,
+    /// Invariant CRC32 des noms de groupes.
+    group_hashes_consistent: bool,
+}
+
+/// Lit un fichier local, ou un chemin logique du VFS, et rend son nom et ses octets.
+fn read_menu_source(path: &std::path::Path) -> Result<(String, Vec<u8>)> {
+    if path.is_file() {
+        let name = path.display().to_string();
+        let bytes = std::fs::read(path).with_context(|| format!("impossible de lire '{name}'"))?;
+        return Ok((name, bytes));
+    }
+
+    let requested = path.to_string_lossy().replace('\\', "/");
+    let logical = if requested.starts_with("data/") {
+        requested
+    } else {
+        format!("data/{requested}")
+    };
+    let vfs = nie_formats::vfs::open_game()
+        .with_context(|| format!("impossible de monter le VFS pour '{logical}'"))?;
+    let bytes = vfs
+        .read(&logical)
+        .with_context(|| format!("fichier absent du VFS : '{logical}'"))?;
+    Ok((logical, bytes))
+}
+
+/// Lit une définition menu binaire ou JSON et la résume avec le parseur typé.
+fn cmd_menu(fichier: PathBuf, indent: usize) -> Result<()> {
+    let (path, bytes) = read_menu_source(&fichier)?;
+    let root = if fichier
+        .extension()
+        .and_then(|extension| extension.to_str())
+        .is_some_and(|extension| extension.eq_ignore_ascii_case("json"))
+    {
+        serde_json::from_slice(&bytes).with_context(|| format!("JSON menu invalide : {path}"))?
+    } else {
+        cfgbin::to_iecode_json(&bytes)
+            .ok_or_else(|| anyhow::anyhow!("cfg.bin menu invalide ou non T2B/RDBN : {path}"))?
+    };
+    let setting = nie_data::menu_setting::parse(&root);
+    let summary = MenuSummary {
+        path,
+        bytes: bytes.len(),
+        layers: setting.layers.len(),
+        resources: setting.resources.len(),
+        commands: setting.commands.len(),
+        layer_groups: setting.layer_groups.len(),
+        groups: setting.groups.len(),
+        focus: setting.focus_base_infos.len(),
+        interactive_layer_id: setting.interactive_layer_id().map(|id| id.0),
+        layer_hashes_consistent: setting.layer_hashes_consistent(),
+        group_hashes_consistent: setting.group_hashes_consistent(),
+    };
+    let json = if indent == 0 {
+        serde_json::to_string(&summary).context("sérialisation JSON")?
+    } else {
+        let formatter = serde_json::ser::PrettyFormatter::with_indent(b"  ");
+        let mut output = Vec::new();
+        let mut serializer = serde_json::Serializer::with_formatter(&mut output, formatter);
+        summary
+            .serialize(&mut serializer)
+            .context("sérialisation JSON")?;
+        String::from_utf8(output).context("UTF-8 JSON")?
+    };
+    println!("{json}");
+    Ok(())
 }
 
 // ---------------------------------------------------------------------------
