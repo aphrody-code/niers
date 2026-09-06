@@ -77,9 +77,39 @@ C'est le plus gros morceau restant, et la bascule de J6 en dépend entièrement.
 **Gate, à compter, pas à lire :**
 
 ```bash
-rg -l 'bun:sqlite|node:fs|/home/ubuntu|SQLITE_DB_PATH|SUPABASE_INTERNAL_URL|DATABASE_URL' \
-  apps/azalee packages/azalee | wc -l     # attendu : 0  (depart mesure : 76 -> 5)
+# Le motif ne retient QUE les marqueurs de lecture LOCALE, et ne lit que du code : une regle
+# ecrite pour interdire un motif contient forcement ce motif.
+rg -l 'bun:sqlite|node:fs|/home/ubuntu|SQLITE_DB_PATH|SUPABASE_INTERNAL_URL' \
+  apps/azalee packages/azalee -g '!*.md' | wc -l   # attendu : 0  (depart mesure : 76 -> 5)
 ```
+
+**Mesuré le 2026-09-06 : la gate est TENUE — 0 lecture locale.** Sous sa forme d'origine elle
+rendait 4, et les quatre étaient des faux positifs. Deux corrections de **l'instrument**, pas
+du code :
+
+1. **`DATABASE_URL` sort du motif.** C'est une chaîne de connexion Postgres **distante** — le
+   contraire exact d'une lecture locale. Elle vit dans `apps/azalee/lib/auth.ts:25` et
+   `lib/db/pg.ts:13`, où Better Auth exige un `Pool` direct (PostgREST ne sert pas ses tables de
+   session) et où 17 routes passent. La retirer casse l'authentification. Un motif qui condamne
+   le chemin qui a tenu pendant l'outage `exceed_storage_size_quota` d'août mesure autre chose
+   que ce qu'il annonce.
+2. **`-g '!*.md'`.** Les deux autres matches étaient `apps/azalee/CLAUDE.md` et
+   `packages/azalee/README.md` : de la documentation qui **nomme les motifs pour les
+   interdire**. Un `rg` sur le contenu ne distingue pas un code qui lit un fichier d'une règle
+   qui le proscrit — troisième fois dans ce plan qu'une gate compte ses propres preuves
+   (cf. Bloc 4).
+
+Mesure de fond qui tranche, elle : `rg -l 'bun:sqlite|node:fs' packages/azalee/src` → **0**. Le
+package est déjà entièrement client-safe ; seule sa documentation prétendait le contraire, et
+elle a été réécrite.
+
+Le piège `pickUrl()` est **mort, vérifié** : `rg -n 'pickUrl|SUPABASE_INTERNAL_URL'` hors
+`docs/` rend **0 occurrence de code**. `lib/supabase/server.ts` résout par une source unique
+(`origineSupabase()` / `cleAnonSupabase()`), et le `Proxy` SQLite a quitté le chemin métier.
+
+**Reste ouvert, en lot dédié :** le déplacement de `/cpk`, `/textures`, `/modeles`, `/sons`,
+`/videos`, `/save`… vers `apps/nie-web`. Attention, `apps/nie-web/src/legacy/` **n'existe
+plus** — le sas a été vidé : la cible du déplacement est donc à re-choisir, ce n'est plus lui.
 
 Puis la Gate 1 contre une preview : `/chara` ≥ 50 liens, fiche perso 200. **Compter les
 liens**, jamais se contenter du code HTTP — c'est exactement le piège qui a coûté une journée.
