@@ -120,6 +120,9 @@ pub struct ExecOutput {
     /// de vérifier le chemin VFS brut → chunk → VM sans déduire un succès de la seule absence
     /// d'erreur.
     pub loaded_includes: Vec<String>,
+    /// Nombre d'instructions du chunk principal effectivement décodé avant son chargement VM.
+    /// `None` pour un chunk source texte.
+    pub decoded_instructions: Option<usize>,
     /// Durée d'exécution en millisecondes.
     pub duration_ms: u64,
 }
@@ -286,7 +289,15 @@ fn execute_inner(
     resolver: Option<IncludeResolver>,
 ) -> Result<ExecOutput, LuaError> {
     // Le chunk principal suit le même chemin de décodage que `load_bytecode` et les includes.
-    validate_bytecode(data)?;
+    // Conserver la mesure issue de ce même parse évite de confondre analyse parallèle et
+    // bytecode réellement remis à la VM.
+    let decoded_instructions = if is_lua52_bytecode(data) {
+        let chunk = crate::bytecode::parse(data)?;
+        Some(chunk.main.total_instructions())
+    } else {
+        validate_bytecode(data)?;
+        None
+    };
     let lua = crate::new_vm();
     let started = std::time::Instant::now();
 
@@ -352,6 +363,7 @@ fn execute_inner(
 
     let mut out = ExecOutput {
         duration_ms: started.elapsed().as_millis() as u64,
+        decoded_instructions,
         stdout: stdout.borrow().clone(),
         ..Default::default()
     };
@@ -570,6 +582,7 @@ mod tests {
         )
         .expect("exécution VFS");
         assert!(out.error.is_none(), "erreur inattendue : {:?}", out.error);
+        assert_eq!(out.decoded_instructions, None);
         assert_eq!(out.loaded_includes, vec!["LUA_MODULE"]);
     }
 

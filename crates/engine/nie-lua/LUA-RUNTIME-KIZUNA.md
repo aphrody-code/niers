@@ -63,6 +63,9 @@ sur les modules VFS inclus.
 scripts → résolution logique/versionnée → VM. `lua-run` et `lua-audit` l’utilisent
 directement, ce qui supprime leurs résolveurs divergents et vérifie la sélection
 numérique des versions au même endroit.
+`ExecOutput.decoded_instructions` expose en plus la mesure du chunk principal
+décodé dans le même appel que son exécution ; le CLI la publie sous
+`liveDecodedInstructions`.
 
 Le driver `nie-game --runtime` utilise maintenant cette session persistante
 plutôt qu’une VM et des index d’include reconstruits à la main. La vérification
@@ -92,7 +95,7 @@ non prouvé.
 
 ```text
 cargo test -p nie-lua --lib
-95 passed, 0 failed, 1 ignored
+96 passed, 0 failed, 1 ignored
 
 cargo clippy -p nie-lua --lib --tests -- -D warnings
 cargo clippy -p nie-game --bins --tests -- -D warnings

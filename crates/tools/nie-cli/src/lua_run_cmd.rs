@@ -77,6 +77,7 @@ pub fn run(
             "ok": output.error.is_none(),
             "decoded": decoded_instructions.is_some(),
             "decodedInstructions": decoded_instructions,
+            "liveDecodedInstructions": output.decoded_instructions,
             "decodeError": decode_error,
             "stdout": output.stdout,
             "returned": output.returned,
