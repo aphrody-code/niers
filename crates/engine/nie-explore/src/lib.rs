@@ -31,6 +31,26 @@ use nie_formats::{
 fn append_nie_data_t2b(out: &mut Vec<String>, t2b: &cfgbin::CfgBinFile) {
     let json = bridge::t2b_to_json(t2b);
 
+    // Les `*_menu_setting.cfg.bin` sont des T2B comme les autres, mais leur valeur n'est pas une
+    // table de contenu : c'est la scène de navigation (layers, ressources, commandes et focus).
+    // La reconnaître ici rend le même aperçu utile à `vfs cat`, `vfs stat` et à Inacord, sans
+    // demander à chaque façade de recopier ce dispatch typé.
+    let menu = nie_data::menu_setting::parse(&json);
+    if !menu.layers.is_empty() {
+        out.push(format!(
+            "nie-data     menu_setting : {} layer(s), {} ressource(s), {} commande(s), {} focus",
+            menu.layers.len(),
+            menu.resources.len(),
+            menu.commands.len(),
+            menu.focus_base_infos.len(),
+        ));
+        out.push(format!(
+            "  invariants CRC : layers={} groupes={}",
+            menu.layer_hashes_consistent(),
+            menu.group_hashes_consistent(),
+        ));
+    }
+
     let charas = nie_data::chara_base::parse_all_chara_base(&json);
     if !charas.is_empty() {
         out.push(format!(
