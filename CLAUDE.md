@@ -628,6 +628,15 @@ csharp/             IECODE.Core / IECODE.CLI / IECODE.Core.Tests (.NET 10, `IECO
   `ReadProcessMemory`) and `nie-edit.exe` (locator catalogue), both requiring elevation.
 - **Reading `nie.exe` memory requires elevation**: the process is more privileged than the session,
   `OpenProcess` fails, and the tool reports "nie.exe not found" while it is running.
+- **Elevation blocks the WINDOW too, and the way around it is not the window.** Measured
+  2026-09-06 on a running game (Steam-launched, pid found, `SeDebugPrivilege` adjusted): `nie-mem
+  base` → `module « nie.exe » introuvable`, `nie-mem maps` → `0 plage(s)`, and a per-`HWND`
+  `PrintWindow` capture → `error=5`. All three are the same access denial wearing three different
+  messages — none of them means the game is absent. **A full-screen `bitblt` grab succeeds**
+  (winclean `computer_capture_screen`), because it reads the composited desktop instead of the
+  protected process: that is how you watch a game you cannot open. `nie-mem find-pid` keeps working
+  throughout (it only enumerates), so a found PID next to an empty module list is the signature of
+  this situation, not of a dead process.
 - The `nie-trace` catalogue was **re-anchored** on the installed build (2026-08-27): `resolve --all`
   gives **20 ✓ / 0 drift / 4 not found** (previously 0 ✓ / 22 drift). The AOBs were **not** at
   fault — they landed on a unique site; the reference `rva`s came from another build. Re-anchor by
