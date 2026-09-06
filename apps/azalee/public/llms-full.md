@@ -36,10 +36,9 @@ française de la communauté Inazuma Eleven.
 
 ## Outils
 
-- [Outils](https://azalee.rosegriffon.fr/tools)
-- [Comparateur](https://azalee.rosegriffon.fr/tools/compare)
-- [Équipe aléatoire](https://azalee.rosegriffon.fr/tools/random-team)
-- [Traducteur](https://azalee.rosegriffon.fr/tools/translator)
+- [Explorateur](https://azalee.rosegriffon.fr/tools/niers) : comparateur, équipe aléatoire,
+  traducteur, calculateur de stats et galerie d'illustrations vivent désormais dans
+  l'application de bureau ; leurs anciennes URL y redirigent.
 - [Recherche](https://azalee.rosegriffon.fr/search)
 
 ## API (pour les IA et outils)

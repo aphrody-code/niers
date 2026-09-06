@@ -328,7 +328,10 @@ export async function runSeoLlmsTxt(): Promise<{ success: boolean; error?: strin
 			{ path: join(WEBSITE_PUBLIC, "llm.md"), content: websiteIndex },
 			{ path: join(WEBSITE_PUBLIC, "llms.md"), content: websiteIndex },
 			{ path: join(WEBSITE_PUBLIC, "llms-full.md"), content: websiteFull },
+			// `llms.html` était servi sans jamais être réécrit : les deux sites en publiaient
+			// un figé au 10/6/2026, avec des liens que la tâche corrigeait partout ailleurs.
 			{ path: join(WEBSITE_PUBLIC, "llm.html"), content: llmsToHtml(websiteIndex, "Rose Griffon — llm.txt") },
+			{ path: join(WEBSITE_PUBLIC, "llms.html"), content: llmsToHtml(websiteIndex, "Rose Griffon — llm.txt") },
 			{ path: join(WEBSITE_PUBLIC, "llms-full.html"), content: llmsToHtml(websiteFull, "Rose Griffon — llms-full") },
 			);
 		} else {
@@ -347,6 +350,7 @@ export async function runSeoLlmsTxt(): Promise<{ success: boolean; error?: strin
 			{ path: join(AZALEE_PUBLIC, "llms.md"), content: azaleeIndex },
 			{ path: join(AZALEE_PUBLIC, "llms-full.md"), content: azaleeFull },
 			{ path: join(AZALEE_PUBLIC, "llm.html"), content: llmsToHtml(azaleeIndex, "Azalée — llm.txt") },
+			{ path: join(AZALEE_PUBLIC, "llms.html"), content: llmsToHtml(azaleeIndex, "Azalée — llm.txt") },
 			{ path: join(AZALEE_PUBLIC, "llms-full.html"), content: llmsToHtml(azaleeFull, "Azalée — llms-full") },
 		);
 

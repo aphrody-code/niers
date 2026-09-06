@@ -16,7 +16,7 @@ Généré le : 2026-09-06
 - [Passifs](https://azalee.rosegriffon.fr/passive) : compétences passives.
 - [Tactiques](https://azalee.rosegriffon.fr/tactic) : tactiques d'équipe.
 - [Actualités](https://azalee.rosegriffon.fr/news) : news et patch-notes du jeu.
-- [Outils](https://azalee.rosegriffon.fr/tools) : comparateur, équipe aléatoire, traducteur.
+- [Explorateur](https://azalee.rosegriffon.fr/tools/niers) : application de bureau — comparateur, équipe aléatoire, traducteur, galerie.
 
 ## Réseaux & liens
 
