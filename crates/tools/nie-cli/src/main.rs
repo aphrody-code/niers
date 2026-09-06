@@ -544,10 +544,11 @@ enum Cmd {
         #[arg(long)]
         all: bool,
     },
-    /// RE en direct : lit/scanne/dumpe la mémoire live d'un nie.exe sous Wine (process_vm_readv).
+    /// RE en direct : lit/scanne/dumpe la mémoire live d'un nie.exe.
     ///
-    /// Le jeu doit tourner (cf. crates/forge/nie-trace/scripts/boot-nie-direct.sh) ; s'attache à un
-    /// process existant, ne le lance jamais, ne le stoppe pas. Linux-only.
+    /// Le jeu doit tourner ; s'attache à un process existant, ne le lance jamais, ne le stoppe pas.
+    /// Le backend est choisi par la plateforme : process_vm_readv sous Linux/Wine, ou
+    /// OpenProcess/ReadProcessMemory sous Windows natif.
     Mem {
         #[command(subcommand)]
         op: MemOp,
@@ -2428,7 +2429,7 @@ fn run() -> anyhow::Result<()> {
     }
 }
 
-// ─── niers mem — RE en direct via nie-trace (process_vm_readv) ─────────────────────
+// ─── niers mem — RE en direct via nie-trace (Linux/Wine et Windows natif) ────────────
 
 fn mem_cmd(op: MemOp) -> anyhow::Result<()> {
     match op {
@@ -2560,11 +2561,12 @@ fn mem_palettes(
     Ok(())
 }
 
-/// Résout/valide le pid (auto-détecte nie.exe si 0) + avertit sur ptrace_scope. Linux-only.
+/// Résout/valide le pid (auto-détecte nie.exe si 0) et vérifie l'accès au processus.
+///
+/// `nie-trace` choisit le backend natif à la compilation : `process_vm_readv` sous Linux/Wine,
+/// `OpenProcess`/`ReadProcessMemory`/`VirtualQueryEx` sous Windows. Le jeu reste toujours un
+/// processus existant : cette commande ne le lance ni ne le stoppe.
 fn mem_preflight(pid: i32) -> anyhow::Result<i32> {
-    if !cfg!(target_os = "linux") {
-        anyhow::bail!("`niers mem` est Linux-only (process_vm_readv).");
-    }
     let pid = if pid <= 0 {
         let p = nie_trace::find_pid_by_name("nie.exe")
             .context("nie.exe introuvable — lance le jeu, ou précise --pid")?;
@@ -2584,9 +2586,14 @@ fn mem_preflight(pid: i32) -> anyhow::Result<i32> {
     if nie_trace::enumerate_regions(pid).is_empty() {
         anyhow::bail!(
             "pid {pid} inaccessible : process inexistant, ou droits insuffisants \
-             (lancer le terminal en administrateur pour lire un jeu élevé)."
+             (le backend Windows utilise OpenProcess/VirtualQueryEx ; le lecteur doit avoir \
+             des droits au moins égaux à ceux du jeu)."
         );
     }
+    #[cfg(not(any(target_os = "linux", windows)))]
+    anyhow::bail!(
+        "lecture mémoire non prise en charge sur cette plateforme ; utilisez Linux/Wine ou Windows"
+    );
     #[cfg(target_os = "linux")]
     if !nie_trace::likely_permitted(pid) {
         let scope = nie_trace::read_ptrace_scope();
@@ -2641,7 +2648,7 @@ fn mem_read(
     let pid = mem_preflight(pid)?;
     let address = mem_resolve_addr(addr, pid)?;
     let mut buf = vec![0u8; len];
-    let got = nie_trace::read(pid, address, &mut buf).context("process_vm_readv")?;
+    let got = nie_trace::read(pid, address, &mut buf).context("lecture mémoire live")?;
     if got == 0 {
         anyhow::bail!("0 octet lu (plage non mappée ?)");
     }

@@ -207,9 +207,6 @@ pub fn lua_field(
     rayon: i64,
     nombres_seuls: bool,
 ) -> anyhow::Result<()> {
-    if !cfg!(target_os = "linux") {
-        anyhow::bail!("`niers mem lua-field` est Linux-only (process_vm_readv).");
-    }
     let pid = if pid > 0 {
         pid
     } else {
@@ -288,9 +285,6 @@ pub fn palettes(
     debut: u64,
     longueur: usize,
 ) -> anyhow::Result<Vec<(u32, [u8; 4])>> {
-    if !cfg!(target_os = "linux") {
-        anyhow::bail!("`niers mem palettes` est Linux-only (process_vm_readv).");
-    }
     let pid = if pid > 0 {
         pid
     } else {
