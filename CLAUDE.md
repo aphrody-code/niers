@@ -886,6 +886,18 @@ bun --bun packages/nie-catalog/src/cli.ts cherche "Mark"
   the `0 passed` and the piped `$?`: the suite runs, passes, and verifies nothing. **Prove a test by
   falsification** — deliberately break the value it guards and watch it go red — before relying on
   it.
+- **A `rg` gate written over source COUNTS ITS OWN EVIDENCE.** Three of this plan's gates were
+  measured on 2026-09-06 and all three were wrong — not the code, the **instrument**. A rule
+  written to forbid a pattern necessarily contains that pattern, so the documentation stating the
+  ban matches the ban (`-g '!*.md'`); a comment explaining that `@rosegriffon/ui` **was removed**
+  matches the very grep that hunts it; and a motif can simply name the wrong thing — `DATABASE_URL`
+  was counted as "reads something local" when it is a **remote** Postgres connection string, so the
+  gate demanded breaking authentication to reach 0. Symptom to recognise: a gate that can only be
+  satisfied by damaging what it protects. Fix the motif, exclude the proof in the **command** (never
+  "0, except two cases we know"), and **falsify it** — drop a real violation, watch it count, remove
+  it, watch it drop. Trap inside the trap, paid the same day: `--glob '!src-tauri/x.json'` does not
+  bite (rg matches the full relative path), it takes `'!**/src-tauri/x.json'` — the corrected gate
+  returned 1 while believing itself right.
 - **To falsify a guard, copy the file — NEVER `git checkout` it back.** The falsification ritual
   above (break the guard, watch it go red) ends with a restore, and `git checkout <file>` restores
   the file to HEAD: it silently threw away an entire uncommitted patch on 2026-09-06. Use
