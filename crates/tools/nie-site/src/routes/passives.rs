@@ -340,7 +340,7 @@ pub async fn kind(
         .skip(bornes.offset())
         .take(bornes.per_page as usize)
         .collect();
-    Ok(Json(Page::nouvelle(elements, bornes, total)))
+    Ok(Json(Page::nouvelle(elements, bornes, total).filtree(motif)))
 }
 
 /// Filtre puis sérialise une tranche de la base. `cle` extrait le texte comparé à `motif`.

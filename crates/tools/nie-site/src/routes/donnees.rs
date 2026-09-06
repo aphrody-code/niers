@@ -207,7 +207,9 @@ pub async fn familles(
         .take(bornes.per_page as usize)
         .map(|c| (*c).clone())
         .collect();
-    Ok(Json(crate::routes::Page::nouvelle(items, bornes, retenus.len())))
+    Ok(Json(
+        crate::routes::Page::nouvelle(items, bornes, retenus.len()).filtree(motif),
+    ))
 }
 
 /// `GET /api/v1/donnees/famille/{cle}` — la famille nommée, sans avoir à connaître le chemin.

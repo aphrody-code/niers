@@ -1808,7 +1808,7 @@ pub async fn screens(
         per_screen: &["objects", "positioned", "mute"],
         screen_route: "/api/v1/screens/{screen}",
         build_ms: idx.elapsed_ms,
-        results: Page::nouvelle(elements, bornes, total),
+        results: Page::nouvelle(elements, bornes, total).filtree(motif),
     }))
 }
 
@@ -1862,7 +1862,7 @@ pub async fn missing_layers(
         .skip(bornes.offset())
         .take(bornes.per_page as usize)
         .collect();
-    Ok(Json(Page::nouvelle(elements, bornes, total)))
+    Ok(Json(Page::nouvelle(elements, bornes, total).filtree(motif)))
 }
 
 /// Un objet de menu d'un écran, réduit à ce qui décide des trois nombres.

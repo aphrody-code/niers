@@ -66,10 +66,25 @@ pub struct Page<T> {
     pub page: u32,
     /// Taille de page appliquée (après bornage).
     pub per_page: u32,
-    /// Nombre total d'éléments, toutes pages confondues.
+    /// Nombre total d'éléments, toutes pages confondues — **après** filtrage.
     pub total: usize,
     /// Nombre total de pages.
     pub pages: usize,
+    /// Le motif `q` réellement appliqué, `null` s'il n'y en avait pas.
+    ///
+    /// # Pourquoi ce champ existe
+    ///
+    /// Mesuré le 2026-09-06 par `scripts/validation/mesurer-filtres.sh` : six routes
+    /// appliquaient `q` correctement — le total baissait — mais **ne le republiaient pas**.
+    /// Vu du client, « filtre appliqué » et « filtre avalé » se ressemblent alors exactement :
+    /// dans les deux cas il reçoit une liste et un total, et rien ne dit lequel des deux il
+    /// tient. `/api/v1/recherche` et `/b` republiaient déjà leur bloc `filtres` ; ce champ
+    /// donne la même garantie à tout ce qui passe par `Page`.
+    ///
+    /// C'est le pendant du défaut n°1 du lot 8 (`/b` acceptait `q` et l'ignorait) : là on
+    /// n'appliquait pas, ici on n'avouait pas.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub q: Option<String>,
 }
 
 impl<T> Page<T> {
@@ -83,7 +98,18 @@ impl<T> Page<T> {
             per_page: p.per_page,
             total,
             pages: total.div_ceil(per_page.max(1)),
+            q: None,
         }
+    }
+
+    /// La même page, en **republiant** le motif appliqué.
+    ///
+    /// À utiliser dès qu'une route accepte `q` : un filtre honoré mais tu est indiscernable
+    /// d'un filtre ignoré.
+    #[must_use]
+    pub fn filtree(mut self, q: Option<String>) -> Self {
+        self.q = q;
+        self
     }
 }
 
