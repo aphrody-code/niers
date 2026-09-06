@@ -91,6 +91,25 @@
     ],
     "interpretation": "exit and bytecode decoding are green for all families; callback errors are state-fixture gaps to close before claiming interactive parity"
   },
+  "site_routes": {
+    "navigation": {
+      "route": "/api/v1/menu/screens",
+      "screen_route": "/api/v1/menu/screens/{stem}",
+      "screens": 475,
+      "status": "served_by_bounded_model_serve_relay"
+    },
+    "static_layout": {
+      "route": "/api/v1/menu/layout/{screen}",
+      "screen_namespace": "*_setting.cfg.bin stem; same namespace as /api/v1/screens/{screen}",
+      "runtime_available": false,
+      "live_probes": [
+        {"screen":"main_menu","status":200,"objects":20,"sprites_resolved":12,"layers_missing":1},
+        {"screen":"chronicle_mode_top_menu","status":200,"objects":27,"sprites_resolved":17,"layers_missing":1},
+        {"screen":"mainmenu01","status":404,"reason":"layer name is not a setting stem"}
+      ],
+      "status": "served_from_vfs_by_nie_site"
+    }
+  },
   "crate_coverage": {
     "workspace_package_count": 38,
     "direct_menu_pipeline": ["nie-formats", "nie-data", "nie-lua", "nie-app", "nie-core", "nie-render3d", "nie-runtime", "nie-explore", "nie-ffi", "nie-game", "nie-headless", "nie-wasm", "nie-cli"],
