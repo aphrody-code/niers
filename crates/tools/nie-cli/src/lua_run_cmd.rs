@@ -51,6 +51,12 @@ pub fn run(
         instruction_limit: (instruction_limit != 0).then_some(instruction_limit),
         with_menu_host,
     };
+    let decoded = nie_lua::bytecode::parse(&bytes);
+    let decoded_instructions = decoded
+        .as_ref()
+        .ok()
+        .map(|chunk| chunk.main.total_instructions());
+    let decode_error = decoded.as_ref().err().map(ToString::to_string);
     let output = execute_with_include(&bytes, &options, move |include| {
         let path = resolve_script_path(include, &by_base, &by_logical)?;
         vfs.read(path).ok()
@@ -70,6 +76,9 @@ pub fn run(
         serde_json::to_string_pretty(&json!({
             "script": name,
             "ok": output.error.is_none(),
+            "decoded": decoded_instructions.is_some(),
+            "decodedInstructions": decoded_instructions,
+            "decodeError": decode_error,
             "stdout": output.stdout,
             "returned": output.returned,
             "missingHostCalls": output.missing_host_calls,

@@ -18,6 +18,8 @@ runtime est opérationnel pour le menu `kizuna_town_mainmenu`.
   0 commande générale inconnue.
 - Trace `INCLUDE` Kizuna : **25 modules distincts résolus**, 0 include manquant
   (les 25 scripts audités partagent bien les modules dans la résolution VFS).
+- `lua-run` sur le chunk primaire Kizuna : `decoded=true`, **1 933
+  instructions**, erreur de décodage nulle et aucune invocation hôte inconnue.
 - Export runtime : 21 objets de layout, 8 objets Lua, 12 objets mutés,
   10 masqués, 9 sprites et 9 textes mis à jour.
 
