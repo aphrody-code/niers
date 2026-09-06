@@ -75,6 +75,8 @@ Le désassembleur résout aussi les cibles de saut avec la règle Lua
 (`B-1`/`C-1`, `vararg` et `multret` inclus). Un test VM généré vérifie ce listing.
 Il rejette désormais explicitement les formats, tailles C et endianess d’en-tête
 incohérents, au lieu de tenter un décodage ambigu.
+`LOADKX` est également résolu avec l’`EXTRAARG` suivant, comme dans le
+bytecode Lua 5.2, au lieu d’être présenté à tort comme `K0`.
 
 ## Limites connues
 

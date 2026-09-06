@@ -638,7 +638,10 @@ fn disassemble_proto(p: &Prototype, label: &str, depth: usize, out: &mut String)
             .line_info
             .get(pc)
             .map_or_else(String::new, |l| format!("[{l}]"));
-        let operands = format_operands(&ins, p, pc);
+        let extra_arg = (ins.name() == "LOADKX")
+            .then(|| p.code.get(pc + 1).map(|raw| decode_instruction(*raw).ax))
+            .flatten();
+        let operands = format_operands(&ins, p, pc, extra_arg);
         let _ = writeln!(
             out,
             "{pad}  {pc:>4} {line:>7} {:<10} {operands}",
@@ -667,14 +670,26 @@ fn disassemble_proto(p: &Prototype, label: &str, depth: usize, out: &mut String)
 }
 
 /// Formate les opérandes selon le mode de l'instruction, en résolvant ce qui peut l'être.
-fn format_operands(ins: &Instruction, p: &Prototype, pc: usize) -> String {
+fn format_operands(
+    ins: &Instruction,
+    p: &Prototype,
+    pc: usize,
+    loadkx_extra_arg: Option<u32>,
+) -> String {
     let k = &p.constants;
     match ins.mode() {
         OpMode::ABx => {
-            // LOADK/LOADKX/CLOSURE : Bx indexe directement les constantes (ou les prototypes).
+            // LOADK/CLOSURE indexent directement leur pool. LOADKX prend son index dans
+            // l'EXTRAARG immédiatement suivant (Lua 5.2, `OP_LOADKX`).
             let name = ins.name();
             if name == "CLOSURE" {
                 format!("R{} := closure #{}", ins.a, ins.bx)
+            } else if name == "LOADKX" {
+                let index = loadkx_extra_arg.unwrap_or(ins.bx);
+                let value = k
+                    .get(index as usize)
+                    .map_or_else(|| "?".to_string(), Constant::display);
+                format!("R{} := K{}({value}) via EXTRAARG", ins.a, index)
             } else {
                 let value = k
                     .get(ins.bx as usize)
@@ -793,6 +808,43 @@ mod tests {
         assert!(
             listing.contains("retourne") && listing.contains("valeur(s)"),
             "arité Lua absente :\n{listing}"
+        );
+    }
+
+    #[test]
+    fn listing_resout_loadkx_avec_son_extraarg() {
+        let chunk = Chunk {
+            header: Header {
+                version: 0x52,
+                format: 0,
+                little_endian: true,
+                size_int: 4,
+                size_size_t: 8,
+                size_instruction: 4,
+                size_number: 8,
+                number_is_integral: false,
+            },
+            main: Prototype {
+                line_defined: 0,
+                last_line_defined: 0,
+                num_params: 0,
+                is_vararg: 0,
+                max_stack_size: 2,
+                // OP_LOADKX = 2, OP_EXTRAARG = 39 ; A=0, Ax=1.
+                code: vec![2, (1 << 6) | 39],
+                constants: vec![Constant::Nil, Constant::Number(42.0)],
+                protos: Vec::new(),
+                upvalues: Vec::new(),
+                source: String::new(),
+                line_info: Vec::new(),
+                loc_vars: Vec::new(),
+                upvalue_names: Vec::new(),
+            },
+        };
+        let listing = disassemble(&chunk);
+        assert!(
+            listing.contains("K1(42) via EXTRAARG"),
+            "LOADKX mal résolu :\n{listing}"
         );
     }
 
