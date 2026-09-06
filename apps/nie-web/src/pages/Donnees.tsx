@@ -76,6 +76,15 @@ const PRESENT = "__present__";
 const ABSENT = "__absent__";
 
 /**
+ * Le suffixe du choix multiple — `?element__in=Feu,Vent`.
+ *
+ * Les pastilles d'une facette écrivent ici, et non dans l'égalité simple : c'est ce qui rend
+ * le geste que la facette dessine réellement possible. Une valeur qui contient une virgule
+ * reste adressable par le champ « égal à… », qui ne découpe rien.
+ */
+const IN = "__in";
+
+/**
  * Combien de colonnes on peut faceter d'un coup — la borne du serveur, recopiée ici.
  *
  * Elle est recopiée plutôt que devinée : au-delà, le serveur rend un `400` qui nomme la limite.
@@ -133,8 +142,9 @@ function etatDeLUrl(): Etat {
 		// Les colonnes déjà filtrées s'ouvrent d'office : une adresse partagée montre alors
 		// POURQUOI la liste est réduite, et quelles autres valeurs existaient.
 		facettes: [...p.entries()]
-			.map(([c]) => c)
+			.map(([c]) => (c.endsWith(IN) ? c.slice(0, -IN.length) : c))
 			.filter((c) => !RESERVES.has(c) && !c.endsWith("__min") && !c.endsWith("__max"))
+			.filter((c, i, tout) => tout.indexOf(c) === i)
 			.slice(0, FACETS_MAX),
 	};
 }
@@ -281,6 +291,28 @@ export function PanneauDonnees({ contexte }: { contexte?: string }) {
 	const valeurDe = (colonne: string) =>
 		etat.filtres.find(([c]) => c === colonne)?.[1] ?? "";
 
+	/** Les valeurs cochées d'une colonne, lues dans son `__in`. */
+	const chois = (colonne: string): string[] => {
+		const brut = etat.filtres.find(([c]) => c === `${colonne}${IN}`)?.[1] ?? "";
+		return brut.split(",").filter((v) => v !== "");
+	};
+
+	/**
+	 * Coche ou décoche une valeur de facette.
+	 *
+	 * Le filtre part dans `colonne__in`, jamais dans l'égalité simple : la facette montre
+	 * plusieurs valeurs et compte sans son propre filtre pour qu'on puisse en prendre
+	 * plusieurs — écrire une égalité ferait qu'un second clic écraserait le premier, et le
+	 * geste dessiné n'existerait pas.
+	 */
+	const basculerValeur = (colonne: string, valeur: string) => {
+		const actuel = chois(colonne);
+		const suivant = actuel.includes(valeur)
+			? actuel.filter((v) => v !== valeur)
+			: [...actuel, valeur];
+		poserFiltre(`${colonne}${IN}`, suivant.join(","));
+	};
+
 	/** Ouvre ou referme le comptage des valeurs d'une colonne. */
 	const basculerFacette = (colonne: string) => {
 		setEtat((e) => ({
@@ -413,17 +445,25 @@ export function PanneauDonnees({ contexte }: { contexte?: string }) {
 									</div>
 									<div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
 										{f.values.map((v) => {
-											// Une valeur nulle se filtre par le jeton de présence, pas par une
-											// chaîne vide : le serveur refuse `?colonne=` — et il a raison, un
-											// filtre vide ne veut rien dire.
+											// Une valeur nulle ne passe pas par le choix multiple : `IN` ne peut
+											// pas exprimer « vide ou nul ». Elle passe par le jeton de présence,
+											// qui est une ÉGALITÉ — donc exclusive, ce qui est correct : « vide »
+											// et « une valeur » ne se cumulent pas.
+											const nul = v.value === null;
 											const jeton = v.value ?? ABSENT;
-											const actif = valeurDe(f.column) === jeton;
+											const actif = nul
+												? valeurDe(f.column) === ABSENT
+												: chois(f.column).includes(jeton);
 											return (
 												<button
 													key={jeton}
 													type="button"
 													aria-pressed={actif}
-													onClick={() => poserFiltre(f.column, actif ? "" : jeton)}
+													onClick={() =>
+														nul
+															? poserFiltre(f.column, actif ? "" : ABSENT)
+															: basculerValeur(f.column, jeton)
+													}
 													style={{
 														...CHAMP,
 														cursor: "pointer",

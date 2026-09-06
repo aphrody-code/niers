@@ -145,6 +145,25 @@ pub const FORMATS: [&str; 2] = ["json", "csv"];
 /// Suffixe de borne basse — `?power_max__min=400`.
 pub const SUFFIXE_MIN: &str = "__min";
 
+/// Suffixe de choix multiple — `?element__in=Feu,Vent`.
+///
+/// La facette dessine des valeurs cliquables et son compte exclut déjà le filtre de sa propre
+/// colonne, précisément pour qu'on puisse en **ajouter** une seconde. Sans ce suffixe,
+/// l'interface promettrait un geste que l'API ne sait pas prendre — une affordance se vérifie
+/// avant d'être dessinée.
+///
+/// **La virgule sépare, donc une valeur qui en contient s'écrit en égalité simple**
+/// (`?colonne=a,b` cherche la valeur littérale `a,b`). Mesuré sur les colonnes facetables des
+/// 6 166 personnages : **0** valeur porte une virgule.
+pub const SUFFIXE_IN: &str = "__in";
+
+/// Combien de valeurs un `__in` accepte.
+///
+/// Au-delà, ce n'est plus un filtre mais une liste d'identifiants : **refusé**, pas tronqué —
+/// une liste coupée en silence rendrait des lignes justes pour une question qui n'a pas été
+/// posée.
+pub const IN_VALEURS_MAX: usize = 60;
+
 /// Suffixe de borne haute — `?power_max__max=880`.
 pub const SUFFIXE_MAX: &str = "__max";
 
@@ -290,6 +309,8 @@ pub struct FiltresAppliques {
     pub ordre: &'static str,
     /// Filtres d'égalité retenus, colonne → valeur.
     pub egalites: BTreeMap<String, String>,
+    /// Choix multiples retenus, `colonne__in` → les valeurs acceptées.
+    pub listes: BTreeMap<String, Vec<String>>,
     /// Bornes retenues, `colonne__min` / `colonne__max` → valeur numérique.
     pub bornes: BTreeMap<String, f64>,
     /// Tests de présence retenus, colonne → `"present"` ou `"absent"`.
@@ -309,6 +330,8 @@ pub struct Demande {
     pub ordre: Ordre,
     /// Égalités demandées, colonne du catalogue → valeur brute (qui sera liée).
     pub egalites: Vec<(String, String)>,
+    /// Choix multiples : colonne du catalogue → les valeurs acceptées (un `IN`).
+    pub listes: Vec<(String, Vec<String>)>,
     /// Bornes demandées : colonne du catalogue, sens, valeur.
     pub bornes: Vec<(String, Borne, f64)>,
     /// Présences demandées : colonne du catalogue, et si l'on veut ce qui est renseigné.
@@ -391,6 +414,11 @@ impl Demande {
             tri: self.tri.clone(),
             ordre: self.ordre.jeton(),
             egalites: self.egalites.iter().cloned().collect(),
+            listes: self
+                .listes
+                .iter()
+                .map(|(c, v)| (format!("{c}{SUFFIXE_IN}"), v.clone()))
+                .collect(),
             bornes: self
                 .bornes
                 .iter()
@@ -692,10 +720,45 @@ pub fn analyser(
     }
 
     let mut egalites = Vec::new();
+    let mut listes: Vec<(String, Vec<String>)> = Vec::new();
     let mut bornes = Vec::new();
     let mut presences = Vec::new();
     for (cle, valeur) in brut {
         if PARAMS_RESERVES.contains(&cle.as_str()) {
+            continue;
+        }
+
+        // Le choix multiple se reconnait a son suffixe, comme les bornes. Il est traite AVANT
+        // elles : `__in` et `__min` ne se recouvrent pas, mais l'ordre de lecture doit dire ce
+        // que fait le code.
+        if let Some(base) = cle.strip_suffix(SUFFIXE_IN) {
+            let colonne = table.colonne(base).ok_or_else(|| {
+                ErreurSite::Demande(format!(
+                    "`{cle}` : `{}` n'a pas de colonne `{base}` ; son schema est sur \
+                     /api/v1/entites",
+                    table.nom
+                ))
+            })?;
+            let mut valeurs: Vec<String> = Vec::new();
+            for v in valeur.split(',').map(str::trim).filter(|v| !v.is_empty()) {
+                if !valeurs.iter().any(|d| d == v) {
+                    valeurs.push(v.to_owned());
+                }
+            }
+            if valeurs.is_empty() {
+                return Err(ErreurSite::Demande(format!(
+                    "`{cle}={valeur}` : un choix multiple vide ne veut rien dire — retirez le \
+                     parametre pour ne pas filtrer"
+                )));
+            }
+            if valeurs.len() > IN_VALEURS_MAX {
+                return Err(ErreurSite::Demande(format!(
+                    "`{cle}` : {} valeurs, {IN_VALEURS_MAX} au maximum — au-dela c'est une \
+                     liste d'identifiants, pas un filtre",
+                    valeurs.len()
+                )));
+            }
+            listes.push((colonne.nom.clone(), valeurs));
             continue;
         }
 
@@ -753,6 +816,7 @@ pub fn analyser(
         }
     }
     egalites.sort_by(|a, b| a.0.cmp(&b.0));
+    listes.sort_by(|a, b| a.0.cmp(&b.0));
     bornes.sort_by(|a, b| (&a.0, a.1.suffixe()).cmp(&(&b.0, b.1.suffixe())));
     presences.sort_by(|a, b| a.0.cmp(&b.0));
 
@@ -762,6 +826,7 @@ pub fn analyser(
         tri,
         ordre,
         egalites,
+        listes,
         bornes,
         presences,
         facets,
@@ -820,6 +885,21 @@ pub fn clause_sauf(table: &TableServie, d: &Demande, sauf: Option<&str>) -> Clau
         }
         morceaux.push(format!("\"{colonne}\" = ?"));
         params.push(ValeurSql::Text(valeur.clone()));
+    }
+
+    for (colonne, valeurs) in &d.listes {
+        if sauf == Some(colonne.as_str()) {
+            continue;
+        }
+        // Autant de `?` que de valeurs : aucune n'entre dans le texte SQL. `valeurs` est non
+        // vide et borne par `IN_VALEURS_MAX`, garanti par `analyser`.
+        let trous = std::iter::repeat_n("?", valeurs.len())
+            .collect::<Vec<_>>()
+            .join(", ");
+        morceaux.push(format!("\"{colonne}\" IN ({trous})"));
+        for v in valeurs {
+            params.push(ValeurSql::Text(v.clone()));
+        }
     }
 
     for (colonne, sens, valeur) in &d.bornes {
@@ -1528,6 +1608,69 @@ mod tests {
     }
 
     #[test]
+    fn un_choix_multiple_prend_l_union_de_ses_valeurs() {
+        // L'affordance que la facette dessine : elle offre les autres valeurs de sa colonne, il
+        // faut donc pouvoir en cocher une seconde. Les trois cas comptent — une valeur seule
+        // doit rendre comme une egalite, deux doivent rendre leur SOMME, et une valeur absente
+        // ne doit rien ajouter. Sans le troisieme, un `IN` qui ignorerait la liste et rendrait
+        // tout passerait aussi.
+        let (_d, g) = base();
+        let t = table_de(&g, "inagle_characters");
+        for (query, attendu) in [
+            (vec![("element__in", "Feu")], 2),
+            (vec![("element__in", "Bois")], 1),
+            (vec![("element__in", "Feu,Bois")], 3),
+            (vec![("element__in", "Feu,Vent")], 2),
+            (vec![("element__in", "Vent")], 0),
+            // Les espaces autour d'une valeur viennent d'une URL ecrite a la main : on les
+            // retire, sans quoi `Feu, Bois` chercherait une valeur ` Bois` qui n'existe pas.
+            (vec![("element__in", "Feu , Bois")], 3),
+            // Le doublon ne double pas le compte : `IN` est un ensemble.
+            (vec![("element__in", "Feu,Feu")], 2),
+            // Croise avec un autre filtre : les deux s'appliquent.
+            (vec![("element__in", "Feu,Bois"), ("zukan__max", "2")], 2),
+        ] {
+            let d = analyser(&t, &q(&query)).unwrap();
+            assert_eq!(compter(&g, &t, &d), attendu, "pour {query:?}");
+        }
+    }
+
+    #[test]
+    fn un_choix_multiple_vide_ou_inconnu_est_refuse() {
+        // Trois refus plutot que trois approximations. Un `__in` vide filtrerait sur rien tout
+        // en ayant l'air de filtrer ; une colonne inconnue laisserait croire qu'elle n'a aucune
+        // valeur ; une liste au-dela de la borne serait tronquee en silence et rendrait des
+        // lignes justes pour une question qui n'a pas ete posee.
+        let (_d, g) = base();
+        let t = table_de(&g, "inagle_characters");
+        assert!(analyser(&t, &q(&[("element__in", " , ")])).is_err(), "liste vide");
+        assert!(analyser(&t, &q(&[("couleur__in", "x")])).is_err(), "colonne inconnue");
+        let trop = (0..=IN_VALEURS_MAX).map(|i| i.to_string()).collect::<Vec<_>>().join(",");
+        assert!(analyser(&t, &q(&[("element__in", trop.as_str())])).is_err(), "liste trop longue");
+
+        // Et il republie ce qu'il a applique, sous le nom que le client a envoye.
+        let d = analyser(&t, &q(&[("element__in", "Feu,Bois")])).unwrap();
+        assert_eq!(
+            d.appliques().listes.get("element__in").map(Vec::as_slice),
+            Some(["Feu".to_owned(), "Bois".to_owned()].as_slice())
+        );
+    }
+
+    #[test]
+    fn une_facette_ignore_aussi_le_choix_multiple_de_sa_colonne() {
+        // Meme propriete que pour l'egalite, et c'est celle qui compte le plus ici : sans elle,
+        // cocher `Feu` puis rouvrir la facette ne montrerait plus `Bois`, et on ne pourrait
+        // jamais cocher la deuxieme valeur.
+        let (_d, g) = base();
+        let t = table_de(&g, "inagle_characters");
+        let d = analyser(&t, &q(&[("facets", "element"), ("element__in", "Feu")])).unwrap();
+        assert_eq!(compter(&g, &t, &d), 2, "la page, elle, est bien filtree");
+        let f = faceter(&g, &t, &d);
+        assert_eq!(compte_de(&f[0], "Feu"), Some(2));
+        assert_eq!(compte_de(&f[0], "Bois"), Some(1), "la seconde valeur reste cochable");
+    }
+
+    #[test]
     fn une_facette_groupe_le_vide_avec_le_nul() {
         // Le miroir mélange les deux — `age_group` est vide, pas nul — et publier la nuance
         // publierait une propriété de l'importeur, pas une du jeu. Même choix que les tests de
@@ -1705,6 +1848,7 @@ mod tests {
                 tri: "id".to_owned(),
                 ordre: "asc",
                 egalites: BTreeMap::new(),
+                listes: BTreeMap::new(),
                 bornes: BTreeMap::new(),
                 presences: BTreeMap::new(),
             },
