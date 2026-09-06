@@ -1,7 +1,7 @@
 {
   "name": "niers",
   "version": "0.1.0",
-  "description": "Outillage Claude Code du projet niers : serveur MCP niers-game, runtime Aphrody v2, ancrage terminologique IEVR, navigation du monorepo, formats Level-5 et pilotage du jeu.",
+  "description": "Outillage Claude Code du projet niers : 6 sous-agents et 15 competences — ancrage terminologique IEVR, navigation du monorepo, formats Level-5, forge, VFS et pilotage du jeu. Le serveur MCP niers-game est declare a la racine du depot (.mcp.json), pas ici.",
   "author": {
     "name": "Rose Griffon",
     "email": "yohanpierre15@gmail.com"

@@ -29,9 +29,16 @@
       }
     ]
   },
+  "extraKnownMarketplaces": {
+    "niers-marketplace": {
+      "source": {
+        "source": "directory",
+        "path": "./plugins"
+      }
+    }
+  },
   "enabledPlugins": {
     "niers@niers-marketplace": true,
-    "supabase@claude-plugins-official": true,
     "frontend-design@claude-plugins-official": true
   }
 }

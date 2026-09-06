@@ -235,13 +235,19 @@ while 77 versioned `.py` already exist.
 
 ## Repository binaries are published globally
 
-`just installer` publishes the **20 Rust binaries** from `target/release` and **5 Bun CLI
-launchers** into `~/.local/bin` (already on `PATH`). Done on 2026-09-02: 25 installed, 0
-collisions.
+`just installer` publishes the Rust binaries from `target/release` (**24** on 2026-09-06, 20 on
+2026-09-02 — the count follows the build, do not quote it as fixed) and **5 Bun CLI launchers**
+into `~/.local/bin` (already on `PATH`).
 
 - **By symlink, never by copy**: 174 MiB of binaries (including `nie-editor` at 82 MiB) are
   written once, and a `cargo build --release` updates the published command without reinstalling.
   A copy would go stale in silence.
+- **On Windows/MSYS the script was silently producing COPIES** until 2026-09-06. Git Bash's `ln -s`
+  falls back to a full copy, with **exit 0 and no message** — measured: `~/.local/bin/niers.exe`
+  was a real 27 690 496-byte file, `readlink` empty, i.e. exactly the stale-copy failure the header
+  forbids. Fixed by exporting `MSYS=winsymlinks:nativestrict` (verified: native link obtained on
+  this machine) **and** by asserting `[ -L "$dest/$nom" ]` after each `ln` — the export alone would
+  still be a promise. Check with `readlink ~/.local/bin/niers.exe`, never by trusting the exit code.
 - **The script refuses to overwrite a foreign executable** already on `PATH` — the lesson of the
   day ast-grep's `sg` alias shadowed `setgroup`.
 - The Bun CLIs are published as `nie-catalog`, `niers-azalee`, `niers-inagle`, `niers-mcp`,
@@ -249,16 +255,53 @@ collisions.
   honoured).
 - **`NIE_GAME_DIR=/home/ubuntu/niers` is set** in `.claude/settings.json`. Without it the four
   `export_*` fail outside the repository: they do call `resolve_game_dir()` (doctrine respected),
-  but from `/tmp` no ancestor carries `data/cpk_list.cfg.bin`. With it, all 20 commands work from
+  but from `/tmp` no ancestor carries `data/cpk_list.cfg.bin`. With it, all the commands work from
   any directory (verified: `export_skills` → 1 004 skills, exit 0).
+- **That value is a VPS path, and `.claude/settings.json` is shared by both machines.** On the
+  Windows workstation `NIE_GAME_DIR`, `NIERS_REPO` and `BASH_ENV` therefore all arrived pointing at
+  `/home/ubuntu/niers`, which does not exist here — every `niers` invocation mounted nothing while
+  looking healthy, and the `niers-game` MCP server opened on **0** file. **Fixed on 2026-09-06 by
+  making the three variables per-machine**: they keep their VPS values in the versioned
+  `.claude/settings.json` (a fresh VPS clone stays correct), and are overridden by
+  `.claude/settings.local.json`, which is per-machine and gitignored (`.gitignore:323`, `.claude/*`).
+  Windows values: `NIERS_REPO=C:\Users\aphro\niers`,
+  `NIE_GAME_DIR=C:\Program Files (x86)\Steam\steamapps\common\INAZUMA ELEVEN Victory Road`.
+  Measured on both sides of the fix, by launching the MCP server: `VFS non montable depuis
+  C:\Program Files\Git\home\ubuntu\niers\data` before, `index VFS chargé : 255308 fichiers` after.
+  **That file does not survive a fresh clone** — recreating it is a bootstrap step, like the
+  generated JSON manifests.
 - The `export_*` binaries have **no** `--help`: their silence on `--help` is not a fault.
 - Doctrine unchanged: **`niers` is the only user-facing CLI**. `nie-mem` and `nie-steam` overlap
   `niers mem` / `niers steam`; a new command goes into `nie-cli`, never into one more binary.
 
+## Claude Code plugin and MCP server of this repository
+
+- **The MCP server `niers-game` is declared exactly once**, in `/.mcp.json` at the root. It used to
+  be declared a **second** time in `plugins/niers-plugin/.mcp.json`: both were started, and the
+  second died on `écoute impossible sur le port 8791 : Is port 8791 in use?` — a message that
+  accuses the port while the cause is the duplicate. Removed on 2026-09-06, along with the
+  `"mcpServers"` key of `.codex-plugin/plugin.json` that pointed at it.
+- **`enabledPlugins` alone loads NOTHING.** `.claude/settings.json` had been activating
+  `niers@niers-marketplace` for days while `niers-marketplace` was declared in no
+  `extraKnownMarketplaces`: measured on 2026-09-06 with `claude plugin marketplace list` (4
+  marketplaces, none of them this repository's), and confirmed by the absence of its **6 sub-agents**
+  and **16 skills** from the session listing. An unknown marketplace raises no error — the plugin is
+  simply not there, exactly like a `.gitignore`d file. Both keys are now in the versioned project
+  settings, the marketplace with the relative path `./plugins` so the VPS resolves it too. Check
+  with `claude plugin list`, never by re-reading `enabledPlugins`.
+- **A plugin is activated in the project it serves, never globally.** On 2026-09-06 three
+  foreign plugins were enabled in `~/.claude/settings.json` — `winclean` (3 agents, 25 skills, and
+  the whole `mcp__plugin_winclean_*` tool block), `aphrody` (25 agents, 57 skills, 6 commands) and
+  `ghidra-suite` (12 skills, plus an MCP server that fails with `ConnectionRefused` as long as no
+  Ghidra GUI listens on :8080). All of it was loaded into **every** session of every project,
+  including this one. They were moved into their own repository's settings; nothing was lost, and
+  this session's listing is 28 agents and 94 skills lighter.
+
 ## Build and test — the gate, and every way a green suite lies
 
-Cargo workspace, **37 members** (measured 2026-09-06, `cargo metadata --no-deps`: 18 engine, 10
-forge, 9 tools) plus 2 archive crates on disk that are out of the build. Organised by role:
+Cargo workspace, **38 members** (re-measured 2026-09-06 evening,
+`cargo metadata --no-deps --format-version 1 | jq '.packages | length'`) plus 2 archive crates on
+disk that are out of the build. Organised by role:
 
 - `crates/forge/*` — binary production (`nie-pe`, `nie-asm`, `nie-forge`) plus the RE scaffolding
   (`nie-re`, `nie-index`, `nie-seed`, `nie-queue`, `nie-trace`).
@@ -270,8 +313,25 @@ forge, 9 tools) plus 2 archive crates on disk that are out of the build. Organis
 
 ```bash
 cargo clippy -p <crate> --lib --tests     # 0 warnings required
+cargo clippy -p <crate> --bins --tests    # for the 7 bin-only crates (see below)
 bun run typecheck                          # TypeScript side
 ```
+
+- **7 of the 38 crates have no library target**, and the gate above answers
+  `error: no library targets found` on them — an error that is NOT a failure of the crate.
+  Measured 2026-09-06 (`cargo metadata … | select([.targets[].kind[]] | index("lib") | not)`):
+  `nie-bench`, `nie-cli`, `nie-editor`, `nie-game`, `nie-headless`, `nie-model-serve`, `nie-play`.
+  Use `--bins --tests` for those seven (all 0 warnings). Do **not** add an empty `src/lib.rs` to
+  make the documented command succeed: that fabricates a target so the gate stops complaining,
+  which is the same class of defect as a test that cannot fail. `nie-ffi` and `nie-wasm` are
+  `cdylib`/`rlib` and DO accept `--lib`.
+- **`apps/inacord/src-tauri` is a separate workspace, so NO repository gate ever compiles it.**
+  Measured 2026-09-06: it did not build at all (`E0063: missing field 'context'` in
+  `src/lua_tools.rs`) after `ExecOptions` gained a field in `nie-lua` — clippy over the 38 crates
+  stayed green throughout, because none of them contains this code. Running `bun run tauri build`
+  is the only thing that reveals such drift. Corollary for that tree: name struct fields
+  explicitly rather than `..Default::default()`, so the next added field breaks loudly instead of
+  being absorbed in silence.
 
 - **Never run `cargo build --workspace --all-targets`**: the disk is 92 % full and it saturates it.
 - Workspace lints (`[workspace.lints]`): `todo!`, `unimplemented!`, `dbg_macro` → **deny**.
@@ -372,8 +432,16 @@ bun run lint
 - **Only LAUNCHING finds bugs of that kind**: neither `tsc`, nor clippy, nor the bundle size check
   can see a resource that is never read or a table that stays empty. After a build, run the exe and
   look at what it wrote into `%APPDATA%\dev.niers.explorer\`.
-- `ui/Icon` renders **`null`** for a name missing from its table (`photo_library` and `handyman`
-  are not in it): a missing icon raises nothing, it disappears. Check the name in `Icon.tsx`.
+- `ui/Icon` renders **`null`** for a name missing from its table: a missing icon raises nothing, it
+  disappears. Measured on the running application on 2026-09-06 — **9** names reached `<Icon>`
+  without being declared in `iconMap` (`flare`, `inventory_2`, `egg`, `checkroom`, `emoji_events`,
+  `animation`, `auto_fix_high`, `content_paste`, `calculate`), amputating four Encyclopédie tabs
+  and the "Auto-remplir" / "Coller un code" buttons. Nothing in `tsc`, clippy or the bundle check
+  can see this. **The structural cause is the type**: `IconProps.name` is
+  `keyof typeof iconMap | (string & {})`, and that `| (string & {})` switches the compiler off.
+  Remove it and the nine silent defects become nine TypeScript errors — a declarative check made
+  structural, cf. § *Editing pitfalls*. Note there are **two** `Icon` components (`ui/Icon.tsx` and
+  `wiki/ui/Icon.tsx`): confirm which one a site imports before counting.
 - `base-ui` **rejects `<SelectItem value="">`** (the empty string means "nothing selected" there):
   encode the "all" value as a token (`__all__`) and translate it back on the way out.
 - A new Tauri command needs three things: `#[tauri::command] #[specta::specta]`, **plus** adding it
@@ -838,6 +906,14 @@ This is the repository's most expensive failure mode, and it has happened more t
   templates out of the repository — including `robots.txt` and `security.txt`, written on day 5 and
   never versioned: on a fresh clone the crate did not compile. Same trap as the `CMakeLists.txt`.
   Check every new non-code file with `git check-ignore -v`.
+- **A fresh clone does NOT typecheck, and that is deliberate.** `packages/*/src/data/**/*.json` is
+  ignored on purpose (`.gitignore:26`, commented): those are generated manifests and LEVEL-5 game
+  content, which must never be committed. Consequence measured 2026-09-06 on a fresh Windows
+  clone: **81 `TS2307`**, all of them missing `../data/*.json`. This is not a `.gitignore` bug and
+  the fix is not a re-inclusion — it is a **bootstrap step**: generate the data (`export_*`,
+  `niers refresh-typed-json`) or fetch it from the VPS, then re-run `bun run typecheck` (0 errors,
+  29/29 workspaces). Anyone diagnosing those 81 errors as a code defect will "fix" imports that are
+  correct.
 - Since 2026-09-05, **all Markdown in the repository is versioned**, with no exception list: that
   list had made `AGENTS.md`, the plugin's 5 sub-agents and 5 skills (a deliverable) and the OC
   READMEs disappear. Still outside, each for a measured reason: installation artefacts, `/refs/` (a

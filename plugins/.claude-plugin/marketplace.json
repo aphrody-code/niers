@@ -12,7 +12,7 @@
     {
       "name": "niers",
       "source": "./niers-plugin",
-      "description": "Outillage Claude Code du projet niers : serveur MCP niers-game, ancrage terminologique IEVR, navigation du monorepo, formats de fichiers Level-5 et pilotage du jeu.",
+      "description": "Outillage Claude Code du projet niers : 6 sous-agents et 15 competences — ancrage terminologique IEVR, navigation du monorepo, formats de fichiers Level-5, forge, VFS et pilotage du jeu.",
       "category": "development"
     }
   ]

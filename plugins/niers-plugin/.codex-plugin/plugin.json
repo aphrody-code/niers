@@ -6,7 +6,6 @@
     "name": "Rose Griffon"
   },
   "skills": "./skills/",
-  "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "NIERS",
     "shortDescription": "Donn\u00e9es du jeu et atelier 3D local",
