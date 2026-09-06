@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{ titre }}</title>
 <meta name="description" content="{{ description }}">
-<link rel="canonical" href="{{ url }}">
+{% if noindex %}<meta name="robots" content="noindex, follow">
+{% endif %}<link rel="canonical" href="{{ url }}">
 {# Les trois langues plus `x-default`, sur CHAQUE page et calcules depuis la meme route nue :
    c'est ce qui rend le groupe reciproque. Un groupe non reciproque est ignore en entier, et
    rien ne le signale. `ja` est le code de langue ; `jp` est un code pays et serait ignore. #}

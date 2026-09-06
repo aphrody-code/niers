@@ -83,7 +83,20 @@ struct Entree {
 /// segment d'URL brut, en minuscule, identique dans les trois langues — parce qu'il tombait
 /// dans la branche générique de [`metadonnees`]. Une entrée du menu que le serveur ne connaît
 /// pas est une page sans titre, absente du plan du site et non déclarée à `robots.txt`.
-const ENTREES: [Entree; 5] = [
+const ENTREES: [Entree; 6] = [
+    Entree {
+        // `/medias` manquait, alors que c'est l'une des DEUX entrées du menu et qu'elle figure
+        // au plan du site : elle sortait donc en `<title>medias — Aphrody</title>`, description
+        // générique et `og:type` d'article — le défaut corrigé pour `/explorateur`, laissé
+        // intact sur la page qui rassemble les quatre catalogues.
+        segment: "medias",
+        titres: ["Médias", "Media", "メディア"],
+        descriptions: [
+            "Textures, modèles, sons et vidéos du jeu, dans une seule page filtrable.",
+            "The game's textures, models, sounds and videos, in a single filterable page.",
+            "ゲームのテクスチャ・モデル・サウンド・ムービーを、ひとつの絞り込み可能なページにまとめています。",
+        ],
+    },
     Entree {
         segment: "textures",
         titres: ["Textures", "Textures", "テクスチャ"],
@@ -130,6 +143,29 @@ const ENTREES: [Entree; 5] = [
         ],
     },
 ];
+
+/// Les deux URL héritées des écrans fusionnés : elles mènent à l'explorateur.
+///
+/// Le bundle les reconnaît (`apps/nie-web/src/entrees.ts`, `ALIAS`) ; le serveur doit donc les
+/// reconnaître aussi, sinon il les traite en route inconnue et leur pose un `noindex` que le
+/// client contredit à l'écran.
+const ALIAS: [&str; 2] = ["recherche", "donnees"];
+
+/// La route est-elle une page que ce site sert réellement ?
+///
+/// La question a une conséquence mesurable : `nie-site` rendait la coquille en **200** pour
+/// n'importe quel chemin, avec un `<title>` fabriqué à partir du segment et un canonique
+/// pointant sur lui-même. `https://aphrody.com/gallery` et `/tools/compare` sortaient donc en
+/// « gallery — Aphrody » et « tools — Aphrody », indexables, alors qu'aucune des deux n'existe :
+/// le client y affiche l'accueil. Une adresse inventée devenait une page.
+#[must_use]
+pub fn route_servie(route: &str) -> bool {
+    let nu = route.trim_start_matches('/').trim_end_matches('/');
+    let premier = nu.split('/').next().unwrap_or("");
+    premier.is_empty()
+        || ENTREES.iter().any(|e| e.segment == premier)
+        || ALIAS.contains(&premier)
+}
 
 /// Index de la langue dans les tables de libellés.
 const fn rang(langue: Langue) -> usize {
@@ -320,6 +356,11 @@ pub struct Coquille {
     pub description: String,
     /// URL canonique absolue.
     pub url: String,
+    /// La page demande-t-elle à ne pas être indexée ?
+    ///
+    /// Vrai pour une route que le site ne sert pas : le bundle y affiche l'accueil, et une
+    /// coquille indexable sous une adresse inventée est un doublon de l'accueil de plus.
+    pub noindex: bool,
     /// Type Open Graph (`website`, `article`…).
     pub type_og: &'static str,
     /// Locale Open Graph de cette page (`fr_FR`, `en_US`, `ja_JP`).
@@ -547,6 +588,7 @@ pub fn construire(
     catalogue: Option<Catalogue>,
 ) -> Coquille {
     let (titre, description, type_og) = metadonnees(route, langue);
+    let noindex = !route_servie(route);
     let i = rang(langue);
     let catalogues = ENTREES
         .iter()
@@ -601,6 +643,7 @@ pub fn construire(
     Coquille {
         lang: langue.code(),
         prefixe_langue: langue.prefixe(),
+        noindex,
         jsonld: donnees_structurees(
             origine,
             route,
@@ -718,9 +761,17 @@ pub async fn coquille(State(etat): State<EtatSite>, uri: Uri) -> Response {
         script,
         catalogue,
     );
+    // Une route que le site ne sert pas garde sa coquille — le bundle y affiche l'accueil, et
+    // couper le JavaScript rendrait le retour en arriere impossible — mais elle le DIT :
+    // 404 et `noindex`, au lieu d'un 200 qui invente une page.
+    let code = if route_servie(&demande.route) {
+        StatusCode::OK
+    } else {
+        StatusCode::NOT_FOUND
+    };
     match page.render() {
         Ok(html) => (
-            StatusCode::OK,
+            code,
             [
                 (
                     header::CACHE_CONTROL,

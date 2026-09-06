@@ -806,11 +806,18 @@ async fn routes_inconnues_repondent_selon_leur_espace() {
         ("/api/v1/health/trop/loin", 404, true),
         ("/api/inconnue", 404, true),
         ("/f/", 404, true),
-        ("/une/route/du/bundle", 200, false),
+        // Une route que le site ne sert pas rend bien la coquille — le bundle sait revenir en
+        // arriere — mais en 404 : en 200 avec un canonique sur elle-meme, chaque adresse
+        // inventee devenait une page indexable de plus (`/gallery`, `/tools/compare`…).
+        ("/une/route/du/bundle", 404, false),
+        // Les routes servies, elles, restent en 200.
+        ("/medias", 200, false),
+        ("/explorateur", 200, false),
+        ("/recherche", 200, false),
     ];
-    assert_eq!(cas.len(), 4);
+    assert_eq!(cas.len(), 7);
     for (uri, code, en_json) in cas {
-        let (statut, entetes, _) = reponse(&etat, uri).await;
+        let (statut, entetes, corps) = reponse(&etat, uri).await;
         assert_eq!(statut.as_u16(), code, "{uri}");
         let type_contenu = entetes[header::CONTENT_TYPE].to_str().unwrap();
         if en_json {
@@ -822,6 +829,14 @@ async fn routes_inconnues_repondent_selon_leur_espace() {
             assert!(
                 type_contenu.starts_with("text/html"),
                 "{uri}: {type_contenu}"
+            );
+            // Le code HTTP et la balise disent la meme chose : une page que le site ne sert
+            // pas ne doit pas non plus s'annoncer indexable.
+            let html = String::from_utf8_lossy(&corps);
+            assert_eq!(
+                html.contains("name=\"robots\" content=\"noindex"),
+                code == 404,
+                "{uri}: noindex et code HTTP doivent concorder"
             );
         }
     }
