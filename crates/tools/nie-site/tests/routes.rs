@@ -157,10 +157,10 @@ async fn toutes_les_routes_declarees_repondent() {
         // Le texte localise : le catalogue enumere `common/text/**` dans le VFS. L'index de
         // test ne porte aucun fichier de texte — la route repond quand meme, elle ne 503 que
         // sans VFS du tout.
-        ("/api/v1/texte", &[200, 503]),
-        ("/api/v1/texte/recherche", &[400, 503]),
-        ("/api/v1/texte/fr/menu_text", &[404, 503]),
-        ("/api/v1/texte/fr/menu_text/0x2d909dd6", &[404, 503]),
+        ("/api/v1/text", &[200, 503]),
+        ("/api/v1/text/search", &[400, 503]),
+        ("/api/v1/text/fr/menu_text", &[404, 503]),
+        ("/api/v1/text/fr/menu_text/0x2d909dd6", &[404, 503]),
         // Les 219 tables du miroir : absent dans l'etat de test, donc 503 en citant la
         // capacite manquante — jamais un catalogue vide qu'un client prendrait pour une base
         // sans tables.
