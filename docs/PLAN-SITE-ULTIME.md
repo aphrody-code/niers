@@ -844,9 +844,41 @@ arithmétique ne la trouve.
 5. **Un débordement horizontal** de la coquille (`packages/inacord-ui`), visible identiquement
    sur `/textures` et sur `/modeles` : il préexiste aux deux lots.
 6. **Les huit favicons de `assets_de_marque`** ne sont pas branchées (cf. lot 5).
-7. **Le sas `apps/nie-web/src/legacy/`** reste à **87 fichiers**, exclu du `tsconfig` et importé
-   nulle part, mais il porte encore `@rosegriffon/*` et `cdn.rosegriffon.fr` — ce que la
-   décision du 2026-09-05 interdit côté Aphrody. C'est le plus gros résidu du dépôt côté front.
+7. ~~**Le sas `apps/nie-web/src/legacy/`**~~ — **vidé le 2026-09-06 : 90 fichiers, 23 647
+   lignes.** Il en portait **87** au dernier compte du plan ; la mesure du jour en trouve 90,
+   et **40 d'entre eux** citaient Rose Griffon — ce que la décision du 2026-09-05 interdit
+   côté Aphrody. Après : `fd . apps/nie-web/src/legacy` → **0**, et
+   `rg -il '@rosegriffon/|rose ?griffon' apps/nie-web/src packages/inacord-ui apps/inacord` →
+   **une seule** occurrence, l'URL de repli de l'updater, qui est l'exception écrite.
+   `bun run typecheck` : 12 paquets à 0 ; `bun run --filter '*nie-web*' build` : 54 modules,
+   244,14 ko de JS (78,56 ko gzip, **306,2 ko en brotli** pour l'ensemble).
+
+   **Ce qui a rendu la suppression légitime, et qu'il fallait vérifier avant** : ce code n'était
+   pas *déplaçable*, il était **inexécutable**. Ce sont des `page.tsx` de Next.js, des
+   *server actions* et des `route.ts` — un hôte Vite ne peut rien en faire, quel que soit le
+   travail de portage. Et le sas était l'**unique copie** : `apps/azalee/app/{avatar,cpk,…}`
+   n'existe plus depuis J2 (`c4a1da8`), et `azalee.rosegriffon.fr/avatar` rend **404**. La
+   régression que le README du sas voulait éviter avait donc déjà eu lieu ; garder les sources
+   ne la réparait pas, il les rendait seulement invisibles. Git les conserve à `c4a1da8`.
+
+   **Ce que le dépôt perd, et ce qui le sert déjà** — dit ici pour qu'aucune capacité ne
+   disparaisse en silence :
+
+   | Supprimé | Lignes | Ce qui sert la donnée aujourd'hui |
+   |---|---:|---|
+   | `app/avatar` | 11 683 | `/api/v1/donnees/famille/chara_edit` (16 listes) — **l'écran, lui, reste à écrire** |
+   | `app/cpk` + `lib/cpk` | 3 086 | `/b`, `/f`, `/api/v1/formats/decode`, `/api/v1/donnees` — l'explorateur riche est le métier d'**Inacord**, pas d'Aphrody |
+   | `components/wiki` + `lib/cutin` | 3 456 | `/api/v1/formats/decode` sur `.g4cm` (parseur **Rust**) ; les composants de fiche sont le métier d'**Azalée** |
+   | `app/videos`, `sons`, `modeles`, `textures` | 3 108 | les **4 vues en ligne** d'Aphrody, lecture audio et vidéo comprises |
+   | `app/vroid` | 907 | rien, et c'est voulu : classé `interne` (OAuth et secrets tiers) |
+   | `app/mode` | 755 | `/api/v1/modes/{slug}`, câblé le jour même |
+   | `app/demo` | 329 | `/api/v1/3d/*` et `/model/{famille}/{fichier}` |
+   | `app/api` | 233 | `/f`, `/api/v1/episodes`, `/assets/tex` — des `route.ts` Next.js n'ont aucun sens ici |
+   | `app/save` | 45 | `POST /api/v1/save/roster` |
+   | `lib/wiki`, `lib/game-text` | 24 | `/api/v1/text` |
+
+   **Le seul trou réel est un écran d'avatar.** Sa donnée est servie ; son interface n'existe
+   nulle part. C'est écrit ici plutôt que laissé à découvrir.
 8. **La page « Sons »** liste les `.awb` comme des sons individuels : `bgm_chronicle.awb` y
    apparaît avec un lecteur audio et **1 291,9 Mo**. Ce sont des banques, pas des pistes ; il
    faut cataloguer par ACB, comme le fait déjà Azalée.
