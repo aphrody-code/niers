@@ -2099,6 +2099,8 @@ pub struct DriveReport {
     /// Nombre d'instructions du chunk principal décodé avant son exécution (`None` pour une
     /// source texte). Le comptage provient du même parseur Rust que la validation live.
     pub decoded_instructions: Option<usize>,
+    /// Instructions des includes binaires décodés pendant cet appel, par nom logique.
+    pub decoded_include_instructions: BTreeMap<String, usize>,
     /// Erreur top-level éventuelle (1ʳᵉ ligne), si `top_level_ok == false`.
     pub top_level_err: Option<String>,
     /// `OnInit()` : `None` = absent ; `Some(true)` = appelé OK ; `Some(false)` = erreur Lua.

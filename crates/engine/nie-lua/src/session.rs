@@ -129,6 +129,12 @@ pub struct ApiReport {
     pub provided: Vec<String>,
 }
 
+struct IncludeJournals {
+    missing: Rc<RefCell<Vec<String>>>,
+    loaded: Rc<RefCell<Vec<String>>>,
+    decoded: Rc<RefCell<std::collections::BTreeMap<String, usize>>>,
+}
+
 impl ApiReport {
     /// Part de la surface réclamée qui est couverte, en pourcentage (100 si rien n'est réclamé).
     #[must_use]
@@ -163,6 +169,8 @@ pub struct LuaSession {
     missing_includes: Rc<RefCell<Vec<String>>>,
     /// Includes effectivement résolus depuis le dernier prélèvement, dans l'ordre de chargement.
     loaded_includes: Rc<RefCell<Vec<String>>>,
+    /// Instructions des includes binaires décodés sur le chemin live, cumulées par nom logique.
+    decoded_include_instructions: Rc<RefCell<std::collections::BTreeMap<String, usize>>>,
     /// Contexte natif réappliqué après chaque reconstruction de VM.
     context: RuntimeContext,
     /// Chunk menu déjà initialisé dans cette VM (`top-level` + `OnInit`).
@@ -249,14 +257,19 @@ impl LuaSession {
         let stdout = Rc::new(RefCell::new(Vec::new()));
         let missing_includes = Rc::new(RefCell::new(Vec::new()));
         let loaded_includes = Rc::new(RefCell::new(Vec::new()));
+        let decoded_include_instructions = Rc::new(RefCell::new(std::collections::BTreeMap::new()));
+        let journals = IncludeJournals {
+            missing: Rc::clone(&missing_includes),
+            loaded: Rc::clone(&loaded_includes),
+            decoded: Rc::clone(&decoded_include_instructions),
+        };
         let context = RuntimeContext::default();
         let (lua, menu_state) = Self::build_vm(
             &registry,
             &stdout,
             with_menu_host,
             include_resolver.as_ref(),
-            &missing_includes,
-            &loaded_includes,
+            &journals,
             &context,
         )?;
         Ok(Self {
@@ -271,6 +284,7 @@ impl LuaSession {
             include_resolver,
             missing_includes,
             loaded_includes,
+            decoded_include_instructions,
             context,
             active_menu: RefCell::new(None),
         })
@@ -294,8 +308,7 @@ impl LuaSession {
         stdout: &Rc<RefCell<Vec<String>>>,
         with_menu_host: bool,
         include_resolver: Option<&IncludeResolver>,
-        missing_includes: &Rc<RefCell<Vec<String>>>,
-        loaded_includes: &Rc<RefCell<Vec<String>>>,
+        journals: &IncludeJournals,
         context: &RuntimeContext,
     ) -> Result<BuiltVm, LuaError> {
         let lua = crate::new_vm();
@@ -308,9 +321,10 @@ impl LuaSession {
         };
         if let Some(resolver) = include_resolver {
             let resolver = Rc::clone(resolver);
-            let missing = Rc::clone(missing_includes);
-            let loaded = Rc::clone(loaded_includes);
-            crate::install_include(&lua, move |name| match resolver(name) {
+            let missing = Rc::clone(&journals.missing);
+            let loaded = Rc::clone(&journals.loaded);
+            let decoded = Rc::clone(&journals.decoded);
+            crate::install_include_with_trace(&lua, move |name| match resolver(name) {
                 Some(bytes) => {
                     loaded.borrow_mut().push(name.to_string());
                     Some(bytes)
@@ -319,7 +333,7 @@ impl LuaSession {
                     missing.borrow_mut().push(name.to_string());
                     None
                 }
-            })?;
+            }, Some(decoded))?;
         }
         // Les stubs viennent EN DERNIER : la métatable de `_G` ne doit intercepter que ce qu'aucun
         // binder n'a fourni, sinon tout serait déclaré « manquant ».
@@ -466,6 +480,7 @@ impl LuaSession {
             .is_some_and(|(loaded_name, loaded_bytes)| {
                 loaded_name == name && loaded_bytes.as_slice() == script_bytes
             });
+        let decoded_includes_before = self.decoded_include_instructions.borrow().clone();
         let result = if already_initialized {
             crate::menu_host::drive_menu_for_frames_existing(
                 &self.lua,
@@ -485,6 +500,21 @@ impl LuaSession {
                 frames,
             )
         };
+        let decoded_includes_after = self.decoded_include_instructions.borrow().clone();
+        let decoded_include_instructions = decoded_includes_after
+            .into_iter()
+            .filter_map(|(include_name, total)| {
+                let previous = decoded_includes_before
+                    .get(&include_name)
+                    .copied()
+                    .unwrap_or(0);
+                (total > previous).then_some((include_name, total - previous))
+            })
+            .collect();
+        let mut result = result;
+        if let Ok(report) = &mut result {
+            report.decoded_include_instructions = decoded_include_instructions;
+        }
         if instruction_limit.is_some() {
             self.lua.remove_hook();
         }
@@ -739,13 +769,17 @@ impl LuaSession {
     /// # Errors
     /// [`LuaError`] si la reconstruction ou un ré-attachement échoue.
     pub fn reload(&mut self) -> Result<(), LuaError> {
+        let journals = IncludeJournals {
+            missing: Rc::clone(&self.missing_includes),
+            loaded: Rc::clone(&self.loaded_includes),
+            decoded: Rc::clone(&self.decoded_include_instructions),
+        };
         let (lua, menu_state) = Self::build_vm(
             &self.registry,
             &self.stdout,
             self.with_menu_host,
             self.include_resolver.as_ref(),
-            &self.missing_includes,
-            &self.loaded_includes,
+            &journals,
             &self.context,
         )?;
         self.lua = lua;
@@ -1071,6 +1105,12 @@ mod tests {
             .expect("pilotage VFS");
         assert!(report.top_level_ok);
         assert!(report.decoded_instructions.unwrap_or(0) > 0);
+        assert!(report
+            .decoded_include_instructions
+            .get("LUA_INC")
+            .copied()
+            .unwrap_or(0)
+            > 0);
         assert_eq!(report.on_init, Some(true));
         assert_eq!(session.eval("menu_ready").unwrap(), "true");
         assert_eq!(session.take_loaded_includes(), vec!["LUA_INC"]);
