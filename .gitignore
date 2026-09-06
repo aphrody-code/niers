@@ -11,6 +11,11 @@ obj/
 
 # IECODE extracted data (gros, non versionné)
 data/
+# Sauf les captures d'écran des menus : elles sont la source mesurée de l'UI (nie-ui les lit,
+# game-screens.css en dérive, un golden le prouve). Suivies depuis a0d464d6. Le `!` sur le
+# contenu ne suffit pas quand le dossier parent est exclu : il faut d'abord ré-ouvrir `data/menu/`.
+!data/menu/
+!data/menu/**
 dump/
 out/
 # Meme piege que `bin/` ci-dessus : `data/` n'est pas ancre, il avale aussi les `src/data/` des

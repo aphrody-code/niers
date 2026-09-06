@@ -522,8 +522,13 @@ csharp/             IECODE.Core / IECODE.CLI / IECODE.Core.Tests (.NET 10, `IECO
 
 ## Game data (VFS)
 
-- `data/` holds the real local copies (dx11, ~57 GB of packs, `cpk_list.cfg.bin`). **gitignored** —
-  assets © LEVEL-5. Never commit or push them (`start.png` and `menu.png` included).
+- `data/` holds the real local copies (dx11, ~57 GB of packs, `cpk_list.cfg.bin`). The bulk is
+  **gitignored** for weight, not for secrecy: a 57 GB pack has no business in a clone.
+- **`data/menu/` is tracked on purpose** (35 files, commit `a0d464d6`). The 33 captures are the
+  measured source of the game's UI — `nie-ui` reads them, `game-screens.css` derives from them, and
+  a golden proves the derivation. A reference that lives outside the clone is a reference no test
+  can check. Publication is covered by Agreement N° RG-L5-VR-2026-001; the repository is public and
+  stays so. Do not re-ignore this directory and do not rewrite it out of the history.
 - **No machine path is compiled into any binary.** The game root is resolved at runtime —
   `nie_formats::vfs::resolve_game_dir()`: `NIE_GAME_DIR`, else the current directory or an ancestor
   carrying `data/cpk_list.cfg.bin`, else the executable's directory. The equivalents are
