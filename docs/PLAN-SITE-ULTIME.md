@@ -51,6 +51,28 @@ Rien ici n'est cité de mémoire ; chaque ligne a une commande.
 d'API**. Le dépôt sait faire environ dix fois ce qu'il expose. Ce plan ne demande pas d'écrire
 des capacités nouvelles : il demande de **servir celles qui existent**.
 
+## 2 bis. Ce que la session RE/Lua a établi — le capital le plus sous-exploité
+
+Mesuré par Codex les 2026-09-05 et 06, rejouable par `niers lua audit` :
+
+| Mesure | Valeur | Ce qu'elle change |
+|---|---|---|
+| Scripts Lua du jeu exécutés par notre runtime | **1 197 / 1 197**, `ok = 1 197`, **0 erreur** | le runtime Lua n'est plus une preuve de concept : il exécute la totalité des scripts |
+| Scripts de menu | **552 / 552**, 0 erreur | la couche menu est entièrement franchie |
+| Includes non résolus | **0** | la résolution VFS des `include` est complète |
+| Constantes non définies | **47 symboles, 225 occurrences** | c'est le SEUL écart restant, et il est chiffré |
+| KB `var/niers.sqlite` | 153 073 fonctions, 1 748 classes RTTI ; `pdata` 94 785, `ghidra` 60 183, `vtable-struct` 13 653 | la carte est là, elle n'est pas exploitée par le site |
+| Vtables vérifiées dans l'image | **1 748 / 1 748** lisibles, 1 745 en `.rdata`, 1 745 pointant du code à +8 | la carte RTTI est structurellement cohérente |
+| Couverture brute `niers rebuild --rounds 4` | 100 664 / 108 650 = **92,65 %**, nommées 13 653 = 12,57 % | l'écart nommé/classé reste le vrai chantier RE |
+
+Les 47 constantes en tête d'occurrences : `CHARA_EDIT_RECIPE_TYPE_FASHION` (49),
+`EVEN_BONE_L21..L24` et `R21..R24` (13 chacune), `VICTORY_TOP_INC` (11),
+`SOCCER_RESULT_MENU` (9), `CHARA_FILTER_MENU` (6). Ce sont des valeurs à retrouver dans le
+binaire ou les includes, pas du code à écrire.
+
+**Conséquence pour le lot 3 :** servir les menus par le runtime Lua n'est plus un pari. Le
+travail restant est une route et 47 constantes, pas un moteur.
+
 ## 3. Ce que les dernières sessions ont raté, et la règle que chaque échec impose
 
 Ce plan est fondé sur ces échecs. Chaque ligne est un défaut réellement payé ici.
@@ -67,6 +89,31 @@ Ce plan est fondé sur ces échecs. Chaque ligne est un défaut réellement pay�
 | L'angle des parallélogrammes déclaré « non mesurable » (R² < 0,45) | une DA posée à l'œil pendant des semaines | **Un R² bas accuse la méthode avant la forme.** Mesuré ligne à ligne : R² = 1,000. |
 | Règle `*.txt` : les 4 templates askama de `nie-site` hors du dépôt | la crate ne compilait pas sur un clone frais | **`git check-ignore -v` sur tout fichier non-code nouveau.** |
 | `188e409` a capté 3 fichiers d'une autre session à mi-course | un lot attribué au mauvais auteur | **`claim:` avant d'écrire, un commit par lot.** |
+
+### Ce qui a été corrigé le 2026-09-06, et ce que ça enseigne
+
+| Défaut | Correction | Preuve |
+|---|---|---|
+| Portail TS rouge sur 2 paquets | `mcp` redirigé vers `@niers/azalee-tools/server/index` ; `cron` déclare `@aphrody/bxc` et reçoit une passerelle de types | `bun run typecheck` = **0 sur les 5 workspaces** |
+| Binaire `nie-site` périmé en ligne | rebâti et redémarré | `/healthz`, `/api/v1/{health,episodes,textures}`, `/feed.atom` = **200**, TTFB 0,66–6,4 ms |
+| Pagination `/chara` commitée mais jamais déployée | déploiement bleu/vert sans coupure | **60 fiches uniques** servies, bascule en 887 ms puis 596 ms, `/` 200 tout du long |
+
+Et une leçon de mesure, qui rejoint les autres : **`/chara` « pèse 2 355 397 o »… en brut.**
+En `br` — l'unité de la gate — il pèse **49 413 o**, très loin des 250 Ko exigés. Un HTML long
+et répétitif se compresse d'un facteur 48. Mesurer dans la mauvaise unité fait ouvrir un
+chantier qui n'existe pas ; **la gate dit son unité, on la mesure dans cette unité-là.**
+
+Trois causes empilées sur `@aphrody/bxc` méritent d'être retenues, parce que chacune, prise
+seule, mène à une fausse conclusion :
+
+1. `node_modules/@aphrody` est absent **à la racine** — mais le linker est `isolated` : le
+   paquet vit dans le `node_modules` de chaque paquet qui le déclare. Conclure « non installé »
+   là-dessus est une erreur de méthode.
+2. `packages/cron` compile les sources d'un paquet du workspace (`@aphrody/ietv`) sans déclarer
+   les dépendances de celui-ci : **ce qu'on compile, on le déclare.**
+3. `@aphrody/bxc` publie ses **sources** `.ts` avec `"types": "./src/api/browser.ts"` : en
+   traversée, `tsc` ne lit pas le sous-chemin `./privacy` et retombe sur la racine — d'où un
+   message qui cite le mauvais module et envoie chercher au mauvais endroit.
 
 ## 4. La matrice de couverture — l'instrument de mesure du plan
 

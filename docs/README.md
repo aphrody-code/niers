@@ -3,10 +3,27 @@
 Vingt documents, un rôle chacun. Ce qui n'y est pas mesurable ou vérifiable n'y a pas sa place :
 pas de journal, pas d'historique daté — l'état vient des outils, l'histoire vient de `git log`.
 
+## La direction — un seul cap, quatre plans subordonnés
+
+Les plans se sont multipliés ; ils ne se contredisent pas, ils ne disaient simplement pas
+lequel commande. Voici l'ordre, du cap au geste :
+
+| Rang | Document | Ce qu'il décide |
+|---|---|---|
+| **Le cap** | [PLAN-SITE-ULTIME.md](PLAN-SITE-ULTIME.md) | **L'état d'arrivée** : un seul site qui expose TOUT ce que le dépôt sait faire. Instrument unique — une matrice de couverture où chaque capacité est `servi`, `interne` (avec sa raison) ou `manquant`. Gate maîtresse : `manquant = 0`. |
+| L'échéance | [../PLAN.md](../PLAN.md) | La bascule Azalée → Vercel et Aphrody sur `aphrody.com` : dates, gates chiffrées, rollback par journée |
+| L'exécution | [CODEX-JOUR-UNIQUE.md](CODEX-JOUR-UNIQUE.md) | Ce que l'agent fait aujourd'hui, dans quel ordre, et à quoi on reconnaît que c'est fait |
+| Le long terme | [PLAN.md](PLAN.md) | Le moteur et la forge : les deux faces, l'état chiffré, les priorités |
+| Le gel | [stack/](stack/README.md) | Les décisions techniques figées, leurs versions, les alternatives rejetées |
+
+**La règle qui les relie :** un plan qui n'avance pas la matrice de couverture n'avance pas le
+projet. Un compte, une commande, un hôte, une date — sinon ce n'est pas fait.
+
 ## Commencer ici
 
 | Document | Contenu |
 |---|---|
+| [PLAN-SITE-ULTIME.md](PLAN-SITE-ULTIME.md) | **Le cap** : couverture de toute la surface du dépôt vers un seul site |
 | [../PLAN.md](../PLAN.md) | **La semaine du 2026-09-05 au 2026-09-11** : Azalée sur Vercel, Aphrody sur `aphrody.com`, Inacord — jour par jour, trois agents, une gate qui compte par jour |
 | [PLAN.md](PLAN.md) | **L'objectif et l'état chiffré** : les deux faces (moteur et forge), ce qui est mesuré, les priorités |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | **La carte** : les quatre arbres, qui fait autorité sur quoi, les crates, les ponts, les fusions interdites |

@@ -232,6 +232,15 @@ Further reading: [`docs/PLAN.md`](docs/PLAN.md) (the plan, with numbers) ·
 
 ## Roadmap
 
+**The cap.** One site that exposes *everything* this repository can do — measured, not claimed:
+[`docs/PLAN-SITE-ULTIME.md`](docs/PLAN-SITE-ULTIME.md). Its single instrument is a coverage
+matrix in which every capability is `servi`, `interne` (with a written reason) or `manquant`;
+the master gate is `manquant = 0`. Starting measurement: 41 `niers` subcommands and 155 Tauri
+commands against ~14 API paths — the repository can do roughly ten times what it exposes. The
+plan order (cap, deadline, execution, long term, frozen decisions) is in
+[`docs/README.md`](docs/README.md).
+
+
 **Aphrody** (`aphrody.com`) is the tools site, served by a `crates/tools/nie-site`
 crate — Axum 0.8, **100 % Rust**, bound to `127.0.0.1:8085` behind nginx and TLS. It is
 **neither the wiki nor the file explorer**: the wiki is **Azalée**, the explorer is

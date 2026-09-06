@@ -44,7 +44,12 @@ autre machine, et une bonne moitié des pièges ci-dessous n'y existe pas.
 - Style : technique, direct, orienté résultats. Zéro politesse inutile, zéro digression.
 - Communiquer exclusivement en **français**.
 
-Plan maître : `docs/PLAN.md` + `docs/FORGE.md` + `apps/inacord/ROADMAP.md`.  
+**Le cap est unique** : `docs/PLAN-SITE-ULTIME.md` — un seul site qui expose TOUT ce que le
+dépôt sait faire, piloté par une matrice de couverture (`servi` / `interne` avec sa raison /
+`manquant`), gate maîtresse `manquant = 0`. Les plans subordonnés et leur ordre sont dans
+`docs/README.md` § « La direction » : `/PLAN.md` (l'échéance de la bascule),
+`docs/CODEX-JOUR-UNIQUE.md` (l'exécution du jour), `docs/PLAN.md` + `docs/FORGE.md` +
+`apps/inacord/ROADMAP.md` (le long terme), `docs/stack/` (le gel).  
 Le reverse-engineering de `nie.exe` est le **moyen**. Le moteur Rust est la **fin**.  
 La **forge** (`docs/FORGE.md`) est le **juge** : elle produit `nie.exe` et mesure, à l'octet, la part
 réellement générée par le dépôt. Un portage qui n'y bouge rien n'a rien prouvé.
