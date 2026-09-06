@@ -48,6 +48,11 @@ il construit l’index physique/logique, sélectionne la version numérique corr
 et délègue la lecture au reader brut de l’appelant. Un test vérifie la sélection
 de `module_10` devant `module_9`.
 
+Le driver `nie-game --runtime` utilise maintenant cette session persistante
+plutôt qu’une VM et des index d’include reconstruits à la main. La vérification
+Kizuna réelle termine avec `on_init=true`, `on_open=true`, 102 commandes
+connues et 0 inconnue.
+
 `menu_host` couvre les commandes Kizuna de visibilité, couleur RGBA, paramètres,
 texture et application de flags. Les commandes générales identifiées par le RE
 sont décodées avec leur protocole de retour ; les requêtes d’état sans donnée

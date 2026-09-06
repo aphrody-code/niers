@@ -3087,10 +3087,9 @@ fn cmd_export_layout_runtime(
     use std::rc::Rc;
 
     use nie_formats::cfgbin::crc32;
-    use nie_lua::{
-        HeaderTab, drive_menu_for_frames, enumerate_header_tabs, index_script_paths,
-        install_include, install_menu_host, new_vm, resolve_script_path,
-    };
+    use nie_lua::host::{HostRegistry, LogSink};
+    use nie_lua::session::LuaSession;
+    use nie_lua::{HeaderTab, enumerate_header_tabs};
     use serde_json::{Value, json};
 
     let data_dir = game_dir.join("data");
@@ -3105,14 +3104,9 @@ fn cmd_export_layout_runtime(
     // construit dynamiquement (les libellés statiques sont déjà joints dans le layout ci-dessus).
     let menu_text = load_menu_text(&vfs);
 
-    // 2) Index basename(.lua.bin) → chemin VFS (résolveur INCLUDE + découverte des scripts).
-    //    `by_base`    : basename exact minuscule → chemin (résolution directe d'INCLUDE).
-    //    `by_logical` : base versionless (`main_menu_inc`) → chemin, pour résoudre les noms
-    //                   LOGIQUES du moteur (`INCLUDE("LUA_MAIN_MENU_INC")`) vers le bon fichier
-    //                   `main_menu_inc_3.00.01.00.lua.bin`. SANS ça, `MAIN_MENU` (défini par cet
-    //                   include) reste nil et tout `OnInit`/`OnSetupLayer` du main_menu avorte.
+    // 2) Inventaire des chemins Lua du VFS (l’index physique/logique est construit par
+    //    `LuaSession::with_script_paths` au moment du pilotage live).
     let script_paths: Vec<String> = vfs.iter().map(|(p, _)| p.to_string()).collect();
-    let (by_base, by_logical) = index_script_paths(script_paths.iter().map(String::as_str));
     let mut menu_scripts: Vec<String> = Vec::new();
     for (p, _) in vfs.iter() {
         if p.starts_with("data/common/script/lua/menu/") && p.ends_with(".lua.bin") {
@@ -3152,9 +3146,6 @@ fn cmd_export_layout_runtime(
     drive_layers.dedup();
 
     let vfs = Rc::new(vfs);
-    let by_base = Rc::new(by_base);
-    let by_logical = Rc::new(by_logical);
-
     // 4) DRIVE chaque script dans sa propre VM (état propre), fusionne les MenuState.
     let mut merged_objs: BTreeMap<u32, MergedObj> = BTreeMap::new();
     // Objets qu'au moins un calque déclare visibles — sert à mesurer ce que la conjonction efface.
@@ -3187,17 +3178,19 @@ fn cmd_export_layout_runtime(
         let Ok(bytes) = vfs.read(path) else { continue };
         let name = path.rsplit('/').next().unwrap_or(path);
 
-        let lua = new_vm();
-        {
-            let (vfs, by_base, by_logical) =
-                (Rc::clone(&vfs), Rc::clone(&by_base), Rc::clone(&by_logical));
-            install_include(&lua, move |n| {
-                resolve_script_path(n, &by_base, &by_logical).and_then(|p| vfs.read(p).ok())
-            })
-            .map_err(|e| anyhow::anyhow!("install_include : {e}"))?;
-        }
-        let state =
-            install_menu_host(&lua).map_err(|e| anyhow::anyhow!("install_menu_host : {e}"))?;
+        // Le driver passe par la session persistante publique : index physique/logique, reader
+        // VFS brut et MenuState live sont ainsi exactement le même chemin que les consommateurs
+        // de `nie-lua`, sans reconstruire manuellement une VM instrumentée.
+        let logs: LogSink = Rc::new(std::cell::RefCell::new(Vec::new()));
+        let registry = HostRegistry::standard(Rc::clone(&logs));
+        let session = LuaSession::with_script_paths(registry, logs, true, script_paths.clone(), {
+            let vfs = Rc::clone(&vfs);
+            move |path| vfs.read(path).ok()
+        })
+        .map_err(|e| anyhow::anyhow!("création session Lua VFS : {e}"))?;
+        let state = session
+            .menu_state()
+            .ok_or_else(|| anyhow::anyhow!("session Lua sans MenuState"))?;
         {
             let mut state = state.borrow_mut();
             for (id, text) in &menu_text {
@@ -3207,18 +3200,23 @@ fn cmd_export_layout_runtime(
         // Seed la donnée de scène AVANT le pilotage : GetObjectAttr/GetItemButtonNum la lit
         // pendant OnInit (le compte est mis en cache à ce moment-là).
         state.borrow_mut().object_attr.clone_from(&item_counts);
-        let report =
-            match drive_menu_for_frames(&lua, &bytes, name, &drive_layers, &item_counts, frames) {
-                Ok(r) => r,
-                Err(e) => {
-                    warn!("drive_menu {name} : {e}");
-                    continue;
-                }
-            };
+        let report = match session.drive_menu_for_frames(
+            &bytes,
+            name,
+            &drive_layers,
+            &item_counts,
+            frames,
+        ) {
+            Ok(r) => r,
+            Err(e) => {
+                warn!("drive_menu {name} : {e}");
+                continue;
+            }
+        };
 
         // Énumère les onglets d'en-tête PENDANT que la VM est vivante (sous-items virtuels :
         // les 9 onglets du main_menu absents de l'objbin, issus de GetSortOfTabs réel).
-        for tab in enumerate_header_tabs(&lua) {
+        for tab in enumerate_header_tabs(session.lua()) {
             header_tabs.entry(tab.obj_hash).or_insert(tab);
         }
 
