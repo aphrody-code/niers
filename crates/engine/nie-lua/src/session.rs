@@ -41,7 +41,10 @@ use crate::runtime::{
     GlobalEntry, RuntimeContext, install_host_stubs, install_print_capture, list_globals,
     value_to_string,
 };
-use crate::{ChunkMode, LuaError, index_script_paths, is_lua52_bytecode, resolve_script_path};
+use crate::{
+    ChunkMode, LuaError, index_script_paths, is_lua52_bytecode, resolve_script_path,
+    validate_bytecode,
+};
 
 /// Points d'entrée standard d'un comportement, dans l'ordre du cycle de vie d'Overload.
 ///
@@ -375,6 +378,7 @@ impl LuaSession {
     /// [`LuaError`] si le chunk échoue — ici l'erreur EST propagée : contrairement à une analyse,
     /// une exécution demandée explicitement doit dire qu'elle a raté.
     pub fn exec(&self, name: &str, data: &[u8]) -> Result<Vec<String>, LuaError> {
+        validate_bytecode(data)?;
         let mode = if is_lua52_bytecode(data) {
             ChunkMode::Binary
         } else {
@@ -398,6 +402,7 @@ impl LuaSession {
     /// # Errors
     /// [`LuaError`] si le chunk échoue ou ne renvoie pas de table.
     pub fn attach(&mut self, name: &str, data: &[u8]) -> Result<&Behaviour, LuaError> {
+        validate_bytecode(data)?;
         let mode = if is_lua52_bytecode(data) {
             ChunkMode::Binary
         } else {

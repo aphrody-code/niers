@@ -23,7 +23,7 @@ use std::rc::Rc;
 
 use mlua::{Lua, MultiValue, Value, Variadic};
 
-use crate::{LuaError, is_lua52_bytecode};
+use crate::{LuaError, is_lua52_bytecode, validate_bytecode};
 
 type IncludeResolver = Box<dyn Fn(&str) -> Option<Vec<u8>>>;
 
@@ -258,6 +258,8 @@ fn execute_inner(
     options: &ExecOptions,
     resolver: Option<IncludeResolver>,
 ) -> Result<ExecOutput, LuaError> {
+    // Le chunk principal suit le même chemin de décodage que `load_bytecode` et les includes.
+    validate_bytecode(data)?;
     let lua = crate::new_vm();
     let started = std::time::Instant::now();
 
@@ -517,6 +519,14 @@ mod tests {
         .expect("exécution avec contexte");
         assert!(out.error.is_none(), "erreur inattendue : {:?}", out.error);
         assert!(out.missing_host_reads.is_empty());
+    }
+
+    #[test]
+    fn execute_valide_le_chunk_binaire_principal_avant_la_vm() {
+        let malformed = [0x1B, b'L', b'u', b'a', 0x52, 0x00];
+        let error = execute(&malformed, &ExecOptions::default())
+            .expect_err("un chunk binaire invalide doit échouer avant la VM");
+        assert!(matches!(error, LuaError::Decode(_)));
     }
 
     /// Une boucle infinie doit être coupée par la limite d'instructions, pas figer l'appelant.

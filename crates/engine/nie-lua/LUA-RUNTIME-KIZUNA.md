@@ -87,7 +87,7 @@ non prouvé.
 
 ```text
 cargo test -p nie-lua --lib
-94 passed, 0 failed, 1 ignored
+95 passed, 0 failed, 1 ignored
 
 cargo clippy -p nie-lua --lib --tests -- -D warnings
 cargo clippy -p nie-game --bins --tests -- -D warnings
@@ -108,7 +108,8 @@ Les lectures bornées du décodeur vérifient désormais les additions de curseu
 et les conversions `size_t` avant tout accès mémoire ; le corpus réel confirme
 toujours **1 143/1 143 scripts** et **985 971 instructions** décodés.
 Le chargement live appelle maintenant ce même décodeur avant `mlua` pour le
-chunk principal **et chaque `INCLUDE` binaire**. Un test de régression vérifie
+chunk principal de `execute`, `LuaSession::exec/attach`, le pilotage de menu,
+**et chaque `INCLUDE` binaire**. Un test de régression vérifie
 qu’un conteneur malformé est refusé avant son exécution et qu’un include invalide
 remonte son nom logique dans l’erreur.
 

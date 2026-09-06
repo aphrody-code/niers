@@ -88,6 +88,18 @@ pub fn is_lua52_bytecode(data: &[u8]) -> bool {
 }
 
 #[cfg(feature = "vm")]
+/// Valide un chunk binaire avec le décodeur partagé avant de le remettre à la VM.
+///
+/// Les chunks texte sont laissés à mlua ; les `.lua.bin` passent tous par le parseur Lua 5.2
+/// Rust, quel que soit le point d'entrée (session, runtime ou include).
+pub fn validate_bytecode(data: &[u8]) -> Result<(), LuaError> {
+    if is_lua52_bytecode(data) {
+        bytecode::parse(data)?;
+    }
+    Ok(())
+}
+
+#[cfg(feature = "vm")]
 /// CRC32 IEEE utilisé par les scripts Level-5 (`CRC32("nom")`).
 ///
 /// Même polynôme réfléchi et même finalisation que `nie-formats::cfgbin::crc32`, gardé ici pour
@@ -136,7 +148,7 @@ pub fn load_bytecode(lua: &mlua::Lua, data: &[u8], name: &str) -> Result<mlua::F
     }
     // Valider avec le décodeur partagé avant le chargement VM : le runtime live et `lua-audit`
     // doivent parler du même chunk, y compris pour les includes imbriqués.
-    bytecode::parse(data)?;
+    validate_bytecode(data)?;
     let func = lua
         .load(data)
         .set_name(name)
