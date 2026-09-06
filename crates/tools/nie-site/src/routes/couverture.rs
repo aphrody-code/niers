@@ -189,10 +189,12 @@ mod tests {
 
     fn matrice_temoin() -> crate::couverture::Matrice {
         let entrees = vec![
+            // Un module de `nie-data` dont le parseur est ecrit et qu'aucune route n'appelle
+            // — le cas que la page doit rendre visible.
             mesure::Entree {
-                source: Source::Vfs,
-                nom: ".p3lip".to_string(),
-                poids: 21_047,
+                source: Source::NieData,
+                nom: "shop".to_string(),
+                poids: 1,
             },
             mesure::Entree {
                 source: Source::Vfs,
@@ -206,11 +208,14 @@ mod tests {
     #[test]
     fn la_page_publie_les_comptes_et_pas_des_statuts() {
         let html = rendre(&matrice_temoin());
-        assert!(html.contains("21047"), "le poids manquant est affiché");
-        assert!(html.contains("71101"));
+        assert!(html.contains("71101"), "le poids servi est affiché");
         assert!(html.contains("gate maîtresse"));
         assert!(html.contains("rompue"), "manquant = 1 : la gate est rompue");
-        assert!(html.contains("nie_formats::lip"), "le décodeur est nommé");
+        assert!(html.contains("shop"), "la capacité manquante est nommée");
+        assert!(
+            html.contains("golden testé"),
+            "le décodeur déjà écrit est nommé, pas seulement compté"
+        );
     }
 
     #[test]

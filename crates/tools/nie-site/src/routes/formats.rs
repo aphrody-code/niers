@@ -113,23 +113,26 @@ const FAMILLES_PROPRES: [(&str, bool, &str, &str); 7] = [
     (".usm", false, "/f/{chemin}", "application/octet-stream"),
 ];
 
-/// Toutes les familles annoncées : celles de ce module, plus les neuf géométriques.
+/// Toutes les familles annoncées : celles de ce module, les neuf géométriques, et les cinq
+/// de [`super::level5`].
 ///
-/// Une seule liste est publiée, mais elle a deux sources et aucune n'est recopiée : c'est ce
-/// qui garantit qu'une famille ajoutée à [`super::geometrie::FAMILLES`] apparaît ici, dans les
-/// comptes de `/api/v1/formats` et dans l'aiguillage de `/decode`, sans autre geste.
+/// Une seule liste est publiée, mais elle a **trois** sources et aucune n'est recopiée : c'est
+/// ce qui garantit qu'une famille ajoutée à l'une d'elles apparaît ici, dans les comptes de
+/// `/api/v1/formats` et dans l'aiguillage de `/decode`, sans autre geste.
 #[must_use]
 pub fn familles() -> Vec<(&'static str, bool, &'static str, &'static str)> {
+    let en_process = |s: &'static str| {
+        (
+            s,
+            true,
+            "/api/v1/formats/decode/{chemin}",
+            "application/json",
+        )
+    };
     FAMILLES_PROPRES
         .into_iter()
-        .chain(super::geometrie::FAMILLES.into_iter().map(|(s, ..)| {
-            (
-                s,
-                true,
-                "/api/v1/formats/decode/{chemin}",
-                "application/json",
-            )
-        }))
+        .chain(super::geometrie::FAMILLES.into_iter().map(|(s, ..)| en_process(s)))
+        .chain(super::level5::FAMILLES.into_iter().map(|(s, ..)| en_process(s)))
         .collect()
 }
 
@@ -610,6 +613,7 @@ pub async fn decode(
     // Quatorze fichiers du VFS portent le magic `G4PK` sous un suffixe de révision
     // (`.g4pk.r41152`…) — les refuser sur leur nom, c'est croire le nom plutôt que le contenu.
     let geom = super::geometrie::Famille::depuis_chemin(&chemin);
+    let l5_suffixe = super::level5::Famille::depuis_chemin(&chemin);
     let cfg = chemin.ends_with(SUFFIXE_CFG);
     let forme_geom = geom
         .map(|_| super::geometrie::Forme::depuis(demande.forme.as_deref()))
@@ -643,6 +647,16 @@ pub async fn decode(
             super::geometrie::famille_au_magic(&octets)
         }
     });
+    // Les cinq familles de `level5` suivent la même règle : le suffixe s'il dit quelque chose,
+    // le magic sinon — mais seulement si aucune famille géométrique n'a déjà répondu.
+    let l5 = if famille.is_some() || cfg {
+        None
+    } else {
+        l5_suffixe.or_else(|| super::level5::famille_au_magic(&octets))
+    };
+    let forme_l5 = l5
+        .map(|_| super::geometrie::Forme::depuis(demande.forme.as_deref()))
+        .transpose()?;
     let forme_geom = match (famille, forme_geom) {
         (Some(_), None) => Some(super::geometrie::Forme::depuis(demande.forme.as_deref())?),
         (_, f) => f,
@@ -656,8 +670,10 @@ pub async fn decode(
     // « trop volumineux » alors que l'identification n'aurait rendu que seize octets d'en-tête.
     // Une borne qui protège d'un JSON énorme n'a rien à faire sur un chemin qui n'en produit
     // aucun.
-    let borne = match (forme_geom, forme_cfg) {
-        (Some(super::geometrie::Forme::Complet), _) | (_, Some(_)) => TAILLE_MAX,
+    let borne = match (forme_geom, forme_cfg, forme_l5) {
+        (Some(super::geometrie::Forme::Complet), _, _)
+        | (_, _, Some(super::geometrie::Forme::Complet))
+        | (_, Some(_), _) => TAILLE_MAX,
         _ => super::geometrie::TAILLE_MAX_RESUME,
     };
     if octets.len() > borne {
@@ -687,6 +703,13 @@ pub async fn decode(
                 forme,
                 compagnon.as_ref(),
             )?),
+            _ if l5.is_some() => {
+                let (f, forme) = (
+                    l5.expect("teste juste au-dessus"),
+                    forme_l5.unwrap_or(super::geometrie::Forme::Resume),
+                );
+                serde_json::to_value(super::level5::decoder(&chemin, &octets, f, forme)?)
+            }
             (_, _, Some(Forme::Structure)) => {
                 serde_json::to_value(structurer(&octets)?).map(|st| {
                     serde_json::json!({ "chemin": chemin, "octets": octets.len(), "structure": st })
@@ -766,15 +789,20 @@ mod tests {
     #[test]
     fn les_familles_declarent_une_route_et_un_type() {
         let table = familles();
-        assert_eq!(table.len(), 16, "7 familles propres + 9 geometriques");
+        assert_eq!(
+            table.len(),
+            21,
+            "7 familles propres + 9 geometriques + 5 de level5"
+        );
         for (suffixe, _, route, sortie) in &table {
             assert!(suffixe.starts_with('.'), "{suffixe}");
             assert!(route.starts_with('/'), "{route}");
             assert!(sortie.contains('/'), "{sortie}");
         }
-        // Onze familles sont decodees ici : les deux de ce module (`cfg.bin` via `std`,
-        // `lua.bin` via `lua`) et les neuf geometriques, toutes derriere `std`. Les cinq autres
-        // exigeraient `textures` / `images` / `audio-decode`, qui restent eteintes.
+        // Seize familles sont decodees ici : les deux de ce module (`cfg.bin` via `std`,
+        // `lua.bin` via `lua`), les neuf geometriques et les cinq de `level5`, toutes derriere
+        // `std`. Les cinq autres exigeraient `textures` / `images` / `audio-decode`, qui
+        // restent eteintes — et aucune dependance n'a ete ajoutee pour ce lot-ci non plus.
         let en_process: Vec<&str> = table
             .iter()
             .filter_map(|&(s, p, ..)| p.then_some(s))
@@ -783,7 +811,7 @@ mod tests {
             en_process,
             vec![
                 ".cfg.bin", ".lua.bin", ".g4pk", ".g4mg", ".objbin", ".g4pkm", ".g4cm", ".col",
-                ".g4sk", ".mevbin", ".g4mt",
+                ".g4sk", ".mevbin", ".g4mt", ".p3lip", ".g4nv", ".g4ma", ".g4vs", ".g4la",
             ]
         );
         assert_eq!(features(), vec!["std", "lua"]);

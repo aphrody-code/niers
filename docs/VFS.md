@@ -46,14 +46,20 @@ trois écrasaient :
 
 | État | Fichiers | Part | Ce que ça veut dire |
 |---|---:|---:|---|
-| **servi** | 224946 | 88.11 % | une route rend le contenu **interprété**, avec un code HTTP mesuré |
-| **manquant** | **21250** | 8.32 % | le décodeur est écrit dans ce dépôt, aucune route ne l'appelle — 21 047 `.p3lip`, 160 `.g4nv`, 35 `.g4ma`, 4 `.g4vs`, 4 `.g4la` |
+| **servi** | 246196 | 96.43 % | une route rend le contenu **interprété**, avec un code HTTP mesuré |
+| **manquant** | **0** | 0 % | les 21 250 fichiers qui l'étaient ont été câblés le 2026-09-06 au soir (`routes::level5`), 124/124 décodés à la mesure |
 | **partiel** | **0** | 0 % | aucun : les 15 875 `.g4mg` sont décodés en process, y compris ceux que l'amont ne sait pas assembler (§ 2 bis) |
 | **interne** | 5512 | 2.16 % | délibérément non exposé, **avec sa raison écrite** |
 | **bloqué** | 3600 | 1.41 % | ni route ni parseur : du reverse d'abord. Y compris les 9 `.g4tg` non identifiés et 10 `.bin` hors `.cfg.bin`/`.lua.bin` |
 | | **255308** | **100 %** | |
 
-**Quatre extensions changent de camp, et c'était une erreur de fait.** `.g4nv`, `.g4ma`, `.g4vs`
+**Les 21 250 sont câblés le soir même.** `crates/tools/nie-site/src/routes/level5.rs` décode les
+cinq familles en process, sans une dépendance de plus — les parseurs étaient là.
+`scripts/validation/mesurer-level5.sh` échantillonne à pas régulier et exige le **jeton de la
+famille dans le corps**, jamais un code 200 : **124 / 124**. Ce qui suit reste écrit parce que
+c'est le diagnostic qui a rendu le câblage possible.
+
+**Quatre extensions changeaient de camp, et c'était une erreur de fait.** `.g4nv`, `.g4ma`, `.g4vs`
 et `.g4la` étaient classées `bloqué` — « aucun parseur ». Les quatre modules existent
 (`crates/engine/nie-formats/src/{navm,g4ma,g4vs,g4la}.rs`), sont documentés et **validés byte sur
 les fichiers réels du VFS**. Elles sont `manquant` : il y a une route à écrire, pas du reverse à

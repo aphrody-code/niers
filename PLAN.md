@@ -26,8 +26,14 @@ maître du moteur et de la forge reste [`docs/PLAN.md`](docs/PLAN.md).
 > 24), et elle en contredit un cinquième : **le VFS n'est pas à `manquant = 0`**, il porte
 > **21 250 fichiers** dont le décodeur est écrit ici sans qu'aucune route ne l'appelle — 21 047
 > `.p3lip` en tête. La raison n'est pas arithmétique : la première mesure comptait `servi` tout
-> ce que `/f` rend, octets bruts compris, si bien que sa gate **ne pouvait pas échouer**. Détail
-> au § 4 et au § 9 bis de [`docs/PLAN-SITE-ULTIME.md`](docs/PLAN-SITE-ULTIME.md).
+> ce que `/f` rend, octets bruts compris, si bien que sa gate **ne pouvait pas échouer**.
+>
+> **Le lot a suivi le soir même** : `routes::level5` décode les cinq familles en process, sans
+> une dépendance de plus, **124 / 124** à la mesure
+> (`scripts/validation/mesurer-level5.sh`). `manquant` passe de **21 450 à 194 en poids** — plus
+> aucun fichier du jeu n'est manquant, il ne reste que des capacités unitaires, dont **110
+> modules de `nie-data`**. Détail au § 4 et au § 9 bis de
+> [`docs/PLAN-SITE-ULTIME.md`](docs/PLAN-SITE-ULTIME.md).
 
 > **Amendement du 2026-09-06 (5) — le VFS est cartographié, la cible devient 100 %.** Six agents
 > ont couvert les 255 308 entrées, un document par domaine plus la synthèse

@@ -9,6 +9,7 @@ pub mod feed;
 pub mod formats;
 pub mod geometrie;
 pub mod health;
+pub mod level5;
 pub mod lua;
 pub mod modeles3d;
 pub mod pages;

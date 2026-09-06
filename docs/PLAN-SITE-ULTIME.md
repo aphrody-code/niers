@@ -281,28 +281,33 @@ Trois gardes le rendent **falsifiable**, ce qui manquait à toute matrice tenue 
   vingt caractères, et l'invariant « `interne` sans raison » est porté par le **type** — il ne
   compile pas.
 
-**Premier résultat, 2026-09-06 — 583 capacités, 255 848 unités de poids, 39 routes montées :**
+**Premier résultat, 2026-09-06 — 583 capacités, 255 848 unités de poids, 39 routes montées**,
+puis l'état après le premier lot qu'il a déclenché (`routes::level5`, le soir même) :
 
-| État | Capacités | Poids |
+| État | Capacités (avant → après) | Poids (avant → après) |
 |---|---:|---:|
-| `servi` | 114 | 225 033 |
-| `partiel` | 0 | 0 |
-| `manquant` | **205** | **21 450** |
-| `bloqué` | 10 | 3 600 |
-| `interne` | 254 | 5 765 |
+| `servi` | 114 → **125** | 225 033 → **246 289** |
+| `partiel` | 0 → 0 | 0 → 0 |
+| `manquant` | **205 → 194** | **21 450 → 194** |
+| `bloqué` | 10 → 10 | 3 600 → 3 600 |
+| `interne` | 254 → 254 | 5 765 → 5 765 |
 | **total** | **583** | **255 848** |
 
-| Source | Total | `manquant` |
+**Le poids de `manquant` est tombé de 21 450 à 194 en une soirée** : plus aucun *fichier du jeu*
+n'est manquant, il ne reste que des capacités unitaires. C'est ce que sert un instrument — il a
+désigné un corpus de 21 250 fichiers que personne ne voyait, et le câblage a suivi le jour même.
+
+| Source | Total | `manquant` (avant → après) |
 |---|---:|---:|
-| `niers` — sous-commandes | 40 | 6 |
-| Inacord — commandes IPC | 158 | 28 |
-| Azalée — pages | 81 | 38 |
-| Azalée — routes d'API | 26 | 1 |
-| `nie-data` — modules | 116 | **110** |
-| `nie-formats` — modules | 46 | 13 |
-| `nie-lua` — fonctions publiques | 34 | 4 |
-| `iecode` — sous-commandes | 39 | 0 |
-| VFS — par extension | 43 | 5 (21 250 fichiers) |
+| `niers` — sous-commandes | 40 | 6 → 6 |
+| Inacord — commandes IPC | 158 | 28 → 27 |
+| Azalée — pages | 81 | 38 → 38 |
+| Azalée — routes d'API | 26 | 1 → 1 |
+| `nie-data` — modules | 116 | **110 → 110** |
+| `nie-formats` — modules | 46 | 13 → 8 |
+| `nie-lua` — fonctions publiques | 34 | 4 → 4 |
+| `iecode` — sous-commandes | 39 | 0 → 0 |
+| VFS — par extension | 43 | 5 (21 250 fichiers) → **0** |
 
 **La gate maîtresse est ROMPUE : `manquant = 205`.** C'est le premier chiffre honnête que ce
 plan possède, et il corrige trois comptes que le plan citait de mémoire :
@@ -314,8 +319,10 @@ plan possède, et il corrige trois comptes que le plan citait de mémoire :
 - **110 des 116 modules de `nie-data` sont `manquant`.** Chacun est un parseur écrit, testé par
   golden, qu'aucune route n'appelle. C'est la mesure qui a motivé ce plan, enfin chiffrée : le
   dépôt ne sait pas *dix fois* ce qu'il expose, il en sait *dix-neuf fois* sur cette source-là.
-- **Le VFS n'est pas à `manquant = 0`.** `docs/VFS.md` l'annonçait le matin même ; l'instrument
-  le contredit le soir, avec **21 250 fichiers** — cf. § 9 bis.
+- **Le VFS n'était pas à `manquant = 0`.** `docs/VFS.md` l'annonçait le matin même ; l'instrument
+  l'a contredit le soir avec **21 250 fichiers** — et le câblage a suivi dans la foulée
+  (`routes::level5`, 124/124 mesurés). Il y est maintenant, sous une définition qui, elle, peut
+  échouer. Cf. § 9 bis.
 
 **Ce que la matrice ne dit pas, et qu'il faut lire :** `interne = 254` est le plus gros poste en
 capacités. Chacune porte sa raison, et aucune n'est « pas le temps » — ce sont l'exécution de
@@ -662,6 +669,18 @@ Les quatre dernières lignes corrigent une **erreur de fait** de `docs/VFS.md` :
 sur les fichiers réels. La distinction `manquant` / `bloqué` est celle entre « écrire une route »
 et « faire du reverse » : les y laisser aurait promis du reverse là où il n'y a qu'un branchement
 à faire. `bloqué` retombe donc de 3 784 à **3 600**.
+
+**Les cinq familles sont câblées le soir même** — `crates/tools/nie-site/src/routes/level5.rs`,
+décodage en process, aucune dépendance ajoutée (les parseurs étaient déjà liés derrière la
+feature `std`, comme les neuf géométriques du lot 9.1). Mesure :
+`scripts/validation/mesurer-level5.sh` échantillonne **à pas régulier** — jamais en tête, les
+premiers fichiers d'un dossier se ressemblent — et exige le **jeton de la famille dans le
+corps**, jamais un code 200 : **124 / 124**. Le VFS passe à `manquant = 0`, cette fois sous une
+définition qui peut échouer.
+
+Ce que le câblage ne prétend pas : `.g4ma`, `.g4vs` et `.g4la` n'ont que leur **en-tête**
+interprété, leur corps n'est pas reversé, et la ligne « produit » de chaque famille le dit dans
+la réponse. Servir ce qu'on sait lire n'oblige pas à laisser croire qu'on lit tout.
 
 **La leçon dépasse ce lot.** Une gate se conçoit en se demandant d'abord *comment elle pourrait
 échouer*. Celle du VFS ne le pouvait pas, et elle a annoncé 100 % de couverture sur un corpus

@@ -586,24 +586,27 @@ mod tests {
 
     #[test]
     fn les_agregats_somment_au_total() {
+        // `shop` est l'un des 110 modules de `nie-data` dont le parseur est ecrit et
+        // qu'aucune route n'appelle. Ce test rougira le jour ou il sera cable — et c'est
+        // voulu : un temoin de `manquant` qui survit a tout ne temoigne de rien.
         let inv = inventaire(&[
             (Source::Vfs, ".cfg.bin", 71_101),
-            (Source::Vfs, ".p3lip", 21_047),
             (Source::Vfs, ".awb", 5_512),
             (Source::Vfs, ".g4tg", 9),
             (Source::Niers, "vfs", 1),
+            (Source::NieData, "shop", 1),
         ]);
         let m = construire(&inv, &crate::app::chemins());
         assert_eq!(m.total.capacites, 5);
-        assert_eq!(m.total.poids, 71_101 + 21_047 + 5_512 + 9 + 1);
+        assert_eq!(m.total.poids, 71_101 + 5_512 + 9 + 1 + 1);
         let somme: u64 = m.par_etat.values().map(|c| c.poids).sum();
         assert_eq!(somme, m.total.poids, "la somme par état doit retomber sur le total");
-        assert_eq!(m.par_etat["manquant"].poids, 21_047);
+        assert_eq!(m.par_etat["manquant"].poids, 1);
         assert_eq!(m.par_etat["interne"].poids, 5_512);
         assert_eq!(m.par_etat["bloque"].poids, 9);
         assert_eq!(m.par_etat["servi"].poids, 71_102);
-        assert!(!m.gate.tenue, "manquant = 21 047 : la gate n'est pas tenue");
+        assert!(!m.gate.tenue, "manquant = 1 : la gate n'est pas tenue");
         assert_eq!(m.gate.manquant, 1);
-        assert_eq!(m.gate.manquant_poids, 21_047);
+        assert_eq!(m.gate.manquant_poids, 1);
     }
 }
