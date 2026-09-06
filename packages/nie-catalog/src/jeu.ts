@@ -203,6 +203,11 @@ export function cheminTypee(chemin: string): string {
 	return `/typed/${chemin}.json`;
 }
 
+/** `/typed/.../<screen>_setting.cfg.bin.json` — définition typée d'un écran de menu. */
+export function menuSettingPath(screen: string): string {
+	return cheminTypee(`data/common/gamedata/menu/cfg/${screen}_setting.cfg.bin`);
+}
+
 /**
  * `/model-full/<code>.glb` — un personnage assemblé (corps + visage + uniforme).
  *
@@ -407,6 +412,11 @@ export function urlCfg(chemin: string): string {
 /** Un `cfg.bin` décodé en structure de jeu typée. */
 export function urlTypee(chemin: string): string {
 	return baseJeu() + cheminTypee(chemin);
+}
+
+/** URL absolue de la définition typée d'un écran de menu. */
+export function menuSettingUrl(screen: string): string {
+	return baseJeu() + menuSettingPath(screen);
 }
 
 /** Un personnage assemblé, en GLB. */

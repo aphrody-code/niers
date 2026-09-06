@@ -157,4 +157,13 @@ describe("la forme des URL", () => {
 	test("la base ne garde pas de slash final", () => {
 		expect(B.endsWith("/")).toBe(false);
 	});
+
+	test("un écran menu utilise la route typed et son suffixe canonique", () => {
+		expect(jeu.menuSettingPath("main_menu")).toBe(
+			"/typed/data/common/gamedata/menu/cfg/main_menu_setting.cfg.bin.json",
+		);
+		expect(jeu.menuSettingUrl("main_menu")).toBe(
+			`${B}/typed/data/common/gamedata/menu/cfg/main_menu_setting.cfg.bin.json`,
+		);
+	});
 });
