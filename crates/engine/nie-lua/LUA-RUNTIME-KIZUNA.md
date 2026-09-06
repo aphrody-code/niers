@@ -50,6 +50,12 @@ il construit l’index physique/logique, sélectionne la version numérique corr
 et délègue la lecture au reader brut de l’appelant. Un test vérifie la sélection
 de `module_10` devant `module_9`.
 
+`RuntimeContext` fournit l’injection typée des globals primitifs que le manager
+natif pose avant un callback (nombres, booléens, chaînes). Le contexte est
+appliqué après les stubs, conservé par la session et réappliqué au `reload()` ;
+il permet donc de fournir les valeurs de scène/save réellement connues sans
+transformer un manque de contexte en table Lua truthy.
+
 Le driver `nie-game --runtime` utilise maintenant cette session persistante
 plutôt qu’une VM et des index d’include reconstruits à la main. La vérification
 Kizuna réelle termine avec `on_init=true`, `on_open=true`, 102 commandes
@@ -78,7 +84,7 @@ non prouvé.
 
 ```text
 cargo test -p nie-lua --lib
-92 passed, 0 failed, 1 ignored
+93 passed, 0 failed, 1 ignored
 
 cargo clippy -p nie-lua --lib --tests -- -D warnings
 cargo clippy -p nie-game --bins --tests -- -D warnings
@@ -130,7 +136,7 @@ qui le déconseille lorsque l’espace disque est contraint.
 ## Clôture de session — 2026-09-06
 
 Le lot de reproduction Lua/Kizuna est versionné et poussé sur `main` jusqu’à
-`dc40e1f` (`feat: include decode metrics in runtime export`). Il couvre le
+`cbe5fde` (`feat: validate live Lua bytecode before execution`). Il couvre le
 décodeur Lua 5.2, l’index VFS à versions numériques, les includes persistants,
 le pilotage live du menu, les hôtes Kizuna, les métriques d’audit et leur
 provenance.

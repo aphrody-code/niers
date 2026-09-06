@@ -31,6 +31,7 @@
 //! c'est la liste de travail du portage moteur, produite par l'exécution elle-même.
 
 use std::cell::RefCell;
+use std::collections::BTreeMap;
 use std::rc::Rc;
 
 use mlua::{Lua, MultiValue, Table, Value};
@@ -116,6 +117,49 @@ impl ApiReport {
     }
 }
 
+/// Valeurs natives primitives injectées avant l'exécution d'un chunk ou d'un menu.
+///
+/// Le manager C++ pose certains globals de contexte (`x`, `pieceIdx`, `MENU_LINIT_NONE`, …)
+/// avant d'appeler Lua. Les laisser au stub générique les transforme en tables truthy ; cette
+/// structure permet au lecteur VFS d'injecter les valeurs connues sans en inventer le contenu.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct RuntimeContext {
+    numbers: BTreeMap<String, f64>,
+    booleans: BTreeMap<String, bool>,
+    strings: BTreeMap<String, String>,
+}
+
+impl RuntimeContext {
+    /// Pose un global numérique (indice, coordonnée ou enum natif).
+    pub fn set_number(&mut self, name: impl Into<String>, value: f64) {
+        self.numbers.insert(name.into(), value);
+    }
+
+    /// Pose un global booléen fourni par le moteur.
+    pub fn set_boolean(&mut self, name: impl Into<String>, value: bool) {
+        self.booleans.insert(name.into(), value);
+    }
+
+    /// Pose un global texte fourni par le moteur.
+    pub fn set_string(&mut self, name: impl Into<String>, value: impl Into<String>) {
+        self.strings.insert(name.into(), value.into());
+    }
+
+    fn apply(&self, lua: &Lua) -> mlua::Result<()> {
+        let globals = lua.globals();
+        for (name, value) in &self.numbers {
+            globals.set(name.as_str(), *value)?;
+        }
+        for (name, value) in &self.booleans {
+            globals.set(name.as_str(), *value)?;
+        }
+        for (name, value) in &self.strings {
+            globals.set(name.as_str(), value.as_str())?;
+        }
+        Ok(())
+    }
+}
+
 /// Une VM Lua persistante, ses binders et ses comportements attachés.
 pub struct LuaSession {
     lua: Lua,
@@ -138,6 +182,8 @@ pub struct LuaSession {
     missing_includes: Rc<RefCell<Vec<String>>>,
     /// Includes effectivement résolus depuis le dernier prélèvement, dans l'ordre de chargement.
     loaded_includes: Rc<RefCell<Vec<String>>>,
+    /// Contexte natif réappliqué après chaque reconstruction de VM.
+    context: RuntimeContext,
 }
 
 impl LuaSession {
@@ -217,6 +263,7 @@ impl LuaSession {
         let stdout = Rc::new(RefCell::new(Vec::new()));
         let missing_includes = Rc::new(RefCell::new(Vec::new()));
         let loaded_includes = Rc::new(RefCell::new(Vec::new()));
+        let context = RuntimeContext::default();
         let (lua, menu_state) = Self::build_vm(
             &registry,
             &stdout,
@@ -224,6 +271,7 @@ impl LuaSession {
             include_resolver.as_ref(),
             &missing_includes,
             &loaded_includes,
+            &context,
         )?;
         Ok(Self {
             lua,
@@ -237,6 +285,7 @@ impl LuaSession {
             include_resolver,
             missing_includes,
             loaded_includes,
+            context,
         })
     }
 
@@ -260,6 +309,7 @@ impl LuaSession {
         include_resolver: Option<&IncludeResolver>,
         missing_includes: &Rc<RefCell<Vec<String>>>,
         loaded_includes: &Rc<RefCell<Vec<String>>>,
+        context: &RuntimeContext,
     ) -> Result<BuiltVm, LuaError> {
         let lua = crate::new_vm();
         install_print_capture(&lua, Rc::clone(stdout))?;
@@ -287,6 +337,7 @@ impl LuaSession {
         // Les stubs viennent EN DERNIER : la métatable de `_G` ne doit intercepter que ce qu'aucun
         // binder n'a fourni, sinon tout serait déclaré « manquant ».
         install_host_stubs(&lua)?;
+        context.apply(&lua)?;
         Ok((lua, menu_state))
     }
 
@@ -459,6 +510,7 @@ impl LuaSession {
             self.include_resolver.as_ref(),
             &self.missing_includes,
             &self.loaded_includes,
+            &self.context,
         )?;
         self.lua = lua;
         self.menu_state = menu_state;
@@ -500,6 +552,23 @@ impl LuaSession {
         Ok(())
     }
 
+    /// Injecte un contexte natif typé dans la VM vivante et le conserve pour `reload()`.
+    ///
+    /// Les valeurs sont posées après les stubs : elles remplacent donc réellement les proxies
+    /// d'accès manquant. Le contexte est remplacé en bloc pour qu'un ancien état de save/scene ne
+    /// survive pas silencieusement à un changement d'écran.
+    pub fn set_context(&mut self, context: RuntimeContext) -> Result<(), LuaError> {
+        context.apply(&self.lua)?;
+        self.context = context;
+        Ok(())
+    }
+
+    /// Retourne une copie du contexte actuellement associé à la session.
+    #[must_use]
+    pub fn context(&self) -> RuntimeContext {
+        self.context.clone()
+    }
+
     /// Confronte ce que les scripts ont réclamé à ce que les binders fournissent.
     #[must_use]
     pub fn api_report(&self) -> ApiReport {
@@ -539,6 +608,30 @@ mod tests {
         s.eval("compteur = 1").expect("eval");
         s.eval("compteur = compteur + 41").expect("eval");
         assert_eq!(s.eval("compteur").unwrap(), "42");
+    }
+
+    #[test]
+    fn le_contexte_natif_type_survit_au_reload_et_ne_devient_pas_un_stub() {
+        let mut s = session();
+        let mut context = RuntimeContext::default();
+        context.set_number("pieceIdx", 3.0);
+        context.set_boolean("isGrayout", true);
+        context.set_string("MENU_LINIT_NONE", "native-sentinel");
+        s.set_context(context.clone()).expect("contexte");
+        s.exec(
+            "context",
+            br#"assert(pieceIdx == 3); assert(isGrayout == true); assert(MENU_LINIT_NONE == "native-sentinel")"#,
+        )
+        .expect("globals de contexte");
+        assert!(s.api_report().missing.is_empty());
+        assert_eq!(s.context(), context);
+
+        s.reload().expect("reload");
+        s.exec(
+            "context-after-reload",
+            br#"assert(pieceIdx == 3); assert(isGrayout == true); assert(MENU_LINIT_NONE == "native-sentinel")"#,
+        )
+        .expect("contexte après reload");
     }
 
     #[test]
