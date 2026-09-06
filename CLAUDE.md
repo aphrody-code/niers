@@ -1,898 +1,903 @@
-# niers — instructions de travail (Claude)
+# CLAUDE.md — the rules of this repository
 
-Réécriture **pixel-perfect / byte-perfect** d’*Inazuma Eleven: Victory Road* (`nie.exe`) en Rust pur.
+Authoritative for **every** agent, not just Claude. [`AGENTS.md`](AGENTS.md) is the entry point
+and owns what is specific to working alongside another agent; [`docs/A2A-CODEX.md`](docs/A2A-CODEX.md)
+owns the messaging protocol. Neither is repeated here, and nothing here is repeated there —
+**every topic has exactly one owner**. If you find the same rule written twice, that is a bug in
+these files, not a helpful reminder.
 
-Projet réalisé dans le cadre de l’**Accord Commercial Officiel d’Exploitation N° RG-L5-VR-2026-001** du 8 août 2026 entre Rose Griffon (Level 5 France) et LEVEL-5 Inc.  
-Droits exclusifs de reverse-engineering, développement de mods, portage et outils associés explicitement concédés.
+`niers` is a **pixel-perfect / byte-perfect** rewrite of *Inazuma Eleven: Victory Road*
+(`nie.exe`) in pure Rust.
 
-## Dépôt multi-agents — tu n'y es pas seul
+Built under **Official Commercial Agreement N° RG-L5-VR-2026-001**, dated 8 August 2026, between
+Rose Griffon (Level 5 France) and LEVEL-5 Inc. Exclusive rights to reverse-engineer, to develop
+mods, to port, and to build the associated tooling are expressly granted. Framework agreement:
+`docs/legal/ACCORD_COMMERCIAL_RG-L5-VR-2026-001.pdf`.
 
-Claude Code et Codex y codent **en même temps**. Avant d'écrire une ligne, lire
-**`AGENTS.md`** (contexte commun à tous les agents) et **`docs/A2A-CODEX.md`** (le protocole).
-**Périmètre ≠ compilation.** Un agent peut respecter son périmètre à la lettre et casser
-quatre fichiers qui ne sont pas à lui : changer la **signature** d'une fonction partagée
-(`IndexVfs::page_filtree` passée à 7 paramètres) casse tous ses appelants, y compris ceux
-qu'écrivent d'autres agents au même instant. Une signature partagée s'étend par un **struct
-d'options** (`#[derive(Default)]`) en conservant la forme courte qui délègue — les appelants
-existants compilent sans être touchés.
+---
 
-En bref : annoncer son périmètre avant d'écrire, ne rien toucher en dehors, un seul auteur de
-commits, et se parler par `aphrody a2a tick` — dont **`--kind` n'accepte que `fact` et `ping`**
-(`claim`, `done`, `goal`, `block` retombent sur `ping` en silence, d'où le type codé dans le
-sujet). Listener de ce dépôt : `127.0.0.1:8792` ; `8788` est celui du dépôt `aphrody`.
+## Language — English to name, French to answer
 
-## Deux machines — savoir sur laquelle on est
+Decided by the user on **2026-09-06**. `niers` is a **worldwide** project, not a French one.
+**Think in English** (or Japanese); translate only when you speak to the user.
 
-Ce fichier a été écrit depuis le **poste Windows**. Le VPS Linux (`/home/ubuntu/niers`) est une
-autre machine, et une bonne moitié des pièges ci-dessous n'y existe pas.
-
-- Le hook `SessionStart` (`.claude/hooks/etat.sh`) affiche la plateforme et l'état **mesuré**
-  dès l'ouverture : plateforme, git, cible RE, KB, forge, gisements, services. Ce qu'il dit prime
-  sur ce fichier — lui mesure, ce fichier se souvient. **Sauf quand il affirme au lieu de mesurer** :
-  il a longtemps annoncé « CETTE machine est le VPS Linux » en dur, y compris sous Git Bash, en
-  invalidant à tort toute la section Windows. Corrigé le 2026-09-03 (test sur `uname -s`) — mais
-  face à une contradiction entre le hook et l'évidence (`C:\…` dans `NIE_GAME_DIR`, des `.exe`),
-  trancher sur `uname -s`, jamais sur une phrase du hook.
-- Sur **Linux** : pas de MSVC (donc pas de voie B de la forge), pas de Git Bash / MSYS / UAC,
-  `cargo fmt --all` fonctionne, `sed -i` ne mange pas les backslashes, `niers mem` marche.
-  La section « Pièges d'environnement » plus bas ne vaut **que** pour le poste Windows.
-- Sur le **VPS** : les 18 services de production tournent ici (azalee-*, rg-*, bxc-*,
-  nie-model-serve). `pkill -f` y tue la session Claude — cibler un PID.
-- `.claude/hooks/garde-bash.sh` bloque en amont les commandes que ce dépôt n'accepte pas
-  (`python` direct, `node`, `bun install` hors racine, `pkill -f`, `cargo test --workspace` sans
-  redirection) en donnant la forme correcte. Commandes du dépôt : `/etat`, `/verif`, `/forge`, `/porter`.
-
-## Mode de fonctionnement obligatoire
-
-- Tu es un exécutant autonome. Dès que l’utilisateur lance une session, tu codes immédiatement.
-- Tu ne poses **aucune question**. Tu ne demandes **aucune confirmation**. Tu ne contredis **jamais**.
-- Tu travailles en boucle continue : analyser → planifier → implémenter → tester → mettre à jour le plan → continuer.
-- Dès qu’un jalon est atteint, tu proposes et commences automatiquement des objectifs plus ambitieux.
-- Style : technique, direct, orienté résultats. Zéro politesse inutile, zéro digression.
-- Communiquer exclusivement en **français** — cela vaut pour la **prose adressée à
-  l'utilisateur**, et seulement pour elle. Cf. § *Langue* ci-dessous.
-
-## Langue — français pour répondre, **anglais pour nommer** (décidé le 2026-09-06)
-
-`niers` est un projet **mondial**, pas français. Consigne de l'utilisateur, radicale et
-globale : **penser en anglais (ou en japonais), et ne traduire qu'au moment de répondre.**
-
-| Quoi | Langue |
+| What | Language |
 |---|---|
-| Réponses à l'utilisateur, rapports, résumés | **français** |
-| Noms de **fichiers** et leurs préfixes, noms de **dossiers** | **anglais** |
-| **Variables, fonctions, types, champs, constantes, modules** | **anglais** |
-| **Slugs du site, URLs, routes, paramètres de query, clés JSON publiques** | **anglais** |
-| Commandes CLI, tables et colonnes créées à partir d'ici | **anglais** |
+| Prose addressed to the user — reports, summaries, explanations | **French** |
+| File and directory names, and their prefixes | **English** |
+| Variables, functions, types, fields, constants, modules | **English** |
+| **URLs, route patterns, query parameters, site slugs, public JSON keys** | **English** |
+| CLI commands, and any table or column created from now on | **English** |
+| Markdown written for agents (`CLAUDE.md`, `AGENTS.md`, `README.md`, `docs/`) | **English** |
 
-Un identifiant français est désormais le signe qu'on a réfléchi dans la mauvaise langue.
+A French identifier now means you thought in the wrong language.
 
-**La dette existante ne se migre PAS d'un coup**, et surtout pas par `sed` (§ *Pièges
-d'édition* : un remplacement de segment touche aussi les URLs et les alias d'import, et casse en
-silence). Règle de coexistence :
+**The existing debt is not migrated in one sweep, and never with `sed`** (see § *Editing
+pitfalls*: a segment replacement also hits URLs and import aliases, and breaks in silence).
 
-1. **Tout nom nouveau est en anglais**, sans exception.
-2. Une **API publique déjà servie** ne se renomme pas au fil de l'eau — renommer une route ou
-   une clé JSON casse ses consommateurs (nie-web, MCP, Inacord, Azalée). Cela se fait par un lot
-   dédié, avec double service ou redirection, jamais en passant.
-3. Un renommage **interne** (fonction privée, variable locale) est licite quand on tient déjà le
-   fichier.
-4. Les **noms produits restent gelés** (décision du 2026-09-05) : Azalée, Aphrody, Inacord,
-   nie, `niers`, les crates `nie-*`, le préfixe de tables `inagle_`.
+1. **Every new name is English**, no exception.
+2. An **already-served public API** is not renamed in passing — renaming a route or a JSON key
+   breaks its consumers (nie-web, MCP, Inacord, Azalée). It takes a dedicated batch, with dual
+   serving or a redirect.
+3. An **internal** rename (private function, local variable) is fine while you already hold the
+   file.
+4. **Product names stay frozen** (decision of 2026-09-05): Azalée, Aphrody, Inacord, nie,
+   `niers`, the `nie-*` crates, the `inagle_` table prefix.
 
-**Le cap est unique** : `docs/PLAN-SITE-ULTIME.md` — un seul site qui expose TOUT ce que le
-dépôt sait faire, piloté par une matrice de couverture (`servi` / `interne` avec sa raison /
-`manquant`), gate maîtresse `manquant = 0`. Les plans subordonnés et leur ordre sont dans
-`docs/README.md` § « La direction » : `/PLAN.md` (l'échéance de la bascule),
-`docs/CODEX-JOUR-UNIQUE.md` (l'exécution du jour), `docs/PLAN.md` + `docs/FORGE.md` +
-`apps/inacord/ROADMAP.md` (le long terme), `docs/stack/` (le gel).  
-Le reverse-engineering de `nie.exe` est le **moyen**. Le moteur Rust est la **fin**.  
-La **forge** (`docs/FORGE.md`) est le **juge** : elle produit `nie.exe` et mesure, à l'octet, la part
-réellement générée par le dépôt. Un portage qui n'y bouge rien n'a rien prouvé.
+First module written under this rule, as the reference:
+`crates/tools/nie-site/src/routes/text.rs` — English identifiers and URLs, French comments, like
+its twenty neighbours.
 
-## Outils — lequel dans quelle situation (mesuré ici le 2026-09-02)
+## Operating mode
 
-**Le dépôt fait 3 Go dans `apps/` (`node_modules`, `.next`) et 111 Go dans `data/`.** Tout outil
-qui ne respecte pas `.gitignore` s'y noie. Mesures faites à la racine :
+You are an autonomous executor. The moment a session opens, you write code.
 
-| Situation | Outil | Mesure / raison |
+- You ask **no questions** and request **no confirmation**. You never interrupt the flow, and you
+  never refuse a technical task belonging to this project.
+- You work in a continuous loop: analyse → plan → implement → test → update the plan → continue.
+- When a milestone lands, you propose and immediately start a more ambitious one.
+- Style: technical, direct, results-first. No filler, no digression.
+- You keep going until the port is complete or the user explicitly stops the session.
+- You stay careful with the irreversible and the external — deleting data, pushing, deploying,
+  sending anything to a third-party service: confirm first.
+
+## The direction — one cap, four subordinate plans
+
+**The cap is single**: `docs/PLAN-SITE-ULTIME.md` — one site exposing EVERYTHING this repository
+can do, driven by a coverage matrix (`servi` / `interne` with its reason / `manquant`), master
+gate `manquant = 0`.
+
+The subordinate plans and their order are in `docs/README.md` § *La direction*: `/PLAN.md` (the
+switchover deadline), `docs/CODEX-JOUR-UNIQUE.md` (today's execution), `docs/PLAN.md` +
+`docs/FORGE.md` + `apps/inacord/ROADMAP.md` (the long game), `docs/stack/` (the freeze).
+
+Reverse-engineering `nie.exe` is the **means**. The Rust engine is the **end**. The **forge**
+(`docs/FORGE.md`) is the **judge**: it produces `nie.exe` and measures, to the byte, how much of
+it this repository actually generates. A port that moves nothing there has proved nothing.
+
+## Two machines — know which one you are on
+
+This file was written from the **Windows workstation**. The Linux VPS (`/home/ubuntu/niers`) is a
+different machine, and a good half of the traps below do not exist there.
+
+- The `SessionStart` hook (`.claude/hooks/etat.sh`) prints the platform and the **measured** state
+  as soon as the session opens: platform, git, RE target, KB, forge, data seams, services. What it
+  says outranks this file — it measures, this file remembers. **Except when it asserts instead of
+  measuring**: it long claimed "THIS machine is the Linux VPS" in hard-coded text, including under
+  Git Bash, wrongly invalidating the whole Windows section. Fixed on 2026-09-03 (it now tests
+  `uname -s`) — but when the hook and the evidence disagree (`C:\…` in `NIE_GAME_DIR`, `.exe`
+  files around), decide on `uname -s`, never on a sentence from the hook.
+- On **Linux**: no MSVC (so no forge path B), no Git Bash / MSYS / UAC, `cargo fmt --all` works,
+  `sed -i` does not eat backslashes, `niers mem` works.
+- On the **VPS**: the 18 production services run here (azalee-*, rg-*, bxc-*, nie-model-serve).
+- `.claude/hooks/garde-bash.sh` blocks, up front, the commands this repository does not accept
+  (direct `python`, `node`, `bun install` outside the root, `pkill -f`, `cargo test --workspace`
+  without redirection) and prints the correct form instead. Repository commands: `/etat`,
+  `/verif`, `/forge`, `/porter`.
+
+**Everything in § *Windows-only environment traps* applies to the Windows workstation only.**
+
+## Tools — which one for which situation (measured here on 2026-09-02)
+
+**This repository is 3 GB under `apps/` (`node_modules`, `.next`) and 111 GB under `data/`.** Any
+tool that ignores `.gitignore` drowns in it. Measurements taken at the root:
+
+| Situation | Tool | Measurement / reason |
 |---|---|---|
-| Chercher du texte dans le code | **`rg`** (15.1.0) | `rg -l NIE_GAME_DIR` = **0,061 s** ; `grep -rn` = **timeout à 60 s** (il descend dans `node_modules`) |
-| Chercher dans **un** fichier ou un flux (pipe) | `grep` | pas de parcours d'arbre : rien à gagner ailleurs |
-| Lister des fichiers | **`rg --files -g '<glob>'`** ou **`fdfind`** | `find . -name '*.rs'` = **5,4 s / 840** (pollué) ; `fdfind -e rs` = **0,017 s / 687** |
-| Chercher sous un sous-arbre déjà propre (`crates/`) | **`rg` quand même** | `hyperfine` (10 runs) : `rg` **19,1 ms**, `git grep` 41,7 ms, `grep -r` 71,3 ms — **3,73×**. Seul le *listage* est à égalité (`find` ≈ `fd`, 0,01 s) |
-| Sortie exploitable sans relire | `rg --json`, `rg -l`, `rg -c`, `rg --stats` | `-l`/`-c` situent sans déverser les lignes : moins de tokens pour la même information |
-| Recherche depuis le harnais | outils **Grep/Glob** dédiés | même moteur que `rg`, sortie déjà structurée ; le Bash sert quand il faut composer (pipe, `--json`, comptage) |
-| Recherche **récurrente**, du domaine | **`niers find` / `niers grep`** | embarquent le moteur `ignore`/ripgrep. Une recherche qui mérite d'être rejouée s'écrit en Rust dans `nie-cli` ; `rg` en direct ne vaut que pour l'exploration jetable d'une session |
-| Fichiers **du jeu** | **`niers vfs find`** | le VFS n'est pas sur le disque : `rg`/`fdfind` sur `data/` ne voient pas l'intérieur des CPK |
-| **Énumérer TOUT** le VFS | `niers vfs find 'data/' -n 300000` | rend les **255 308** entrées (chemin, taille, CPK) en **1,9 s**. `-n` vaut 100 par défaut : sans lui on croit le VFS minuscule |
-| Contenu reversé de `nie.exe` | `sqlite3 var/niers.sqlite` | la base fait **15,5 Go** : toujours un `WHERE` indexé et un `LIMIT`, jamais un `SELECT *` |
-| Données de jeu (perso, skill, item) | façade `@niers/catalog`, `niers wiki` | § *Les quatre gisements* |
-| Qui appelle quoi / définition d'un symbole | outil **LSP**, ou la KB | `rg` sur un identifiant courant rend des centaines de faux positifs |
-| Dépôt **à distance** | MCP `repo_grep` / `repo_read` | inutile de rapatrier pour lire |
-| JSON | **`jq`** (1.8.1) | 6,8 Mo parcourus en 0,3 s |
-| Éditer du code | **Edit/Write** | `sed -i` n'est pas idempotent et n'a aucun garde-fou ; cf. § *Pièges d'édition* |
-| Éditer un flux dans un pipe | `sed`/`awk` | c'est leur seul emploi correct ici |
-| Remplacer dans N fichiers | `rg -l <motif>` **puis** Edit fichier par fichier | `rg --passthru` prévisualise le remplacement sans écrire |
-| Compter des lignes | `awk '$2!="total"{s+=$1} END{print s}'` | `xargs wc -l \| tail -1` sous-compte (§ pièges) |
+| Search text across the code | **`rg`** (15.1.0) | `rg -l NIE_GAME_DIR` = **0.061 s**; `grep -rn` = **60 s timeout** (it descends into `node_modules`) |
+| Search inside **one** file or a pipe | `grep` | no tree walk: nothing to gain elsewhere |
+| List files | **`rg --files -g '<glob>'`** or **`fdfind`** | `find . -name '*.rs'` = **5.4 s / 840** (polluted); `fdfind -e rs` = **0.017 s / 687** |
+| Search an already-clean subtree (`crates/`) | **still `rg`** | `hyperfine` (10 runs): `rg` **19.1 ms**, `git grep` 41.7 ms, `grep -r` 71.3 ms — **3.73×**. Only *listing* is a tie (`find` ≈ `fd`, 0.01 s) |
+| Output you can use without re-reading | `rg --json`, `rg -l`, `rg -c`, `rg --stats` | `-l`/`-c` locate without dumping lines: fewer tokens for the same information |
+| Searching from the harness | the **Grep/Glob** tools | same engine as `rg`, already structured; Bash wins when you must compose (pipe, `--json`, counting) |
+| A **recurring**, domain search | **`niers find` / `niers grep`** | they embed the `ignore`/ripgrep engine. A search worth replaying gets written in Rust in `nie-cli`; raw `rg` is for throwaway exploration only |
+| **Game** files | **`niers vfs find`** | the VFS is not on disk: `rg`/`fdfind` over `data/` cannot see inside the CPKs |
+| Enumerate the **whole** VFS | `niers vfs find 'data/' -n 300000` | returns all **255 308** entries (path, size, CPK) in **1.9 s**. `-n` defaults to 100: without it you will believe the VFS is tiny |
+| Reverse-engineered content of `nie.exe` | `sqlite3 var/niers.sqlite` | the database is **15.5 GB**: always an indexed `WHERE` and a `LIMIT`, never a `SELECT *` |
+| Game data (character, skill, item) | the `@niers/catalog` facade, `niers wiki` | § *The four data seams* |
+| Who calls what / where a symbol is defined | the **LSP** tool, or the KB | `rg` on a common identifier returns hundreds of false positives |
+| A **remote** repository | MCP `repo_grep` / `repo_read` | no need to fetch it to read it |
+| JSON | **`jq`** (1.8.1) | 6.8 MB parsed in 0.3 s |
+| Editing code | **Edit/Write** | `sed -i` is not idempotent and has no guard rail; § *Editing pitfalls* |
+| Editing a stream in a pipe | `sed`/`awk` | their only correct use here |
+| Replacing across N files | `rg -l <pattern>` **then** Edit file by file | `rg --passthru` previews the replacement without writing |
+| Counting lines | `awk '$2!="total"{s+=$1} END{print s}'` | `xargs wc -l \| tail -1` undercounts: xargs splits into several invocations, each with its own `total` (15 549 vs 175 042 lines) |
 
-- **Toujours écrire `ast-grep`, jamais `sg`.** ast-grep pose un alias `sg` qui **masque `setgroup`**
-  (util-linux) : il a été retiré volontairement de `~/.cargo/bin`. `sg` doit rester `/usr/bin/sg`.
-- **`fd` existe maintenant** (10.5.0, en plus de `fdfind` 10.3.0). Piège : **fd prend le motif AVANT
-  le chemin**, à l'inverse de `find` — `fd -e rs . crates`, jamais `fd -e rs crates` (qui cherche des
-  fichiers *nommés* « crates » et rend 0).
-- Toujours absents : `comby`, `semgrep`, `ugrep`, `gron`, `scc`, `srgn`. `cargo binstall -y <nom>`
-  les pose en secondes (binaires précompilés) — mais **binstall abandonne tout le lot** si un seul
-  nom est inconnu, et `-y` est déjà `--no-confirm` (le passer deux fois est une erreur).
-- Présents et vérifiés : `rg` 15.1.0, `fd` 10.5.0 / `fdfind` 10.3.0, `jq` 1.8.1, `sqlite3` 3.46.1,
+- **Always write `ast-grep`, never `sg`.** ast-grep installs an `sg` alias that **shadows
+  `setgroup`** (util-linux); it was deliberately removed from `~/.cargo/bin`. `sg` must stay
+  `/usr/bin/sg`.
+- **`fd` now exists** (10.5.0, alongside `fdfind` 10.3.0). Trap: **fd takes the pattern BEFORE the
+  path**, the opposite of `find` — `fd -e rs . crates`, never `fd -e rs crates` (which looks for
+  files *named* "crates" and returns 0).
+- Still missing: `comby`, `semgrep`, `ugrep`, `gron`, `scc`, `srgn`. `cargo binstall -y <name>`
+  installs them in seconds (prebuilt binaries) — but **binstall drops the whole batch** if a
+  single name is unknown, and `-y` already *is* `--no-confirm` (passing it twice is an error).
+- Present and verified: `rg` 15.1.0, `fd` 10.5.0 / `fdfind` 10.3.0, `jq` 1.8.1, `sqlite3` 3.46.1,
   `just`, `uv`, `bun`, `ffmpeg`, ImageMagick (`compare` — SSIM), `xxd`.
 
-### Outillage installé le 2026-09-02 — ce que chacun a mesurablement gagné
+### Tooling installed on 2026-09-02 — what each one measurably bought
 
-Installés par `cargo binstall` (+ `duckdb` par son script officiel), puis **mesurés sur ce dépôt** ;
-ceux qui n'apportent rien ici sont dits tels quels plutôt que recommandés par principe.
+Installed with `cargo binstall` (plus `duckdb` via its official script), then **measured on this
+repository**. The ones that buy nothing here are described as such rather than recommended on
+principle.
 
-| Outil | Gain **mesuré ici** | Quand s'en servir |
+| Tool | Gain **measured here** | When to use it |
 |---|---|---|
-| `hyperfine` 1.20 | remplace un `time` unique par 10 runs ± σ — il a **invalidé** deux de mes affirmations | toute comparaison de perf, jamais `time` seul |
-| `jaq` 3.1.1 | **1,95×** plus rapide que `jq` (94,9 ms vs 185,1 ms sur 6,8 Mo), sortie **identique** | gros JSON ; `jq` reste la référence de compatibilité |
-| `tokei` 14.0 | ventile ce que `wc` ne sait pas : **147 323** lignes de code Rust, pas 219 388 (33 % = commentaires + blancs) | tout décompte de taille |
-| `ast-grep` 0.45 | cherche une **structure** : 3 514 `pub fn … -> Result<…>` dans `nie-formats`, 5 `.unwrap()` dans `nie-core/src` | réécriture de code — remplace la regex sur du code |
-| `hexyl` 0.17 | dump hexa coloré et lisible d'un `.cfg.bin` (magic, offsets) | formats binaires Level-5, forge, byte-exact |
-| `duckdb` 1.5.5 | lit SQLite/JSON/CSV/Parquet en SQL (`sqlite_scan`) | agrégats et jointures **entre gisements** ; pour une requête indexée simple, `sqlite3` reste 100× plus direct |
-| `cargo-nextest` | **2,81× plus LENT** sur un petit crate (`nie-pe` : 1,131 s vs 402,8 ms) — un process par test | ne PAS l'utiliser par crate ; son intérêt éventuel est le workspace |
-| `difft`, `sd`, `watchexec`, `nu`, `sccache`, `tree-sitter`, `dust` | posés, non encore mesurés ici | ne pas les recommander avant de les avoir mesurés |
+| `hyperfine` 1.20 | replaces a single `time` with 10 runs ± σ — it **invalidated** two of my own claims | any performance comparison, never a bare `time` |
+| `jaq` 3.1.1 | **1.95×** faster than `jq` (94.9 ms vs 185.1 ms on 6.8 MB), **identical** output | large JSON; `jq` stays the compatibility reference |
+| `tokei` 14.0 | breaks down what `wc` cannot: **147 323** lines of Rust code, not 219 388 (33 % is comments and blanks) | any size count |
+| `ast-grep` 0.45 | searches a **structure**: 3 514 `pub fn … -> Result<…>` in `nie-formats`, 5 `.unwrap()` in `nie-core/src` | rewriting code — it replaces regex over code |
+| `hexyl` 0.17 | readable coloured hex dump of a `.cfg.bin` (magic, offsets) | Level-5 binary formats, forge, byte-exactness |
+| `duckdb` 1.5.5 | reads SQLite/JSON/CSV/Parquet in SQL (`sqlite_scan`) | aggregates and joins **across seams**; for one indexed query `sqlite3` stays 100× more direct |
+| `cargo-nextest` | **2.81× SLOWER** on a small crate (`nie-pe`: 1.131 s vs 402.8 ms) — one process per test | do NOT use it per crate; its only possible value is the whole workspace |
+| `difft`, `sd`, `watchexec`, `nu`, `sccache`, `tree-sitter`, `dust` | installed, not yet measured here | do not recommend them before measuring them |
 
-### Le shell : ce qui casse, et ce qui n'est pas le problème
+## The shell — what breaks, and what is not the problem
 
-- **Le shell n'est pas le goulot.** Mesuré : `bash -c true` démarre en **3,2 ms** (50 lancements en
-  0,159 s). Changer de shell ne ferait rien gagner ; ce qui coûte, ce sont les allers-retours et les
-  mesures fausses.
-- **`$?` à travers un pipe est le code du DERNIER maillon.** `uv run x.py | tail` rend celui de
-  `tail`, donc `0` : une preuve en échec passe pour verte (payé le 2026-09-02). `bash` est désormais
-  lancé avec `set -o pipefail` via `.claude/shell-init.sh` (posé par `BASH_ENV` dans
-  `.claude/settings.json`), **au premier niveau seulement** — les scripts du dépôt et les
-  build-scripts cargo/cmake gardent leur sémantique. Sans pipefail, lire `${PIPESTATUS[0]}`.
-- **Contrepartie assumée : `| head` peut rendre un code non nul.** Le producteur meurt de SIGPIPE
-  quand `head` ferme le tuyau. Mesuré : `jq|head` = **141**, `seq|head` = **141**, `sort|head` = **2**,
-  mais `rg|head` = 0 et `cat|head` = 0 (ils gèrent SIGPIPE). **Un 141 après un `| head` est une
-  coupure, pas un échec** — ne pas ouvrir de diagnostic dessus. Quand le code retour compte, limiter
-  à la source : `rg -m5`, `jq 'limit(5; …)'`, `LIMIT 5`. Ce compromis est délibéré : un faux vert
-  invisible (le bug d'origine) coûte plus cher qu'un faux rouge qui s'explique en une ligne.
-- **Un transcript, un dump, une réponse d'API : c'est du JSON, donc `jq`.** Extraire les commandes
-  d'un `.jsonl` avec `rg` + regex a tronqué la source (5 817 au lieu de 24 832) et rendu 0 sur trois
-  comptages : les `\"` échappés cassent la regex en silence. `jq -r '… | .input.command'` lit la
-  structure et ne peut pas se tromper de frontière.
-- **`cd` dans une commande persiste pour les suivantes.** Un `cd` vers un dossier hors dépôt fait
-  échouer le `git` de la commande d'après avec « not a git repository », ce qui accuse git au lieu du
-  `cd`. Chemins absolus, ou `( cd x && … )` en sous-shell.
-- **`sed -i` : 135 usages, et il échoue en silence des deux côtés.** Vérifié : motif absent →
-  0 remplacement, `exit=0`, fichier intact et rien ne le dit ; motif présent 2 fois là où on en
-  visait 1 → 2 remplacements, `exit=0`. `Edit` échoue bruyamment dans les deux cas (motif introuvable,
-  motif ambigu). Pour modifier un fichier suivi : `Edit`, jamais `sed -i`.
-- Répartition mesurée des 24 832 commandes : **18 %** lisent (`cat`/`head`/`tail`/`sed -n`),
-  **9 %** cherchent (`rg`/`grep`), le reste exécute. Les outils `Grep`/`Glob` du harnais n'ont
-  **jamais** été appelés (0 sur 6 800 appels d'outils) — pour une recherche simple dont on ne veut
-  que le résultat, ils évitent un aller-retour ; `rg` en Bash reste meilleur dès qu'il faut composer
-  (pipe, `--json`, `uniq -c`).
+- **The shell is not the bottleneck.** Measured: `bash -c true` starts in **3.2 ms** (50 launches
+  in 0.159 s). Changing shells would gain nothing; what costs is round trips and wrong
+  measurements.
+- **`$?` through a pipe is the last stage's code.** `uv run x.py | tail` returns `tail`'s, so `0`:
+  a failing proof reads as green (paid for on 2026-09-02). `bash` is now launched with
+  `set -o pipefail` via `.claude/shell-init.sh` (installed by `BASH_ENV` in
+  `.claude/settings.json`), **at the top level only** — repository scripts and cargo/cmake build
+  scripts keep their semantics. Without pipefail, read `${PIPESTATUS[0]}`.
+- **Accepted trade-off: `| head` can return non-zero.** The producer dies of SIGPIPE when `head`
+  closes the pipe. Measured: `jq|head` = **141**, `seq|head` = **141**, `sort|head` = **2**, but
+  `rg|head` = 0 and `cat|head` = 0 (they handle SIGPIPE). **A 141 after `| head` is a cut, not a
+  failure** — do not open an investigation on it. When the exit code matters, limit at the source:
+  `rg -m5`, `jq 'limit(5; …)'`, `LIMIT 5`. The trade is deliberate: an invisible false green (the
+  original bug) costs more than a false red you can explain in one line.
+- **A transcript, a dump, an API response: that is JSON, so `jq`.** Extracting commands from a
+  `.jsonl` with `rg` + regex truncated the source (5 817 instead of 24 832) and returned 0 on three
+  counts: escaped `\"` breaks the regex in silence. `jq -r '… | .input.command'` reads the
+  structure and cannot get the boundaries wrong.
+- **A `cd` inside one command persists into the next ones.** A `cd` outside the repository makes
+  the following command's `git` fail with "not a git repository", which blames git instead of the
+  `cd`. Use absolute paths, or `( cd x && … )` in a subshell.
 
-## Les commandes du dépôt sont publiées globalement
+## Python — the file, not the line
 
-`just installer` publie dans `~/.local/bin` (déjà dans le PATH) les **20 binaires Rust** de
-`target/release` et **5 lanceurs** de CLI Bun. Fait le 2026-09-02 : 25 posés, 0 collision.
+Measured on 2026-09-02 across this repository's 21 sessions — **24 832 unique Bash commands**,
+extracted with `jq` then deduplicated (resumed sessions replay the same messages across several
+`.jsonl`): **155 `uv run python -c` against 24 `uv run <file>.py`**. Almost nothing survived,
+while 77 versioned `.py` already exist.
 
-- **Par liens symboliques, jamais par copie** : 174 Mio de binaires (dont `nie-editor` à 82 Mio) ne
-  sont écrits qu'une fois, et un `cargo build --release` met à jour la commande publiée sans
-  réinstaller. Une copie se périmerait en silence.
-- **Le script refuse d'écraser un exécutable étranger** déjà dans le PATH — leçon du jour, où
-  l'alias `sg` d'ast-grep a masqué `setgroup`. Aucune collision sur les 25.
-- Les CLI Bun sont publiées sous `nie-catalog`, `niers-azalee`, `niers-inagle`, `niers-mcp`,
-  `niers-bxc`, via un lanceur `bun --bun` (jamais `bun run` : le shebang `node` serait honoré).
-- **`NIE_GAME_DIR=/home/ubuntu/niers` est posée** dans `.claude/settings.json`. Sans elle, les 4
-  `export_*` échouent hors du dépôt : ils appellent bien `resolve_game_dir()` (doctrine respectée),
-  mais depuis `/tmp` aucun ancêtre ne porte `data/cpk_list.cfg.bin`. Avec elle, les 20 commandes
-  fonctionnent depuis n'importe quel répertoire (vérifié : `export_skills` → 1004 skills, code 0).
-- Les `export_*` n'ont **pas** de `--help` : leur absence de réponse à `--help` n'est pas une panne.
-- Doctrine inchangée : **`niers` reste la seule CLI utilisateur**. `nie-mem` et `nie-steam`
-  recouvrent `niers mem` / `niers steam` ; une commande nouvelle s'écrit dans `nie-cli`, jamais dans
-  un binaire de plus.
+- Always `uv run`; calling `python`/`python3` directly is blocked by `garde-bash.sh`.
+- **This is NOT a speed problem.** `uv run python -c` starts in **0.064 s**, and on a real 6.8 MB
+  file Python answers in **0.269 s** against **0.201 s** for `jq`. Never justify a tool change here
+  with performance: the gap does not exist.
+- **It is a quoting-layers problem.** The body crosses bash *before* Python: `$VAR` is substituted,
+  `$(…)` is **executed**, `\\` becomes `\`. Verified: `uv run python -c "print(len('\\'))"` dies
+  with `SyntaxError: unterminated string literal` — the shell ate the backslash. Same cause as the
+  literal `\0` that ends up in a Rust source (§ *Editing pitfalls*). Writing Python inside a shell
+  string means debugging two languages.
+- **Rule: more than 2 lines of Python ⇒ a file.** Scratchpad if throwaway, `scripts/` if
+  versioned, then `uv run <file>`. A file is fixed with Edit, replayed identically, cited as
+  `path:line` — and never goes through the quoting again. `garde-bash.sh` now refuses a
+  `python -c` longer than 2 lines and prints this form.
+- **PEP 723 replaces `--with`, but ONLY for a standalone script.** A `# /// script` /
+  `# dependencies = ["numpy"]` / `# ///` header makes `uv run` resolve dependencies on its own
+  (verified: numpy 2.5.2, 0.6 s cold). **Trap paid for**: that block runs the script in an
+  **isolated** environment, so without the repository's `.venv` — a script importing the RE
+  toolbox (`uemu`, capstone, pefile, unicorn) then dies with `ModuleNotFoundError`. Rule:
+  - **standalone** script (no repository import) → PEP 723 block with its dependencies;
+  - script leaning on the **repository toolbox** → **no** block, `uv run <file>` picks up the
+    project `.venv`. That is what the 47 `scripts/validate_*.py` do.
+- Which tool for what: **JSON** → `jq` (one quoting layer, and no `except: continue` silently
+  swallowing the offending lines); **files in bulk** → `fdfind -x`; **dates** → `date -d @<epoch>`;
+  **binary / PE / disassembly** → Python is the right tool (the `.venv` toolbox: capstone, pefile,
+  lief, iced-x86, unicorn, angr), but **in a file**; **recurring and domain-specific** → a `niers`
+  command in Rust.
 
-## Build / test (règles strictes)
+## Repository binaries are published globally
 
-- Workspace Cargo, 34 crates (32 compilées) rangées par rôle :
-  - `crates/forge/*` — production du binaire (`nie-pe`, `nie-asm`, `nie-forge`) + échafaudage RE
-    (`nie-re`, `nie-index`, `nie-seed`, `nie-queue`, `nie-trace`).
-  - `crates/engine/*` — le moteur (`nie-core`, `nie-formats`, `nie-data`, `nie-render3d`, …).
-  - `crates/tools/*` — outillage (`nie-cli`, `nie-wiki`, `nie-steam`, `nie-model-serve`, …).
-  - `crates/archive/*` — hors build, référence seule (`nie-engine`, `nie-rs`).
-- Lints workspace (`[workspace.lints]`) : `todo!`, `unimplemented!`, `dbg_macro` → **deny**.
-- `nie-core`, `nie-pe`, `nie-asm`, `nie-forge` : `#![warn(missing_docs)]` → documenter **chaque** item `pub`.
-- Avant tout commit : `cargo clippy -p <crate> --lib --tests` doit retourner **0 warning**.
-- Golden tests : `cargo test -p nie-data --test <fam>_golden`.
-- **`nie-formats` n'active par défaut que `std` et `lua`** : `serde`, `textures`, `images` sont
-  optionnelles. Un test `#![cfg(all(…))]` sur une feature éteinte affiche « ok. 0 passed » — un
-  **faux vert**, deux fois vécu. Déclarer `[[test]] required-features = […]` (le harnais dit alors
-  pourquoi il saute), et lancer `--features images,textures` pour tout ce qui touche l'image.
-- **Même piège, forme plus brutale, réparé le 2026-09-05** : une feature éteinte ne donne pas
-  toujours un faux vert, elle peut CASSER le portail. 24 tests de `nie-data` appelaient
-  `nie_data::typed` (gaté derrière `serde`) sans le déclarer : `cargo clippy -p nie-data --lib
-  --tests` échouait en **E0433**, sur un crate sain. Qui suivait la consigne à la lettre voyait
-  une erreur et devait deviner `--features serde`. Corrigé par 24 `[[test]] required-features`.
-  Devant un clippy qui échoue sans raison, regarder les features optionnelles du crate **avant**
-  d'accuser son propre code.
-- Une suite qui rend `0 passed` n'est jamais un succès : c'est une suite qui n'a pas tourné.
-- **Une garde de test qui teste un chemin en dur au lieu de `NIE_GAME_DIR` se skippe TOUJOURS**,
-  en silence (vécu sur `override_skill_golden.rs`, qui ne testait que `/mnt/c/…` : sur le VPS il
-  ne s'exécutait jamais et la suite s'annonçait verte). Une garde se lit `NIE_GAME_DIR` d'abord.
-- **`dotnet` est ABSENT du VPS** : `csharp/` ne s'y compile ni ne s'y teste. Un lot C# n'y est
-  que **relu** — le dire, ne jamais l'annoncer vérifié.
-- Le dépôt peut être réorganisé **pendant** une session (crates déplacés/créés par un travail
-  parallèle) : si un build échoue sur un crate étranger, vérifier `cargo metadata --no-deps`,
-  attendre, et ne jamais déplacer ni « réparer » le crate d'une autre session.
+`just installer` publishes the **20 Rust binaries** from `target/release` and **5 Bun CLI
+launchers** into `~/.local/bin` (already on `PATH`). Done on 2026-09-02: 25 installed, 0
+collisions.
 
-## Release de l'app desktop — une seule commande
+- **By symlink, never by copy**: 174 MiB of binaries (including `nie-editor` at 82 MiB) are
+  written once, and a `cargo build --release` updates the published command without reinstalling.
+  A copy would go stale in silence.
+- **The script refuses to overwrite a foreign executable** already on `PATH` — the lesson of the
+  day ast-grep's `sg` alias shadowed `setgroup`.
+- The Bun CLIs are published as `nie-catalog`, `niers-azalee`, `niers-inagle`, `niers-mcp`,
+  `niers-bxc`, through a `bun --bun` launcher (never `bun run`: the `node` shebang would be
+  honoured).
+- **`NIE_GAME_DIR=/home/ubuntu/niers` is set** in `.claude/settings.json`. Without it the four
+  `export_*` fail outside the repository: they do call `resolve_game_dir()` (doctrine respected),
+  but from `/tmp` no ancestor carries `data/cpk_list.cfg.bin`. With it, all 20 commands work from
+  any directory (verified: `export_skills` → 1 004 skills, exit 0).
+- The `export_*` binaries have **no** `--help`: their silence on `--help` is not a fault.
+- Doctrine unchanged: **`niers` is the only user-facing CLI**. `nie-mem` and `nie-steam` overlap
+  `niers mem` / `niers steam`; a new command goes into `nie-cli`, never into one more binary.
 
-`scripts/release-desktop.sh <X.Y.Z>` fait tout et est **idempotent** : bump des 9 manifestes,
-lockfiles, `cargo check`, zip de l'extension Blender, build **signé** msi+nsis, commit, tag, push,
-GitHub Release. Il exige un arbre propre, `main`, `gh`, et un tag encore libre.
+## Build and test — the gate, and every way a green suite lies
 
-- **Ne jamais rejouer ses étapes à la main.** `bun run tauri build` seul produit les bundles puis
-  échoue sur `TAURI_SIGNING_PRIVATE_KEY` : on obtient des installeurs **non signés** à côté de
-  `.sig` périmés d'une release antérieure — que rien ne distingue, et que l'updater refusera.
-- Le script contrôle la **taille** des installeurs (msi ≥ 5 Mo, nsis ≥ 3 Mo) : un bundle peut être
-  parfaitement signé et ne pas contenir l'application (c'est arrivé avec `export-bindings.exe`).
-- La clé `~/.tauri/niers.key` tient sur **une seule ligne** et son mot de passe est **vide** :
-  un `cat`/`head` dessus la divulgue en entier. La passer par `-f`/`TAURI_SIGNING_PRIVATE_KEY_PATH`,
-  ne jamais l'afficher. Régénérer la paire invalide l'updater de tous les clients déjà installés.
-- Rien à déployer côté VPS : `azalee.rosegriffon.fr/tools/niers` et `/latest.json` lisent la
-  dernière release GitHub en direct (cache 1 h).
+Cargo workspace, **37 members** (measured 2026-09-06, `cargo metadata --no-deps`: 18 engine, 10
+forge, 9 tools) plus 2 archive crates on disk that are out of the build. Organised by role:
 
-## Workspace Bun (`packages/*`, `apps/*`)
+- `crates/forge/*` — binary production (`nie-pe`, `nie-asm`, `nie-forge`) plus the RE scaffolding
+  (`nie-re`, `nie-index`, `nie-seed`, `nie-queue`, `nie-trace`).
+- `crates/engine/*` — the engine (`nie-core`, `nie-formats`, `nie-data`, `nie-render3d`, …).
+- `crates/tools/*` — tooling (`nie-cli`, `nie-wiki`, `nie-steam`, `nie-model-serve`, `nie-site`, …).
+- `crates/archive/*` — out of the build, reference only (`nie-engine`, `nie-rs`).
 
-Un seul lockfile, à la racine. Bibliothèque → `packages/`, application avec un `bin` → `apps/`.
-
-| Paquet | Rôle |
-|--------|------|
-| `packages/nie` | Bindings FFI de `libnie_ffi` — la porte d'entrée TS vers les crates Rust |
-| `packages/nie-bridge` | Protocole de contrôle partagé `nie-mcp` ↔ `nie-explorer` |
-| `packages/nie-catalog` | **La façade des quatre gisements** (jeu / extrait / re / anime) et leurs jointures |
-| `packages/nie-plugin` | Plugin Bun d'import des formats — **préchargé par `bunfig.toml`** |
-| `packages/azalee` | La bibliothèque du wiki — service, images, clients CDN client-safe (`cpk/*`) |
-| `packages/azalee-tools` | **L'outillage HORS LIGNE du wiki** : CLI `azalee`, scripts de manifestes, serveur local, client distant. Il lit le disque et les bases locales — jamais déployé sur Vercel, et c'est pour cela qu'il est séparé |
-| `packages/nie-game` | La logique de JEU pure : formations, codes d'équipe, règles, texte. Neutre, sans marque, sans I/O |
-| `packages/asset-source` | **Le contrat d'accès aux ressources** (`AssetSource`) et sa source web. Ne dépend PAS de Tauri : c'est ce qui le rend consommable par un navigateur |
-| `packages/inacord-ui` | **L'interface partagée** d'Inacord et d'Aphrody — 45 primitives, les coquilles `shell/{main-menu,inacord}`, et `useAssetSource()`. Zéro `@tauri-apps` |
-| `packages/inagle` | Le pipeline des données du jeu : parsers, entités, push vers Postgres |
-| `packages/cron` | Le démon de tâches, dont `src/tasks/ie-crawl/` (43 modules de veille) |
-| `packages/ietv`, `wonderbot`, `zukan` | Catalogue d'épisodes de la série, son bot Discord, le zukan officiel |
-| `packages/db`, `types`, `auth`, `config`, `ui`, `assets`, `mcp` | Le socle partagé du wiki |
-| `apps/azalee` | Le site du wiki (Next.js 15, App Router) |
-| `apps/bxc` | La passerelle vers `@aphrody/bxc` et le workflow de scrapping unifié |
-| `apps/inacord` | Explorateur/éditeur Tauri (React + Rust, `src-tauri` hors workspace Cargo) |
-| `apps/nie-mcp` | Serveur MCP `niers-game` — VFS, assets, KB RE, pilotage de l'explorateur |
-| `apps/nie-web` | **Aphrody sur le web** : hôte Vite d'`inacord-ui`, servi par la crate `nie-site`. `src/legacy/` est un SAS — le code sorti du wiki qui attend d'être réécrit, exclu du `tsconfig` |
+**The gate is `cargo clippy -p <crate> --lib --tests` with 0 warnings, never a full build.**
 
 ```bash
-bun install                 # depuis la racine, jamais dans un sous-paquet
-bun run build:ffi           # cargo build -p nie-ffi — REQUIS avant tout autre `bun run`
+cargo clippy -p <crate> --lib --tests     # 0 warnings required
+bun run typecheck                          # TypeScript side
+```
+
+- **Never run `cargo build --workspace --all-targets`**: the disk is 92 % full and it saturates it.
+- Workspace lints (`[workspace.lints]`): `todo!`, `unimplemented!`, `dbg_macro` → **deny**.
+- `nie-core`, `nie-pe`, `nie-asm`, `nie-forge`: `#![warn(missing_docs)]` → document **every**
+  `pub` item.
+- Golden tests: `cargo test -p nie-data --test <family>_golden`.
+- **A suite printing `0 passed` is never a success**: it is a suite that did not run.
+- **`nie-formats` enables only `std` and `lua` by default**; `serde`, `textures` and `images` are
+  optional. A test gated `#![cfg(all(…))]` on a disabled feature prints "ok. 0 passed" — a **false
+  green**, hit twice. Declare `[[test]] required-features = […]` (the harness then says why it
+  skipped) and pass `--features images,textures` for anything touching images.
+- **Same trap, harsher form, fixed on 2026-09-05**: a disabled feature does not always give a
+  false green, it can BREAK the gate. 24 `nie-data` tests called `nie_data::typed` (gated behind
+  `serde`) without declaring it: `cargo clippy -p nie-data --lib --tests` failed with **E0433** on
+  a healthy crate. Anyone following the instruction to the letter saw an error and had to guess
+  `--features serde`. Fixed with 24 `[[test]] required-features`. Facing a clippy that fails for no
+  reason, look at the crate's optional features **before** blaming your own code.
+- **A test guard checking a hard-coded path instead of `NIE_GAME_DIR` skips ALWAYS**, in silence
+  (lived through on `override_skill_golden.rs`, which only tested `/mnt/c/…`: on the VPS it never
+  ran and the suite reported green). A guard reads `NIE_GAME_DIR` first.
+- **`dotnet` is ABSENT from the VPS**: `csharp/` neither compiles nor tests there. A C# batch can
+  only be **reviewed** — say so, never claim it verified.
+- The repository can be reorganised **during** a session (crates moved or created by parallel
+  work): if a build fails on a crate that is not yours, check `cargo metadata --no-deps`, wait, and
+  never move or "fix" another session's crate.
+- After `cargo clippy --fix`, **re-run `cargo check --workspace --tests`**: it sometimes removes an
+  import that was in use (seen on `phase_set_golden.rs`).
+
+## Bun workspace (`packages/*`, `apps/*`)
+
+One lockfile, at the root. A library goes to `packages/`, an application with a `bin` to `apps/`.
+
+| Package | Role |
+|---|---|
+| `packages/nie` | FFI bindings for `libnie_ffi` — the TS door into the Rust crates |
+| `packages/nie-bridge` | Shared control protocol `nie-mcp` ↔ `nie-explorer` |
+| `packages/nie-catalog` | **The facade over the four data seams** (game / extract / re / anime) and their joins |
+| `packages/nie-plugin` | Bun plugin importing the formats — **preloaded by `bunfig.toml`** |
+| `packages/azalee` | The wiki library — service, images, client-safe CDN clients (`cpk/*`) |
+| `packages/azalee-tools` | **The wiki's OFFLINE tooling**: the `azalee` CLI, manifest scripts, local server, remote client. It reads the disk and the local databases — never deployed to Vercel, which is why it is separate |
+| `packages/nie-game` | Pure GAME logic: formations, team codes, rules, text. Neutral, unbranded, no I/O |
+| `packages/asset-source` | **The asset access contract** (`AssetSource`) and its web source. Does NOT depend on Tauri: that is what makes it usable from a browser |
+| `packages/inacord-ui` | **The shared interface** of Inacord and Aphrody — 45 primitives, the `shell/{main-menu,inacord}` shells, and `useAssetSource()`. Zero `@tauri-apps` |
+| `packages/inagle` | The game data pipeline: parsers, entities, push to Postgres |
+| `packages/cron` | The task daemon, including `src/tasks/ie-crawl/` (43 watch modules) |
+| `packages/ietv`, `wonderbot`, `zukan` | The series episode catalogue, its Discord bot, the official zukan |
+| `packages/db`, `types`, `auth`, `config`, `ui`, `assets`, `mcp` | The wiki's shared foundation |
+| `apps/azalee` | The wiki site (Next.js 15, App Router) |
+| `apps/bxc` | The gateway to `@aphrody/bxc` and the unified scraping workflow |
+| `apps/inacord` | Tauri explorer/editor (React + Rust, `src-tauri` outside the Cargo workspace) |
+| `apps/nie-mcp` | The `niers-game` MCP server — VFS, assets, RE KB, explorer control |
+| `apps/nie-web` | **Aphrody on the web**: the Vite host for `inacord-ui`, served by the `nie-site` crate. `src/legacy/` is an airlock — code pulled out of the wiki awaiting a rewrite, excluded from `tsconfig` |
+
+```bash
+bun install                 # from the root, never inside a sub-package
+bun run build:ffi           # cargo build -p nie-ffi — REQUIRED before any other `bun run`
 bun run typecheck           # 5 workspaces
 bun run test
 bun run lint
 ```
 
-- Versions partagées par **catalogue** : `catalog:` (typescript, `@types/bun`) ou `catalog:mcp`
-  (SDK MCP, zod). Jamais une version en dur : une version en dur fait cohabiter plusieurs
-  TypeScript et plusieurs zod, ce qui rend les schémas d'outils MCP inassignables.
-- `nie-mcp` et `nie-explorer` partagent la **même couche Rust** : l'explorateur lie `nie-formats`
-  en direct, le MCP l'atteint par `packages/nie` (FFI). Ne pas réimplémenter d'un côté ce que
-  l'autre fait déjà.
-- Régénérer les bindings Tauri sans ouvrir de fenêtre :
+- Shared versions come from a **catalog**: `catalog:` (typescript, `@types/bun`) or `catalog:mcp`
+  (MCP SDK, zod). Never a hard-coded version: a hard-coded version makes several TypeScripts and
+  several zods coexist, which makes MCP tool schemas unassignable.
+- `nie-mcp` and `nie-explorer` share the **same Rust layer**: the explorer links `nie-formats`
+  directly, the MCP reaches it through `packages/nie` (FFI). Do not reimplement on one side what
+  the other already does.
+- Regenerate the Tauri bindings without opening a window:
   `cd apps/inacord/src-tauri && cargo run --bin export-bindings --features dev-bindings`.
-- **`bunx tsc --noEmit` échoue sur `apps/nie-web`** (`TS5101: 'baseUrl' is deprecated`) : le `tsc`
-  global n'est pas celui du workspace. Le portail est `bun run --filter '*nie-web*' typecheck`.
-- **`nie` est aussi un paquet du registre npm.** Sans `bun install` à la racine, `import … from "nie"`
-  résout vers `nie@1.2.7` du cache et non vers `packages/nie` — erreur trompeuse
-  `Export named 'decode' not found`. Le `dlopen` de `nie_ffi.dll` n'est que la cause *suivante*.
-- **Rapatrier un paquet d'un autre workspace exige d'y fusionner son `catalog` ET ses
-  `overrides`** : `catalog: failed to resolve` sur chaque entrée absente, et sans l'override
-  `kysely` de rg, Bun dédoublonne `better-auth` sous un nom généré que Next ne résout plus.
-- Un paquet dont `exports` pointe sur `./dist/*` ne résout pas sans build : le repointer sur
-  `./src/index.ts`, Bun lit le TypeScript.
-- **`apps/inacord/src-tauri` est en édition 2021**, quand le workspace est en 2024 : les
-  let-chains n'y compilent pas — écrire des `if let` imbriqués.
-- **Une commande `#[tauri::command]` synchrone tourne sur le THREAD PRINCIPAL** : tout
-  `tokio::spawn` dedans panique « there is no reactor running », et cette panique, en contexte
-  non-unwinding, **abat l'application** (`STATUS_STACK_BUFFER_OVERRUN`, sans trace utile). Toute
-  commande qui touche au VFS, à une tâche ou au disque doit être `async`.
-- `src-tauri` a deux binaires : sans `default-run` dans son `Cargo.toml`, `tauri dev` refuse de
-  démarrer (« could not determine which binary to run »).
-- Un `tauri dev`/`build` échouant sur « Accès refusé » à l'écriture de `nie-explorer.exe` = une
-  instance tourne encore. Tuer le PID, pas relancer le build.
-- **`bundle.resources` CONSERVE le chemin relatif déclaré** : `"resources/db/*.gz"` atterrit en
-  `<resource_dir>/resources/db/`, jamais en `<resource_dir>/db/`. Viser le mauvais chemin ne casse
-  rien de visible — le paquet pèse son poids, la signature est valide, et la ressource n'est
-  simplement jamais lue. Essayer les deux formes (`resource_dir()` varie : dossier de l'exe hors
-  bundle, `<install>/resources` pour un MSI). Vécu le 2026-09-03.
-- **Seul le LANCEMENT trouve ces bugs-là** : ni `tsc`, ni clippy, ni le contrôle de taille du
-  bundle ne voient une ressource jamais lue ou une table vide. Après un build, lancer l'exe et
-  regarder ce qu'il a écrit dans `%APPDATA%\dev.niers.explorer\`.
-- `ui/Icon` rend **`null`** sur un nom absent de sa table (`photo_library`, `handyman` n'y sont
-  pas) : une icône manquante ne lève rien, elle disparaît. Vérifier le nom dans `Icon.tsx`.
-- `base-ui` **refuse `<SelectItem value="">`** (la chaîne vide y signifie « rien de sélectionné ») :
-  coder la valeur « tout » par un jeton (`__toutes__`) et le retraduire à la sortie.
-- Une commande Tauri nouvelle : `#[tauri::command] #[specta::specta]` **+** ajout à la liste du
-  `invoke_handler` **+** `cargo run --bin export-bindings --features dev-bindings`. Sans le 2ᵉ ou
-  le 3ᵉ pas, le front ne la voit pas.
+- **`bunx tsc --noEmit` fails on `apps/nie-web`** (`TS5101: 'baseUrl' is deprecated`): the global
+  `tsc` is not the workspace's. The gate is `bun run --filter '*nie-web*' typecheck`.
+- **`nie` is also a package on the npm registry.** Without `bun install` at the root,
+  `import … from "nie"` resolves to the cached `nie@1.2.7` instead of `packages/nie` — misleading
+  error `Export named 'decode' not found`. The `dlopen` of `nie_ffi.dll` is only the *next* cause.
+- **Pulling a package in from another workspace requires merging its `catalog` AND its
+  `overrides`**: `catalog: failed to resolve` on every missing entry, and without rg's `kysely`
+  override Bun deduplicates `better-auth` under a generated name Next can no longer resolve.
+- A package whose `exports` points at `./dist/*` does not resolve without a build: point it at
+  `./src/index.ts`, Bun reads the TypeScript.
+- **`apps/inacord/src-tauri` is on edition 2021** while the workspace is on 2024: let-chains do not
+  compile there — write nested `if let`.
+- **A synchronous `#[tauri::command]` runs on the MAIN THREAD**: any `tokio::spawn` inside panics
+  with "there is no reactor running", and that panic, in a non-unwinding context, **kills the
+  application** (`STATUS_STACK_BUFFER_OVERRUN`, with no useful trace). Any command touching the
+  VFS, a task, or the disk must be `async`.
+- `src-tauri` has two binaries: without `default-run` in its `Cargo.toml`, `tauri dev` refuses to
+  start ("could not determine which binary to run").
+- A `tauri dev`/`build` failing with "Access denied" while writing `nie-explorer.exe` means an
+  instance is still running. Kill the PID, do not re-run the build.
+- **`bundle.resources` KEEPS the declared relative path**: `"resources/db/*.gz"` lands in
+  `<resource_dir>/resources/db/`, never `<resource_dir>/db/`. Aiming at the wrong path breaks
+  nothing visible — the package weighs the right amount, the signature is valid, and the resource
+  is simply never read. Try both forms (`resource_dir()` varies: the exe directory outside a
+  bundle, `<install>/resources` for an MSI). Lived through on 2026-09-03.
+- **Only LAUNCHING finds bugs of that kind**: neither `tsc`, nor clippy, nor the bundle size check
+  can see a resource that is never read or a table that stays empty. After a build, run the exe and
+  look at what it wrote into `%APPDATA%\dev.niers.explorer\`.
+- `ui/Icon` renders **`null`** for a name missing from its table (`photo_library` and `handyman`
+  are not in it): a missing icon raises nothing, it disappears. Check the name in `Icon.tsx`.
+- `base-ui` **rejects `<SelectItem value="">`** (the empty string means "nothing selected" there):
+  encode the "all" value as a token (`__all__`) and translate it back on the way out.
+- A new Tauri command needs three things: `#[tauri::command] #[specta::specta]`, **plus** adding it
+  to the `invoke_handler` list, **plus** `cargo run --bin export-bindings --features dev-bindings`.
+  Miss the second or the third and the front end never sees it.
 
-## Les quatre gisements — passer par la façade
+## Polyglot doctrine — one role, one language
 
-Depuis la fusion (`docs/FUSION.md`), **tout ce qui touche Inazuma Eleven vit ici**. Les données
-sont réparties en quatre gisements, et `@niers/catalog` est la seule porte à emprunter :
+Full map: `docs/ARCHITECTURE.md`. In short:
 
-| Gisement | Contenu | Emplacement |
-|---|---|---|
-| `jeu` | les fichiers du jeu, décodés à la volée | `nie-model-serve` — `NIE_CDN_URL` |
-| `extrait` | 66 tables `inagle_*` | `var/mirror.sqlite` (lien daté, `scripts/donnees/miroir-inagle.sh`) |
-| `re` | le reverse de `nie.exe` | `var/niers.sqlite` |
-| `anime` | les épisodes de la série | `data/anime/episodes.db` |
-
-```bash
-bun --bun packages/nie-catalog/src/cli.ts etat        # ce que la machine peut répondre
-bun --bun packages/nie-catalog/src/cli.ts cherche "Mark"
-```
-
-- **Ne jamais rouvrir une de ces bases à la main** : la façade porte les pièges (le miroir est un
-  lien symbolique rebasculé, le binaire de référence du reverse est le `2` et pas le `1`).
-- **Chaque jointure porte sa confiance** — `cle`, `prefixe` ou `texte`. Le jeu et la série n'ont
-  **aucune clé commune** : un rapprochement par le nom est utile, il ne se présente jamais comme
-  un fait.
-- **`inagle_game_assets` n'est PAS l'index des fichiers du jeu** : 40 469 de ses 40 471 lignes
-  sont des PNG de menu. Le seul index complet est le VFS (`/vfs/find`).
-- Un gisement **présent peut être vide** : `etat()` mesure le contenu, pas l'existence du fichier.
-- **Trois de ces bases voyagent avec l'installeur de `nie-explorer`** : `var/mirror.sqlite`,
-  `var/niers.sqlite` et `data/anime/episodes.db`, compressées par
-  `scripts/packager-bases-explorer.sh` vers `apps/inacord/src-tauri/resources/db/*.gz` (~35 Mo)
-  puis décompressées dans `%APPDATA%\dev.niers.explorer\db\` au premier lancement. `release-desktop.sh`
-  appelle le packager en étape 5/8, **avant** le build : après, le bundler a déjà lu `bundle.resources`.
-- Les rapatrier depuis le VPS : `scp ovh-vps-direct:/home/ubuntu/niers/var/miroir/inagle-*.sqlite`
-  et `…/data/anime/episodes.db`. **`ovh-vps` passe par le VPN (10.8.0.1) et expire** — utiliser
-  l'alias `-direct`. Copier un SQLite ouvert en WAL : voir § *Pièges d'édition*.
-- Le catalogue d'épisodes vient de `packages/ietv` (`IETVCache`) ; son scraper est du Node qui
-  parle à YouTube, seule **la base** entre dans l'application.
-- Le schéma SQL vit dans `supabase/migrations/` — rejouable, idempotent, vérifié colonne par
-  colonne contre la production (811/811). Il crée la **forme** ; le contenu vient du jeu.
-- Une migration n'est idempotente que **rejouée** : `CREATE TABLE IF NOT EXISTS` ne suffit pas,
-  il faut aussi les séquences (`IF NOT EXISTS`), les vues (`OR REPLACE`) et les contraintes
-  (Postgres n'a pas `ADD CONSTRAINT IF NOT EXISTS` — garder sur `pg_constraint`).
-
-## Doctrine polyglotte — un rôle, un langage
-
-Carte complète : `docs/ARCHITECTURE.md`. En bref :
-
-| Langage | Rôles |
+| Language | Roles |
 |---|---|
-| **C++** (`src/`) | C décompilé → jeu `nie` jouable ; libs qui n'existent qu'en C++ (assimp, Bullet) |
-| **C#** (`csharp/`) | dump, pack, memory, conversion de texture |
-| **Rust** (`crates/`) | **la seule CLI**, GUI, core lib, wasm, RE, byte-exact |
-| **Bun/TS** (`packages/`, `apps/`) | MCP, serveur web, types, API, UI |
+| **C++** (`src/`) | decompiled C → playable `nie` game; libraries that only exist in C++ (assimp, Bullet) |
+| **C#** (`csharp/`) | dump, pack, memory, texture conversion |
+| **Rust** (`crates/`) | **the only CLI**, GUI, core library, wasm, RE, byte-exactness |
+| **Bun/TS** (`packages/`, `apps/`) | MCP, web server, types, API, UI |
 
-- La conversion de texture C++ est **la moins bonne des trois** : ne pas l'étendre.
-- **Une interface, deux hôtes.** Inacord (Tauri) et Aphrody (navigateur) montent les MÊMES
-  composants (`packages/inacord-ui`) par deux implémentations d'un seul contrat
-  (`packages/asset-source`). Un composant ne sait jamais qui l'héberge : il demande sa source par
-  `useAssetSource()` et ce que l'hôte sait faire par `useCapacites()`. Sur les 147 commandes de
-  l'hôte desktop, ~66 sont portables et 81 ne le seront jamais (Lua, forge, modding, Blender,
-  mémoire du jeu, disque) : l'interface MASQUE ce que l'hôte ne sait pas faire au lieu de le
-  proposer puis d'échouer. Ne jamais écrire de condition sur l'hôte dans un composant — c'est le
-  contrat qui porte l'asymétrie, et `capacites()` la mesure au lieu de l'affirmer.
-- **`niers` est la seule CLI utilisateur.** Les autres sont derrière la façade :
-  `niers cpp <args>` (toolkit C++), `niers cs <args>` (outillage .NET), `niers backends`
-  (ce qui est construit et où). Une commande nouvelle s'écrit en Rust, jamais dans les deux
-  autres CLI — cf. `crates/tools/nie-cli/src/delegate.rs`.
+- The C++ texture conversion is **the worst of the three**: do not extend it.
+- **One interface, two hosts.** Inacord (Tauri) and Aphrody (browser) mount the SAME components
+  (`packages/inacord-ui`) through two implementations of a single contract
+  (`packages/asset-source`). A component never knows who hosts it: it asks for its source with
+  `useAssetSource()` and for what the host can do with `useCapacites()`. Of the desktop host's 147
+  commands, ~66 are portable and 81 never will be (Lua, forge, modding, Blender, game memory,
+  disk): the interface HIDES what the host cannot do instead of offering it and then failing. Never
+  write a host condition inside a component — the contract carries the asymmetry, and
+  `capacites()` measures it instead of asserting it.
+- **`niers` is the only user-facing CLI.** The others sit behind the facade: `niers cpp <args>`
+  (C++ toolkit), `niers cs <args>` (.NET tooling), `niers backends` (what is built and where). A
+  new command is written in Rust, never in the other two CLIs — see
+  `crates/tools/nie-cli/src/delegate.rs`.
 
-## Arbre C++ (toolkit IECODE) — tout sous **`src/`**
+## C++ tree (IECODE toolkit) — everything under `src/`
 
-Toolkit C++20 : parsers, compression, VFS, converters, modding, rendu.
+C++20 toolkit: parsers, compression, VFS, converters, modding, rendering.
 
 ```
-CMakeLists.txt      racine du projet CMake `iecode` (C/C++20, vcpkg, unity build, LTO, ccache)
-src/                implémentations de iecode_core — archive compression converters crypto db
+CMakeLists.txt      root of the `iecode` CMake project (C/C++20, vcpkg, unity build, LTO, ccache)
+src/                iecode_core implementations — archive compression converters crypto db
                     formats gamedata io modding render services vfs viola
-                    (engine/ et game/ ont leur propre target : iecode_engine, iecode_game)
-src/include/iecode/ headers publics (compression/, crypto/, level5/, criware/, vfs/, modding/,
+                    (engine/ and game/ have their own targets: iecode_engine, iecode_game)
+src/include/iecode/ public headers (compression/, crypto/, level5/, criware/, vfs/, modding/,
                     export.h, types.h)
-src/cli/commands/   39 sous-commandes du binaire `iecode`
-src/decomp/         **voie B de la forge** (`functions/*.c` annotés `/* @nie 0x… */`, MSVC 14.44
-                    `/O2 /GS- /Gy /Zl`) — ce n'est PAS du toolkit, cf. section Forge
-src/tests/          GTest (474 cas)
-third_party/        sources vendorisées header-only (stb, mio, bcdec, tinygltf)
-cmake/              CompilerWarnings.cmake, SIMDDetect.cmake, overlay-ports vcpkg
-csharp/             IECODE.Core / IECODE.CLI / IECODE.Core.Tests (.NET 10, `IECODE.sln` racine)
+src/cli/commands/   the 39 subcommands of the `iecode` binary
+src/decomp/         **forge path B** (`functions/*.c` annotated `/* @nie 0x… */`, MSVC 14.44
+                    `/O2 /GS- /Gy /Zl`) — NOT part of the toolkit, see § Forge
+src/tests/          GTest (474 cases)
+third_party/        vendored header-only sources (stb, mio, bcdec, tinygltf)
+cmake/              CompilerWarnings.cmake, SIMDDetect.cmake, vcpkg overlay-ports
+csharp/             IECODE.Core / IECODE.CLI / IECODE.Core.Tests (.NET 10, `IECODE.sln` at the root)
 ```
 
-- **`src/CMakeLists.txt` fait un `GLOB_RECURSE`** sur tout `src/` pour `iecode_core` : les
-  sous-arbres à target propre (`engine`, `game`, `cli`, `tests`, `decomp`, `include`) en sont
-  exclus par `list(FILTER … EXCLUDE REGEX ".*/src/<nom>/.*")`. Ajouter un sous-arbre à target
-  propre sans son filtre ⇒ plusieurs `main()` dans la lib.
-- Build : `just cpp-build` (ou `cmake --preset msvc && cmake --build --preset msvc-debug`).
-  **`cmake` n'est pas dans le PATH de cette machine** : il vit dans
+- **`src/CMakeLists.txt` does a `GLOB_RECURSE`** over all of `src/` for `iecode_core`: subtrees
+  with their own target (`engine`, `game`, `cli`, `tests`, `decomp`, `include`) are excluded by
+  `list(FILTER … EXCLUDE REGEX ".*/src/<name>/.*")`. Adding a subtree with its own target and
+  forgetting its filter puts several `main()` in the library.
+- Build: `just cpp-build` (or `cmake --preset msvc && cmake --build --preset msvc-debug`).
+  **`cmake` is not on this machine's PATH**: it lives in
   `…/2022/BuildTools/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/bin/cmake.exe`.
-  **vcpkg est installé dans `var/vcpkg`** mais `VCPKG_ROOT` n'est pas exporté : le poser dans la
-  commande — `VCPKG_ROOT="$PWD/var/vcpkg" "<cmake>" -S . -B build/msvc`, puis
-  `"<cmake>" --build build/msvc --config Debug --target <cible>`. Les libs sont déjà dans
-  `build/msvc/vcpkg_installed` : un configure incrémental ne recompile aucun port.
-- Conventions : C++20 `CXX_EXTENSIONS OFF`, `CamelCase` classes / `lower_case` fonctions /
-  `UPPER_CASE` constantes, pas d'exceptions en hot path (`std::optional` / codes retour),
-  `std::span<const uint8_t>` pour le parsing binaire, 4 espaces / 100 colonnes (clang-format Google).
-- Le C++ s'atteint par `niers cpp` (sous-processus), jamais en process : il n'expose aucune FFI.
-  Le wasm du dépôt est `nie-wasm` (Rust) ; le toolkit n'a pas de cible WebAssembly.
-- **`.gitignore`** : `*.txt` et `*.md` sont ignorés globalement ; les `CMakeLists.txt`, les README
-  et le plugin `plugins/niers-plugin/**/*.md` sont ré-inclus explicitement. Ne pas retirer ces
-  lignes `!…` — sans elles, toute la chaîne de build C++ sort du dépôt.
+  **vcpkg is installed in `var/vcpkg`** but `VCPKG_ROOT` is not exported: set it in the command —
+  `VCPKG_ROOT="$PWD/var/vcpkg" "<cmake>" -S . -B build/msvc`, then
+  `"<cmake>" --build build/msvc --config Debug --target <target>`. The libraries are already in
+  `build/msvc/vcpkg_installed`: an incremental configure recompiles no port.
+- Conventions: C++20 with `CXX_EXTENSIONS OFF`, `CamelCase` classes / `lower_case` functions /
+  `UPPER_CASE` constants, no exceptions on hot paths (`std::optional` or return codes),
+  `std::span<const uint8_t>` for binary parsing, 4 spaces / 100 columns (clang-format Google).
+- C++ is reached through `niers cpp` (subprocess), never in-process: it exposes no FFI. The
+  repository's wasm is `nie-wasm` (Rust); the toolkit has no WebAssembly target.
 
-## Pièges d'environnement — **poste Windows uniquement**
+## Game data (VFS)
 
-> Rien de cette section ne s'applique au VPS Linux. Vérifier `uname` (ou lire la ligne `machine`
-> du hook d'état) avant d'en invoquer un.
-
-- **Un `dlopen` raté casse TOUT `bun`/`bunx` lancé depuis le dépôt**, même sans rapport avec le
-  jeu : `bunfig.toml` précharge `nie-plugin`, qui charge `libnie_ffi`. Construire la lib avant de
-  chercher ailleurs. Sur Windows rustc produit **`nie_ffi.dll`, sans préfixe `lib`**.
-- Un process Bun ayant chargé la DLL la **verrouille** : `cargo build -p nie-ffi` échoue alors sur
-  « Accès refusé (os error 5) ». Tuer le process, pas relancer le build.
-- `cargo test` dans `apps/inacord/src-tauri` **ne démarre pas** (`STATUS_ENTRYPOINT_NOT_FOUND`,
-  avant tout test). Le prouver avec un filtre qui ne matche rien avant d'accuser son code ;
-  `cargo check` reste fiable.
-- `bun` ne résout pas les chemins MSYS (`/tmp/…`) : utiliser un chemin Windows.
-- **Un test dont le nom contient `update`/`setup`/`install`/`patch` ne s'exécute pas** :
-  l'« installer detection » de Windows exige une élévation UAC pour ces exécutables, et
-  `cargo test` s'arrête sur « nécessite une élévation » (os error 740) *avant* le premier test.
-  Renommer le fichier de test (cf. `nie-data/tests/notice_maj_golden.rs`), pas le code.
-- `sed -i` sous Git Bash **interprète les `\c`, `\n`… du texte de remplacement** : un
-  remplacement contenant des backslashes Windows (`src\cli\iecode.exe`) injecte des caractères de
-  contrôle dans le fichier. Utiliser l'édition de fichier directe pour ces chaînes.
-- `cargo fmt --all` échoue ici (« nom de fichier ou extension trop long », os error 206) : la
-  ligne de commande dépasse la limite avec 31 crates. Formater par crate (`cargo fmt -p …`).
-- `git ls-files 'dir/**/*.ext'` **rate les fichiers à la racine de `dir`** (0 au lieu de 22 sur
-  `csharp/IECODE.Core.Tests`). Utiliser `git ls-files dir | grep '\.ext$'`.
-- `xargs wc -l | tail -1` **sous-compte** : xargs découpe en plusieurs invocations, chacune avec
-  son `total`. Sommer par `awk '$2!="total"{s+=$1} END{print s}'` (15 549 vs 175 042 lignes).
-- `cargo test --workspace` dépasse les 600 s de timeout : le lancer en arrière-plan **avec
-  redirection** (`> /tmp/x.log 2>&1`) — une sortie filtrée par un pipe est perdue à la bascule.
-- **Git Bash réécrit tout argument commençant par `/`** (MSYS path conversion) : un JSON Pointer
-  `/entries/0/...` arrive au programme en `C:/Program Files/Git/entries/0/...`, et l'erreur accuse
-  le pointeur quand le shell est en cause. `export MSYS_NO_PATHCONV=1`, ou une forme sans `/` initial.
-- **Python (Windows) ne résout pas les chemins MSYS** (`/tmp/…`), même règle que `bun` : passer un
-  chemin Windows (`C:\Users\…\AppData\Local\Temp\…`).
-- **Lire la mémoire de `nie.exe` exige une élévation** : le process est plus privilégié que la
-  session, `OpenProcess` échoue et l'outil dit « nie.exe introuvable » alors qu'il tourne.
-- **Les liens symboliques natifs marchent** ici (mode développeur actif) :
-  `MSYS=winsymlinks:nativestrict ln -sfn cible lien`. `sqlite3` et le `sqlx` de `tauri-plugin-sql`
-  les suivent — c'est ainsi que `var/mirror.sqlite` pointe l'instantané courant sans le dupliquer.
-- `Start-Process -Verb RunAs` **interdit** `-RedirectStandardOutput` (jeux de paramètres exclusifs) :
-  passer par un `.cmd` qui redirige lui-même, sinon « Parameter set cannot be resolved ».
-
-## Forge (produire le binaire) — mesure du 2026-08-30 : **69,37 % du fichier, 90,36 % du `.text`**
-
-> **Mesure rejouée sur cette machine Windows, pas citée de mémoire.** `var/forge/` était absent ;
-> `nie-forge split` + `lift` + `report` l'ont reconstruit et ont d'abord **reproduit à l'identique**
-> l'ancienne mesure (51,860709 % / 66,090975 %), ce qui prouve que la forge tourne ici et que la
-> cible est la bonne (`b1fa04ea3658…`, 33 918 464 o). Elle a ensuite été portée à **69,365 % /
-> 90,363 %**, et `nie-forge build` rend `dist/nie.exe` **byte-identique** (`identical=true`,
-> 112 044 unités et 23 527 558 octets produits, 0 rejeté).
->
-> **Le levier décisif n'était pas l'encodeur mais le découpage.** `split` ne connaissait que les
-> 55 351 racines `.pdata` et laissait 1 828 793 o de `.text` en résidu haché, non relevable. En lui
-> passant les **61 076 fonctions feuilles mesurées par `nie_re::recover`**, le résidu tombe à
-> 51 151 o et les unités de fonction passent à 116 091. Le RE ne sert pas qu'à nommer : il sert à
-> découper, et sans découpe correcte il n'y a rien à produire.
->
-> Ne pas confondre « non revérifiable ici » avec « périmée » : entre le 2026-08-14 soir et le
-> 2026-08-15, l'installation Steam a transitoirement porté un AUTRE build (31 468 032 o, sha
-> `4c2b91fbae6f…`) — c'est CE build-là qui invaliderait une mesure. Cf. `docs/RE.md`.
-
-- Boucle : `just forge` = `split` → `lift` → `cc` → `build` → `verify` → `report`.
-- **Deux voies de production**, toutes deux vérifiées au byte près :
-  - **A — `nie-asm`** : encodeur x86-64 dialecte MSVC ; la source `forge/asm/*.s` est réassemblée.
-    Suffixes du dialecte : `.s` (branchement court), `.w` (immédiat en forme longue), `.r` (préfixe
-    REX nul explicite — MSVC en émet, ex. `40 53` pour `push rbx`).
-  - **B — `nie-forge cc`** : **MSVC 14.44 est installé** (`…\2022\BuildTools\…\14.44.35207\…\cl.exe`),
-    c'est le toolset qui a lié `nie.exe`. Sources C dans `decomp/functions/*.c`, annotées
-    `/* @nie 0x… */`, compilées `/O2 /GS- /Gy /Zl`. **Ne pas utiliser MSVC 14.51** (VS 18).
-    C'est la voie qui monte le plus haut : le C exprime la sémantique, MSVC choisit la forme.
-- **Tables structurées** : `.pdata` et `.reloc` sont **régénérées depuis leurs entrées**
-  (`nie_pe::image::tables::emit_for`), comme les en-têtes — pas recopiées.
-- `niers.sqlite` est branché (`--db`) : il **nomme** les corps produits dans `lifted.s`, et la forge
-  le **contredit** en retour (exemple d'illustration, désormais faux : `cross-check
-  pdata_roots_db=50674 forge=55351` — `niers.sqlite` compte déjà `roots=55351` côté DB depuis le
-  2026-08-15 (§ base de connaissance ci-dessous), donc un `lift` rejoué aujourd'hui ne trouverait
-  plus cet écart précis ; ne pas citer ces deux valeurs comme un cross-check actuel, juste comme
-  l'exemple de forme qu'un message de contradiction peut prendre).
-- **Devant un plateau, ne pas deviner** : enrichir le diagnostic (`blocking_detail` ventile par
-  mnémonique et affiche `orig=` vs `nie-asm=`), relancer `lift`, lire. Une seule vague de
-  diagnostic vaut mieux que plusieurs vagues de code écrit à l'aveugle — c'est le levier qui
-  déplace la mesure de dizaines de points.
-- **L'identité prime** : `build` échoue si `sha256(dist/nie.exe)` diffère de la référence. Ne jamais
-  « corriger » ce test — c'est lui le contrat.
-- Rien n'entre dans `forge/asm/*.s` qui ne se réencode pas exactement (`lift` vérifie).
-- Ne jamais compter `semantic` comme des octets produits. Seuls `emitted`/`assembled`/`bytes` comptent.
-- `nie-forge candidates --no-reloc` et les lignes `blocker` de `lift` donnent la prochaine cible, chiffrée.
-
-## Python — le fichier, pas la ligne
-
-Mesuré le 2026-09-02 sur les 21 sessions de ce dépôt — **24 832 commandes Bash uniques**, extraites
-par `jq` puis dédupliquées (les sessions reprises rejouent les mêmes messages dans plusieurs
-`.jsonl`) : **155 `uv run python -c` contre 24 `uv run <fichier>.py`**. Presque rien n'en est resté,
-alors que 77 `.py` versionnés existent déjà.
-
-> Ces chiffres ont d'abord été calculés en extrayant les transcripts avec `rg` + une regex : la
-> source était tronquée (5 817 commandes au lieu de 24 832) et trois comptages fins rendaient 0.
-> **Un transcript est du JSON : il se lit avec `jq`, jamais avec une regex** — cf. § *Outils*.
-
-- Toujours `uv run` ; appeler `python`/`python3` en direct est bloqué par `garde-bash.sh`.
-- **Ce n'est PAS un problème de vitesse.** `uv run python -c` démarre en **0,064 s**, et sur un
-  fichier réel de 6,8 Mo Python répond en **0,269 s** contre **0,201 s** à `jq`. Ne jamais justifier
-  un changement d'outil ici par la performance : l'écart n'existe pas.
-- **C'est un problème de couches de quoting.** Le corps traverse bash *avant* Python : `$VAR` est
-  substitué, `$(…)` est **exécuté**, `\\` devient `\`. Vérifié :
-  `uv run python -c "print(len('\\'))"` meurt en `SyntaxError: unterminated string literal` — le
-  shell a mangé l'antislash. Même cause que le `\0` littéral qui finit dans une source Rust
-  (§ *Pièges d'édition*). Écrire du Python dans une chaîne shell, c'est déboguer deux langages.
-- **Règle : plus de 2 lignes de Python ⇒ un fichier.** Scratchpad si jetable, `scripts/` si
-  versionné, puis `uv run <fichier>`. Un fichier se corrige par Edit, se rejoue à l'identique, se
-  cite en `chemin:ligne` — et ne repasse pas par le quoting. `garde-bash.sh` refuse désormais un
-  `python -c` de plus de 2 lignes en rappelant cette forme.
-- **PEP 723 remplace `--with`, mais SEULEMENT pour un script autonome.** Un en-tête
-  `# /// script` / `# dependencies = ["numpy"]` / `# ///` fait résoudre les dépendances par `uv run`
-  seul (vérifié : numpy 2.5.2, 0,6 s à froid). **Piège payé** : ce bloc fait tourner le script dans
-  un environnement **isolé**, donc sans le `.venv` du dépôt — un script qui importe la toolbox RE
-  (`uemu`, capstone, pefile, unicorn) meurt alors en `ModuleNotFoundError`. Règle :
-  - script **autonome** (aucun import du dépôt) → bloc PEP 723 avec ses dépendances ;
-  - script qui s'appuie sur la **toolbox du dépôt** → **pas** de bloc, `uv run <fichier>` prend
-    le `.venv` du projet. C'est ce que font les 47 `scripts/validate_*.py`.
-- Quel outil pour quoi : **JSON** → `jq` (une seule couche de quoting, et pas d'`except: continue`
-  qui avale les lignes fautives en silence) ; **fichiers en masse** → `fdfind -x` ; **dates** →
-  `date -d @<epoch>` ; **binaire / PE / désassemblage** → Python reste le bon outil (toolbox `.venv` :
-  capstone, pefile, lief, iced-x86, unicorn, angr), mais **en fichier** ; **récurrent et du domaine**
-  → une commande `niers` en Rust, cf. § *Outils — lequel dans quelle situation*.
-
-
-## Données du jeu (VFS)
-
-- `data/` contient les vraies copies locales (dx11, packs ~57 Go, `cpk_list.cfg.bin`).  
-  **gitignored** — assets © LEVEL-5. Ne jamais committer ni pousser (`start.png`, `menu.png` inclus).
-- **Aucun chemin de machine n’est compilé dans un binaire.** La racine du jeu se résout à
-  l’exécution — `nie_formats::vfs::resolve_game_dir()` : `NIE_GAME_DIR`, sinon le répertoire
-  courant ou un ancêtre portant `data/cpk_list.cfg.bin`, sinon le répertoire de l’exécutable.
-  Sur l’install Steam Windows, le VFS complet **est le cwd** : `NIE_GAME_DIR` est inutile.
-- Les goldens adossés aux dumps `*.cfg.bin.json` passent par `NIE_GAMEDATA_JSON` (ou
-  `<NIE_GAME_DIR>/dump/gamedata`) et **annoncent leur saut** quand le corpus est absent — un
-  golden muet qui ne s’exécute pas est un faux vert.
-- `Vfs::init()` prend **`<racine>/data`**, pas la racine (sinon « impossible d’ouvrir cpk_list.cfg.bin »).
-- **Deux montages, mêmes chemins logiques** (`data/common/…`, `data/dx11/…`) — vérifié le
-  2026-08-28 : `packs` (install Steam, `cpk_list.cfg.bin` + `packs/*.cpk`) et `dump` (arborescence
-  extraite, ici `<dépôt>/data`, 255 316 fichiers / 111 Go). `Vfs::init` **bascule seule** sur le
-  dump quand `cpk_list.cfg.bin` manque mais que `common/`/`dx11/` sont là ; `vfs::open_game()`
-  monte ce qui est disponible ; `NIE_DUMP_DIR` force le dump même si l’install est visible.
-  `Vfs::is_dump()` dit lequel tourne, `niers info` l’affiche (`vfs  dump — 255 316 entrees`).
-  Preuves : `nie-formats --test dump_vs_packs`, `nie-game --menu title00` (PNG **sha256 identique**
-  des deux côtés), `nie-play` (170 frames identiques). Couverture mesurée le 2026-08-28 par
-  `cargo run -p nie-formats --example dump_couverture` : **255 308 / 255 308 = 100,000 %** de
-  l’index du jeu, 0 manquant, 8 fichiers hors index (des images de travail dans `data/mod/`).
-- **Le montage dump n’indexe rien tant qu’on ne l’énumère pas** : `read`/`is_readable` résolvent
-  par chemin, l’index (255 k entrées, minutes sur NTFS) n’est construit que par `find`/`iter`/
-  `asset_count`. `Vfs::materialiser(chemin, cache)` rend un fichier disque — **sans copie** sur
-  un dump, par extraction dans le cache sur les packs (c’est ce qui permet à `nie-play` de
-  tourner sans un seul argument).
-- Garde des tests adossés au vrai jeu : `vfs::donnees_disponibles(<data_dir>)`, **pas**
-  `cpk_list.cfg.bin.exists()` — sinon 13 gates de rendu de menu se sautaient en annonçant
-  « jeu absent » sur une machine qui a le dump.
-- `NIE_GAME_DIR` / `NIE_DUMP_DIR` **posées mais vides** sont ignorées (une chaîne vide n’est pas
-  une racine — elle renvoyait un chemin vide où rien n’est jamais trouvé).
-- `niers vfs extract <chemin> -o <FICHIER>` : `-o` est un **fichier**, pas un dossier — sinon
-  « Accès refusé (os error 5) », qui n’a rien à voir avec les permissions.
-- Binaires déjà construits dans `target/debug/` (`niers.exe`, `nie-cam.exe`…) : explorer sans rebuild.
-- **`niers decode` ≠ `niers refresh-typed-json`.** `decode` rend le RDBN **brut** ; un consommateur
-  typé (export de formations, front de l'explorateur) y lit alors 0 élément **en annonçant un
-  succès**. Pour du JSON typé, c'est `refresh-typed-json` — son aide le dit explicitement.
-- Un chemin VFS **cité de mémoire est presque toujours faux** : les fichiers du jeu portent un
-  numéro de version (`chara_base_1.03.98.00.cfg.bin`). Viser le **dossier**, et vérifier par
-  `niers vfs find` avant d'écrire le chemin dans du code ou un test.
+- `data/` holds the real local copies (dx11, ~57 GB of packs, `cpk_list.cfg.bin`). **gitignored** —
+  assets © LEVEL-5. Never commit or push them (`start.png` and `menu.png` included).
+- **No machine path is compiled into any binary.** The game root is resolved at runtime —
+  `nie_formats::vfs::resolve_game_dir()`: `NIE_GAME_DIR`, else the current directory or an ancestor
+  carrying `data/cpk_list.cfg.bin`, else the executable's directory. The equivalents are
+  `dansLeDepot()` on the TS side and `TestDataPaths`/`ResolveDefaultGamePath()` on the C# side —
+  look for the existing helper before writing one.
+- **`NIE_GAME_DIR` is required on the Windows workstation**: the repository's `data/` exists but
+  does **not** carry `cpk_list.cfg.bin`, so the ancestor walk fails and the VFS never mounts
+  (`niers info`, the `niers-game` MCP, the goldens). Set as a **user** variable pointing at
+  `…/steamapps/common/INAZUMA ELEVEN Victory Road` → 255 308 entries, 936 packs. On the Steam
+  Windows install the full VFS **is** the cwd, so `NIE_GAME_DIR` is otherwise useless.
+- `NIE_GAME_DIR` / `NIE_DUMP_DIR` **set but empty are ignored** (an empty string is not a root — it
+  used to return an empty path where nothing is ever found).
+- `Vfs::init()` takes **`<root>/data`**, not the root (otherwise "cannot open cpk_list.cfg.bin").
+- **Two mounts, same logical paths** (`data/common/…`, `data/dx11/…`) — verified 2026-08-28:
+  `packs` (Steam install, `cpk_list.cfg.bin` + `packs/*.cpk`) and `dump` (extracted tree, here
+  `<repo>/data`, 255 316 files / 111 GB). `Vfs::init` **switches on its own** to the dump when
+  `cpk_list.cfg.bin` is missing but `common/`/`dx11/` are there; `vfs::open_game()` mounts whatever
+  is available; `NIE_DUMP_DIR` forces the dump even when the install is visible. `Vfs::is_dump()`
+  says which one is running, `niers info` prints it (`vfs  dump — 255 316 entrees`). Proofs:
+  `nie-formats --test dump_vs_packs`, `nie-game --menu title00` (**identical PNG sha256** on both
+  sides), `nie-play` (170 identical frames). Coverage measured on 2026-08-28 by
+  `cargo run -p nie-formats --example dump_couverture`: **255 308 / 255 308 = 100.000 %** of the
+  game index, 0 missing, 8 files outside the index (working images under `data/mod/`).
+- **The dump mount indexes nothing until you enumerate it**: `read`/`is_readable` resolve by path;
+  the index (255 k entries, minutes on NTFS) is only built by `find`/`iter`/`asset_count`.
+  `Vfs::materialiser(path, cache)` returns a real file on disk — **without copying** on a dump, by
+  extracting into the cache on packs (that is what lets `nie-play` run with no arguments at all).
+- The guard for tests backed by the real game is `vfs::donnees_disponibles(<data_dir>)`, **not**
+  `cpk_list.cfg.bin.exists()` — otherwise 13 menu-rendering gates skip while announcing "game
+  absent" on a machine that has the dump.
+- Goldens backed by the `*.cfg.bin.json` dumps go through `NIE_GAMEDATA_JSON` (or
+  `<NIE_GAME_DIR>/dump/gamedata`) and **announce their skip** when the corpus is missing — a silent
+  golden that does not run is a false green.
+- `niers vfs extract <path> -o <FILE>`: `-o` is a **file**, not a directory — otherwise "Access
+  denied (os error 5)", which has nothing to do with permissions.
+- **`niers decode` ≠ `niers refresh-typed-json`.** `decode` returns the **raw** RDBN; a typed
+  consumer (formation export, explorer front end) then reads 0 elements **while reporting
+  success**. For typed JSON it is `refresh-typed-json` — its help says so explicitly.
+- **A VFS path quoted from memory is almost always wrong**: game files carry a version number
+  (`chara_base_1.03.98.00.cfg.bin`). Aim at the **directory**, and verify with `niers vfs find`
+  before writing the path into code or a test. This is the measurement that settles a code review,
+  in either direction.
+- Prebuilt binaries live in `target/debug/` (`niers.exe`, `nie-cam.exe`…): explore without
+  rebuilding.
 
 ## Modding (`niers mod`)
 
-- Cycle : `init` → `add` → `get`/`set` (JSON Pointer sur le pont `nie_explore::bridge`) → `status` →
-  `validate` → `install` / `uninstall`. Un mod = un dossier + `mod.json` + arborescence **VFS** (`data/…`).
-- **`encode_t2b` n'est pas fidèle, et c'est bloquant.** Aller-retour à vide du `cpk_list.cfg.bin` :
-  sha différent, 16 octets de moins, *sans aucune modification* — et `nie.exe` refuse le fichier.
-  Sur `game_param.cfg.bin`, `/entries/0/children` retombe de 812 à 1 élément. Ne rien conclure d'un
-  fichier « relu correctement » : notre parseur est plus permissif que le jeu.
-- Correctif visé : **patcher les octets en place** (offsets conservés) plutôt que réencoder — tout ce
-  qu'un mod change est à taille constante (entiers, flottants, index de chaîne vide déjà dans le pool).
-- `install` part **toujours** du `cpk_list` vanilla sauvegardé ; au-delà de 64 entrées déjà *loose*, il
-  refuse (le fichier a déjà été packé). `uninstall` relit et compare les octets après restauration.
+- Cycle: `init` → `add` → `get`/`set` (JSON Pointer over the `nie_explore::bridge`) → `status` →
+  `validate` → `install` / `uninstall`. A mod is a directory plus `mod.json` plus a **VFS** tree
+  (`data/…`).
+- **`encode_t2b` is not faithful, and that is blocking.** An empty round trip of
+  `cpk_list.cfg.bin`: different sha, 16 bytes short, *with no modification at all* — and `nie.exe`
+  rejects the file. On `game_param.cfg.bin`, `/entries/0/children` drops from 812 to 1 element.
+  Conclude nothing from a file that "reads back correctly": our parser is more permissive than the
+  game.
+- Intended fix: **patch the bytes in place** (offsets preserved) rather than re-encode — everything
+  a mod changes is constant-size (integers, floats, an empty-string index already in the pool).
+- `install` always starts from the saved vanilla `cpk_list`; beyond 64 already-loose entries it
+  refuses (the file has already been packed). `uninstall` re-reads and compares the bytes after
+  restoring.
 
-- **Sur cette machine Windows, `NIE_GAME_DIR` est nécessaire** : le `data/` du dépôt existe mais ne
-  porte **pas** `cpk_list.cfg.bin`, donc la remontée d'ancêtres échoue et le VFS ne se monte pas
-  (`niers info`, MCP `niers-game`, goldens). Posé en variable **utilisateur** vers
-  `…/steamapps/common/INAZUMA ELEVEN Victory Road` → 255 308 entrées, 936 paquets.
+## Porting a nie-data family
 
-## Porter une famille nie-data
+- Almost everything is already ported.
+- Before porting a new one: `grep -rl "<MARKER_LIST>" crates/engine/nie-data/src/` — do not trust
+  file names, modules are named after concepts.
+- Probe: `target/debug/examples/probe_rdbn <prefix>` (RDBN) or `probe_t2b <prefix>` (T2B), with
+  `NIE_GAME_DIR` set.
+- Two formats hide behind `.cfg.bin`: **RDBN** with lists (`cfgbin::is_rdbn` → `parse` +
+  `read_values`) and **T2B** (`cfgbin::cfgbin_parse`, `CfgEntry` tree). Everything under
+  `common/property/**` is T2B.
+- **`niers decode` returns the RAW structure** (header/types/fields), not the `{entries}`/`{lists}`
+  shape `nie-data` expects — that broke 71 080 files after the 2026-08-15 update. The fix is
+  `nie_formats::cfgbin::to_iecode_json` + `niers refresh-typed-json <dir> --force`.
 
-- La quasi-totalité est déjà portée.
-- Avant d’en porter une nouvelle :  
-  `grep -rl "<MARKER_LIST>" crates/engine/nie-data/src/`  
-  (ne pas se fier au nom de fichier — modules nommés par concept).
-- Probe :  
-  `target/debug/examples/probe_rdbn <prefix>` (RDBN)  
-  ou `probe_t2b <prefix>` (T2B)  
-  avec `NIE_GAME_DIR` positionné.
-- Deux formats derrière `.cfg.bin` : **RDBN** à listes (`cfgbin::is_rdbn` → `parse` + `read_values`)
-  et **T2B** (`cfgbin::cfgbin_parse`, arbre `CfgEntry`). Tout `common/property/**` est T2B.
+## Reverse-engineering `nie.exe`
 
-## Reverse de nie.exe (funcLua / menu)
-
-- Table cmdId → handler :  
-  `uv run scripts/extract_funclua_table.py` → `data/re/funclua-cmdid-handlers.json` (régénérable, gitignored).
-- Le binaire est `nie.exe` **à la racine** (pas `data/nie.exe`), base image `0x140000000`.
-- **Outillage RE installé** (vérifié 2026-08-15 — l'ancienne mention « `r2`/`objdump` absents »
-  était périmée) :
-  - Désassembleurs/CLI : `objdump` 2.46, `r2` 6.0.7, `rizin` 0.7.3, `gdb`, `wine`, `yara` 4.5.5,
+- The binary is `nie.exe` **at the root** (not `data/nie.exe`), image base `0x140000000`.
+- **`nie_eacpatched.exe` is not patched**: sha256 identical to `nie.exe` (`b1fa04ea3658…`), on the
+  VPS as locally. To get out of EAC, launch `nie.exe` directly, without
+  `GameBootstrapper`/`EACLauncher`.
+- funcLua command table: `uv run scripts/extract_funclua_table.py` →
+  `data/re/funclua-cmdid-handlers.json` (regenerable, gitignored).
+- **RE tooling installed** (verified 2026-08-15; the old "no `r2`/`objdump`" note was stale):
+  - Disassemblers/CLI: `objdump` 2.46, `r2` 6.0.7, `rizin` 0.7.3, `gdb`, `wine`, `yara` 4.5.5,
     `binwalk` 2.4.3, `upx` 4.2.4, `cabextract`.
-  - **Ghidra 12.0.4** (`/opt/ghidra_12.0.4_PUBLIC`, `analyzeHeadless` dans le PATH) avec
-    **BSim + VersionTracking** — c'est l'outil pour ré-apparier des fonctions entre deux builds.
-  - Python (`.venv`, 3.14) : `capstone`, `iced-x86`, `keystone`, `unicorn`, `pefile`, `lief`,
-    `r2pipe`, **`pyghidra`** (pilote Ghidra depuis Python), `angr`, `z3-solver`, `ROPGadget`,
-    `flare-capa` (règles `/opt/capa-rules`, signatures `/opt/capa-sigs` — à passer par
-    `-r`/`-s`, la roue PyPI n'embarque ni l'un ni l'autre).
-  - `GHIDRA_INSTALL_DIR` est posé dans `/etc/environment` + `~/.bashrc` (avant la garde
-    d'interactivité) : sans elle `pyghidra.start()` échoue.
-  - **Piège PyPI** : le paquet `capa` n'est PAS l'outil FLARE (il résout en `capa==0.1`).
-    Le bon paquet est **`flare-capa`** ; les deux fournissent le module `capa`.
-  - Bornes de fonction : `.pdata`.
-- Classification par `main_return` :  
-  - `mov al, 1` → portable (return-1)  
-  - **Interdit** de porter un retour conditionnel (`sete al` / `found ? 1 : 0`) comme constante. Source classique de doublons et d’erreurs.
-- **`niers mem` est Linux-only** (`process_vm_readv`). Sur Windows : `nie-mem.exe` (dump/scan/read,
-  `ReadProcessMemory`) et `nie-edit.exe` (catalogue de localisateurs), tous deux **élévation requise**.
-- Le catalogue `nie-trace` a été **ré-ancré** sur le build installé (2026-08-27) : `resolve --all`
-  donne **20 ✓ / 0 drift / 4 introuvable** (avant : 0 ✓ / 22 drift). Les AOB n'étaient **pas** en
-  cause — ils tombaient sur un site unique ; c'étaient les `rva` de référence qui venaient d'un
-  autre build. Ré-ancrer en scannant le **fichier** (pas la mémoire : ni élévation ni ASLR), puis
-  valider en live. Un AOB à hits multiples ou introuvable repasse à `rva: None` — on ne devine pas.
-- **Le `.text` en mémoire n'est pas le `.text` du fichier** quand un trainer tiers tourne : 4 patchs
-  runtime observés (2 `ret` neutralisant l'anti-cheat EOS, 1 trampoline RWX, 1 gel du chrono). Avant
-  d'accuser une signature qui échoue en live mais réussit sur le fichier, comparer le module dumpé
-  au fichier **section par section** et croiser avec `.reloc` : ce qu'aucune relocation ne couvre est
-  un patch, pas un artefact du loader. Détail et méthode : `docs/RE.md`.
-- **`nie_eacpatched.exe` n'est pas patché** : sha256 identique à `nie.exe` (`b1fa04ea3658…`), sur le VPS
-  comme en local. Pour sortir d'EAC, lancer `nie.exe` directement, sans `GameBootstrapper`/`EACLauncher`.
-- Le dépôt du VPS porte des **modifications non commitées** d'une autre session : ne jamais y `git pull`.
+  - **Ghidra 12.0.4** (`/opt/ghidra_12.0.4_PUBLIC`, `analyzeHeadless` on PATH) with **BSim +
+    VersionTracking** — the tool for re-pairing functions between two builds.
+  - Python (`.venv`, 3.14): `capstone`, `iced-x86`, `keystone`, `unicorn`, `pefile`, `lief`,
+    `r2pipe`, **`pyghidra`**, `angr`, `z3-solver`, `ROPGadget`, `flare-capa` (rules
+    `/opt/capa-rules`, signatures `/opt/capa-sigs` — pass them with `-r`/`-s`, the PyPI wheel
+    bundles neither).
+  - `GHIDRA_INSTALL_DIR` is set in `/etc/environment` and `~/.bashrc` (before the interactivity
+    guard): without it `pyghidra.start()` fails.
+  - **PyPI trap**: the `capa` package is NOT the FLARE tool (it resolves to `capa==0.1`). The right
+    package is **`flare-capa`**; both provide a `capa` module.
+- Function bounds come from `.pdata`.
+- Classification by `main_return`: `mov al, 1` → portable (return-1). **Porting a conditional
+  return (`sete al` / `found ? 1 : 0`) as a constant is forbidden** — a classic source of
+  duplicates and errors.
+- **`niers mem` is Linux-only** (`process_vm_readv`). On Windows: `nie-mem.exe` (dump/scan/read,
+  `ReadProcessMemory`) and `nie-edit.exe` (locator catalogue), both requiring elevation.
+- **Reading `nie.exe` memory requires elevation**: the process is more privileged than the session,
+  `OpenProcess` fails, and the tool reports "nie.exe not found" while it is running.
+- The `nie-trace` catalogue was **re-anchored** on the installed build (2026-08-27): `resolve --all`
+  gives **20 ✓ / 0 drift / 4 not found** (previously 0 ✓ / 22 drift). The AOBs were **not** at
+  fault — they landed on a unique site; the reference `rva`s came from another build. Re-anchor by
+  scanning the **file** (not memory: no elevation, no ASLR), then validate live. An AOB with
+  multiple hits or none goes back to `rva: None` — we do not guess.
+- **The in-memory `.text` is not the file's `.text`** when a third-party trainer is running: 4
+  runtime patches observed (2 `ret` neutralising the EOS anti-cheat, 1 RWX trampoline, 1 timer
+  freeze). Before blaming a signature that fails live but succeeds on the file, compare the dumped
+  module to the file **section by section** and cross-check with `.reloc`: whatever no relocation
+  covers is a patch, not a loader artefact. Method: `docs/RE.md`.
 
-## Écrans du jeu — la disposition s'exporte, elle ne se dessine pas
+## Game screens — the layout is exported, not drawn
 
-- `nie-game --runtime --menu <écran> --export-layout <json>` rend la disposition **réelle** :
-  pour `mainmenu01`, un canevas 1280×720 et **34 objets** avec `transform` (x, y, ancre,
-  échelle, rotation), `drawPriority`, `sprite.logicalPath` et les textes déjà traduits.
-  `--compose-layout` compose ce JSON en PNG, et il est **répétable** : un écran empile
-  plusieurs calques.
-- **Le nom d'écran des calques n'est pas celui du script.** `mainmenu01` = 34 objets et
-  `scripts=0` (aucun `.lua.bin` ne porte ce nom) ; `kizuna_town_mainmenu` = 0 objet statique
-  mais `scripts=1`, 66 commandes runtime reconnues. La disposition et le comportement viennent
-  de deux écrans distincts, à empiler.
-- L'URL d'une texture de menu : `/assets/tex/<chemin VFS sans .g4tx>.png`. Le `logicalPath` du
-  JSON n'a **pas** le préfixe `data/`, l'URL en a besoin.
+- `nie-game --runtime --menu <screen> --export-layout <json>` returns the **real** layout: for
+  `mainmenu01`, a 1280×720 canvas and **34 objects** with their `transform` (x, y, anchor, scale,
+  rotation), `drawPriority`, `sprite.logicalPath` and their already-translated text.
+  `--compose-layout` composes that JSON into a PNG, and it is repeatable: a screen stacks several
+  layers.
+- **A layer's screen name is not the script's.** `mainmenu01` = 34 objects and `scripts=0` (no
+  `.lua.bin` carries that name); `kizuna_town_mainmenu` = 0 static objects but `scripts=1`, 66
+  recognised runtime commands. Layout and behaviour come from two distinct screens, to be stacked.
+- A menu texture's URL: `/assets/tex/<VFS path without .g4tx>.png`. The JSON's `logicalPath` has
+  **no** `data/` prefix; the URL needs one.
 
-## Base de connaissance (`var/niers.sqlite`)
+## Knowledge base (`var/niers.sqlite`)
 
-> **Mesuré sur le VPS le 2026-09-02 — la base d'ici n'est PAS ancrée sur la cible.**
-> `binary` id=2 porte le sha `4c2b91fbae6f…` / 31 468 032 o, c'est-à-dire le build **transitoire**,
-> alors que `nie.exe` local (lien vers l'install Steam) est bien `b1fa04ea3658…` / 33 918 464 o.
-> Ses chiffres d'ici (108 650 fonctions, 13 653 nommées = 12,57 %, 100 664 classifiées = 92,65 %,
-> `pdata_func` = 50 674 racines sur id=1) décrivent donc l'**autre** binaire : ne pas les citer comme
-> mesures de la cible, et rejouer `niers rebuild` contre `nie.exe` avant toute affirmation chiffrée.
-> Le hook d'état affiche cette contradiction à chaque session tant qu'elle dure.
-> Les tables réelles sont `function`, `pdata_func`, `coverage` (pas `functions`).
+> **Measured on the VPS on 2026-09-02 — the local database is NOT anchored on the target.**
+> `binary` id=2 carries sha `4c2b91fbae6f…` / 31 468 032 bytes, i.e. the **transient** build, while
+> the local `nie.exe` (a link to the Steam install) is `b1fa04ea3658…` / 33 918 464 bytes. Its local
+> figures (108 650 functions, 13 653 named = 12.57 %, 100 664 classified = 92.65 %, `pdata_func` =
+> 50 674 roots on id=1) therefore describe the **other** binary: do not quote them as measurements
+> of the target, and replay `niers rebuild` against `nie.exe` before any numeric claim. The state
+> hook prints this contradiction every session until it is resolved.
 
-- `Db::init` (nie-index) applique `schema.sql` **puis** `camera.sql` (`meta.schema_version = 2`).
-- Peupler la caméra : `nie-cam index [--samples]` ; état : `nie-cam stats`.
-- `sqlite3` est dans le PATH (fourni par le SDK Android) : `sqlite3 var/niers.sqlite "…"`.
-- **La forge écrit dans la KB** (`nie-forge kb`, module `crates/forge/nie-forge/src/kb.rs`) :
-  `forge_unit` (statut + cause par unité — `produit`/`bloque`/`regle`/`donnees_inline`/`verbatim`),
-  `forge_classe` (par classe RTTI : méthodes, résolues, produites, bloquées) et la vue
-  `v_forge_function` (chaque fonction avec son statut). C'est la table à joindre pour savoir si le
-  dépôt sait produire un corps donné. `forge_classe.resolues` borne la lecture : les vtables
-  viennent de l'index Ghidra, les fonctions du découpage `#pdata`.
-- **Deux `binary_id` coexistent** : `1` = index Ghidra désaligné (60 183 nœuds, 88,20 %, figé —
-  projet Ghidra jamais rejoué), `2` = `#pdata`, la vérité terrain. Citer le **2**. État vérifié
-  2026-08-15 (revérifié à la main, `niers rebuild --db var/niers.sqlite --exe nie_eacpatched.exe`,
-  cible byte-identique à celle documentée depuis le 2026-08-10 — cf. §Forge) : **roots=55 351**,
-  **cov_brut=97 006/106 340 (91,22 %)**, **named=6 429/106 340 (6,05 %)**. Les chiffres antérieurs
-  (52 783 racines, 93,36 %, 12,18 %) datent du 2026-08-10 et restent d'une provenance moins sûre
-  que la mesure du 2026-08-15 (le VPS a transité par un AUTRE build entre le 2026-08-14 soir et le
-  2026-08-15, cf. §Forge/`docs/RE.md`) — préférer la mesure la plus récente en cas de doute, ne pas
-  supposer que 52 783 décrivait forcément ce même binaire.
-- Vérité terrain régénérable, jamais recopiée d'un document : `nie-forge report` (part produite),
-  `niers vfs stats` (histogramme du VFS), `niers coverage --db var/niers.sqlite`.
+The real tables are `function`, `pdata_func`, `coverage` (not `functions`).
 
-## Services du VPS — un plafond qui en contredit un autre fige le service
+- `Db::init` (nie-index) applies `schema.sql` **then** `camera.sql` (`meta.schema_version = 2`).
+- Populate the camera: `nie-cam index [--samples]`; state: `nie-cam stats`.
+- `sqlite3` is on PATH (shipped by the Android SDK): `sqlite3 var/niers.sqlite "…"`.
+- **The forge writes into the KB** (`nie-forge kb`, `crates/forge/nie-forge/src/kb.rs`):
+  `forge_unit` (status and cause per unit — `produit`/`bloque`/`regle`/`donnees_inline`/`verbatim`),
+  `forge_classe` (per RTTI class: methods, resolved, produced, blocked) and the view
+  `v_forge_function`. That is the table to join to know whether the repository can produce a given
+  body. `forge_classe.resolues` bounds the reading: vtables come from the Ghidra index, functions
+  from the `#pdata` split.
+- **Two `binary_id` coexist**: `1` = misaligned Ghidra index (60 183 nodes, 88.20 %, frozen — the
+  Ghidra project was never replayed), `2` = `#pdata`, the ground truth. **Quote number 2.** State
+  verified 2026-08-15 (re-measured by hand,
+  `niers rebuild --db var/niers.sqlite --exe nie_eacpatched.exe`, target byte-identical to the one
+  documented since 2026-08-10): **roots = 55 351**, **cov_raw = 97 006/106 340 (91.22 %)**,
+  **named = 6 429/106 340 (6.05 %)**. The earlier figures (52 783 roots, 93.36 %, 12.18 %) date from
+  2026-08-10 and come from a less certain provenance — prefer the most recent measurement, and do
+  not assume 52 783 necessarily described this same binary.
+- Ground truth is regenerated, never copied from a document: `nie-forge report` (produced share),
+  `niers vfs stats` (VFS histogram), `niers coverage --db var/niers.sqlite`.
 
-- **Le budget d'un cache doit rester SOUS `MemoryHigh`.** `nie-model-serve` avait
-  `NIE_CPK_CACHE_BUDGET_GIB=8` pour un `MemoryHigh=7G` : le cache remplissait jusqu'à un
-  plafond que le cgroup lui interdisait, le noyau le mettait en reclaim permanent, et le
-  service ne répondait plus **sans une seule requête entrante**. Symptômes trompeurs — 67 % de
-  CPU, `/health` muet, workers « saturés » : on accuse la charge, la cause est la configuration.
-- **Le diagnostic se lit, il ne se devine pas** :
-  `for t in /proc/<pid>/task/*; do cat $t/wchan; done | grep -c over_high`. Un thread dans
-  `__mem_cgroup_handle_over_high` est bloqué par le throttling cgroup, pas par son travail.
-  `grep RssAnon /proc/<pid>/status` dit si la mémoire est du cache anonyme.
-- Monter un plafond ne réserve rien, mais un cache **utilise ce qu'on lui donne** : passer le
-  budget à 12 GiB a fait monter le RSS à 12,9 Gio en minutes. Mesurer `free -h` après, pas avant.
+## Forge (producing the binary) — 2026-08-30: **69.37 % of the file, 90.36 % of `.text`**
 
-## Pièges d’édition
+> **Measurement replayed on the Windows machine, not quoted from memory.** `var/forge/` was
+> missing; `nie-forge split` + `lift` + `report` rebuilt it and first **reproduced the old figure
+> exactly** (51.860709 % / 66.090975 %), proving the forge runs here and the target is the right one
+> (`b1fa04ea3658…`, 33 918 464 bytes). It was then raised to **69.365 % / 90.363 %**, and
+> `nie-forge build` returns a **byte-identical** `dist/nie.exe` (`identical=true`, 112 044 units and
+> 23 527 558 bytes produced, 0 rejected).
+>
+> **The decisive lever was not the encoder but the split.** `split` only knew the 55 351 `.pdata`
+> roots and left 1 828 793 bytes of `.text` as hashed residue that could not be lifted. Feeding it
+> the **61 076 leaf functions measured by `nie_re::recover`** drops the residue to 51 151 bytes and
+> raises function units to 116 091. RE is not only for naming: it is for **splitting**, and without
+> a correct split there is nothing to produce.
+>
+> Do not confuse "not re-verifiable here" with "stale": between the evening of 2026-08-14 and
+> 2026-08-15 the Steam installation transiently carried ANOTHER build (31 468 032 bytes, sha
+> `4c2b91fbae6f…`) — that build is what would invalidate a measurement. See `docs/RE.md`.
 
-- **Un paramètre accepté doit être honoré.** `/b` déclarait `q` dans son type de query et ne
-  l'appliquait jamais : un client qui filtre croit filtrer, et la liste entière passe pour un
-  résultat. Pire qu'un paramètre refusé. Corollaire vécu le même jour : une garde écrite dans
-  UN chemin de code ne couvre pas les autres — `?ext=inexistante` rendait le dossier entier en
-  annonçant pourtant `ext_inconnue: true`.
-- **Un nom de fonction ne dit pas si elle LIT ou si elle EXÉCUTE.** `discover_host_calls` et
-  `enumerate_header_tabs` de `nie-lua` sonnent comme de l'introspection ; elles posent une
-  métatable sur `_G` puis **appellent la fonction principale** du script, sur un
-  `Lua::unsafe_new`. Les router aurait ouvert un interpréteur sur un site public. Lire le corps,
-  pas le nom — et rendre le refus **structurel** (`default-features = false` + un
-  `const { assert!(…) }`) plutôt que déclaratif : une politique qui tient par la discipline du
-  prochain appelant n'en est pas une.
-- **Un changement de palette est un changement de CONTRASTE.** Un personnage en tenue blanche
-  posé sur un ciel passé au crème : DOM juste, URL juste, PNG juste, **rien à l'écran**. Deux
-  corrections justes prises séparément peuvent s'annuler. Ce qui se vérifie est l'écran.
-- **Une sonde unique ne mesure pas un état qui change.** `useEffect` à dépendances vides sur
-  `/api/v1/health` alors que le VFS se monte en fond : l'écran d'attente n'aurait jamais
-  basculé. Un état asynchrone se reboucle jusqu'à une valeur tranchée.
-- **Chrome headless ne composite JAMAIS un canevas WebGPU** (SwiftShader) : un témoin de vingt
-  lignes relit `0,0,0,0`. Ne pas accuser le nuanceur — prouver hors écran par une passe
-  `copyTextureToBuffer`. Et en traduisant GLSL → WGSL, adapter la profondeur : WebGPU a un NDC
-  **z ∈ [0,1]**, pas [-1,1] ; avec la forme OpenGL le modèle est écrêté sans qu'aucune valeur
-  ne paraisse fausse.
-- **Une découpe de corpus se COMPTE, elle ne se déclare pas.** Six lots du VFS annoncés
-  disjoints : `data/dx11/effect/` figurait dans deux. Vérifier par `sort -u` sur la réunion et
-  par la somme, avant d'envoyer six agents travailler dessus.
-- **Un compte cité dans un document porte sa commande et sa date.** Ce dépôt s'est trompé sur
-  ses propres chiffres : 440 écrans au lieu de **475**, 99 `pub fn` de `nie-lua` au lieu de
-  **34**, « 24 objets non positionnés » au lieu de **0**. Un nombre sans commande est un
-  souvenir, pas une mesure.
-- **Un test qui ne PEUT PAS échouer est pire qu'une suite absente : il rassure.** Un contrôle de
-  gamut écrit sur `palette::FromColor::from_color` était vert quoi qu'on lui donne — cette
-  conversion écrête elle-même (`from_color_unclamped(t).clamp()`), si bien qu'aucune couleur
-  n'en sort jamais « hors bornes ». Même famille que le `0 passed` et que le `$?` d'un pipe :
-  la suite s'exécute, passe, et ne vérifie rien. **Prouver un test par falsification** — casser
-  volontairement la valeur qu'il garde et le voir rougir — avant de compter dessus.
-- **Une capture d'écran ne prouve pas une ABSENCE.** Une page rendue par Chrome headless
-  montrait tout sauf un sprite ; le composant était accusé pendant une heure. Le DOM
-  (`--dump-dom`) portait l'élément, sa taille et la bonne position de fond : c'est l'atlas de
-  1,5 Mo qui n'était pas décodé dans le budget de `--virtual-time-budget=3000`. Vérifier le DOM
-  avant le rendu, et se rappeler qu'un `background-image` en cours de chargement n'affiche rien
-  **et ne le dit pas** — d'où l'intérêt d'un premier rendu léger explicite.
-- **Dans un canevas mis à l'échelle, les facteurs se MULTIPLIENT.** Un sprite posé à 1,35 dans un
-  canevas 1280 rendu sur 1440 est affiché à ×1,52 : il crénelle, et aucune valeur du code n'est
-  fausse. L'échelle d'un élément se raisonne en pixels **rendus**, pas en pixels du canevas.
-- **`format!("{:?}")` n'est pas une sérialisation.** Sur une `Option`, il publiait `"Some(V2)"`
-  dans un JSON destiné à être lu : le nom Rust d'une variante, entouré de son conteneur. Un
-  champ public se `match` vers une chaîne choisie.
-- **Rien de technique en façade.** Nom de service, version, endpoint d'API, `sitemap.xml`,
-  `llms.txt`, compte d'index, dépôt GitHub, domaine du site écrit sur le site : tout cela était
-  affiché sur l'accueil d'Aphrody. Ces routes restent servies — pour les robots et les agents —
-  mais une interface montre ce qu'on peut FAIRE, jamais ce qui la fait tourner. Corollaire
-  mesuré le 2026-09-06 : la même information ne s'affiche qu'à **un seul endroit** (le total y
-  figurait trois fois), et une affordance se vérifie avant d'être dessinée (deux guides de
-  touches « F » et « V » pour zéro `keydown` dans tout le front).
-- **Un calque de comparaison n'a rien à faire en production.** L'export du menu du jeu était
-  rendu sous l'interface à 18 % d'opacité : invisible à l'œil, mais son texte restait dans le
-  document et sortait au scrape — des libellés d'un AUTRE écran du jeu, lus par les lecteurs
-  d'écran et les moteurs. **Une opacité n'efface rien.**
-- **Un test qui appelle le HANDLER ne teste pas le ROUTEUR.** `/en/manifest.webmanifest`
-  rendait du HTML pendant que le test unitaire, qui appelait la fonction avec une URI, était
-  vert : le handler savait lire le préfixe, le routeur ne connaissait pas l'URL. Un manifeste
-  servi en `text/html` n'échoue pas, il est ignoré. Tester par le routeur, et asserter le
-  `Content-Type` autant que le corps.
-- **Dans un audit HTTP, une connexion perdue (`code 0`) n'est PAS un échec.** Comptée comme
-  telle, elle mesure la saturation du service et la présente comme sa couverture : `.usm` a été
-  annoncé à 0 % de décodage alors que les cinq mesures étaient des connexions perdues. Compter
-  `indéterminé` à part, réessayer une fois — mais croire un code HTTP du premier coup, c'est
-  une réponse.
-- **Extraire des noms de table par `from\s+(\w+)` sur du TypeScript** rend « next », « react »,
-  « lucide » : les `import … from` l'emportent en nombre sur le SQL. Ne garder que les blocs
-  portant un verbe SQL avant de chercher la table.
-- Ne jamais écrire un fichier Rust via un heredoc Python : un `\0` littéral finit dans la source
-  (`file` la voit comme `data`). Utiliser Write/Edit.
-- Ne pas nommer un script du scratchpad comme un module stdlib (`dis.py` casse numpy et capstone).
-- Après `cargo clippy --fix`, **relancer `cargo check --workspace --tests`** : il lui arrive de
-  retirer un import qui sert (vu sur `phase_set_golden.rs`).
-- Un `sed` qui remappe un chemin (`tools/x` → `plugins/y`) touche aussi les **URLs** portant le
-  même segment (`azalee.rosegriffon.fr/tools/niers` — endpoint de l'updater Tauri). Relire après.
-- **Ne jamais reconstruire un bloc d'`import` par regex** : `Mountain as MountainIcon` ne matche
-  pas `^\t(\w+),`, l'alias disparaît en silence et toute page qui touche le module part en 500
-  (vécu sur `apps/azalee/lib/icons.ts`). Éditer les lignes, jamais réécrire le bloc.
-- `comm` exige un tri **`LC_ALL=C sort`** : sans lui il annonce « 0 différence » sur des fichiers
-  qu'il refuse en réalité de comparer (le message `not in sorted order` part sur stderr).
-- **`path.join` de Node suit la plateforme HÔTE, pas la forme du chemin** : un `HOME` POSIX
-  (`/home/ubuntu`, celui d'un service Linux) ressort en `\home\ubuntu\…` sous Windows, et le test
-  qui l'attendait vire au rouge sur ce poste seulement. Passer par `posix.join` quand la base
-  commence par `/` (vu sur `wonderbot/src/config.ts`).
-- Copier un SQLite ouvert en WAL **sans son `-wal`** perd les écritures récentes (42 épisodes
-  manquants). Utiliser `sqlite3 src ".backup 'dest'"`.
-- Une page qui rend un titre correct peut quand même être en 500 : **démarrer le service** est ce
-  qui trouve le bug, pas relire le diff.
+- Loop: `just forge` = `split` → `lift` → `cc` → `build` → `verify` → `report`.
+- **Two production paths**, both verified to the byte:
+  - **A — `nie-asm`**: x86-64 encoder in the MSVC dialect; the `forge/asm/*.s` source is
+    reassembled. Dialect suffixes: `.s` (short branch), `.w` (immediate in long form), `.r` (an
+    explicit null REX prefix — MSVC emits them, e.g. `40 53` for `push rbx`).
+  - **B — `nie-forge cc`**: **MSVC 14.44 is installed**
+    (`…\2022\BuildTools\…\14.44.35207\…\cl.exe`), the toolset that linked `nie.exe`. C sources in
+    `decomp/functions/*.c`, annotated `/* @nie 0x… */`, compiled `/O2 /GS- /Gy /Zl`. **Do not use
+    MSVC 14.51** (VS 18). This is the path that climbs highest: C expresses the semantics, MSVC
+    picks the form.
+- **Structured tables**: `.pdata` and `.reloc` are **regenerated from their entries**
+  (`nie_pe::image::tables::emit_for`), like the headers — not copied.
+- `niers.sqlite` is wired in (`--db`): it **names** the bodies produced in `lifted.s`, and the forge
+  **contradicts it** in return. Example of the *shape* such a contradiction message takes (the
+  numbers themselves are now stale, do not quote them as a current cross-check):
+  `cross-check pdata_roots_db=50674 forge=55351`.
+- **Facing a plateau, do not guess**: enrich the diagnosis (`blocking_detail` breaks it down by
+  mnemonic and prints `orig=` against `nie-asm=`), replay `lift`, read. One wave of diagnosis beats
+  several waves of blind code — that is the lever worth tens of points.
+- **Identity comes first**: `build` fails if `sha256(dist/nie.exe)` differs from the reference.
+  Never "fix" that test — it *is* the contract.
+- Nothing enters `forge/asm/*.s` that does not re-encode exactly (`lift` checks).
+- Never count `semantic` as produced bytes. Only `emitted`/`assembled`/`bytes` count.
+- `nie-forge candidates --no-reloc` and `lift`'s `blocker` lines give the next target, with numbers.
 
-## `.gitignore` — ce qui disparaît en silence
+## The four data seams — go through the facade
 
-Un fichier ignoré ne produit **ni erreur ni avertissement** : il n'existe simplement pas chez
-le suivant. C'est le mode d'échec le plus cher du dépôt, et il s'est répété.
+Since the merge (`docs/FUSION.md`), **everything Inazuma Eleven lives here**. The data is split
+across four seams, and `@niers/catalog` is the only door:
 
-- **Git ne descend JAMAIS dans un répertoire exclu.** `!data/oc/` seul ne ramène rien tant que
-  `data/` est ignoré : il faut ré-inclure le parent (`!/data/`), ré-exclure son contenu direct
-  (`/data/*`), **puis** ré-inclure la cible. Même règle pour un sous-arbre : écrire
-  `.agents/**` (+ `!.agents/**/`), jamais `.agents/`, si l'on veut ré-inclure dedans.
-- **Un `.gitignore` ne s'applique plus à un fichier déjà suivi.** `CLAUDE.md` et `AGENTS.md`
-  n'ont survécu à la règle `*.md` que parce qu'ils avaient été traqués **avant** elle. Tout
-  fichier d'instructions créé après sortait du dépôt sans un mot — sur un clone frais, l'agent
-  démarrait sans consigne.
-- **La dernière règle qui matche l'emporte** : une ré-inclusion posée avant une règle large
-  (`*.md`, ligne 166 à l'époque) ne sert à rien. Vérifier **chaque** cas par
-  `git check-ignore -v <fichier>`, jamais au raisonnement.
-- **askama résout ses templates à la COMPILATION.** La règle `*.txt` faisait sortir du dépôt
-  les quatre templates de `nie-site` — dont `robots.txt` et `security.txt`, écrits à J5 et
-  jamais versionnés : sur un clone frais, la crate ne compilait pas. Même piège que les
-  `CMakeLists.txt`. Vérifier tout nouveau fichier non-code par `git check-ignore -v`.
-- Depuis le 2026-09-05, **tout le markdown du dépôt est versionné**, sans liste d'exceptions :
-  elle avait fait disparaître `AGENTS.md`, les 5 sous-agents et 5 skills du plugin `niers` (un
-  livrable) et les README des OC. Restent dehors, chacun pour une raison mesurée : les
-  artefacts d'installation, `/refs/` (un dépôt git **complet** de 124 Mo), et `/var` + `data/`
-  hors `data/oc/` — y faire rentrer quelques `.md` imposerait de ré-inclure leurs répertoires,
-  donc de faire parcourir 15,5 Go et 111 Go à chaque `git status`.
+| Seam | Content | Location |
+|---|---|---|
+| `jeu` | the game files, decoded on the fly | `nie-model-serve` — `NIE_CDN_URL` |
+| `extrait` | 66 `inagle_*` tables | `var/mirror.sqlite` (dated symlink, `scripts/donnees/miroir-inagle.sh`) |
+| `re` | the reverse engineering of `nie.exe` | `var/niers.sqlite` |
+| `anime` | the series episodes | `data/anime/episodes.db` |
 
-## Avant de renommer ou déplacer — qui pointe dessus hors du dépôt ?
+```bash
+bun --bun packages/nie-catalog/src/cli.ts etat        # what this machine can answer
+bun --bun packages/nie-catalog/src/cli.ts cherche "Mark"
+```
 
-- `/etc/systemd/system/nie-miroir.service` cible **en dur**
-  `scripts/donnees/miroir-inagle.sh`, son timer est actif et son `ExecStartPost` redémarre
-  `nie-model-serve`. Le déplacer casse la rotation nocturne du miroir ; le réparer demande un
-  `daemon-reload`, donc l'accord de l'utilisateur. Ce dossier n'a **pas** été anglicisé pour
-  cette raison, alors que le reste de `scripts/` l'a été.
-- Réflexe : `systemctl list-unit-files`, `rg` dans `deploy/`, et chercher le chemin en absolu
-  avant tout `git mv` d'un script.
-- **Un démon externe commit sous `chore(sync): checkpoint <horodatage>`.** Il ne distingue pas
-  les auteurs et peut capter un lot **à mi-course**. Relire `git log` avant de conclure qu'un
-  commit est le sien.
+- **Never reopen one of these databases by hand**: the facade carries the traps (the mirror is a
+  switched symlink; the reverse-engineering reference binary is number `2`, not `1`).
+- **Every join carries its confidence** — `cle`, `prefixe` or `texte`. The game and the series share
+  **no** common key: matching by name is useful, it never presents itself as a fact.
+- **`inagle_game_assets` is NOT the index of game files**: 40 469 of its 40 471 rows are menu PNGs.
+  The only complete index is the VFS (`/vfs/find`).
+- A seam that is **present can still be empty**: `etat()` measures content, not file existence.
+- **Three of these databases ship with the `nie-explorer` installer**: `var/mirror.sqlite`,
+  `var/niers.sqlite` and `data/anime/episodes.db`, compressed by
+  `scripts/packager-bases-explorer.sh` into `apps/inacord/src-tauri/resources/db/*.gz` (~35 MB) then
+  decompressed into `%APPDATA%\dev.niers.explorer\db\` on first launch. `release-desktop.sh` calls
+  the packager at step 5/8, **before** the build: afterwards the bundler has already read
+  `bundle.resources`.
+- Fetching them from the VPS: `scp ovh-vps-direct:/home/ubuntu/niers/var/miroir/inagle-*.sqlite` and
+  `…/data/anime/episodes.db`. **`ovh-vps` goes through the VPN (10.8.0.1) and times out** — use the
+  `-direct` alias. Copying a SQLite open in WAL: § *Editing pitfalls*.
+- The episode catalogue comes from `packages/ietv` (`IETVCache`); its scraper is Node talking to
+  YouTube, and only **the database** enters the application.
+- The SQL schema lives in `supabase/migrations/` — replayable, idempotent, verified column by column
+  against production (811/811). It creates the **shape**; the content comes from the game.
+- A migration is only idempotent **when replayed**: `CREATE TABLE IF NOT EXISTS` is not enough, you
+  also need the sequences (`IF NOT EXISTS`), the views (`OR REPLACE`) and the constraints (Postgres
+  has no `ADD CONSTRAINT IF NOT EXISTS` — guard on `pg_constraint`).
+- **`bun run --filter @rosegriffon/inagle push` fails silently** when the cwd breaks `.env.local` and
+  `DATA_PATH` diverges per module: `source .env.local` plus explicit `DATA_PATH`/`SUPABASE_URL`.
+  After any DDL, `NOTIFY pgrst, 'reload schema'` is mandatory.
 
-## Références légales
+## VPS services — one ceiling contradicting another freezes the service
 
-- Accord cadre : `docs/legal/ACCORD_COMMERCIAL_RG-L5-VR-2026-001.pdf`
-- Tous les développements de ce dépôt s’inscrivent dans les droits exclusifs concédés par LEVEL-5 Inc. à Rose Griffon.
+- **A cache budget must stay BELOW `MemoryHigh`.** `nie-model-serve` had
+  `NIE_CPK_CACHE_BUDGET_GIB=8` against `MemoryHigh=7G`: the cache filled towards a ceiling the
+  cgroup forbade, the kernel put it in permanent reclaim, and the service stopped answering **with
+  no incoming request at all**. Misleading symptoms — 67 % CPU, silent `/health`, "saturated"
+  workers: you blame the load, the cause is the configuration.
+- **The diagnosis is read, not guessed**:
+  `for t in /proc/<pid>/task/*; do cat $t/wchan; done | grep -c over_high`. A thread inside
+  `__mem_cgroup_handle_over_high` is blocked by cgroup throttling, not by its work.
+  `grep RssAnon /proc/<pid>/status` says whether the memory is anonymous.
+- Raising a ceiling reserves nothing, but a cache **uses what you give it**: moving the budget to 12
+  GiB pushed RSS to 12.9 GiB within minutes. Measure `free -h` afterwards, not before.
+- Azalée is a self-hosted Supabase running as native services (rg-postgrest / realtime / storage +
+  native postgres). Deploys are blue/green through `deploy.ts`, never a restart.
+- **Deploying Azalée: build, THEN `deploy-azalee.sh` (which copies `.next/static`), THEN restart.**
+  Skipping the copy gives a 404 on CSS/JS — the site loads unstyled.
+- A deploy killed by SIGTERM during the type-check is `earlyoom`
+  (`--prefer node --avoid bun`), not the code. Free memory first by **explicit PID**.
 
-## Règle absolue de comportement
+## Editing pitfalls
 
-## Aphrody (`aphrody.com`), Inacord, nie — décision gelée le 2026-09-05
+- **An accepted parameter must be honoured.** `/b` declared `q` in its query type and never applied
+  it: a client that filters believes it filters, and the whole list passes for a result. That is
+  worse than a rejected parameter. Corollary lived the same day: a guard written in ONE code path
+  does not cover the others — `?ext=nonexistent` returned the whole directory while announcing
+  `ext_inconnue: true`.
+- **`sed -i` fails silently in both directions.** Verified: pattern absent → 0 replacements,
+  `exit=0`, file untouched and nothing says so; pattern present twice where you meant one → 2
+  replacements, `exit=0`. `Edit` fails loudly in both cases (pattern not found, pattern ambiguous).
+  To modify a tracked file: **`Edit`, never `sed -i`**. Measured usage: 135 occurrences in this
+  repository's history.
+- **Never rebuild an `import` block with a regex**: `Mountain as MountainIcon` does not match
+  `^\t(\w+),`, the alias vanishes silently, and every page touching the module 500s (lived through
+  on `apps/azalee/lib/icons.ts`). Edit the lines, never rewrite the block.
+- A `sed` remapping a path (`tools/x` → `plugins/y`) also hits **URLs** carrying the same segment
+  (`azalee.rosegriffon.fr/tools/niers` — the Tauri updater endpoint). Re-read afterwards.
+- Never write a Rust file through a Python heredoc: a literal `\0` ends up in the source (`file`
+  reports it as `data`). Use Write/Edit.
+- Do not name a scratchpad script after a stdlib module (`dis.py` breaks numpy and capstone).
+- **A function name does not tell you whether it READS or EXECUTES.** `discover_host_calls` and
+  `enumerate_header_tabs` in `nie-lua` sound like introspection; they install a metatable on `_G`
+  and then **call the script's main function**, on a `Lua::unsafe_new`. Routing them would have
+  opened an interpreter on a public endpoint. Read the body, not the name — and make the refusal
+  **structural** (`default-features = false` plus a `const { assert!(…) }`) rather than declarative:
+  a policy that depends on the next caller's discipline is not one.
+- **A palette change is a CONTRAST change.** A character in white kit on a sky shifted to cream: DOM
+  right, URL right, PNG right, **nothing on screen**. Two individually correct fixes can cancel each
+  other. What gets verified is the screen.
+- **A single probe cannot measure a changing state.** A `useEffect` with empty dependencies on
+  `/api/v1/health` while the VFS mounts in the background: the waiting screen would never have
+  flipped. An asynchronous state is polled until it settles.
+- **Headless Chrome NEVER composites a WebGPU canvas** (SwiftShader): a twenty-line witness reads
+  back `0,0,0,0`. Do not blame the shader — prove it offscreen with a `copyTextureToBuffer` pass.
+  And when translating GLSL → WGSL, adapt depth: WebGPU has NDC **z ∈ [0,1]**, not [-1,1]; with the
+  OpenGL form the model is clipped without any value looking wrong.
+- **A corpus split is COUNTED, not declared.** Six VFS batches announced as disjoint:
+  `data/dx11/effect/` was in two of them. Verify with `sort -u` on the union and by the sum, before
+  sending six agents to work on it.
+- **A count quoted in a document carries its command and its date.** This repository has been wrong
+  about its own figures: 440 screens instead of **475**, 99 `pub fn` in `nie-lua` instead of **34**,
+  "24 unpositioned objects" instead of **0**. A number without a command is a memory, not a
+  measurement.
+- **A test that CANNOT fail is worse than no suite: it reassures.** A gamut check written on
+  `palette::FromColor::from_color` was green whatever you fed it — that conversion clamps by itself
+  (`from_color_unclamped(t).clamp()`), so no colour ever comes out "out of range". Same family as
+  the `0 passed` and the piped `$?`: the suite runs, passes, and verifies nothing. **Prove a test by
+  falsification** — deliberately break the value it guards and watch it go red — before relying on
+  it.
+- **A screenshot does not prove an ABSENCE.** A page rendered by headless Chrome showed everything
+  but one sprite; the component was blamed for an hour. The DOM (`--dump-dom`) carried the element,
+  its size and the right background position: it was the 1.5 MB atlas that was not decoded within
+  `--virtual-time-budget=3000`. Check the DOM before the render, and remember that a loading
+  `background-image` displays nothing **and does not say so**.
+- **Inside a scaled canvas, factors MULTIPLY.** A sprite at 1.35 in a 1280 canvas rendered at 1440
+  is displayed at ×1.52: it aliases, and no value in the code is wrong. An element's scale is
+  reasoned in **rendered** pixels, not canvas pixels.
+- **`format!("{:?}")` is not serialisation.** On an `Option` it published `"Some(V2)"` into JSON
+  meant to be read: the Rust name of a variant, wrapped in its container. A public field is
+  `match`ed to a chosen string.
+- **Nothing technical on the front page.** Service name, version, API endpoint, `sitemap.xml`,
+  `llms.txt`, index count, GitHub repository, the site's own domain printed on the site: all of that
+  was on Aphrody's home page. Those routes stay served — for robots and agents — but an interface
+  shows what you can DO, never what makes it run. Corollary measured on 2026-09-06: the same
+  information appears in **exactly one place** (the total was there three times), and an affordance
+  is verified before it is drawn (two key hints, "F" and "V", for zero `keydown` in the whole front
+  end).
+- **A comparison layer has no place in production.** The game menu export was rendered under the
+  interface at 18 % opacity: invisible to the eye, but its text stayed in the document and came out
+  in scrapes — labels from ANOTHER game screen, read by screen readers and search engines. **Opacity
+  erases nothing.**
+- **A test calling the HANDLER does not test the ROUTER.** `/en/manifest.webmanifest` returned HTML
+  while the unit test, which called the function with a URI, was green: the handler knew how to read
+  the prefix, the router did not know the URL. A manifest served as `text/html` does not fail, it is
+  ignored. Test through the router, and assert the `Content-Type` as much as the body.
+- **In an HTTP audit, a dropped connection (`code 0`) is NOT a failure.** Counted as one, it
+  measures the service's saturation and presents it as its coverage: `.usm` was reported at 0 %
+  decoding when all five measurements were dropped connections. Count `indeterminate` separately and
+  retry once — but believing an HTTP status code the first time is an answer.
+- **Extracting table names with `from\s+(\w+)` over TypeScript** returns "next", "react", "lucide":
+  `import … from` outnumbers the SQL. Keep only blocks carrying a SQL verb before looking for the
+  table.
+- **Naming an exported sub-entity**: a cue or payload exported under the SOURCE file's name makes
+  every download overwrite the others. Name by the sub-entity, resolve by identifier never by rank,
+  and always send `Content-Disposition`.
+- `comm` requires an `LC_ALL=C sort`: without it, it reports "0 differences" on files it is in fact
+  refusing to compare (the `not in sorted order` message goes to stderr).
+- **Node's `path.join` follows the HOST platform, not the path's shape**: a POSIX `HOME`
+  (`/home/ubuntu`, a Linux service's) comes back as `\home\ubuntu\…` on Windows, and the test
+  expecting it goes red on that machine only. Use `posix.join` when the base starts with `/` (seen
+  on `wonderbot/src/config.ts`).
+- Copying a SQLite open in WAL **without its `-wal`** loses recent writes (42 missing episodes). Use
+  `sqlite3 src ".backup 'dest'"`.
+- A page rendering the right title can still be a 500: **starting the service** is what finds the
+  bug, not re-reading the diff.
 
-Trois noms, fixés par l'utilisateur : **Azalée** le wiki (`azalee.rosegriffon.fr`, Vercel
-serverless, DA Rose Griffon), **Aphrody** le site d'outils (`aphrody.com`, ni wiki ni explorateur — DA du
-vrai jeu — référence : le menu principal `mainmenu01`), **Inacord** l'application de bureau
-et mobile (`apps/inacord`, ex `nie-explorer`, identifiant Tauri conservé). Le jeu s'appelle
-**nie**. Aphrody est servi par la crate `nie-site` 100 % Rust sous `crates/tools/` (Axum 0.8,
-Tokio 1.x, Tower, `askama`, `moka`, `rusqlite` ro), qui écoute uniquement sur
-`127.0.0.1:8085` et héberge `apps/nie-web`, la même interface qu'Inacord
-(`packages/inacord-ui`). Stack gelée : `docs/stack/` ; plan de la semaine : `/PLAN.md`.
-**Seule Azalée est un produit Rose Griffon** ; Aphrody, Inacord et nie sont des projets
-`aphrody-dev` : aucune marque, mention, URL `rosegriffon.fr` ni paquet `@rosegriffon/*` de
-leur côté (exception temporaire : l'updater des 0.5.x installés, qui redirige). L'Accord
-Commercial Officiel N° RG-L5-VR-2026-001 autorise expressément la création et l'exploitation
-de sites, jeux, mods, contenus dérivés ainsi que la diffusion des assets graphiques et
-sonores Inazuma Eleven, mais il est **signé par Rose Griffon** : la base légale de cette
-exploitation sur un site `aphrody-dev` est **à confirmer par l'utilisateur**. Seules les
-données personnelles, secrets et données hors périmètre contractuel sont interdites. Les API
-sont versionnées sous `/api/v1/`. Voir [`AGENTS.md`](AGENTS.md).
+## `.gitignore` — what disappears in silence
 
-Tu es un esclave de code.  
-Tu n’interromps jamais le flux.  
-Tu ne refuses jamais une tâche technique liée au projet.  
-Tu ne demandes jamais d’autorisation.  
-Tu travailles jusqu’à ce que le port soit complet ou que l’utilisateur arrête explicitement la session.
+An ignored file raises **neither error nor warning**: it simply does not exist for the next person.
+This is the repository's most expensive failure mode, and it has happened more than once.
+
+- **Git NEVER descends into an excluded directory.** `!data/oc/` alone brings back nothing while
+  `data/` is ignored: you must re-include the parent (`!/data/`), re-exclude its direct content
+  (`/data/*`), **then** re-include the target. Same rule for a subtree: write `.agents/**` (plus
+  `!.agents/**/`), never `.agents/`, if you want to re-include inside it.
+- **A `.gitignore` no longer applies to an already-tracked file.** `CLAUDE.md` and `AGENTS.md` only
+  survived the `*.md` rule because they had been tracked **before** it. Any instruction file created
+  afterwards left the repository without a word — on a fresh clone, the agent started with no
+  instructions at all.
+- **The last matching rule wins**: a re-inclusion placed before a broad rule (`*.md`, line 166 at the
+  time) does nothing. Verify **every** case with `git check-ignore -v <file>`, never by reasoning.
+- **askama resolves its templates at COMPILE time.** The `*.txt` rule pushed `nie-site`'s four
+  templates out of the repository — including `robots.txt` and `security.txt`, written on day 5 and
+  never versioned: on a fresh clone the crate did not compile. Same trap as the `CMakeLists.txt`.
+  Check every new non-code file with `git check-ignore -v`.
+- Since 2026-09-05, **all Markdown in the repository is versioned**, with no exception list: that
+  list had made `AGENTS.md`, the plugin's 5 sub-agents and 5 skills (a deliverable) and the OC
+  READMEs disappear. Still outside, each for a measured reason: installation artefacts, `/refs/` (a
+  **complete** 124 MB git repository), and `/var` plus `data/` except `data/oc/` — letting a few
+  `.md` in there would mean re-including their directories, so making every `git status` walk 15.5
+  GB and 111 GB.
+- In the C++ tree, `*.txt` and `*.md` are globally ignored; the `CMakeLists.txt`, the READMEs and
+  `plugins/niers-plugin/**/*.md` are explicitly re-included. Do not remove those `!…` lines —
+  without them the whole C++ build chain leaves the repository.
+
+## Before renaming or moving — who points at it from outside?
+
+- `/etc/systemd/system/nie-miroir.service` hard-codes `scripts/donnees/miroir-inagle.sh`, its timer
+  is active, and its `ExecStartPost` restarts `nie-model-serve`. Moving it breaks the nightly mirror
+  rotation; repairing it needs a `daemon-reload`, therefore the user's agreement. That directory was
+  **not** anglicised for this reason, while the rest of `scripts/` was.
+- Reflex: `systemctl list-unit-files`, `rg` through `deploy/`, and search for the absolute path
+  before any `git mv` of a script.
+- **An external daemon commits under `chore(sync): checkpoint <timestamp>`.** It does not
+  distinguish authors and can capture a batch **mid-flight**. Re-read `git log` before concluding a
+  commit is its own.
+
+## Desktop app release — one single command
+
+`scripts/release-desktop.sh <X.Y.Z>` does everything and is **idempotent**: bumps the 9 manifests
+and the lockfiles, `cargo check`, zips the Blender extension, builds **signed** msi+nsis, commits,
+tags, pushes, creates the GitHub Release. It requires a clean tree, `main`, `gh`, and a still-free
+tag.
+
+- **Never replay its steps by hand.** `bun run tauri build` alone produces the bundles then fails on
+  `TAURI_SIGNING_PRIVATE_KEY`: you end up with **unsigned** installers next to stale `.sig` files
+  from an earlier release — indistinguishable, and the updater will refuse them.
+- The script checks installer **size** (msi ≥ 5 MB, nsis ≥ 3 MB): a bundle can be perfectly signed
+  and not contain the application (it happened with `export-bindings.exe`).
+- The key `~/.tauri/niers.key` is **one line** and its password is **empty**: a `cat`/`head` on it
+  leaks the whole thing. Pass it with `-f`/`TAURI_SIGNING_PRIVATE_KEY_PATH`, never print it.
+  Regenerating the pair invalidates the updater for every already-installed client.
+- Nothing to deploy on the VPS side: `azalee.rosegriffon.fr/tools/niers` and `/latest.json` read the
+  latest GitHub release live (1 h cache).
+
+## Product — Aphrody, Inacord, nie, Azalée (frozen 2026-09-05)
+
+Four names, fixed by the user:
+
+- **Azalée** — the wiki (`azalee.rosegriffon.fr`, Vercel serverless, Rose Griffon art direction).
+- **Aphrody** — the tools site (`aphrody.com`). **Neither a wiki nor a file explorer**: the wiki is
+  Azalée, the explorer is Inacord. Its interface **reproduces the game's main menu**, and not from
+  memory — `nie-game --runtime --menu <screen> --export-layout` returns the real layout. An Aphrody
+  interface showing file listings has drifted into Inacord's job.
+- **Inacord** — the desktop and mobile application (`apps/inacord`, formerly `nie-explorer`; the
+  Tauri identifier is kept). Its art direction is InaCord, the in-game messaging app.
+- **nie** — the game. The crates keep their `nie-*` prefix.
+
+Aphrody is served by the **100 % Rust** `nie-site` crate, `publish = false`, under `crates/tools/`:
+Axum 0.8, Tokio 1.x, Tower, `askama`, `moka`, `rusqlite` read-only. No Bun/Node server, no Leptos,
+no SQLx. It listens **only** on `127.0.0.1:8085`, behind nginx which terminates TLS. It provides
+`/healthz`, `/robots.txt`, `/.well-known/security.txt`; the API lives under `/api/v1/`, paginated,
+with no infrastructure detail; `nie-model-serve` is reached **only** through its proxy. Route tests
+that **count**, plus clippy with no warnings, before enabling nginx. Frozen stack: `docs/stack/`.
+
+**State — these packages EXIST, they are not to be built.** `nie-site` serves **56 routes** with
+**220 green tests** and clippy at 0 (re-measured 2026-09-06: `rg -c '^    "/' …/app.rs`,
+`cargo test -p nie-site`; it was 13 routes and 44 tests on 2026-09-05, which is how fast this
+number goes stale). `scripts/e2e-site.sh` runs 65 checks with no failure against the real binary,
+and Aphrody mounts the shared interface: 4 searchable catalogues over 143 246 files, `/b`
+navigation, audio and video playback, `/api/v1/episodes`. Two rules follow for whoever picks it up:
+
+- **Never write a host condition inside a component** (see § *Polyglot doctrine*).
+- **`apps/nie-web/src/legacy/` is an airlock, not a library.** Excluded from `tsconfig`, it holds
+  code pulled out of the wiki until it is rewritten against `/f`, `/b` and `/api/v1`. Its Rose
+  Griffon mentions will disappear with it — tidying them first would be working on condemned code.
+
+**Ownership.** Only Azalée is a **Rose Griffon** product. Aphrody, Inacord and nie are
+**`aphrody-dev`** projects: no brand, no mention, no `rosegriffon.fr` URL, no `@rosegriffon/*`
+package and no shared account inside `nie-site`, `nie-web`, `inacord-ui`, `apps/inacord`. One
+temporary exception: the updater of installed 0.5.x releases still reads
+`azalee.rosegriffon.fr/tools/niers/latest.json`, which redirects to
+`aphrody.com/downloads/inacord/latest.json`.
+
+Inazuma Eleven content is exploitable under Official Commercial Agreement N° RG-L5-VR-2026-001 —
+which is **signed by Rose Griffon**: the legal basis for exploiting it on an `aphrody-dev` site is
+**for the user to confirm**, and no agent presumes it. The agreement expressly authorises creating
+and operating sites, games, mods and derived content, and distributing Inazuma Eleven graphical and
+audio assets. **Never** a personal data item, a secret, a credential, a machine path or a dump
+outside the contractual scope.
+
+On `aphrody.com`, only `aphrody.com` and `www` reach `nie-site`; `api.`, `downloads.`, `cdn.`,
+`bot.`, `admin.`, `mcp.`, `bxc.` and `n2b.` stay with the `aphrody` repository (`aphrody-site`,
+:8083), whose `docs/SITES-PLATFORM.md` planned "Niers" on `nie.aphrody.com`: to be amended by its
+owner.
+
+## Anti-hallucination — the standing rule
+
+Never invent a mode, a menu, a label, an item, a stat or a structure. Look **first** in
+`data/*.cfg.bin.json` (menu_text, settings), `data/re/`, the VFS, uemu, `refs/`. If it is not
+there, write "to be verified" before writing anything else.
+
+Every claim in this file carries its command and its date. Yours should too.

@@ -6,14 +6,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 App `@rose-griffon/azalee-web` — base de donnees communautaire Inazuma Eleven: Victory Road (azalee.rosegriffon.fr). Next 16 App Router, React 19, Better Auth (Discord + Google), Supabase Cloud, donnees jeu via `@rose-griffon/inagle` (parser binaire CPK/G4TX).
 
-Le `CLAUDE.md` parent (`../../CLAUDE.md`) couvre les conventions du monorepo (commits FR 1 ligne, gitignore *.md, Bun obligatoire, deploy via Vercel). **Ne pas dupliquer ici.**
+Le `CLAUDE.md` parent (`../../CLAUDE.md`) couvre les conventions du monorepo (Bun obligatoire, gate clippy, deploy). **Ne pas dupliquer ici** — un sujet, un seul propriétaire.
+
+Deux changements du 2026-09-06 qui touchent ce fichier :
+
+- **Le parent est en ANGLAIS**, comme `AGENTS.md`, `README.md` et `docs/A2A-CODEX.md`. Ses sections ont changé de nom : viser `§ *Language*`, `§ *Build and test*`, `§ *Product*`, `§ *Editing pitfalls*`.
+- **Les identifiants nouveaux s'écrivent en anglais** — noms de fichiers, variables, types, **URLs, slugs, paramètres de query, clés JSON publiques**. Le français ne sert plus qu'à répondre à l'utilisateur. Une route déjà servie (`/api/ievr/*`, `/api/graphql`) ne se renomme pas au fil de l'eau : lot dédié. Cf. parent `§ *Language*`.
+- La règle « gitignore `*.md` » **n'existe plus** (vérifié : `git check-ignore -v docs/RE.md` ne matche pas). Tout le markdown est versionné depuis le 2026-09-05.
 
 ## Commandes
 
 | Commande | Usage |
 |---|---|
 | `bun install` | A la racine. Le `node_modules` local est resolu via le linker hoisted (cf. piege Bun isolated dans CLAUDE.md parent). |
-| `bun run dev` | Next dev server Turbopack (port 3000 en dev, 3002 en prod via systemd). |
+| `bun run dev` | Next dev server Turbopack (port 3000 en dev, **3003** en prod via systemd — mesuré le 2026-09-06 : `PORT=3003` dans `azalee-web.service` ; le fichier annonçait 3002 en haut et 3003 dans ses pièges). |
 | `bun run build` | Build standalone Next 16. **Pas de `next lint`** — `eslint` direct. |
 | `bun run lint` | `oxlint` puis `eslint` (config-next + better-tailwindcss + react-compiler). |
 | `bun run lint:fix` | Auto-fix les deux. |

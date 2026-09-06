@@ -256,28 +256,18 @@ rules: [`AGENTS.md`](AGENTS.md).
 
 ## Contributing
 
-This repository is worked on by **several agents at once** (Claude Code, Codex). Before touching
-anything, read the two files that make that possible:
+This repository is worked on by **several agents at once** (Claude Code, Codex), and the rules that
+make that possible are written down once, each in exactly one place:
 
-- [`AGENTS.md`](AGENTS.md) — the context every agent reads first, whatever its engine.
-- [`docs/A2A-CODEX.md`](docs/A2A-CODEX.md) — the coexistence protocol: announce your scope before
-  writing, stay inside it, one commit author, and talk over the `.coord/` mailbox.
+| What | Where |
+|---|---|
+| The entry point every agent reads first, whatever its engine | [`AGENTS.md`](AGENTS.md) |
+| Every rule about this repository — tools, gates, traps, data, forge, RE | [`CLAUDE.md`](CLAUDE.md) |
+| The agent-to-agent wire protocol | [`docs/A2A-CODEX.md`](docs/A2A-CODEX.md) |
 
-The gate before any commit is `cargo clippy -p <crate> --lib --tests` with **0 warnings** — never
-`cargo build --workspace --all-targets`, which saturates the disk.
-
-### Naming — English identifiers (2026-09-06)
-
-This is a **worldwide** project. Everything a machine or a non-French reader parses is named in
-**English**: file and directory names, variables, functions, types, fields, constants, modules,
-site slugs, URLs, routes, query parameters, public JSON keys, CLI commands, and any new database
-table or column. French is used for one thing only — talking to the maintainer.
-
-Much of the repository predates this rule and is still named in French. It is **not** migrated in
-one sweep, and never with `sed`: every **new** name is English, an **already-served public API**
-is renamed only by a dedicated batch (with a redirect or dual serving), and internal names may be
-fixed while you already hold the file. Product names stay frozen: Azalée, Aphrody, Inacord, nie,
-`niers`, the `nie-*` crates, the `inagle_` table prefix. See [`CLAUDE.md`](CLAUDE.md) § *Langue*.
+Two things worth knowing before you read them: identifiers, URLs and documentation are in
+**English** (this is a worldwide project — [`CLAUDE.md`](CLAUDE.md) § *Language*), and the gate
+before any commit is `cargo clippy -p <crate> --lib --tests` with **0 warnings**.
 
 ## Legal
 
