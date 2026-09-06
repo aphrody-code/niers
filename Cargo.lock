@@ -5177,6 +5177,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "nie-ui"
+version = "0.5.9"
+dependencies = [
+ "nie-aphrody",
+ "nie-formats",
+]
+
+[[package]]
 name = "nie-viola"
 version = "0.5.9"
 dependencies = [

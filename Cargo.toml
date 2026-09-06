@@ -133,6 +133,10 @@ nie-lua = { path = "crates/engine/nie-lua" }
 nie-app = { path = "crates/engine/nie-app" }
 nie-render3d = { path = "crates/engine/nie-render3d" }
 nie-aphrody = { path = "crates/engine/nie-aphrody" }
+# nie-ui : source unique, typée, des jetons de design du jeu (couleurs OKLCH, géométrie,
+# mouvement) — génère le CSS de packages/inacord-ui/src/shell/game-tokens.css et relie
+# nie-formats::sprite_sheet (icônes) aux jetons pour le Rust qui compose des images.
+nie-ui = { path = "crates/engine/nie-ui" }
 # `nie-runtime` : le moteur de match. Declare ici parce que `nie-ffi` le consomme desormais —
 # c'est ce qui rend la simulation pilotable depuis Python (`niepy`) et donc depuis Ren'Py.
 nie-runtime = { path = "crates/engine/nie-runtime" }

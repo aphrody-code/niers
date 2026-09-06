@@ -1,0 +1,35 @@
+[package]
+name = "nie-ui"
+description = "Source unique, typée, des jetons de design du jeu (couleurs OKLCH, géométrie, mouvement) — génère le CSS de packages/inacord-ui/src/shell/game-tokens.css et relie nie_formats::sprite_sheet (icônes) aux jetons pour le Rust qui compose des images"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+# Le pont ICÔNES (`icons.rs`) : les atlas `.g4tx` d'interface sont déjà transposés en CSS/SVG
+# dans `nie_formats::sprite_sheet` (rectangles RECOPIÉS du jeu, jamais recalculés). nie-ui
+# APPELLE ce module pour composer le CSS des régions avec ses propres jetons ; il ne réimplémente
+# ni le découpage d'atlas ni le calcul de `background-position`.
+# Cargo refuse `default-features = false` sur une dépendance héritée du workspace tant que la
+# racine ne le déclare pas elle-même (`error inheriting nie-formats : cannot override
+# default-features`) : on prend donc les features par défaut (`std` + `lua`). `lua` ne pèse rien
+# ici — c'est `nie_lua::bytecode` pur Rust, sans mlua ni tree-sitter (cf. le Cargo.toml de
+# nie-formats) — et c'est déjà la base commune de nie-core/nie-render3d/nie-game : nie-formats
+# reste le seul poids ajouté, pas un poids nouveau pour l'écosystème.
+nie-formats.workspace = true
+
+[dev-dependencies]
+# Cross-check UNIQUEMENT (pas de dépendance de la bibliothèque publiée) : `nie_aphrody::design`
+# dérive DÉJÀ les 26+3 rôles `--jeu-*`/`--inacord-*` par k-means Oklab sur l'atlas du personnage
+# (`pixel mesurer … --k 10`). nie-ui ne réimplémente pas cette dérivation ; son test appelle le
+# VRAI calcul (`nie_aphrody::design::role(nom).oklch()`) pour prouver que la transposition figée
+# de `color.rs` reste synchronisée avec lui — une divergence future y devient un test rouge, pas
+# une hypothèse. En dev-dependency : le poids de resvg/usvg/tiny-skia/image-compare que porte
+# nie-aphrody (sa chaîne image → SVG → raster, sans rapport avec la lecture d'un jeton) ne
+# retombe JAMAIS sur un consommateur de la bibliothèque (nie-render3d, nie-game, nie-core).
+nie-aphrody = { workspace = true }
