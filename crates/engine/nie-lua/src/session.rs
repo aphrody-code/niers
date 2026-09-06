@@ -60,6 +60,24 @@ pub const LIFECYCLE_CALLBACKS: [&str; 6] = [
     "OnDestroy",
 ];
 
+/// Valeur transportable par un événement host→Lua.
+///
+/// Le manager natif convertit les `uint` en nombres Lua et transmet aussi un argument optionnel
+/// `nil` ; les callbacks de menus rencontrent également des booléens et des chaînes. Garder ces
+/// variantes explicites évite de réduire tous les événements à des nombres et de changer leur
+/// arité observable avec `select('#', ...)`.
+#[derive(Debug, Clone, PartialEq)]
+pub enum CallbackArg {
+    /// Nombre Lua (les IDs moteur et hashes arrivent ici).
+    Number(f64),
+    /// Booléen Lua.
+    Boolean(bool),
+    /// Chaîne Lua.
+    String(String),
+    /// Valeur Lua `nil`, distincte de l’absence d’argument.
+    Nil,
+}
+
 type IncludeResolver = Rc<dyn Fn(&str) -> Option<Vec<u8>>>;
 type BuiltVm = (Lua, Option<Rc<RefCell<MenuState>>>);
 
@@ -356,6 +374,25 @@ impl LuaSession {
         args: &[f64],
         context: Option<RuntimeContext>,
     ) -> Result<bool, LuaError> {
+        let args = args
+            .iter()
+            .copied()
+            .map(CallbackArg::Number)
+            .collect::<Vec<_>>();
+        self.call_menu_callback_typed(callback, &args, context)
+    }
+
+    /// Appelle un callback host→Lua avec les types de valeurs du pont natif.
+    ///
+    /// `CallbackArg::Nil` est volontairement conservé dans la liste : il reproduit un argument
+    /// optionnel passé explicitement par le host C#, au lieu de le confondre avec un callback sans
+    /// argument.
+    pub fn call_menu_callback_typed(
+        &mut self,
+        callback: &str,
+        args: &[CallbackArg],
+        context: Option<RuntimeContext>,
+    ) -> Result<bool, LuaError> {
         if let Some(context) = context {
             self.set_context(context)?;
         }
@@ -364,9 +401,17 @@ impl LuaSession {
         };
         let values = args
             .iter()
-            .copied()
-            .map(Value::Number)
-            .collect::<MultiValue>();
+            .map(|arg| match arg {
+                CallbackArg::Number(value) => Ok(Value::Number(*value)),
+                CallbackArg::Boolean(value) => Ok(Value::Boolean(*value)),
+                CallbackArg::String(value) => self
+                    .lua
+                    .create_string(value)
+                    .map(Value::String)
+                    .map_err(LuaError::from),
+                CallbackArg::Nil => Ok(Value::Nil),
+            })
+            .collect::<Result<MultiValue, LuaError>>()?;
         function.call::<MultiValue>(values)?;
         Ok(true)
     }
@@ -615,7 +660,8 @@ mod tests {
             br#"assert(pieceIdx == 3); assert(isGrayout == true); assert(MENU_LINIT_NONE == "native-sentinel")"#,
         )
         .expect("globals de contexte");
-        s.set_context(context.clone()).expect("remplacement contexte");
+        s.set_context(context.clone())
+            .expect("remplacement contexte");
         s.exec(
             "context-replacement",
             br#"assert(rawget(_G, "oldSceneSlot") == nil)"#,
@@ -650,16 +696,51 @@ mod tests {
         .expect("callbacks");
         let mut context = RuntimeContext::default();
         context.set_number("pieceIdx", 4.0);
-        assert!(s
-            .call_menu_callback("OnOpenLayer", &[10.0, 2.0], Some(context.clone()))
-            .expect("OnOpenLayer"));
-        assert!(s
-            .call_menu_callback("OnCloseEndLayer", &[20.0, 1.0], Some(context))
-            .expect("OnCloseEndLayer"));
-        assert!(!s
-            .call_menu_callback("OnChangeFocus", &[0.0, 0.0], None)
-            .expect("callback absent"));
+        assert!(
+            s.call_menu_callback("OnOpenLayer", &[10.0, 2.0], Some(context.clone()))
+                .expect("OnOpenLayer")
+        );
+        assert!(
+            s.call_menu_callback("OnCloseEndLayer", &[20.0, 1.0], Some(context))
+                .expect("OnCloseEndLayer")
+        );
+        assert!(
+            !s.call_menu_callback("OnChangeFocus", &[0.0, 0.0], None)
+                .expect("callback absent")
+        );
         assert_eq!(s.eval("calls[1] .. ',' .. calls[2]").unwrap(), "16,25");
+    }
+
+    #[test]
+    fn les_evenements_host_preservent_types_nil_et_arite() {
+        let mut s = session();
+        s.exec(
+            "typed-events",
+            br#"
+                function OnTyped(...)
+                    argc = select('#', ...)
+                    first_type = type(select(1, ...))
+                    second_value = select(2, ...)
+                    third_value = select(3, ...)
+                    fourth_type = type(select(4, ...))
+                end
+            "#,
+        )
+        .expect("callback variadique");
+        assert!(
+            s.call_menu_callback_typed(
+                "OnTyped",
+                &[
+                    CallbackArg::Number(7.0),
+                    CallbackArg::Boolean(true),
+                    CallbackArg::String("scene".to_string()),
+                    CallbackArg::Nil,
+                ],
+                None,
+            )
+            .expect("callback typé")
+        );
+        assert_eq!(s.eval("argc .. '/' .. first_type .. '/' .. tostring(second_value) .. '/' .. third_value .. '/' .. fourth_type").unwrap(), "4/number/true/scene/nil");
     }
 
     #[test]

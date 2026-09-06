@@ -71,6 +71,8 @@ sur les modules VFS inclus.
 `LuaSession::call_menu_callback` expose aussi les événements host→Lua de
 navigation (`OnSetupLayer`, `OnOpenLayer`, `OnCloseLayer`, `OnCloseEndLayer`,
 `OnChangeLayerGroup`) sur la même VM, avec injection de contexte par événement.
+`call_menu_callback_typed` conserve en plus les booléens, chaînes et `nil` explicites du pont
+natif, ainsi que leur arité Lua observable.
 `DriveReport` expose désormais `frames_requested`, `frames_executed` et le
 compteur par callback ; l’ordre et la couverture de la boucle de frames sont
 ainsi vérifiables sans déduire le résultat de l’état final seul.
