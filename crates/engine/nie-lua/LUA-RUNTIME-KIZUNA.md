@@ -52,6 +52,10 @@ success, 0 warning
 Les audits ont été lancés avec `NIE_GAME_DIR`/`--game-dir` vers l’installation
 locale du jeu, sans chemin machine écrit dans le code ou dans ce rapport.
 
+Le désassembleur résout aussi les cibles de saut avec la règle Lua
+`pc + 1 + sBx` et affiche les arités réelles de `CALL`, `TAILCALL` et `RETURN`
+(`B-1`/`C-1`, `vararg` et `multret` inclus). Un test VM généré vérifie ce listing.
+
 ## Limites connues
 
 L’audit complet signale 13 paramètres non résolus dans un script d’effets

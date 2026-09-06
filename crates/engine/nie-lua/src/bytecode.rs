@@ -614,7 +614,7 @@ fn disassemble_proto(p: &Prototype, label: &str, depth: usize, out: &mut String)
             .line_info
             .get(pc)
             .map_or_else(String::new, |l| format!("[{l}]"));
-        let operands = format_operands(&ins, p);
+        let operands = format_operands(&ins, p, pc);
         let _ = writeln!(
             out,
             "{pad}  {pc:>4} {line:>7} {:<10} {operands}",
@@ -643,7 +643,7 @@ fn disassemble_proto(p: &Prototype, label: &str, depth: usize, out: &mut String)
 }
 
 /// Formate les opérandes selon le mode de l'instruction, en résolvant ce qui peut l'être.
-fn format_operands(ins: &Instruction, p: &Prototype) -> String {
+fn format_operands(ins: &Instruction, p: &Prototype, pc: usize) -> String {
     let k = &p.constants;
     match ins.mode() {
         OpMode::ABx => {
@@ -658,7 +658,12 @@ fn format_operands(ins: &Instruction, p: &Prototype) -> String {
                 format!("R{} := K{}({value})", ins.a, ins.bx)
             }
         }
-        OpMode::AsBx => format!("A={} sBx={} (→ {})", ins.a, ins.sbx, ins.sbx + 1),
+        OpMode::AsBx => {
+            // Les sauts Lua sont relatifs à l'instruction suivante, pas au début du prototype.
+            // Garder le PC dans le listing évite de fabriquer un graphe de contrôle faux.
+            let target = (pc as i64) + 1 + i64::from(ins.sbx);
+            format!("A={} sBx={} (→ pc {})", ins.a, ins.sbx, target)
+        }
         OpMode::Ax => format!("Ax={}", ins.ax),
         OpMode::ABC => {
             let name = ins.name();
@@ -669,8 +674,27 @@ fn format_operands(ins: &Instruction, p: &Prototype) -> String {
                 "SETTABUP" => format!("Up{}[{}] := {}", ins.a, rk(ins.b, k), rk(ins.c, k)),
                 "GETTABLE" => format!("R{} := R{}[{}]", ins.a, ins.b, rk(ins.c, k)),
                 "SETTABLE" => format!("R{}[{}] := {}", ins.a, rk(ins.b, k), rk(ins.c, k)),
-                "CALL" => format!("R{}(...) — {} args, {} retours", ins.a, ins.b, ins.c),
-                "RETURN" => format!("retourne R{}..{}", ins.a, ins.b),
+                "CALL" | "TAILCALL" => {
+                    let args = if ins.b == 0 {
+                        "vararg".to_string()
+                    } else {
+                        (ins.b - 1).to_string()
+                    };
+                    let returns = if ins.c == 0 {
+                        "multret".to_string()
+                    } else {
+                        (ins.c - 1).to_string()
+                    };
+                    format!("R{}(...) — {} args, {} retours", ins.a, args, returns)
+                }
+                "RETURN" => {
+                    let returns = if ins.b == 0 {
+                        "multret".to_string()
+                    } else {
+                        format!("{} valeur(s)", ins.b - 1)
+                    };
+                    format!("retourne R{}..{} ({returns})", ins.a, ins.b)
+                }
                 "MOVE" => format!("R{} := R{}", ins.a, ins.b),
                 _ => format!("A={} B={} C={}", ins.a, ins.b, ins.c),
             }
@@ -726,6 +750,26 @@ mod tests {
         let listing = disassemble(&chunk);
         assert!(listing.contains("ADD"), "listing :\n{listing}");
         assert!(listing.contains("function main"), "listing :\n{listing}");
+    }
+
+    #[test]
+    fn listing_resout_les_sauts_depuis_le_pc_et_les_arites_lua() {
+        let lua = crate::new_vm();
+        let dumped = lua
+            .load("local x = ...; if x then return x, 2 end return 0")
+            .set_name("controle")
+            .into_function()
+            .expect("compilation")
+            .dump(false);
+        let listing = disassemble(&parse(&dumped).expect("décodage"));
+        assert!(
+            listing.contains("→ pc "),
+            "cible de saut absente :\n{listing}"
+        );
+        assert!(
+            listing.contains("retourne") && listing.contains("valeur(s)"),
+            "arité Lua absente :\n{listing}"
+        );
     }
 
     #[test]
