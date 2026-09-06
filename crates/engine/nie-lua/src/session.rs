@@ -451,6 +451,17 @@ impl LuaSession {
         if let Some(context) = context {
             self.set_context(context)?;
         }
+        // Le manager natif installe le layer événementiel comme contexte courant avant d'appeler
+        // OnSetup/OnOpen/OnClose. Les commandes d'objet qui omettent leur layerId relisent alors
+        // ce slot ; le faire ici évite de muter silencieusement le layer 0 dans une session live.
+        if matches!(
+            callback,
+            "OnSetupLayer" | "OnOpenLayer" | "OnCloseLayer" | "OnCloseEndLayer"
+        ) && let Some(CallbackArg::Number(layer_id)) = args.first()
+            && let Some(state) = &self.menu_state
+        {
+            state.borrow_mut().current_layer = *layer_id as u32;
+        }
         let Ok(Value::Function(function)) = self.lua.globals().raw_get::<Value>(callback) else {
             return Ok(false);
         };
@@ -855,6 +866,29 @@ mod tests {
             .expect("callback typé")
         );
         assert_eq!(s.eval("argc .. '/' .. first_type .. '/' .. tostring(second_value) .. '/' .. third_value .. '/' .. fourth_type").unwrap(), "4/number/true/scene/nil");
+    }
+
+    #[test]
+    fn un_evenement_de_layer_positionne_le_contexte_host_avant_lappel() {
+        let mut s = LuaSession::standard(true).expect("session menu");
+        s.exec(
+            "layer-event",
+            br#"
+                function OnOpenLayer(layer)
+                    funcLuaMenuCommand(0x2A64B198, 0x1234, 0, false)
+                end
+            "#,
+        )
+        .expect("callback de layer");
+        assert!(
+            s.call_menu_callback_typed("OnOpenLayer", &[CallbackArg::Number(0x77 as f64)], None,)
+                .expect("OnOpenLayer")
+        );
+        let state = s.menu_state().expect("MenuState");
+        let state = state.borrow();
+        assert_eq!(state.current_layer, 0x77);
+        assert!(!state.layers[&0x77].objects[&0x1234].visible);
+        assert!(!state.layers.contains_key(&0));
     }
 
     #[test]
