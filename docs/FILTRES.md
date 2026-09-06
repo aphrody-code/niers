@@ -322,7 +322,7 @@ vignette), compté à part et jamais comme un manque.
 | **Transverse** |
 | 46 | Recherche globale multi-gisements | ✅ | ✅ | ❌ | **ABSENT** | 160 inchangé |
 | 47 | Facettes avec **comptes** | ✅ | ✅ | ◐ 3D seule | **SERVI** | `/api/v1/playstyles` compte ses six styles |
-| 48 | Export de la liste filtrée | ❌ | ✅ | ❌ | **ABSENT** | refusé en **400** |
+| 48 | Export de la liste filtrée | ❌ | ✅ | ❌ | **SERVI** | `?format=csv` → `text/csv` + `inagle_characters-page1.csv` |
 
 \* **SERVI\*** veut dire *servi structurellement, sans donnée pour le montrer* : la colonne est
 acceptée et un nom hors schéma est refusé en `400`, mais elle est **constante ou vide dans ce
@@ -332,10 +332,10 @@ tort — c'est le gisement qui est pauvre, pas la route.
 ### Compte — 2026-09-06 au soir
 
 ```
-servis 38 · absents 8 · côté client 2 · à relire 0  (sur 48)
+servis 39 · absents 7 · côté client 2 · à relire 0  (sur 48)
 ```
 
-- **API : 38 servis, 8 absents, 2 hors périmètre.** Le matin, la même colonne comptait 6 servis.
+- **API : 39 servis, 7 absents, 2 hors périmètre.** Le matin, la même colonne comptait 6 servis.
 - Les deux derniers (#29, #32) ont été gagnés **le soir même, par la mesure** : le script les a
   classés `ABSENT` en disant *pourquoi* — « l'égalité ne sait dire ni l'intervalle ni la
   présence » — et cette phrase était le cahier des charges. `entites` a gagné `colonne__min` /
@@ -362,7 +362,7 @@ servis 38 · absents 8 · côté client 2 · à relire 0  (sur 48)
 ---
 
 
-## 6. Les 8 manques restants : source de données et coût
+## 6. Les 7 manques restants : source de données et coût
 
 > Réécrit le 2026-09-06 au soir contre la mesure. Les 26 lignes que cette section chiffrait le
 > matin (#1–#3, #7–#10, #14–#17, #17–#28, #33–#35, #42, #43, #47) sont **servies** : elles ne
@@ -375,7 +375,6 @@ servis 38 · absents 8 · côté client 2 · à relire 0  (sur 48)
 | 40/41 | Pertinence pondérée, fuzzy | — | **à écrire** ; `apps/inacord/src/lib/recherche.ts:186-295` est un portage direct |
 | 44/45 | RE, forge | `var/niers.sqlite` (`function`, `forge_unit`, `v_forge_function`) | **bloqué en amont, pas en code** : la KB du VPS est ancrée sur le build transitoire `4c2b91fbae6f…`, pas sur la cible. Une route servirait des chiffres faux. `niers rebuild` d'abord |
 | 46 | Recherche globale multi-gisements | les 4 gisements, via `@niers/catalog` | **coûteux et incertain** : le jeu et la série n'ont aucune clé commune ; un rapprochement par le nom ne peut pas se présenter comme un fait |
-| 48 | Export de la liste filtrée | la page déjà rendue | **client seul** — la liste filtrée est déjà servie en JSON, l'exporter est un `<a download>` |
 
 **Le constat central n'a pas changé de forme, il a changé de côté.** Le matin : « aucun des 42
 manques n'exige une passe sur les 255 308 entrées ». Le soir : il n'en reste **12**, et les deux
@@ -403,7 +402,10 @@ Trois restent une **forme** de filtre (glob, sous-arbre, fuzzy) plutôt qu'une d
    trois filtres n'ont coûté aucune ligne qui leur soit propre. `/api/v1/episodes` reste ce
    qu'elle est : l'API de synchronisation des Inacord installés.
 5. **Glob (#11)** — moteur déjà écrit, à rendre atteignable.
-6. **Export (#48)** — client seul, une balise.
+6. ~~Export (#48).~~ **Fait le 2026-09-06** — `?format=csv` rend la MÊME page, filtrée et
+   triée, avec un nom qui porte la table *et* la page : sans la seconde, deux exports du même
+   corpus se recouvrent dans le dossier de téléchargement. Ce n'est pas un dump — la pagination
+   continue de s'appliquer, sinon ce serait une seconde route déguisée.
 7. **Fuzzy et pertinence (#40, #41)** — utiles quand il y aura assez de champs cherchables pour
    que le classement compte.
 8. **RE et forge (#44, #45)** — **ne pas commencer** avant `niers rebuild` : la KB n'est pas

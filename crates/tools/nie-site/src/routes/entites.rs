@@ -73,12 +73,26 @@
 //!   `__present__` serait détourné. Mesuré avant d'écrire : **0 occurrence** des deux jetons
 //!   dans les 165 249 lignes des 219 tables.
 //!
+//! ## L'export : la même page, dans un autre format
+//!
+//! `?format=csv` rend la page **exactement telle qu'elle est filtrée et triée**, en CSV, avec
+//! un `Content-Disposition` dont le nom porte la table et la page — jamais un nom générique,
+//! sinon deux exports se recouvrent dans le dossier de téléchargement (leçon déjà payée sur
+//! les cues audio).
+//!
+//! Ce n'est pas un dump : la pagination continue de s'appliquer, `per_page` reste plafonné, et
+//! l'export d'un corpus entier passe par autant d'appels que de pages. Un export qui
+//! ignorerait la pagination serait une seconde route déguisée, avec un coût que personne
+//! n'aurait choisi.
+//!
 //! Sans miroir, les trois routes répondent `503` avec la raison : le service démarre toujours.
 
 use std::collections::BTreeMap;
 
 use axum::Json;
 use axum::extract::{Path, Query, State};
+use axum::http::header;
+use axum::response::IntoResponse;
 use rusqlite::Connection;
 use rusqlite::types::Value as ValeurSql;
 use serde::Serialize;
@@ -103,7 +117,14 @@ pub const PREFIXE_INTERNE: char = '_';
 /// français de la route, le second parce que c'est celui du reste de l'API
 /// ([`crate::routes::DemandePage`]) et qu'un client qui l'emploie ne doit pas se retrouver avec
 /// un `400` sur une « colonne inconnue `per_page` ».
-pub const PARAMS_RESERVES: [&str; 6] = ["page", "par_page", "per_page", "tri", "ordre", "q"];
+pub const PARAMS_RESERVES: [&str; 7] =
+    ["page", "par_page", "per_page", "tri", "ordre", "q", "format"];
+
+/// Les formats de sortie servis par `/api/v1/entites/{table}`.
+///
+/// Volontairement courte : `json` (le défaut) et `csv`. Un format inconnu est un `400` — le
+/// rendre en JSON « par défaut » ferait télécharger un fichier au mauvais format sans un mot.
+pub const FORMATS: [&str; 2] = ["json", "csv"];
 
 /// Suffixe de borne basse — `?power_max__min=400`.
 pub const SUFFIXE_MIN: &str = "__min";
@@ -975,23 +996,99 @@ pub async fn lignes(
     State(etat): State<EtatSite>,
     Path(nom): Path<String>,
     Query(brut): Query<BTreeMap<String, String>>,
-) -> Result<Json<PageLignes>, ErreurSite> {
+) -> Result<axum::response::Response, ErreurSite> {
     let gisement = std::sync::Arc::clone(&etat.gisement);
     let anime = std::sync::Arc::clone(&etat.anime);
     tokio::task::spawn_blocking(move || {
+        let csv = match brut.get("format").map(|v| v.trim().to_ascii_lowercase()) {
+            None => false,
+            Some(f) if f == "json" => false,
+            Some(f) if f == "csv" => true,
+            Some(f) => {
+                return Err(ErreurSite::Demande(format!(
+                    "`format={f}` : seuls {} sont servis",
+                    FORMATS.join(" et ")
+                )));
+            }
+        };
         dans_le_gisement(&gisement, &anime, &nom, |c, table| {
             let demande = analyser(table, &brut)?;
             let page = page_lignes(c, table, &demande)?;
-            Ok(Json(PageLignes {
+            let corps = PageLignes {
                 page,
                 gisement: table.gisement,
                 table: table.nom.clone(),
                 cle: table.cle.clone(),
                 filtres: demande.appliques(),
-            }))
+            };
+            Ok(if csv {
+                reponse_csv(&corps)
+            } else {
+                Json(corps).into_response()
+            })
         })
     })
     .await?
+}
+
+/// Rend une page en CSV, avec le nom de fichier qui la désigne.
+///
+/// Les colonnes sont l'UNION des clés rencontrées, dans l'ordre stable de `serde_json::Map` —
+/// une ligne du miroir peut omettre une colonne nulle, et prendre les clés de la première
+/// ligne perdrait silencieusement les colonnes suivantes.
+fn reponse_csv(p: &PageLignes) -> axum::response::Response {
+    let mut colonnes: Vec<String> = Vec::new();
+    for ligne in &p.page.elements {
+        for cle in ligne.keys() {
+            if !colonnes.iter().any(|c| c == cle) {
+                colonnes.push(cle.clone());
+            }
+        }
+    }
+    let mut corps = String::new();
+    corps.push_str(&colonnes.iter().map(|c| echapper_csv(c)).collect::<Vec<_>>().join(","));
+    corps.push('\n');
+    for ligne in &p.page.elements {
+        let cellules: Vec<String> = colonnes
+            .iter()
+            .map(|c| match ligne.get(c) {
+                None | Some(ValeurJson::Null) => String::new(),
+                Some(ValeurJson::String(s)) => echapper_csv(s),
+                Some(v) => echapper_csv(&v.to_string()),
+            })
+            .collect();
+        corps.push_str(&cellules.join(","));
+        corps.push('\n');
+    }
+    // Le nom porte la TABLE et la PAGE : sans la seconde, deux exports du même corpus se
+    // recouvrent dans le dossier de téléchargement et le lecteur croit n'en avoir qu'un.
+    let nom = format!("{}-page{}.csv", p.table, p.page.page);
+    let mut reponse = (
+        [(
+            header::CONTENT_TYPE,
+            "text/csv; charset=utf-8",
+        )],
+        corps,
+    )
+        .into_response();
+    if let Ok(v) = format!("attachment; filename=\"{nom}\"").parse() {
+        reponse.headers_mut().insert(header::CONTENT_DISPOSITION, v);
+    }
+    reponse
+}
+
+/// Échappe une cellule CSV selon RFC 4180.
+///
+/// Le guillemet se double, et toute cellule qui porte une virgule, un guillemet ou un saut de
+/// ligne est encadrée. Les descriptions du jeu contiennent les trois : sans cet échappement,
+/// une seule ligne décale toutes les colonnes de la suivante, et le fichier s'ouvre
+/// « correctement » avec des valeurs dans les mauvaises cases.
+fn echapper_csv(v: &str) -> String {
+    if v.contains([',', '"', '\n', '\r']) {
+        format!("\"{}\"", v.replace('"', "\"\""))
+    } else {
+        v.to_owned()
+    }
 }
 
 /// Exécute une lecture sur le gisement qui porte cette table, le miroir d'abord.
@@ -1270,6 +1367,61 @@ mod tests {
     /// Un gisement qui ne pointe sur rien — l'état d'un miroir qui n'a pas encore tourné.
     fn base_absente() -> crate::dataset::Gisement {
         crate::dataset::Gisement::nouveau("/inexistant/aucun-gisement.sqlite")
+    }
+
+    #[test]
+    fn une_cellule_csv_est_echappee_selon_rfc_4180() {
+        // Moitie positive ET negative : sans la seconde, un echappement universel passerait,
+        // et le fichier serait plein de guillemets inutiles.
+        assert_eq!(echapper_csv("Mark"), "Mark");
+        assert_eq!(echapper_csv("Feu, Vent"), "\"Feu, Vent\"");
+        assert_eq!(echapper_csv("il dit \"non\""), "\"il dit \"\"non\"\"\"");
+        assert_eq!(echapper_csv("deux\nlignes"), "\"deux\nlignes\"");
+    }
+
+    #[test]
+    fn les_colonnes_csv_sont_l_union_pas_celles_de_la_premiere_ligne() {
+        // Une ligne du miroir peut omettre une colonne nulle. Prendre les cles de la premiere
+        // ligne perdrait la colonne suivante en silence — et un CSV ampute ne se voit pas.
+        let mut a = MapJson::new();
+        a.insert("id".into(), ValeurJson::String("c1".into()));
+        let mut b = MapJson::new();
+        b.insert("id".into(), ValeurJson::String("c2".into()));
+        b.insert("element".into(), ValeurJson::String("Feu".into()));
+        let page = PageLignes {
+            page: Page::nouvelle(vec![a, b], Pagination::borner(None, None), 2),
+            gisement: GISEMENT_EXTRAIT,
+            table: "inagle_characters".to_owned(),
+            cle: "id".to_owned(),
+            filtres: FiltresAppliques {
+                q: None,
+                tri: "id".to_owned(),
+                ordre: "asc",
+                egalites: BTreeMap::new(),
+                bornes: BTreeMap::new(),
+                presences: BTreeMap::new(),
+            },
+        };
+        let corps = reponse_csv(&page);
+        assert_eq!(corps.status(), axum::http::StatusCode::OK);
+        let nom = corps
+            .headers()
+            .get(axum::http::header::CONTENT_DISPOSITION)
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or_default()
+            .to_owned();
+        assert!(
+            nom.contains("inagle_characters-page1.csv"),
+            "le nom porte la table ET la page, sinon deux exports se recouvrent : {nom}"
+        );
+    }
+
+    #[test]
+    fn un_format_inconnu_est_refuse_pas_rendu_en_json() {
+        // Rendre du JSON « par defaut » ferait telecharger un fichier au mauvais format sans
+        // un mot. La liste servie tient en deux entrees, et elle est close.
+        assert_eq!(FORMATS, ["json", "csv"]);
+        assert!(PARAMS_RESERVES.contains(&"format"));
     }
 
     #[test]

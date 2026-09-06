@@ -106,6 +106,16 @@ absent_prouve() { # #  nom  url  condition_jq  explication
     else ligne "$n" "$nom" "NOUVEAU" "$u ne verifie plus $c : relire la matrice"; rouges=$((rouges+1)); fi
 }
 
+# Certaines routes ne rendent pas un total mais un FICHIER : leur preuve est dans les en-tetes.
+entete() { # #  nom  url  type_attendu  fragment_du_nom
+    local n="$1" nom="$2" u="$3" type="$4" frag="$5" tete
+    tete=$(curl -s -D - -o /dev/null --max-time 60 "$BASE$u")
+    if printf '%s' "$tete" | grep -qi "content-type:.*$type" \
+        && printf '%s' "$tete" | grep -qi "content-disposition:.*$frag"
+    then ligne "$n" "$nom" "SERVI" "$type + $frag"; servis=$((servis+1))
+    else ligne "$n" "$nom" "ROUGE" "en-tetes attendus absents ($type, $frag)"; rouges=$((rouges+1)); fi
+}
+
 client() { ligne "$1" "$2" "CLIENT" "$3"; clients=$((clients+1)); }
 
 printf '%-5s %-46s %-7s %s\n' '#' filtre verdict preuve
@@ -247,8 +257,12 @@ echo "-- Transverse"
 absent 46 "recherche globale multi-gisements" \
         "/api/v1/recherche?per_page=1&q=mark" "/api/v1/recherche?per_page=1&q=mark&gisements=tous"
 existe 47 "facettes avec comptes" "/api/v1/playstyles" '[.playstyles[].characters]|add > 0'
-absent_400 48 "export de la liste filtree" \
-        "/api/v1/entites/inagle_characters?per_page=1&q=mark&format=csv"
+# L'export rend la MEME page, filtree et triee, dans un autre format : le verdict porte donc
+# sur l'en-tete, pas sur un total. Un CSV servi en `application/json`, ou sans
+# `Content-Disposition`, s'ouvrirait dans le navigateur au lieu de se telecharger.
+entete 48 "export de la liste filtree" \
+        "/api/v1/entites/inagle_characters?per_page=5&q=mark&format=csv" \
+        "text/csv" "inagle_characters-page1.csv"
 
 echo
 printf 'servis %d · absents %d · cote client %d · a relire %d  (sur %d)\n' \
