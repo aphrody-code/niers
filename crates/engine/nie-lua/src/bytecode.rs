@@ -346,11 +346,14 @@ struct Reader<'a> {
 
 impl<'a> Reader<'a> {
     fn take(&mut self, n: usize) -> Result<&'a [u8], BytecodeError> {
-        if self.pos + n > self.data.len() {
+        let Some(end) = self.pos.checked_add(n) else {
+            return Err(BytecodeError::UnexpectedEof(self.pos));
+        };
+        if end > self.data.len() {
             return Err(BytecodeError::UnexpectedEof(self.pos));
         }
-        let out = &self.data[self.pos..self.pos + n];
-        self.pos += n;
+        let out = &self.data[self.pos..end];
+        self.pos = end;
         Ok(out)
     }
 
@@ -414,7 +417,11 @@ impl<'a> Reader<'a> {
         if size == 0 {
             return Ok(Vec::new());
         }
-        let raw = self.take(size as usize)?;
+        let size = usize::try_from(size).map_err(|_| BytecodeError::Invalid {
+            offset: self.pos,
+            reason: "taille de chaîne size_t hors de la plateforme".to_string(),
+        })?;
+        let raw = self.take(size)?;
         // Le `\0` final fait partie de la longueur écrite mais pas de la chaîne.
         Ok(raw[..raw.len().saturating_sub(1)].to_vec())
     }
@@ -877,6 +884,21 @@ mod tests {
         assert!(matches!(
             parse(&bad_size),
             Err(BytecodeError::UnsupportedHeader(message)) if message.contains("size_t")
+        ));
+    }
+
+    #[test]
+    fn reader_refuse_un_take_avec_overflow() {
+        let mut reader = Reader {
+            data: &[0u8; 1],
+            pos: usize::MAX,
+            little_endian: true,
+            size_size_t: 8,
+            size_int: 4,
+        };
+        assert!(matches!(
+            reader.take(1),
+            Err(BytecodeError::UnexpectedEof(usize::MAX))
         ));
     }
 

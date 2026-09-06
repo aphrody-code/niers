@@ -77,6 +77,9 @@ Il rejette désormais explicitement les formats, tailles C et endianess d’en-t
 incohérents, au lieu de tenter un décodage ambigu.
 `LOADKX` est également résolu avec l’`EXTRAARG` suivant, comme dans le
 bytecode Lua 5.2, au lieu d’être présenté à tort comme `K0`.
+Les lectures bornées du décodeur vérifient désormais les additions de curseur
+et les conversions `size_t` avant tout accès mémoire ; le corpus réel confirme
+toujours **1 143/1 143 scripts** et **985 971 instructions** décodés.
 
 ## Limites connues
 
