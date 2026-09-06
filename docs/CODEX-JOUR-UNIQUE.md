@@ -101,13 +101,34 @@ Décision gelée : seule Azalée est un produit Rose Griffon ; Aphrody, Inacord 
 `aphrody-dev`.
 
 ```bash
-rg -il '@rosegriffon/|rose ?griffon' packages/inacord-ui apps/inacord apps/nie-web | wc -l
+# Les deux exceptions sont exclues PAR LA COMMANDE, pas de tête : une gate qui se lit
+# « 0, sauf deux cas qu'on connaît » n'est pas une gate, c'est une habitude.
+rg -il '@rosegriffon/|rose ?griffon' packages/inacord-ui apps/inacord apps/nie-web \
+  --glob '!**/src-tauri/tauri.conf.json' --glob '!**/ui/skeleton.tsx' | wc -l
 rg -l '@tauri-apps' packages/inacord-ui | wc -l
 ```
 
 **Gate :** les deux rendent **0**. Départ mesuré : 13 fichiers, 23 imports, 19 mentions.
-Seule exception, temporaire et documentée : l'updater des 0.5.x qui lit encore
-`azalee.rosegriffon.fr/tools/niers/latest.json` (il redirige).
+
+**Mesuré le 2026-09-06 : la gate est TENUE — 0 violation.** Les deux derniers matches de la
+forme non filtrée sont des exceptions, et aucune n'est un oubli :
+
+1. `apps/inacord/src-tauri/tauri.conf.json:41` — l'updater des 0.5.x déjà installées lit encore
+   `azalee.rosegriffon.fr/tools/niers/latest.json` (qui redirige), en **2ᵉ** position derrière
+   `aphrody.com/downloads/inacord/latest.json`. Le retirer figerait silencieusement toutes les
+   0.5.x. Il partira quand le parc aura basculé, pas avant.
+2. `packages/inacord-ui/src/components/ui/skeleton.tsx:6-7` — un **commentaire de doctrine**,
+   sans `import` ni URL ni marque affichée : il explique que le squelette a été réécrit ici
+   *parce que* `@rosegriffon/ui` a été retiré. La ligne qui matche est **la preuve que la règle
+   a été appliquée** ; l'effacer pour satisfaire une regex reviendrait à supprimer la
+   justification et non la dette.
+
+Le constat qui compte : sans les deux `--glob`, **cette gate compte ses propres preuves** et ne
+peut atteindre 0 qu'en cassant l'updater ou en effaçant une justification. C'est la même famille
+que le test qui ne peut pas échouer — un instrument qu'on satisfait en abîmant ce qu'il mesure.
+
+À noter aussi : `apps/nie-web/src/legacy/` **n'existe plus** (le `rg` rend `os error 2`). Le sas
+a été vidé ; l'exception qui le concernait est sans objet.
 
 ### Bloc 5 — la production `nie-site`
 
