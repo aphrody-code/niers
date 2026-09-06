@@ -94,3 +94,54 @@ une route existe quand elle répond et qu'un test compte sa réponse.
 - [Next.js — Vercel runtime Node](https://nextjs.org/docs) · [Supabase RLS](https://supabase.com/docs/guides/database/postgres/row-level-security)
 - [Tauri 2](https://github.com/tauri-apps/tauri) · [wgpu](https://github.com/gfx-rs/wgpu)
 - [Steamworks](https://partner.steamgames.com/doc/api) · [steamworks-rs](https://github.com/Noxime/steamworks-rs)
+
+---
+
+## Le front d'Aphrody — état MESURÉ le 2026-09-06
+
+> Ce document ne couvrait que le Rust de `nie-site`. Le front n'y figurait pas, alors qu'il a
+> changé de nature ce jour-là : `apps/nie-web` a reçu **Tailwind v4** et monte désormais les
+> primitives partagées de `packages/inacord-ui`.
+
+### Ce qui a été ajouté, et pourquoi
+
+| Paquet | Version | Rôle | Alternative écartée |
+|---|---|---|---|
+| `tailwindcss` | 4.3.x | **débloque les 37 primitives** de `inacord-ui`, écrites en classes Tailwind. Sans lui elles se rendent **sans un seul style**, en silence | écrire un second jeu de composants en CSS inline — c'est ce que faisait chaque écran, et ils divergeaient |
+| `@tailwindcss/vite` | 4.3.x | le plugin v4 ; pas de PostCSS, pas de `tailwind.config.js` | `@tailwindcss/postcss` (utilisé par Azalée, qui est en Next) |
+
+Deux pièges, tous deux silencieux, tous deux payés :
+
+1. **`@source` est obligatoire.** Tailwind v4 ne scanne que le paquet courant : sans
+   `@source "../../../packages/inacord-ui/src"` dans `base.css`, les classes des primitives ne
+   sont **jamais générées**. Le composant se rend, nu.
+2. **Trois systèmes de noms de couleurs coexistent** — shadcn (`background`, `muted-foreground`)
+   pour les primitives d'Inacord, Material 3 (`surface-container-high`, `on-surface-variant`)
+   pour les composants venus du wiki, et les jetons `--jeu-*` du menu du jeu, qui sont la seule
+   palette réelle d'Aphrody. Le bloc `@theme inline` de `base.css` fait le pont. Une classe dont
+   la couleur n'est pas mappée s'affiche **transparente sur transparent** : visible dans le DOM,
+   invisible à l'écran. Vu sur `SearchBar`, qui s'affichait sans cadre à côté de champs qui en
+   avaient un.
+
+### Les retards, mesurés par `bun outdated --filter '*'`
+
+| Paquet | Ici | Dernier | Verdict |
+|---|---|---|---|
+| `typescript` | 5.9.3 | **7.0.2** | **à ne pas monter à l'aveugle** : TS 7 supprime `baseUrl`, et plusieurs `tsconfig` du dépôt s'en servent — l'erreur `TS5101` est déjà constatée sur `bunx tsc` global |
+| `vite` | 6.4.3 | **8.2.2** | deux majeures ; `nie-web` et `inacord` ensemble, à mesurer par un build réel |
+| `@vitejs/plugin-react` | 4.7.0 | **6.1.1** | suit Vite, même lot |
+| `vitest` | 4.1.11 | 5.0.0 | une majeure, périmètre Azalée |
+| `jsdom` | 29.1.1 | 30.0.1 | idem |
+| `@testing-library/jest-dom` | 6.10.0 | 7.0.1 | idem |
+| `next` | 16.3.0-**canary**.37 | 16.3.4 | une canary épinglée en production ; la stable existe |
+| `@types/node` | 25.9.5 | 26.4.1 | mineur |
+| `@types/bun` | 1.3.14 | 1.4.1 | mineur, 28 paquets concernés |
+| `@types/react-dom` | 19.2.4 | 19.2.7 | correctif |
+| `@playwright/test` | 1.62.1 | 1.63.0 | mineur |
+| `hls.js` | 1.7.1 | 1.7.2 | correctif |
+| `libsodium-wrappers` | 0.7.16 | 0.8.4 | une majeure, périmètre bot |
+
+**Ce que ce tableau dit et ne dit pas.** Il dit qu'aucune de ces libs n'est abandonnée ni
+vulnérable au sens de `cargo deny`/`bun audit` — ce sont des retards, pas des dettes. Il ne dit
+pas qu'il faut toutes les monter : `typescript` 7 casserait `baseUrl` **de façon mesurée**, et
+une montée de Vite se juge sur un build réel, pas sur un numéro.

@@ -132,16 +132,23 @@ principal du jeu**. La disposition n'est pas dessinée : `nie-game --runtime --m
 
 ### La direction artistique du jeu
 
-Le thème vit dans `packages/inacord-ui/src/theme/` et **se génère** depuis les données du jeu :
+> **Corrigé le 2026-09-06 — trois chemins de cette section n'existaient pas.** Vérifié par
+> `test -d` : `packages/inacord-ui/src/theme/`, `shell/main-menu/` et `shell/inacord/` sont
+> **absents**. Les onze composants qu'ils étaient censés contenir, eux, existent — dans
+> `shell/main-menu.tsx` et `shell/inacord.tsx`, deux **fichiers** et non deux répertoires. Les
+> jetons, eux, vivent dans `shell/game-tokens.css`. Un chemin faux dans un document de stack
+> coûte plus qu'une absence : on cherche là où il indique.
+
+Le thème vit dans `packages/inacord-ui/src/shell/` et **se génère** depuis les données du jeu :
 
 | Élément | Source dans le jeu | Comment il arrive dans le thème |
 |---|---|---|
-| Coquille (shell) | le **menu principal** `mainmenu01` — capture ver. 7.1.2 (`data/design/aphrody-ui-ref-mainmenu-7.1.2.png`, hors dépôt) et sa décomposition dans `docs/DESIGN.md` | composants `SkewTile`, `TileRow`, `HeaderBanner`, `SidePanel`, `TitleBand`, `VersionChip`, `Callout`, `Badge` dans `packages/inacord-ui/src/shell/main-menu/` (Aphrody) ; `PhoneFrame`, `RoomList`, `MessageThread`, `HexBackdrop`, `TabBar` dans `shell/inacord/` (Inacord) |
+| Coquille (shell) | le **menu principal** `mainmenu01` — capture ver. 7.1.2 (`data/design/aphrody-ui-ref-mainmenu-7.1.2.png`, hors dépôt) et sa décomposition dans `docs/DESIGN.md` | composants `SkewTile`, `TileRow`, `HeaderBanner`, `SidePanel`, `TitleBand`, `VersionChip`, `Callout`, `Badge` dans `packages/inacord-ui/src/shell/main-menu.tsx` (Aphrody) ; `PhoneFrame`, `RoomList`, `MessageThread`, `HexBackdrop`, `TabBar` dans `shell/inacord.tsx` (Inacord) |
 | Palette de cadrage | capture, quantifiée en 12 couleurs (MESURÉ, ImageMagick) : `#FDFEFE` `#D9EFED` `#A4E4F7` `#46B9F2` `#5BA2E3` `#2F69C7` `#295B9F` `#293D60` `#F6E028` `#D55025` | variables `--shell-*` ; remplacées une à une par la valeur du fichier du jeu quand elle est identifiée |
 | Couleurs de texte | `common/font/font_color.cfg.bin` — 70 entrées `FONT_COLOR`, déjà portées (`nie-data::font_color`) | `niers design tokens` écrit `game-tokens.css` : une variable par couleur, sous son nom d'origine |
 | Cadres, fonds, boutons | textures de menu (`menu/…`, 40 469 PNG indexés dans `inagle_game_assets`) | servies par `/assets/tex/...` de `nie-site`, référencées en CSS ; jamais copiées dans le dépôt |
-| Icônes | atlas déjà exploités par `sprites.css` et `data/re/menu-icon-atlases.txt` | inchangés |
-| Titres | fonte du jeu (`font_def.g4tx` + métriques) | **À VÉRIFIER** : sprites de glyphes CSS depuis l'atlas, ou fonte web la plus proche mesurée sur capture |
+| Icônes | atlas déjà exploités par `sprites.css` et `data/re/menu-icon-atlases.txt` | **le générateur existe et n'est pas branché** : `nie_formats::sprite_sheet` transpose un `.g4tx` d'interface en CSS (`background-position` par région) ou en SVG (`<symbol>`), rectangles du jeu **recopiés** jamais recalculés — `depuis_g4tx`, `vers_css`, `vers_svg`, `vers_json`. Côté web, `SpriteIcon.tsx` + `config/sprites.ts` tiennent la même table **à la main**, en parallèle. `gaiji_game.g4tx` = 117 régions |
+| Titres | fonte du jeu (`font_def.g4tx` + métriques) | **À VÉRIFIER** : sprites de glyphes CSS depuis l'atlas, ou fonte web la plus proche mesurée sur capture. Ce qui existe déjà côté Rust : `parse_metrics` / `glyph_blitter` de `nie-formats`, et six exemples (`font_catalog`, `font_render`, `font_accents`, `render_text`, `dialogue_scene`) — ils rendent un glyphe en **image**, rien ne va vers `@font-face` |
 | Corps de texte, espacements, responsive | pas dans les fichiers | **ESTIMÉ**, corrigé sur capture réelle, jamais de mémoire |
 
 Aucun token, composant ou paquet `@rosegriffon/*` n'entre dans ce thème : Aphrody et Inacord
