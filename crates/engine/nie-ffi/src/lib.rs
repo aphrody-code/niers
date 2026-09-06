@@ -1731,4 +1731,63 @@ mod tests {
         unsafe { nie_font_free(fctx) };
         unsafe { nie_vfs_free(vfs) };
     }
+
+    /// Parcourt le corpus Steam complet et vérifie que le pont typé ne perd aucun écran menu.
+    ///
+    /// Ce garde-fou est volontairement end-to-end : index VFS réel, extraction CPK réelle,
+    /// parseur T2B réel, puis désérialisation de la structure sémantique. Il reste silencieux
+    /// quand l'installation n'est pas disponible sur la machine de CI.
+    #[test]
+    fn menu_setting_typed_corpus_real() {
+        let dir = nie_formats::vfs::resolve_game_dir().join("data");
+        if !nie_formats::vfs::donnees_disponibles(&dir) {
+            eprintln!("skip menu_setting_typed_corpus_real : jeu absent");
+            return;
+        }
+
+        let mut vfs = nie_formats::vfs::Vfs::new();
+        vfs.init(&dir).expect("initialiser le VFS réel");
+        let paths: Vec<String> = vfs
+            .iter()
+            .filter(|(path, _)| path.ends_with("_menu_setting.cfg.bin"))
+            .map(|(path, _)| path.to_owned())
+            .collect();
+        assert!(
+            paths.len() >= 300,
+            "corpus menu_setting trop petit : {}",
+            paths.len()
+        );
+
+        let mut total_layers = 0usize;
+        let mut total_commands = 0usize;
+        for path in &paths {
+            let bytes = vfs
+                .read(path)
+                .unwrap_or_else(|e| panic!("lecture {path}: {e}"));
+            let output = menu_setting_json_impl(&bytes);
+            assert!(!output.ptr.is_null(), "sortie vide pour {path}");
+            // SAFETY: le tampon vient de `menu_setting_json_impl` et reste vivant jusqu'à free.
+            let json = unsafe { core::slice::from_raw_parts(output.ptr, output.len) };
+            let parsed: nie_data::menu_setting::MenuSetting =
+                serde_json::from_slice(json).unwrap_or_else(|e| panic!("JSON {path}: {e}"));
+            assert!(
+                parsed.layer_hashes_consistent(),
+                "layer_id incohérent dans {path}"
+            );
+            total_layers += parsed.layers.len();
+            total_commands += parsed.commands.len();
+            // SAFETY: chaque allocation produite par `menu_setting_json_impl` est libérée une fois.
+            unsafe { nie_bytes_free(output) };
+        }
+        assert!(total_layers >= 2_000, "trop peu de layers : {total_layers}");
+        assert!(
+            total_commands >= 300,
+            "trop peu de commandes : {total_commands}"
+        );
+        eprintln!(
+            "OK {}/{} menu_setting — {total_layers} layers / {total_commands} commandes",
+            paths.len(),
+            paths.len()
+        );
+    }
 }
