@@ -104,4 +104,95 @@ body {
 	--color-on-surface: var(--jeu-nuit-profonde);
 	--color-on-surface-variant: var(--jeu-texte-doux);
 	--shadow-level-1: var(--jeu-ombre-tuile);
+
+	/* ── M3 complété : trios rôle/on-rôle/rôle-container, error, inverse, surface, outline ─────
+	 *
+	 * Le bloc precedent ne couvrait que 7 rôles M3 ; le même balayage sur TOUS les composants
+	 * (`rg -o '(bg|text|border|...)-[a-z...]*' packages/inacord-ui/src/components`, filtré des
+	 * utilitaires natifs Tailwind et des faux positifs de la regex — `text-menu-*` et
+	 * `--radix-*-transform-origin` tronqués, `shadow-intensity` un attribut `<model-viewer>`,
+	 * `border-color`/`border-radius` des noms de propriété CSS littéraux dans une chaîne JS, pas
+	 * des classes) en fait remonter 33 de plus, dont `on-primary` seul dans 40+ fichiers : pas des
+	 * cas marginaux. */
+	--color-surface: var(--jeu-ciel-clair); /* M3 pose surface == background dans son schéma de base ; on-surface pointe déjà vers le même texte */
+	--color-surface-container: var(--jeu-ciel-brume); /* comble l'écart entre low (glace, 0.94) et high/highest (craie/brume, 0.88) : les 5 paliers restent dans une plage de clarté resserrée, cohérente avec une élévation M3 */
+	--color-surface-variant: var(--jeu-surface-brume); /* s'accorde avec on-surface-variant (jeu-texte-doux, bleu) : même famille de teinte */
+	--color-outline: var(--jeu-tuile-bord); /* équivalent M3 de --color-border : même frontière, même jeton */
+	--color-outline-variant: var(--jeu-surface-cendre); /* palier plus sourd que outline : le taupe rompt avec le bleu dominant, un vrai écart entre trait fort et trait faible plutôt qu'une simple baisse d'opacité */
+	--color-on-primary: var(--jeu-ciel-clair);
+	--color-primary-container: var(--jeu-surface-glace); /* jeton documenté "une carte claire" — exactement le rôle container */
+	--color-on-primary-container: var(--jeu-nuit-profonde);
+	--color-on-secondary: var(--jeu-nuit-profonde);
+	--color-secondary-container: var(--jeu-surface-brume);
+	--color-on-secondary-container: var(--jeu-nuit-profonde);
+	--color-tertiary: var(--jeu-accent-ambre); /* primary et secondary sont tous deux bleus : tertiary doit trancher — l'ambre (or, 21 % de l'atlas mesuré) est le seul accent chaud disponible */
+	--color-on-tertiary: var(--jeu-nuit-profonde);
+	--color-tertiary-container: var(--jeu-surface-craie);
+	--color-on-tertiary-container: var(--jeu-nuit-profonde);
+	--color-error: var(--jeu-accent-brique); /* même rouge que --color-destructive : M3 "error" et shadcn "destructive" sont un seul concept */
+	--color-on-error: var(--jeu-ciel-clair);
+	--color-error-container: var(--jeu-surface-rose); /* seule surface pâle teintée rouge/mauve de la palette mesurée */
+	--color-on-error-container: var(--jeu-nuit-profonde);
+	--color-inverse-surface: var(--jeu-nuit-profonde); /* le thème est clair : l'inverse est la couleur de texte sombre, utilisée comme fond (BulkActionsBar, un bandeau type snackbar) */
+	--color-inverse-on-surface: var(--jeu-ciel-clair);
+
+	/* ── États nommés en français (dashboard-stats-card.tsx) ────────────────────────────────
+	 * Aucun vert n'existe dans la palette mesurée (atlas dominé par bleu/or/rouge) : succes prend
+	 * l'accent froid le plus saturé disponible, pour rester lisible comme "positif" à côté de
+	 * error/brique plutôt que d'inventer un vert. */
+	--color-alerte: var(--jeu-accent-ambre);
+	--color-succes: var(--jeu-accent-turquoise); /* pas de vert mesuré : l'accent froid le plus vif tient lieu de "positif" */
+	--color-info: var(--jeu-accent-cyan);
+	--color-warning: var(--jeu-accent-ambre);
+	--color-warning-container: var(--jeu-surface-craie);
+	--color-on-warning-container: var(--jeu-nuit-profonde);
+
+	/* ── Éléments du jeu — badges Feu/Forêt/Montagne/Vent (PassiveCard, PassiveDetail) ──────
+	 * Même contrainte : ni vert ni brun mesurés. montagne/vent ont un vrai jeton assorti au sens
+	 * (taupe terreux, bleu-ciel) ; foret n'en a aucun et prend l'ambre par défaut de teinte chaude
+	 * neutre — une approximation assumée, pas une couleur "forêt". Les 4 restent visuellement
+	 * distincts (teintes ≈18°/94°/46°/258°). */
+	--color-element-feu: var(--jeu-accent-brique);
+	--color-element-foret: var(--jeu-accent-ambre); /* pas de vert dans la palette mesurée — meilleure approximation chaude disponible, cf. commentaire de groupe */
+	--color-element-montagne: var(--jeu-surface-cendre); /* jeton documenté "taupe" — le seul ton terreux mesuré */
+	--color-element-vent: var(--jeu-accent-azur);
+
+	/* ── Coquille sombre « app-* / ink-* » (data-grid, tree-rows, popover, select, split-pane,
+	 * shortcut, circle-button) ──────────────────────────────────────────────────────────────
+	 * Vocabulaire Spacedrive d'Inacord : nativement destiné à la coquille `--inacord-*`
+	 * (game-tokens.css § deux coquilles), hors périmètre ici. Cette passerelle ne sert QUE l'hôte
+	 * Aphrody : reconstruit avec les 4 paliers `--jeu-fond-*` (abysse → moyen) plutôt que
+	 * d'introduire des jetons inacord dans le pont du jeu. */
+	--color-app-overlay: var(--jeu-fond-nuit);
+	--color-app-box: var(--jeu-fond-profond);
+	--color-app-dark-box: var(--jeu-fond-abysse);
+	--color-app-hover: var(--jeu-fond-moyen); /* le plus clair des 4 paliers sombres : seul capable de se lire comme un survol */
+	--color-app-selected: var(--jeu-accent-azur); /* une sélection doit trancher sur du neutre, pas rester dans les fonds sombres */
+	--color-app-line: var(--jeu-tuile-bord);
+	--color-ink: var(--jeu-texte-vif); /* jeton documenté "le texte sur fond sombre" — correspondance directe */
+	--color-ink-dull: var(--jeu-surface-brume);
+	--color-ink-faint: var(--jeu-surface-cendre); /* jeton documenté "un texte secondaire" — correspondance directe */
+	--color-sidebar-ink: var(--jeu-texte-vif);
+	--color-sidebar-ink-dull: var(--jeu-surface-brume);
+
+	/* ── Primitive shadcn Sidebar (sidebar.tsx) ──────────────────────────────────────────────
+	 * Primitive générique, pas skinnée pour Inacord : rien n'indique qu'elle doive être sombre —
+	 * elle reçoit la même famille claire que le reste d'Aphrody, pas la coquille app-* / ink-*. */
+	--color-sidebar: var(--jeu-surface-glace);
+	--color-sidebar-foreground: var(--jeu-nuit-profonde);
+	--color-sidebar-accent: var(--jeu-surface-craie);
+	--color-sidebar-accent-foreground: var(--jeu-nuit-profonde);
+	--color-sidebar-border: var(--jeu-tuile-bord);
+	--color-sidebar-ring: var(--jeu-accent-azur);
+
+	/* ── Ombres, éclat, et un rôle isolé ──────────────────────────────────────────────────── */
+	--shadow-level-2: var(--jeu-ombre-panneau);
+	--shadow-level-3: var(--jeu-ombre-panneau); /* aucune 3e ombre distincte n'est mesurée dans game-tokens.css : level-2 et level-3 partagent la valeur la plus profonde plutôt que d'en inventer une */
+	--shadow-primary: var(--jeu-lueur-accent); /* jeton documenté "le liseré d'un état actif" — un éclat de couleur, exactement l'usage (glow autour d'un bouton primary) */
+	--color-primary-hover: var(--jeu-tuile-active-haut); /* text-primary-hover (TranslatorClient.tsx) : ni primary ni primary-container ne conviennent à un survol de lien — le jeu a déjà un jeton "tuile pressée/active", plus saturé, exactement ce paradigme */
+
+	/* bg-rg-rose / text-rg-rose (dashboard-stats-card.tsx) : NON mappé. Couleur de marque Rose
+	 * Griffon — interdite sur Aphrody/Inacord/nie (CLAUDE.md § Produit : "0 marque, 0 URL").
+	 * Lui donner un jeton --jeu-* masquerait cette fuite au lieu de la signaler ; le vrai
+	 * correctif est de retirer ce rôle du composant partagé, hors périmètre d'un seul fichier. */
 }
