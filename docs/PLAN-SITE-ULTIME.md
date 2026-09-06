@@ -25,8 +25,9 @@
 > The navigation wiring is now delivered: `nie-site` exposes `/api/v1/menu/screens` and
 > `/api/v1/menu/screens/{stem}` as bounded relays of `nie-model-serve` (`/menu-tree.json` and
 > `/menu-tree/{stem}.json`). `{stem}` is the stem of `*_setting.cfg.bin`, never a layer or Lua
-> script name. HTTP static-layout and PNG-composition routes remain explicitly open: their
-> decoder exists in `nie-game`, but that crate is still binary-only.
+> script name. The static layout route is also delivered at `/api/v1/menu/layout/{stem}`;
+> it reads real settings, objbin, g4pkm and g4tx data and explicitly reports
+> `runtime.available=false`. PNG composition remains a CLI capability, not a public HTTP route.
 
 ---
 
@@ -563,8 +564,9 @@ réelle ; `rg -l '@tauri-apps' packages/inacord-ui` → **0**.
 
 Aujourd'hui : le codec bytecode est byte-exact, `menu_host` est porté, 66 commandes runtime
 sont reconnues sur `kizuna_town_mainmenu`, et l'audit réel a franchi 1 197/1 197 scripts. La
-navigation menu est maintenant adressée par les deux routes de relais de `nie-site` ; le layout
-HTTP reste le travail distinct qui manque.
+navigation menu est maintenant adressée par les deux routes de relais de `nie-site`, complétées
+par `/api/v1/menu/layout/{stem}` pour le layout statique issu du VFS. L'exécution Lua complète
+reste séparée et réservée au CLI.
 
 Deux corrections d'assiette, mesurées le 2026-09-06 :
 
