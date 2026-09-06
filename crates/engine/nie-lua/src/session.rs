@@ -1070,6 +1070,7 @@ mod tests {
             )
             .expect("pilotage VFS");
         assert!(report.top_level_ok);
+        assert!(report.decoded_instructions.unwrap_or(0) > 0);
         assert_eq!(report.on_init, Some(true));
         assert_eq!(session.eval("menu_ready").unwrap(), "true");
         assert_eq!(session.take_loaded_includes(), vec!["LUA_INC"]);

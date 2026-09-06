@@ -2096,6 +2096,9 @@ pub fn enumerate_header_tabs(lua: &Lua) -> Vec<HeaderTab> {
 pub struct DriveReport {
     /// L'exécution top-level du script (qui définit les callbacks) a réussi.
     pub top_level_ok: bool,
+    /// Nombre d'instructions du chunk principal décodé avant son exécution (`None` pour une
+    /// source texte). Le comptage provient du même parseur Rust que la validation live.
+    pub decoded_instructions: Option<usize>,
     /// Erreur top-level éventuelle (1ʳᵉ ligne), si `top_level_ok == false`.
     pub top_level_err: Option<String>,
     /// `OnInit()` : `None` = absent ; `Some(true)` = appelé OK ; `Some(false)` = erreur Lua.
@@ -2190,6 +2193,9 @@ fn drive_menu_for_frames_impl(
 
     let mut report = DriveReport {
         frames_requested: frames,
+        decoded_instructions: crate::is_lua52_bytecode(script_bytes)
+            .then(|| crate::bytecode::parse(script_bytes).map(|chunk| chunk.main.total_instructions()))
+            .transpose()?,
         top_level_ok: !initialize,
         ..DriveReport::default()
     };
