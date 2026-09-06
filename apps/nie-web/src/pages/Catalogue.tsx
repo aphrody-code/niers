@@ -33,9 +33,10 @@
  */
 import type { EntreeVfs, VueCatalogue } from "@niers/asset-source";
 import { useAssetSource, useCapacites } from "@niers/inacord-ui";
+import { Tabs, TabsList, TabsTrigger } from "@niers/inacord-ui/components/ui/tabs";
 import { useEffect, useMemo, useState } from "react";
 import { libelleEntree } from "../entrees";
-import { accorde, Note, TitreVue } from "./Ecran";
+import { accorde, Note, tailleLisible as taille, TitreVue } from "./Ecran";
 import { Modeles3D } from "./Modeles3D";
 
 /**
@@ -164,57 +165,42 @@ export function Catalogue({ vue: route }: { vue: VueCatalogue }) {
 	return (
 		<>
 			{/*
-			  * `tablist` et non quatre boutons : c'est ce qui fait annoncer « onglet 2 sur 4 »
-			  * par un lecteur d'écran. Le rôle décrit ce que la chose EST, pas ce à quoi elle
-			  * ressemble.
+			  * La primitive PARTAGÉE, pas un `role="tablist"` réécrit à la main.
+			  *
+			  * `packages/inacord-ui` en expose 37, éprouvées par Inacord, et cet hôte n'en
+			  * utilisait aucune : il redessinait ses contrôles en style inline, écran par écran.
+			  * Ce qu'elle apporte ici et qu'un `<div role>` n'a pas : le déplacement au clavier
+			  * entre onglets, le `aria-controls` posé sur le bon panneau, et l'anneau de focus.
+			  *
+			  * Elle ne s'affiche correctement que parce que Tailwind est désormais branché sur
+			  * cet hôte ET que la palette du jeu est mappée sur les variables de shadcn
+			  * (`base.css`) : sans ce pont, la primitive se rendrait transparente sur
+			  * transparent — visible dans le DOM, invisible à l'écran.
 			  */}
-			<div
-				role="tablist"
-				aria-label="Type de média"
-				style={{
-					display: "flex",
-					flexWrap: "wrap",
-					gap: "var(--jeu-espace-xs)",
-					margin: "0 0 var(--jeu-espace-m)",
-					borderBottom: "2px solid var(--jeu-tuile-bord)",
-				}}
-			>
-				{VUES.map((v) => (
-					<button
-						key={v.vue}
-						type="button"
-						role="tab"
-						aria-selected={vue === v.vue}
-						onClick={() => setVue(v.vue)}
-						style={{
-							padding: "var(--jeu-espace-s) var(--jeu-espace-m)",
-							background: vue === v.vue ? "var(--jeu-tuile-bord)" : "none",
-							border: "none",
-							borderBottom:
-								vue === v.vue
-									? "3px solid var(--jeu-nuit-profonde)"
-									: "3px solid transparent",
-							color: "var(--jeu-nuit-profonde)",
-							font: "inherit",
-							fontWeight: vue === v.vue ? 800 : 600,
-							cursor: "pointer",
-						}}
-					>
-						{v.libelle}
-					</button>
-				))}
-			</div>
+			<Tabs value={vue} onValueChange={(v) => setVue(v as VueCatalogue)}>
+				{/*
+				  * La taille par défaut de la primitive est celle d'Inacord — une application
+				  * dense, aux onglets discrets. Ici c'est le SEUL sélecteur de la page, et le
+				  * bandeau de titre qui le suit fait trois fois sa hauteur : à taille égale, il
+				  * se lisait comme une note de bas de page. La primitive est reprise telle
+				  * quelle, seule son échelle est réglée.
+				  */}
+				<TabsList aria-label="Type de média" className="mb-4 h-auto gap-1 p-1 text-base">
+					{VUES.map((v) => (
+						<TabsTrigger
+							key={v.vue}
+							value={v.vue}
+							className="px-4 py-2 font-bold data-[selected]:font-extrabold"
+						>
+							{v.libelle}
+						</TabsTrigger>
+					))}
+				</TabsList>
+			</Tabs>
 
 			{vue === "modeles" ? <Modeles3D /> : <CatalogueVfs key={vue} vue={vue} />}
 		</>
 	);
-}
-
-/** Formate une taille en octets pour l'affichage. */
-function taille(octets: number): string {
-	if (octets < 1024) return `${octets} o`;
-	if (octets < 1024 * 1024) return `${(octets / 1024).toFixed(1)} ko`;
-	return `${(octets / (1024 * 1024)).toFixed(1)} Mo`;
 }
 
 /** Un champ de la barre de réglages. */
@@ -296,9 +282,13 @@ function CatalogueVfs({ vue }: { vue: VueCatalogue }) {
 
 	return (
 		<section>
-			<TitreVue appoint={total ? accorde(total, "élément") : undefined}>
-				{titre}
-			</TitreVue>
+			{/*
+			  * « Médias » et non le nom de la vue : l'onglet actif dit déjà « Textures », et le
+			  * répéter en bandeau juste dessous donne deux fois la même information à deux
+			  * tailles. Le titre nomme LA PAGE, l'onglet nomme la vue, et le compte reste ici
+			  * parce qu'il porte sur ce que la page montre.
+			  */}
+			<TitreVue appoint={total ? accorde(total, "élément") : undefined}>Médias</TitreVue>
 
 			<form
 				onSubmit={(e) => {

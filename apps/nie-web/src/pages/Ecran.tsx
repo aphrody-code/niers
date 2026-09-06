@@ -202,6 +202,21 @@ export function Note({ children, ton = "info" }: { children: ReactNode; ton?: "i
  * est en tête de page, et c'est le genre de détail qui fait douter du reste. Zéro prend le
  * singulier, comme le veut l'usage français.
  */
+/**
+ * Formate une taille en octets, **jusqu'aux gigaoctets**.
+ *
+ * L'échelle s'arrêtait aux mégaoctets, dans trois copies de cette fonction : `bgm_chronicle.awb`
+ * s'affichait « 1291.9 Mo », et le plus gros fichier du jeu — un `.usm` de 2 099 267 008 octets —
+ * « 2002.0 Mo ». Ce n'est pas faux, c'est illisible : passé mille, l'unité a changé et le
+ * lecteur doit diviser de tête. Une fonction, un endroit.
+ */
+export function tailleLisible(octets: number): string {
+	if (octets < 1024) return `${octets} o`;
+	if (octets < 1024 * 1024) return `${(octets / 1024).toFixed(1)} ko`;
+	if (octets < 1024 * 1024 * 1024) return `${(octets / (1024 * 1024)).toFixed(1)} Mo`;
+	return `${(octets / (1024 * 1024 * 1024)).toFixed(2)} Go`;
+}
+
 export function accorde(n: number, singulier: string, pluriel = `${singulier}s`): string {
 	return `${n.toLocaleString("fr")} ${n > 1 ? pluriel : singulier}`;
 }

@@ -36,3 +36,53 @@ body {
 	margin: 0 auto;
 	padding: 2rem 1rem;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════════════════════
+ * Tailwind, et la passerelle vers les primitives partagées.
+ *
+ * ## Pourquoi Tailwind entre ici
+ *
+ * `packages/inacord-ui` expose 37 primitives — `data-grid`, `tree-rows`, `tabs`, `split-pane`,
+ * `tooltip`, `command`… — écrites en classes Tailwind et déjà éprouvées par Inacord. Cet hôte
+ * n'en utilisait AUCUNE : il n'importait que les jetons CSS, et chaque écran redessinait ses
+ * champs en style inline. Les monter sans Tailwind ne lève aucune erreur — les composants se
+ * rendent, sans un seul style. C'est le mode d'échec le plus coûteux du dépôt.
+ *
+ * `@source` est obligatoire : Tailwind v4 ne scanne que le paquet courant, et sans lui les
+ * classes des primitives ne sont jamais générées. Le symptôme serait le même — des composants
+ * nus, et rien qui le dise.
+ * ══════════════════════════════════════════════════════════════════════════════════════════ */
+@import "tailwindcss";
+@source "../../../packages/inacord-ui/src";
+
+/* ── La passerelle : les variables de shadcn, dans la DA du jeu ────────────────────────────
+ *
+ * Les primitives lisent quinze variables (`--background`, `--border`, `--primary`…) qui
+ * n'existent pas ici : la palette d'Aphrody est celle du MENU DU JEU, mesurée sur ses captures
+ * (`game-tokens.css`), pas le thème sombre d'Inacord. Sans ce pont, chaque primitive s'afficherait
+ * transparente sur transparent — visible dans le DOM, invisible à l'écran, exactement le défaut
+ * que ce dépôt a déjà payé (« une palette est un contraste »).
+ *
+ * Aucune couleur n'est inventée ici : chaque ligne pointe vers un jeton déjà mesuré. */
+@theme inline {
+	--color-background: var(--jeu-ciel-clair);
+	--color-foreground: var(--jeu-nuit-profonde);
+	--color-card: #fff;
+	--color-card-foreground: var(--jeu-nuit-profonde);
+	--color-popover: #fff;
+	--color-popover-foreground: var(--jeu-nuit-profonde);
+	--color-primary: var(--jeu-tuile-haut);
+	--color-primary-foreground: var(--jeu-ciel-clair);
+	--color-secondary: var(--jeu-surface-glace);
+	--color-secondary-foreground: var(--jeu-nuit-profonde);
+	--color-muted: var(--jeu-surface-craie);
+	--color-muted-foreground: var(--jeu-texte-doux);
+	--color-accent: var(--jeu-surface-glace);
+	--color-accent-foreground: var(--jeu-nuit-profonde);
+	--color-destructive: var(--jeu-accent-brique);
+	--color-destructive-foreground: var(--jeu-ciel-clair);
+	--color-border: var(--jeu-tuile-bord);
+	--color-input: var(--jeu-tuile-bord);
+	--color-ring: var(--jeu-accent-azur);
+	--radius: var(--jeu-rayon);
+}

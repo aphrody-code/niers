@@ -34,14 +34,7 @@ import type { ContenuDossier, EntreeVfs } from "@niers/asset-source";
 import { useAssetSource, useCapacites } from "@niers/inacord-ui";
 import { useEffect, useMemo, useState } from "react";
 import { PanneauDonnees } from "./Donnees";
-import { accorde, Note, TitreVue } from "./Ecran";
-
-/** Formate une taille en octets. */
-function taille(octets: number): string {
-	if (octets < 1024) return `${octets} o`;
-	if (octets < 1024 * 1024) return `${(octets / 1024).toFixed(1)} ko`;
-	return `${(octets / (1024 * 1024)).toFixed(1)} Mo`;
-}
+import { accorde, Note, tailleLisible as taille, TitreVue } from "./Ecran";
 
 /**
  * Le code d'un asset : sa feuille, sans extension **ni numéro de version**.
