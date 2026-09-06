@@ -85,4 +85,23 @@ body {
 	--color-input: var(--jeu-tuile-bord);
 	--color-ring: var(--jeu-accent-azur);
 	--radius: var(--jeu-rayon);
+
+	/* ── Les rôles Material 3, pour les composants venus du wiki ────────────────────────────
+	 *
+	 * Un TROISIÈME système de noms arrive avec eux : le wiki est en Material 3
+	 * (`surface-container-high`, `on-surface-variant`), là où les primitives d'Inacord sont en
+	 * shadcn (`background`, `muted-foreground`). Ni l'un ni l'autre n'est la palette d'Aphrody,
+	 * qui est celle du menu du jeu.
+	 *
+	 * Mesuré avant d'écrire : sept rôles M3 seulement sont employés par les composants portés.
+	 * Sans eux, `SearchBar` s'affichait **sans cadre** — fond transparent, bordure absente, à
+	 * côté de champs qui en avaient un. Rien ne le signalait : la classe existe, la couleur
+	 * qu'elle nomme n'existait pas. */
+	--color-surface-container-lowest: #fff;
+	--color-surface-container-low: var(--jeu-surface-glace);
+	--color-surface-container-high: var(--jeu-surface-craie);
+	--color-surface-container-highest: var(--jeu-surface-brume);
+	--color-on-surface: var(--jeu-nuit-profonde);
+	--color-on-surface-variant: var(--jeu-texte-doux);
+	--shadow-level-1: var(--jeu-ombre-tuile);
 }

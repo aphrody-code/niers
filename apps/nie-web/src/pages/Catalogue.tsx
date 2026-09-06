@@ -33,6 +33,7 @@
  */
 import type { EntreeVfs, VueCatalogue } from "@niers/asset-source";
 import { useAssetSource, useCapacites } from "@niers/inacord-ui";
+import { SearchBar } from "@niers/inacord-ui/components/ui/search-bar";
 import { Tabs, TabsList, TabsTrigger } from "@niers/inacord-ui/components/ui/tabs";
 import { useEffect, useMemo, useState } from "react";
 import { libelleEntree } from "../entrees";
@@ -297,25 +298,22 @@ function CatalogueVfs({ vue }: { vue: VueCatalogue }) {
 				}}
 				style={{ display: "flex", gap: "var(--jeu-espace-s)", margin: "var(--jeu-espace-m) 0" }}
 			>
-				<input
-					type="search"
-					value={saisie}
-					onChange={(e) => setSaisie(e.target.value)}
+				{/*
+				  * `SearchBar`, portée du wiki vers le paquet partagé le 2026-09-06. Ce qu'elle
+				  * apporte et que l'`<input>` + bouton n'avait pas : une frappe temporisée de
+				  * 400 ms, la touche Entrée qui court-circuite l'attente, et un pictogramme de
+				  * loupe. Le bouton disparaît donc — il n'avait de raison d'être que parce que
+				  * rien ne partait tout seul.
+				  */}
+				<SearchBar
+					className="flex-1"
+					defaultValue={saisie}
 					placeholder={`Chercher dans les ${titre.toLowerCase()}…`}
-					aria-label={`Chercher dans ${titre}`}
-					style={{
-						flex: 1,
-						padding: "var(--jeu-espace-s) var(--jeu-espace-m)",
-						background: "#fff",
-						border: "2px solid var(--jeu-tuile-bord)",
-						borderRadius: "var(--jeu-rayon)",
-						color: "var(--jeu-nuit-profonde)",
-						font: "inherit",
+					onSearch={(v) => {
+						setSaisie(v);
+						setEtat((e) => ({ ...e, q: v.trim(), page: 1 }));
 					}}
 				/>
-				<button type="submit" style={BOUTON}>
-					Chercher
-				</button>
 				{filtre || ext || tri !== "nom" || ordre !== "asc" ? (
 					<button
 						type="button"
