@@ -11,6 +11,24 @@ La stack est **gelée** : [`docs/stack/`](docs/stack/README.md) (décisions, ver
 alternatives rejetées, gates). Ce fichier est le plan d'exécution de cette semaine ; le plan
 maître du moteur et de la forge reste [`docs/PLAN.md`](docs/PLAN.md).
 
+> **Amendement du 2026-09-06 (6) — la matrice de couverture existe, et la gate est rompue.**
+> Le § 4 du cap prévoyait « une seule table, régénérée par une commande, jamais tenue à la
+> main » ; elle n'existait pas, et c'était le trou le plus coûteux du plan — sans instrument, le
+> reste se pilote au souvenir. Elle est construite :
+> `nie-site --regenerer-couverture var/couverture-site.json`, servie par
+> [`/couverture`](https://aphrody.com/couverture) et `/api/v1/couverture`, code dans
+> `crates/tools/nie-site/src/couverture/`.
+>
+> **Premier résultat : 583 capacités sur 9 sources, `servi` 114, `manquant` 205, `partiel` 0,
+> `bloqué` 10, `interne` 254 — gate ROMPUE.** Elle corrige quatre comptes que ce dépôt citait de
+> mémoire (`niers` a **40** sous-commandes et non 41, Inacord **158** et non 155, `nie-data`
+> **116** modules et `nie-formats` **46** au lieu de 117 et 47, Azalée **26** routes d'API et non
+> 24), et elle en contredit un cinquième : **le VFS n'est pas à `manquant = 0`**, il porte
+> **21 250 fichiers** dont le décodeur est écrit ici sans qu'aucune route ne l'appelle — 21 047
+> `.p3lip` en tête. La raison n'est pas arithmétique : la première mesure comptait `servi` tout
+> ce que `/f` rend, octets bruts compris, si bien que sa gate **ne pouvait pas échouer**. Détail
+> au § 4 et au § 9 bis de [`docs/PLAN-SITE-ULTIME.md`](docs/PLAN-SITE-ULTIME.md).
+
 > **Amendement du 2026-09-06 (5) — le VFS est cartographié, la cible devient 100 %.** Six agents
 > ont couvert les 255 308 entrées, un document par domaine plus la synthèse
 > [`docs/VFS.md`](docs/VFS.md). Résultat : **63,5 % servi, 26,6 % `manquant`, 6,2 % `partiel`,

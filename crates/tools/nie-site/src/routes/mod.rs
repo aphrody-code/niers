@@ -3,6 +3,7 @@
 pub mod api_v1;
 pub mod aphrody;
 pub mod assets;
+pub mod couverture;
 pub mod episodes;
 pub mod feed;
 pub mod formats;

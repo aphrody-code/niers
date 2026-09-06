@@ -21,9 +21,19 @@ async fn main() -> anyhow::Result<()> {
         )
         .init();
 
-    let config = Options::parse()
-        .en_config()
-        .context("adresse d'ecoute invalide")?;
+    let options = Options::parse();
+    // Mode outil : on regenere la matrice de couverture et on sort SANS ecouter. C'est la
+    // commande du § 4 du plan — la matrice se regenere, elle ne se tient pas a la main.
+    if let Some(sortie) = options.regenerer_couverture.clone() {
+        let racine = options
+            .racine_depot
+            .clone()
+            .or_else(|| std::env::var_os("NIE_GAME_DIR").map(std::path::PathBuf::from))
+            .unwrap_or_else(|| std::path::PathBuf::from("."));
+        return regenerer_couverture(&racine, &sortie);
+    }
+
+    let config = options.en_config().context("adresse d'ecoute invalide")?;
     let adresse = config.adresse;
     tracing::info!(
         version = nie_site::VERSION,
@@ -47,6 +57,55 @@ async fn main() -> anyhow::Result<()> {
         .with_graceful_shutdown(arret())
         .await
         .context("le serveur s'est arrete sur une erreur")?;
+    Ok(())
+}
+
+/// Regenere la matrice de couverture et publie ses comptes sur la sortie standard.
+///
+/// Elle **affiche** ce qu'elle a mesure, source par source, plutot que d'ecrire un fichier en
+/// silence : un compte que personne ne lit est un compte que personne ne verifie. Le code de
+/// retour reste 0 meme quand la gate est rompue — la commande mesure, elle ne juge pas ; c'est
+/// le plan qui fixe la cible.
+fn regenerer_couverture(racine: &std::path::Path, sortie: &std::path::Path) -> anyhow::Result<()> {
+    let matrice = nie_site::couverture::generer(racine, sortie)
+        .with_context(|| format!("mesure impossible depuis {}", racine.display()))?;
+    println!(
+        "matrice ecrite dans {} — {} capacites, {} unites de poids, {} routes montees",
+        sortie.display(),
+        matrice.total.capacites,
+        matrice.total.poids,
+        matrice.routes_montees
+    );
+    for nom in nie_site::couverture::Etat::NOMS {
+        let c = matrice.par_etat.get(nom).copied().unwrap_or_default();
+        println!("  {nom:<9} {:>5} capacites  {:>8} poids", c.capacites, c.poids);
+    }
+    for ligne in &matrice.par_source {
+        let manquant = ligne.par_etat.get("manquant").copied().unwrap_or_default();
+        let partiel = ligne.par_etat.get("partiel").copied().unwrap_or_default();
+        println!(
+            "  {:<38} total {:>5}  manquant {:>5}  partiel {:>4}  [{}]",
+            ligne.libelle,
+            ligne.total.capacites,
+            manquant.capacites,
+            partiel.capacites,
+            ligne.commande
+        );
+    }
+    for i in &matrice.incoherences {
+        println!("  INCOHERENCE {i}");
+    }
+    for r in &matrice.regles_mortes {
+        println!("  REGLE MORTE {r}");
+    }
+    println!(
+        "gate maitresse : manquant = {} ({} poids), partiel = {} ({} poids) -> {}",
+        matrice.gate.manquant,
+        matrice.gate.manquant_poids,
+        matrice.gate.partiel,
+        matrice.gate.partiel_poids,
+        if matrice.gate.tenue { "TENUE" } else { "ROMPUE" }
+    );
     Ok(())
 }
 

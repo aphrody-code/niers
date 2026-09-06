@@ -134,9 +134,12 @@ nouvelles — elle demande de **servir celles qui existent** : 41 sous-commandes
 155 commandes Tauri pour 14 chemins d'API aujourd'hui. Son instrument est une matrice de
 couverture a CINQ etats — `servi`, `partiel`, `manquant` (le decodeur existe ici, la route
 non), `bloque` (ni l'un ni l'autre : du reverse d'abord) et `interne` (avec sa raison) — et sa
-gate maitresse est **`manquant = 0` ET `partiel = 0`**. Atteinte sur le VFS le 2026-09-06
-(245 972 / 255 308 servis) ; les 41 commandes de `niers`, les 155 d'Inacord et les 81 pages
-d'Azalee restent a classer.
+gate maitresse est **`manquant = 0` ET `partiel = 0`**. Elle est MESUREE depuis le 2026-09-06 :
+`nie-site --regenerer-couverture var/couverture-site.json` rend la matrice, `/couverture` la
+sert. Premier resultat : **583 capacites, manquant = 205, partiel = 0 — gate ROMPUE**. Le VFS
+avait ete annonce a `manquant = 0` le matin meme ; l'instrument le contredit avec 21 250
+fichiers, parce que la premiere definition comptait `servi` tout ce que `/f` rend, octets
+bruts compris — une gate qui ne peut pas echouer ne mesure rien.
 
 ## 4. Les gates de la journée, toutes chiffrées
 

@@ -22,6 +22,13 @@ pub const STATIQUE_DEFAUT: &str = "apps/nie-web/dist";
 /// Catalogue des épisodes par défaut — le gisement `anime` du dépôt.
 pub const EPISODES_DEFAUT: &str = "data/anime/episodes.db";
 
+/// Matrice de couverture par défaut, produite par `nie-site --regenerer-couverture`.
+///
+/// Elle vit dans `var/` — hors dépôt, comme toute mesure : une matrice versionnée se périme en
+/// silence, une matrice régénérée dit sa date. Son absence n'empêche pas le service de
+/// démarrer ; `/couverture` répond alors `503` avec la commande qui la produit.
+pub const COUVERTURE_DEFAUT: &str = "var/couverture-site.json";
+
 /// Nombre maximal d'éléments par page d'API. Le catalogue complet (250 800 fichiers, 53 126
 /// textures) n'est **jamais** servi d'un coup : c'est une borne, pas une suggestion.
 pub const PER_PAGE_MAX: u32 = 200;
@@ -44,6 +51,8 @@ pub struct Config {
     /// C'est la base que le cron du VPS rafraîchit chaque nuit, et la source de
     /// `/api/v1/episodes` — la porte par laquelle les Inacord déjà installés se mettent à jour.
     pub episodes: PathBuf,
+    /// Matrice de couverture servie par `/couverture` (`NIE_SITE_COUVERTURE`).
+    pub couverture: PathBuf,
     /// Délai maximal d'un appel vers l'amont.
     pub delai_amont: Duration,
     /// Nombre d'appels simultanés autorisés vers l'amont.
@@ -71,6 +80,7 @@ impl Default for Config {
             amont: AMONT_DEFAUT.to_owned(),
             statique: PathBuf::from(STATIQUE_DEFAUT),
             episodes: PathBuf::from(EPISODES_DEFAUT),
+            couverture: PathBuf::from(COUVERTURE_DEFAUT),
             delai_amont: Duration::from_secs(10),
             concurrence_amont: 16,
             taille_max_amont: 32 * 1024 * 1024,
@@ -105,6 +115,17 @@ pub struct Options {
     /// Catalogue des épisodes de la série (défaut `data/anime/episodes.db`).
     #[arg(long, env = "NIE_SITE_EPISODES")]
     pub episodes: Option<PathBuf>,
+    /// Matrice de couverture servie par `/couverture` (défaut `var/couverture-site.json`).
+    #[arg(long, env = "NIE_SITE_COUVERTURE")]
+    pub couverture: Option<PathBuf>,
+    /// Mode outil : régénère la matrice de couverture dans ce fichier, puis sort **sans
+    /// écouter**. C'est la commande du § 4 du plan — la matrice ne se tient jamais à la main.
+    #[arg(long, value_name = "FICHIER")]
+    pub regenerer_couverture: Option<PathBuf>,
+    /// Racine du dépôt mesurée par `--regenerer-couverture` (défaut : `NIE_GAME_DIR`, sinon le
+    /// répertoire courant).
+    #[arg(long, value_name = "RACINE")]
+    pub racine_depot: Option<PathBuf>,
     /// Origine publique annoncée dans `sitemap.xml` et les balises `og:`.
     #[arg(long, env = "NIE_SITE_ORIGIN")]
     pub origin: Option<String>,
@@ -145,6 +166,9 @@ impl Options {
         }
         if let Some(e) = self.episodes.filter(|p| !p.as_os_str().is_empty()) {
             cfg.episodes = e;
+        }
+        if let Some(c) = self.couverture.filter(|p| !p.as_os_str().is_empty()) {
+            cfg.couverture = c;
         }
         if let Some(o) = self.origin.filter(|s| !s.trim().is_empty()) {
             cfg.origine = o.trim().trim_end_matches('/').to_owned();

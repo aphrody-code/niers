@@ -91,7 +91,7 @@ fn json(corps: &[u8]) -> serde_json::Value {
 async fn toutes_les_routes_declarees_repondent() {
     let etat = etat();
     // Une instance concrète par route déclarée, dans le même ordre que `app::chemins()`.
-    let instances: [(&str, &[u16]); 38] = [
+    let instances: [(&str, &[u16]); 40] = [
         ("/healthz", &[200]),
         ("/robots.txt", &[200]),
         ("/.well-known/security.txt", &[200]),
@@ -144,11 +144,16 @@ async fn toutes_les_routes_declarees_repondent() {
         // Une famille geometrique, pour que le routage du lot 9.1 soit dans cette garde-la
         // aussi : absente de l'index de test, donc 404 — mais routee.
         ("/api/v1/formats/decode/data/x.g4pk", &[404]),
+        // La matrice de couverture : elle est LUE sur disque, jamais mesuree par le service.
+        // Dans l'etat de test elle n'a pas ete produite, donc 503 en citant la commande qui
+        // la produit — la meme regle que le VFS, le miroir et l'amont.
+        ("/couverture", &[503]),
+        ("/api/v1/couverture", &[503]),
         ("/", &[200]),
     ];
 
     let declarees = nie_site::app::chemins();
-    assert_eq!(declarees.len(), 37, "le routeur monte 37 routes");
+    assert_eq!(declarees.len(), 39, "le routeur monte 39 routes");
     assert!(
         instances.len() >= declarees.len(),
         "au moins une instance par route declaree"
@@ -180,7 +185,7 @@ async fn toutes_les_routes_declarees_repondent() {
         );
         vus += 1;
     }
-    assert_eq!(vus, 38, "38 instances interrogees pour 37 routes");
+    assert_eq!(vus, 40, "40 instances interrogees pour 39 routes");
 }
 
 /// Vrai quand `uri` est une instance du motif de route `motif` (syntaxe axum 0.8).

@@ -148,7 +148,47 @@ declarer_routes! {
     "/api/v1/lua/desassemblage/{*chemin}" => crate::routes::lua::desassemblage,
     "/api/v1/formats" => crate::routes::formats::capacites,
     "/api/v1/formats/decode/{*chemin}" => crate::routes::formats::decode,
+    // La matrice de couverture du plan (§ 4). Elle est LUE, jamais mesuree ici : mesurer,
+    // c'est lancer `niers --help`, lire quatre arbres de sources et parcourir 255 308 lignes
+    // d'inventaire. Cf. `routes::couverture`.
+    "/couverture" => crate::routes::couverture::page,
+    "/api/v1/couverture" => crate::routes::couverture::json,
     "/" => crate::routes::pages::coquille,
+}
+
+/// Dit si un motif de route d'axum reconnaît une URI concrète.
+///
+/// Elle vit **ici** et non dans les tests parce que la matrice de couverture en dépend : une
+/// règle de classement cite la route qui sert une capacité, et [`crate::couverture::construire`]
+/// rétrograde en `manquant` toute capacité dont la route n'est montée nulle part. Sans cette
+/// fonction, la matrice se croirait sur parole — et une matrice qu'on ne peut pas contredire
+/// n'est pas un instrument de mesure.
+///
+/// Elle reproduit la règle de `matchit` telle qu'axum 0.8 l'emploie : un segment `{param}`
+/// consomme exactement un segment non vide, un `{*joker}` consomme tout le reste (au moins un
+/// segment), et tout autre segment doit être égal.
+#[must_use]
+pub fn correspond(motif: &str, uri: &str) -> bool {
+    let mut segments_uri = uri.trim_start_matches('/').split('/');
+    let segments_motif: Vec<&str> = motif.trim_start_matches('/').split('/').collect();
+    for m in &segments_motif {
+        if m.starts_with("{*") {
+            return segments_uri.next().is_some();
+        }
+        match segments_uri.next() {
+            None => return false,
+            Some(s) => {
+                if m.starts_with('{') {
+                    if s.is_empty() {
+                        return false;
+                    }
+                } else if *m != s {
+                    return false;
+                }
+            }
+        }
+    }
+    segments_uri.next().is_none()
 }
 
 /// Construit le routeur complet : les routes déclarées ci-dessus, le repli statique et les
@@ -231,9 +271,21 @@ mod tests {
     }
 
     #[test]
+    fn correspondance_de_motif() {
+        assert!(correspond("/f/{*chemin}", "/f/data/common/x.g4tx"));
+        assert!(!correspond("/f/{*chemin}", "/f"));
+        assert!(correspond("/api/v1/{vue}", "/api/v1/textures"));
+        assert!(!correspond("/api/v1/{vue}", "/api/v1/textures/1"));
+        assert!(correspond("/healthz", "/healthz"));
+        assert!(!correspond("/healthz", "/healthz/x"));
+        // Un motif ne reconnait pas un segment vide : `/api/v1/` n'est pas `/api/v1/{vue}`.
+        assert!(!correspond("/api/v1/{vue}", "/api/v1/"));
+    }
+
+    #[test]
     fn contrat_de_routes() {
         let routes = chemins();
-        assert_eq!(routes.len(), 37, "37 routes montees");
+        assert_eq!(routes.len(), 39, "39 routes montees");
         for r in &routes {
             assert!(r.starts_with('/'), "{r}");
             // Syntaxe axum 0.7 (`:id`, `*path`) : elle PANIQUE au `route()`, elle ne degrade

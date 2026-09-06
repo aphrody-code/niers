@@ -36,23 +36,40 @@ trois écrasaient :
   est toute la différence entre « écrire une route » et « faire du reverse » — deux ordres de
   grandeur de travail, que le mot « manquant » confondait.
 
+> **Recalculée le 2026-09-06 au soir par la matrice de couverture**
+> (`nie-site --regenerer-couverture`, § 4 du cap). Les comptes ci-dessous **remplacent** ceux de
+> la première passe, et l'écart n'est pas arithmétique : il tient à la définition de `servi`.
+> La première passe comptait `servi` tout ce que `/f/{*chemin}` rend — c'est-à-dire les octets
+> bruts de **n'importe quel** fichier du jeu. Sous cette définition la gate ne peut pas échouer,
+> donc elle ne mesure rien. `servi` veut désormais dire qu'une route rend le contenu
+> **interprété** : décodé, image, audio, GLB, script.
+
 | État | Fichiers | Part | Ce que ça veut dire |
 |---|---:|---:|---|
-| **servi** | 246003 | 96.35 % | une route l'expose, avec un code HTTP **mesuré** |
-| **manquant** | **0** | 0 % | plus aucun : les 67 878 fichiers des huit familles géométriques ont été câblés le 2026-09-06 (§ 2 bis) |
-| **partiel** | **0** | 0 % | plus aucun : les 15 875 `.g4mg` sont décodés en process, y compris ceux que l'amont ne sait pas assembler (§ 2 bis) |
+| **servi** | 224946 | 88.11 % | une route rend le contenu **interprété**, avec un code HTTP mesuré |
+| **manquant** | **21250** | 8.32 % | le décodeur est écrit dans ce dépôt, aucune route ne l'appelle — 21 047 `.p3lip`, 160 `.g4nv`, 35 `.g4ma`, 4 `.g4vs`, 4 `.g4la` |
+| **partiel** | **0** | 0 % | aucun : les 15 875 `.g4mg` sont décodés en process, y compris ceux que l'amont ne sait pas assembler (§ 2 bis) |
 | **interne** | 5512 | 2.16 % | délibérément non exposé, **avec sa raison écrite** |
-| **bloqué** | 3784 | 1.48 % | aucun parseur — mais le format est **nommé** quand son en-tête le dit (`G4VS`, `G4LA`) : reverse préalable, pas ignorance |
-| **inconnu** | **9** | 0.004 % | les `.g4tg`, seuls restants : 37 des 46 fichiers rares ont été identifiés le 2026-09-06 (§ 3) |
+| **bloqué** | 3600 | 1.41 % | ni route ni parseur : du reverse d'abord. Y compris les 9 `.g4tg` non identifiés et 10 `.bin` hors `.cfg.bin`/`.lua.bin` |
 | | **255308** | **100 %** | |
 
-**`manquant` et `partiel` sont retombés à zéro le 2026-09-06.** Les 67 878 fichiers (26,6 %) qu'un parseur
+**Quatre extensions changent de camp, et c'était une erreur de fait.** `.g4nv`, `.g4ma`, `.g4vs`
+et `.g4la` étaient classées `bloqué` — « aucun parseur ». Les quatre modules existent
+(`crates/engine/nie-formats/src/{navm,g4ma,g4vs,g4la}.rs`), sont documentés et **validés byte sur
+les fichiers réels du VFS**. Elles sont `manquant` : il y a une route à écrire, pas du reverse à
+faire. Confondre les deux, c'est promettre des semaines là où il y a des heures.
+
+**Et `.p3lip` — 21 047 fichiers, le plus gros corpus non servi — n'était pas visible du tout**,
+parce que `/f` en rend les octets. `nie_formats::lip` les décode depuis longtemps.
+
+**`partiel` est retombé à zéro le 2026-09-06 ; `manquant` ne l'a jamais été.** Les 67 878 fichiers (26,6 %) qu'un parseur
 du dépôt décodait déjà sans qu'aucune route ne l'appelle sont servis par
 `/api/v1/formats/decode/{chemin}` — cf. § 2 bis. Le diagnostic tenait : ce n'était pas un trou
 de connaissance mais un trou de câblage, et il s'est refermé sans une dépendance de plus.
 
-À l'opposé, **3 776 fichiers (1,5 %) sont `bloqué`** : shaders, effets, particules, tissu,
-navigation. Aucune route n'est possible avant du reverse. Les promettre serait mentir.
+À l'opposé, **3 600 fichiers (1,41 %) sont `bloqué`** : shaders, effets, particules, tissu.
+Aucune route n'est possible avant du reverse — les promettre serait mentir. La navigation
+(`.g4nv`) en est SORTIE : son parseur existe, elle est `manquant`.
 
 ## 2 bis. Le câblage du 2026-09-06 — `manquant` : 67 878 → 0, `partiel` : 15 875 → 0
 

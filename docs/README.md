@@ -10,7 +10,7 @@ lequel commande. Voici l'ordre, du cap au geste :
 
 | Rang | Document | Ce qu'il décide |
 |---|---|---|
-| **Le cap** | [PLAN-SITE-ULTIME.md](PLAN-SITE-ULTIME.md) | **L'état d'arrivée** : un seul site qui expose TOUT ce que le dépôt sait faire. Instrument unique — une matrice de couverture à **cinq** états : `servi`, `partiel`, `manquant` (le décodeur existe, la route non), `bloqué` (ni l'un ni l'autre : du reverse d'abord) et `interne` (avec sa raison). Gate maîtresse : `manquant = 0` **et** `partiel = 0` — atteinte sur le VFS le 2026-09-06, pas encore sur les commandes. |
+| **Le cap** | [PLAN-SITE-ULTIME.md](PLAN-SITE-ULTIME.md) | **L'état d'arrivée** : un seul site qui expose TOUT ce que le dépôt sait faire. Instrument unique — une matrice de couverture à **cinq** états : `servi`, `partiel`, `manquant` (le décodeur existe, la route non), `bloqué` (ni l'un ni l'autre : du reverse d'abord) et `interne` (avec sa raison). Gate maîtresse : `manquant = 0` **et** `partiel = 0`. La matrice **existe** depuis le 2026-09-06 (`nie-site --regenerer-couverture`, servie par `/couverture`) : 583 capacités mesurées sur 9 sources, `manquant = 205` — **gate rompue**, et c'est le premier chiffre honnête du plan. |
 | L'échéance | [../PLAN.md](../PLAN.md) | La bascule Azalée → Vercel et Aphrody sur `aphrody.com` : dates, gates chiffrées, rollback par journée |
 | L'exécution | [CODEX-JOUR-UNIQUE.md](CODEX-JOUR-UNIQUE.md) | Ce que l'agent fait aujourd'hui, dans quel ordre, et à quoi on reconnaît que c'est fait |
 | Le long terme | [PLAN.md](PLAN.md) | Le moteur et la forge : les deux faces, l'état chiffré, les priorités |

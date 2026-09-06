@@ -249,10 +249,79 @@ comme `manquant` ; une extension classée `inconnu` compte comme `bloqué` — o
 qu'on n'a pas identifié.
 
 Sources de la matrice, toutes déjà présentes : **le VFS lui-même (255 308 entrées, la source la
-plus large — `docs/VFS.md`)**, `niers --help` (41), l'`invoke_handler` de
-`src-tauri` (155), les modules de `nie-data` (117) et `nie-formats` (47), les `pub fn` de
-`nie-lua` (**34**, mesurés le 2026-09-06 par `rg 'pub fn' crates/engine/nie-lua/src/` — le 99 cité
-jusqu'ici ne se rejoue pas), les pages d'Azalée (81 + 24), les sous-commandes d'`iecode` (39).
+plus large — `docs/VFS.md`)**, `niers --help`, l'`invoke_handler` de `src-tauri`, les modules de
+`nie-data` et `nie-formats`, les `pub fn` de `nie-lua`, les pages d'Azalée, les sous-commandes
+d'`iecode`.
+
+### L'instrument existe — construit et exécuté le 2026-09-06
+
+`crates/tools/nie-site/src/couverture/`, servi par `/couverture` (page) et
+`/api/v1/couverture` (JSON), régénéré par **une commande** :
+
+```
+nie-site --regenerer-couverture var/couverture-site.json --racine-depot /home/ubuntu/niers
+```
+
+Il tient en trois pièces séparées, et cette séparation est ce qui l'empêche de mentir :
+
+1. **la mesure** (`couverture/mesure.rs`) énumère et ne décide de rien ;
+2. **le classement** (`couverture/regles.rs`) est un jeu de **règles** — un motif, un état, une
+   raison écrite. Chaque capacité classée cite la règle qui l'a classée : on remonte d'une ligne
+   de la matrice à la décision qui l'a produite ;
+3. **la jointure** (`couverture/mod.rs`) applique les règles au mesuré.
+
+Trois gardes le rendent **falsifiable**, ce qui manquait à toute matrice tenue à la main :
+
+- une capacité qu'aucune règle ne reconnaît sort en `manquant` « non classée » — une commande
+  ajoutée à `niers` demain apparaît d'elle-même, personne n'a à y penser ;
+- une capacité dont la règle cite une route **qui n'est montée nulle part** est *rétrogradée* en
+  `manquant`, et l'incohérence est publiée. La matrice ne se croit pas sur parole : elle
+  confronte chaque `servi` à `app::chemins()` ;
+- une règle qui ne classe plus rien est publiée. Un test refuse en plus toute raison de moins de
+  vingt caractères, et l'invariant « `interne` sans raison » est porté par le **type** — il ne
+  compile pas.
+
+**Premier résultat, 2026-09-06 — 583 capacités, 255 848 unités de poids, 39 routes montées :**
+
+| État | Capacités | Poids |
+|---|---:|---:|
+| `servi` | 114 | 225 033 |
+| `partiel` | 0 | 0 |
+| `manquant` | **205** | **21 450** |
+| `bloqué` | 10 | 3 600 |
+| `interne` | 254 | 5 765 |
+| **total** | **583** | **255 848** |
+
+| Source | Total | `manquant` |
+|---|---:|---:|
+| `niers` — sous-commandes | 40 | 6 |
+| Inacord — commandes IPC | 158 | 28 |
+| Azalée — pages | 81 | 38 |
+| Azalée — routes d'API | 26 | 1 |
+| `nie-data` — modules | 116 | **110** |
+| `nie-formats` — modules | 46 | 13 |
+| `nie-lua` — fonctions publiques | 34 | 4 |
+| `iecode` — sous-commandes | 39 | 0 |
+| VFS — par extension | 43 | 5 (21 250 fichiers) |
+
+**La gate maîtresse est ROMPUE : `manquant = 205`.** C'est le premier chiffre honnête que ce
+plan possède, et il corrige trois comptes que le plan citait de mémoire :
+
+- **`niers` a 40 sous-commandes, pas 41** (`help` n'en est pas une, c'est clap qui la pose) ;
+  Inacord en a **158**, pas 155 ; `nie-data` **116** modules et `nie-formats` **46**, pas 117 et
+  47 ; Azalée a **26** routes d'API et non 24 (trois `route.ts` vivent hors d'`app/api`).
+  Seuls `nie-lua` (34), les pages d'Azalée (81) et `iecode` (39) étaient exacts.
+- **110 des 116 modules de `nie-data` sont `manquant`.** Chacun est un parseur écrit, testé par
+  golden, qu'aucune route n'appelle. C'est la mesure qui a motivé ce plan, enfin chiffrée : le
+  dépôt ne sait pas *dix fois* ce qu'il expose, il en sait *dix-neuf fois* sur cette source-là.
+- **Le VFS n'est pas à `manquant = 0`.** `docs/VFS.md` l'annonçait le matin même ; l'instrument
+  le contredit le soir, avec **21 250 fichiers** — cf. § 9 bis.
+
+**Ce que la matrice ne dit pas, et qu'il faut lire :** `interne = 254` est le plus gros poste en
+capacités. Chacune porte sa raison, et aucune n'est « pas le temps » — ce sont l'exécution de
+Lua, la mémoire d'un process, le disque de l'utilisateur, l'écriture, les secrets et
+l'éditorial d'Azalée. Mais un `interne` mal motivé est indiscernable d'un `manquant` déguisé :
+c'est le fichier `regles.rs` qu'il faut relire, pas le total.
 
 ## 5. Les lots, par ordre de dépendance
 
@@ -561,6 +630,44 @@ Trois conséquences déjà mesurées :
 Servir tout le VFS et **indexer** tout le VFS sont deux décisions distinctes. `/f/` ne rend que
 des octets : il n'a pas à entrer dans un plan de site, quel que soit le niveau de couverture
 atteint. La question de l'indexation reste ouverte au § 7, et elle appartient à l'utilisateur.
+
+#### 9 bis — Ce que la matrice a contredit le soir même
+
+`docs/VFS.md`, établi le matin du 2026-09-06, annonçait `manquant = 0` et `partiel = 0` sur le
+VFS. La matrice, construite le soir, rend **21 250 fichiers `manquant`**. Les deux mesures ne
+sont pas en désaccord sur les faits : elles ne comptaient pas la même chose.
+
+`docs/VFS.md` comptait `servi` **tout ce qu'une route rend**, `/f/{*chemin}` compris — or `/f`
+sert les octets bruts de n'importe quel fichier du jeu. Sous cette définition, la gate est vraie
+**par construction** : elle ne peut pas échouer, donc elle ne mesure rien. C'est le défaut que ce
+dépôt a déjà payé sur un contrôle de gamut vert quoi qu'on lui donne, et sur un `0 passed`
+annoncé comme un succès.
+
+La matrice durcit la définition : **`servi` veut dire qu'une route rend le contenu *interprété***
+— décodé, converti en image, en audio, en GLB, en script. `/f` reste le filet universel ; il ne
+suffit plus à classer une extension `servi`.
+
+Ce que ce durcissement fait apparaître, fichier par fichier :
+
+| Extension | Fichiers | Le décodeur existe | Ce que le site en rend |
+|---|---:|---|---|
+| `.p3lip` | **21 047** | `nie_formats::lip` (193 l., pistes de lip-sync) | les octets, rien de plus |
+| `.g4nv` | 160 | `nie_formats::navm` (534 l., magic **NAVM**, pas « G4NV ») | idem |
+| `.g4ma` | 35 | `nie_formats::g4ma`, validé byte sur les 35 fichiers réels | idem |
+| `.g4vs` | 4 | `nie_formats::g4vs`, validé byte sur les 4 fichiers réels | idem |
+| `.g4la` | 4 | `nie_formats::g4la`, validé byte sur les 4 fichiers réels | idem |
+
+Les quatre dernières lignes corrigent une **erreur de fait** de `docs/VFS.md` : il les classait
+`bloqué` — « aucun parseur » — alors que les quatre modules sont écrits, documentés et validés
+sur les fichiers réels. La distinction `manquant` / `bloqué` est celle entre « écrire une route »
+et « faire du reverse » : les y laisser aurait promis du reverse là où il n'y a qu'un branchement
+à faire. `bloqué` retombe donc de 3 784 à **3 600**.
+
+**La leçon dépasse ce lot.** Une gate se conçoit en se demandant d'abord *comment elle pourrait
+échouer*. Celle du VFS ne le pouvait pas, et elle a annoncé 100 % de couverture sur un corpus
+dont 21 250 fichiers ne sont servis qu'en octets. Ce n'est pas une erreur de calcul — la somme
+retombait à l'unité près sur 255 308 — c'est une erreur de **définition**, et aucune vérification
+arithmétique ne la trouve.
 
 ## 5 bis. Ce que la session du 2026-09-06 a livré, et ce qu'elle laisse ouvert
 

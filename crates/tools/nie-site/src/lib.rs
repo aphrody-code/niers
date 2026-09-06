@@ -23,6 +23,7 @@
 
 pub mod app;
 pub mod config;
+pub mod couverture;
 pub mod dataset;
 pub mod debit;
 pub mod error;
