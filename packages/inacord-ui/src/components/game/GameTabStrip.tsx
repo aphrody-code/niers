@@ -111,7 +111,7 @@ export function GameTabStrip({
 				) : null}
 			</div>
 			{showLabel && current ? (
-				<div className="game-tab-strip__label" aria-hidden="true" style={{ textAlign: "center" }}>
+				<div className="game-tab-strip__label" aria-hidden="true">
 					{current.label}
 				</div>
 			) : null}

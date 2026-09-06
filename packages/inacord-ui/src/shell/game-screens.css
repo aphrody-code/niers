@@ -144,6 +144,9 @@
 .game-tab-strip > * {
 	transform: skewX(calc(-1 * var(--game-skew)));
 }
+.game-tab-strip__label {
+	text-align: center;
+}
 .game-tab-strip__key {
 	display: grid;
 	place-items: center;
@@ -165,6 +168,15 @@
 }
 
 /* --- Panneau FILTRES — filters_elements.png (et les 7 autres filters_*.png) ---------------- */
+/* Le dialogue entier : `.game-panel` porte le cadre, `.game-filter-panel` le pose au centre de
+   l'écran comme sur la capture, où il flotte au-dessus de la liste sans la remplacer. */
+.game-filter-panel {
+	display: flex;
+	flex-direction: column;
+	gap: var(--jeu-espace-m);
+	max-height: 80vh;
+	overflow: auto;
+}
 .game-panel {
 	position: relative;
 	display: flex;
@@ -233,6 +245,12 @@
 }
 .game-check__label {
 	letter-spacing: var(--jeu-libelle-espacement);
+}
+/* Le compte à droite du libellé (« Vent 12 ») : présent, mais en retrait — sur la capture il ne
+   dispute jamais la lecture au nom de la famille. */
+.game-check__count {
+	margin-left: var(--jeu-espace-s);
+	opacity: 0.7;
 }
 
 /* --- Pastille d'icone coloree — filters_elements.png (Vent, Feu, Foret, Montagne) --------- */

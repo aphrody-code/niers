@@ -292,7 +292,7 @@ export function GameFilterPanel({
 							>
 								{option.label}
 								{option.count !== undefined ? (
-									<span className="game-check__count" style={{ marginLeft: 8, opacity: 0.7 }}>
+									<span className="game-check__count">
 										{option.count.toLocaleString("fr")}
 									</span>
 								) : null}
