@@ -1050,8 +1050,22 @@ no SQLx. It listens **only** on `127.0.0.1:8085`, behind nginx which terminates 
 with no infrastructure detail; `nie-model-serve` is reached **only** through its proxy. Route tests
 that **count**, plus clippy with no warnings, before enabling nginx. Frozen stack: `docs/stack/`.
 
+> **The test count was wrong on BOTH platforms, and Windows is what revealed it.** Re-measured
+> 2026-09-06 night on the workstation: **310 (lib) + 21 (`--test routes`) + 1 doctest = 332 green,
+> 0 failed, 1 ignored** — not 316. Getting there fixed **3 tests that were red on Windows only**,
+> and one of them was hiding a **real service defect**: against an unreachable upstream the proxy
+> answered **504 "did not respond in 10 s"** when the connection had been *refused* in 2 s and
+> never accepted. Cause: `connect_timeout(2 s)` wins the race here (Windows takes ~2,03 s to return
+> `ConnectionRefused`, Linux is immediate), and the resulting error is **both** `is_connect` and
+> `is_timeout` — the code tested `is_timeout()` first. An upstream you never reach is a **gateway**
+> fault (502); 504 stays for an upstream that accepts then goes quiet. The other one was a test
+> `unlink`-ing a SQLite still held open by `Gisement` — legal under POSIX, impossible on Windows:
+> it had been passing **by accident**. Lesson worth more than the count: a suite that is only ever
+> run on one platform is a suite with an untested half, and the defects it hides are not always in
+> the tests.
+
 **State — these packages EXIST, they are not to be built.** `nie-site` serves **80 mounted
-routes** with **316 green tests** and clippy at 0 (re-measured 2026-09-06 evening:
+routes** with **332 green tests** and clippy at 0 (re-measured 2026-09-06 evening:
 `curl …/api/v1/couverture | jq .routes_montees`, `cargo test -p nie-site`; it was 13 routes and
 44 tests on 2026-09-05, and 56/220 the same morning — which is how fast this number goes stale).
 `scripts/e2e-site.sh` runs 65 checks with no failure against the real binary, and Aphrody mounts
