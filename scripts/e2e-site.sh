@@ -40,7 +40,22 @@ for arg in "$@"; do
 done
 
 # Port éphémère : la suite doit pouvoir tourner pendant qu'un `nie-site` de développement écoute.
-PORT="$(python3 -c 'import socket;s=socket.socket();s.bind(("127.0.0.1",0));print(s.getsockname()[1]);s.close()')"
+# Choisi en bash pur : `python3` n'existe pas sur le poste Windows (le `python3` du PATH y est le
+# raccourci Microsoft Store, qui n'exécute rien et fait échouer tout le script sur sa ligne 43).
+# On tire un port dans la plage éphémère et on vérifie qu'il est libre avec /dev/tcp.
+PORT=""
+for _ in $(seq 1 50); do
+	candidat=$(( 20000 + RANDOM % 20000 ))
+	if ! (exec 3<>"/dev/tcp/127.0.0.1/$candidat") 2>/dev/null; then
+		PORT="$candidat"
+		break
+	fi
+	exec 3<&- 2>/dev/null || true
+done
+if [ -z "$PORT" ]; then
+	echo "aucun port libre trouvé entre 20000 et 39999 après 50 tirages" >&2
+	exit 1
+fi
 BASE="http://127.0.0.1:$PORT"
 BUNDLE="apps/nie-web/dist"
 BINAIRE="target/release/nie-site"
@@ -299,7 +314,11 @@ if [ "$ETAT_VFS" = "pret" ]; then
 	# Des chemins TIRÉS de l'index, sous leur forme exacte, extension du jeu conservée. Un
 	# chemin cité de mémoire est presque toujours faux — d'où le tirage plutôt qu'une liste.
 	req "/api/v1/textures?page=1&per_page=200" >/dev/null
-	mapfile -t CHEMINS < <(jq -r '.elements[].chemin' <"$CORPS" | head -n "$ECHANTILLON_VFS")
+	# `tr -d '\r'` n'est pas décoratif : le jq natif Windows écrit en mode texte et termine chaque
+	# ligne par CRLF. Le CR entre alors dans le chemin, curl refuse l'URL (« Malformed input to a
+	# URL function ») et les 201 vérifications VFS tombent en bloc — un rouge qui accuse le serveur
+	# alors qu'il n'a jamais été interrogé.
+	mapfile -t CHEMINS < <(jq -r '.elements[].chemin' <"$CORPS" | tr -d '\r' | head -n "$ECHANTILLON_VFS")
 	declare -i ok200=0
 	for c in "${CHEMINS[@]}"; do
 		[ "$(req "/f/$c" -o /dev/null -I | cut -d' ' -f1)" = "200" ] && ok200+=1
