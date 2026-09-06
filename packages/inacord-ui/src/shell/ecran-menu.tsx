@@ -235,14 +235,15 @@ export function HeroPanel({
 				border: 0,
 				padding: 0,
 				textAlign: gauche ? "left" : "right",
-				// Le degrade va du clair (bord EXTERIEUR) au bleu (bord INTERIEUR), et non
-				// l'inverse : termine sur `--jeu-ciel-clair` (#f9fcfc), le panneau finissait a la
-				// couleur exacte du fond de l'ecran (#f9fdf9) et son bord biseaute devenait
-				// invisible. On voyait alors un degrade qui s'eteignait, pas un parallelogramme —
-				// et l'ecart avec la capture etait impossible a situer.
+				// Le degrade va du clair (bord EXTERIEUR) au bleu (bord INTERIEUR), et il part de
+				// `--jeu-surface-glace` et non de `--jeu-ciel-clair` : ce dernier (#f9fcfc) est a
+				// une distance de 4 du fond de l'ecran (#f9fdf9), donc INDISCERNABLE. Mesure a
+				// l'appui : le panneau gauche, cense commencer a x = 0, n'etait detecte qu'a
+				// x = 28 — ses 28 premiers pixels existaient sans se voir, des deux cotes du
+				// bord. Un panneau qui s'eteint dans le fond n'a plus de forme a comparer.
 				background: gauche
-					? "linear-gradient(100deg, var(--jeu-ciel-clair) 0%, var(--jeu-ciel-brume) 100%)"
-					: "linear-gradient(260deg, var(--jeu-ciel-clair) 0%, var(--jeu-ciel-brume) 100%)",
+					? "linear-gradient(100deg, var(--jeu-surface-glace) 0%, var(--jeu-ciel-brume) 100%)"
+					: "linear-gradient(260deg, var(--jeu-surface-glace) 0%, var(--jeu-ciel-brume) 100%)",
 				color: "var(--jeu-nuit-profonde)",
 				font: "inherit",
 				cursor: onClick ? "pointer" : "default",
@@ -357,7 +358,7 @@ export function NoticeCard({
 			<div
 				style={{
 					...coupe(12),
-					padding: "6px 16px 8px",
+					padding: "10px 18px 12px",
 					background: "linear-gradient(180deg, var(--jeu-ciel-clair), var(--jeu-ciel-brume))",
 					border: "2px solid var(--jeu-nuit-profonde)",
 					color: "var(--jeu-nuit-profonde)",
@@ -490,7 +491,9 @@ export function CornerChip({ children }: { children: ReactNode }) {
 				display: "inline-flex",
 				alignItems: "center",
 				gap: 8,
-				padding: "4px 18px",
+				// 43 px de haut, comme la pastille « Deluxe Edition » mesuree sur la capture ; a
+				// 4 px de padding elle n'en faisait que 29 et se perdait dans l'angle.
+				padding: "11px 28px",
 				background: "linear-gradient(180deg, #10233f, var(--jeu-fond-abysse))",
 				border: "2px solid var(--jeu-lisere-or)",
 				color: "var(--jeu-accent-ambre)",

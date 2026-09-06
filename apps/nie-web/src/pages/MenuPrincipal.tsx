@@ -197,6 +197,8 @@ export function MenuPrincipal({
 	}, []);
 
 	const principales = useMemo(() => entreesPrincipales(etat), [etat]);
+	/** La première vue publiée : ce que le panneau « Ressources » ouvre. */
+	const premiere = principales[0];
 	const totalGeneral = useMemo(
 		() => etat?.vues.reduce((s, v) => s + (v.total ?? 0), 0) ?? 0,
 		[etat],
@@ -215,9 +217,12 @@ export function MenuPrincipal({
 					diagnostic={calque === "diagnostic"}
 					// En calque, l'export s'efface derriere l'interface : 24 de ses objets sont
 					// empiles sur le centre du canevas faute de position, et les rendre a pleine
-					// opacite mettrait un tas de fragments au milieu de la page d'accueil. En
-					// diagnostic, c'est l'inverse : on VIENT les lire.
-					opacite={calque === "diagnostic" ? 1 : 0.4}
+					// opacite mettrait un tas de fragments au milieu de la page d'accueil. A 0,4
+					// ils restaient la tache la plus visible de la comparaison avec la capture,
+					// juste sous la plaque centrale ; 0,18 les laisse perceptibles sans les faire
+					// passer pour un element de l'ecran. En diagnostic, c'est l'inverse : on VIENT
+					// les lire, et l'opacite remonte a 1.
+					opacite={calque === "diagnostic" ? 1 : 0.18}
 					baseZ={-1000}
 					onTexture={surTexture}
 				/>
@@ -258,9 +263,14 @@ export function MenuPrincipal({
 			</CanvasItem>
 
 			{/* --- Le titre, au centre haut, dans la boîte du logo du jeu --- */}
+			{/* Le titre occupe la boîte du logo du jeu — 412 px de large, ce que « APHRODY » à 82 px
+			    mesure exactement. Sa HAUTEUR, elle, ne peut pas y coller : le jeu a une
+			    illustration de 287 px, nous avons deux lignes de texte. Aligné en haut, comme le
+			    logo ; centré, il flottait 94 px plus bas que la référence. Écart de hauteur
+			    assumé — l'agrandir déborderait sur les deux panneaux. */}
 			<CanvasItem
 				x={BOITES.titre.x + BOITES.titre.l / 2}
-				y={BOITES.titre.y + 40}
+				y={BOITES.titre.y + 15}
 				ancreX={0.5}
 				z={10}
 			>
@@ -279,8 +289,8 @@ export function MenuPrincipal({
 					</div>
 					<div
 						style={{
-							marginTop: 10,
-							fontSize: 24,
+							marginTop: 34,
+							fontSize: 26,
 							fontWeight: 800,
 							letterSpacing: "0.30em",
 							textTransform: "uppercase",
@@ -305,16 +315,30 @@ export function MenuPrincipal({
 						display: "flex",
 						alignItems: "center",
 						justifyContent: "flex-end",
-						gap: 10,
+						gap: 12,
+						height: BOITES.encartHautDroit.h,
 						color: "var(--jeu-accent-azur)",
 						fontWeight: 800,
-						fontSize: 19,
+						fontSize: 22,
 						textDecoration: "none",
 					}}
 				>
 					<KeyCap>F</KeyCap>
 					<span>Nouveautés</span>
-					<span style={{ color: "var(--jeu-tuile-bas)" }}>{GLYPHES.info}</span>
+					<span
+						style={{
+							display: "flex",
+							alignItems: "center",
+							justifyContent: "center",
+							width: BOITES.encartHautDroit.h,
+							height: BOITES.encartHautDroit.h,
+							background:
+								"linear-gradient(180deg, var(--jeu-tuile-active-haut), var(--jeu-tuile-active-bas))",
+							color: "var(--jeu-texte-vif)",
+						}}
+					>
+						{GLYPHES.info}
+					</span>
 				</a>
 			</CanvasItem>
 
@@ -326,12 +350,19 @@ export function MenuPrincipal({
 					titre="Ressources"
 					cote="gauche"
 					penche={BISEAU_PANNEAU}
-					onClick={() => onChoisir("textures")}
+					// La première vue PUBLIÉE, pas « textures » écrit en dur : le panneau ouvre ce
+					// que le serveur expose en premier, et suit un changement d'ordre sans rien
+					// casser. Sans vue publiée, il n'ouvre rien plutôt que d'ouvrir une page vide.
+					onClick={premiere ? () => onChoisir(premiere.vue) : undefined}
 				>
 					<span style={APPOINT_GAUCHE}>
-						{compte(totaux.get("textures")) ?? "—"} textures
-						<br />
-						{compte(totaux.get("modeles")) ?? "—"} modèles
+						{etat?.vues.length
+							? etat.vues.map((v) => (
+									<span key={v.nom} style={{ display: "block" }}>
+										{compte(v.total) ?? "—"} {HABILLAGE[v.nom]?.libelle ?? v.nom}
+									</span>
+								))
+							: "catalogue en cours d'indexation…"}
 					</span>
 				</HeroPanel>
 			</CanvasItem>
@@ -372,14 +403,13 @@ export function MenuPrincipal({
 			{/* --- La rangée principale : les entrées du menu --- */}
 			<CanvasItem x={CENTRE_RANGEE} y={BOITES.rangee.y} ancreX={0.5} z={20}>
 				<TileStrip ecart={ECART_TUILE}>
-					{PRINCIPALES.map((entree) => {
-						const total = entree.compte ? totaux.get(entree.compte) : undefined;
+					{principales.map((entree) => {
 						return (
 							<IconTile
 								key={entree.vue}
 								icone={GLYPHES[entree.glyphe]}
 								libelle={entree.libelle}
-								appoint={compte(total) ?? undefined}
+								appoint={compte(entree.total) ?? undefined}
 								actif={entree.vue === vue}
 								// Tant que l'index n'est pas prêt, la tuile est en sourdine : elle ne
 								// promet pas un contenu qu'elle ne peut pas encore montrer.
@@ -431,7 +461,10 @@ export function MenuPrincipal({
 								key={service.libelle}
 								icone={GLYPHES[service.glyphe]}
 								libelle={service.libelle}
-								appoint={LIBELLE_CALQUE[calque]}
+								// L'état du calque n'est PAS mis en appoint : « Calque masqué » ne
+								// tient pas dans 137 px et sort de la tuile par le biseau. Il est
+								// déjà écrit deux fois — sur le bouton de la notice et sous le
+								// guide de touche du bas.
 								hauteur={BOITES.rangeeBasse.h}
 								onClick={() => setCalque(SUIVANT[calque])}
 							/>
@@ -552,7 +585,7 @@ export function MenuPrincipal({
 					}}
 				>
 					<KeyCap>V</KeyCap>
-					<span>{LIBELLE_CALQUE[calque]}</span>
+					<span>Calque</span>
 				</button>
 			</CanvasItem>
 
@@ -564,7 +597,7 @@ export function MenuPrincipal({
 			>
 				<span
 					style={{
-						fontSize: 13,
+						fontSize: 17,
 						fontWeight: 700,
 						color: "var(--jeu-tuile-bas)",
 						whiteSpace: "nowrap",
@@ -586,13 +619,13 @@ export function MenuPrincipal({
  * « 203 textures », un chiffre plausible).
  */
 const APPOINT_GAUCHE = {
-	position: "absolute",
-	top: 16,
-	left: 28,
+	color: "var(--jeu-nuit-profonde)",
 	fontSize: 15,
 	fontWeight: 800,
+	left: 28,
 	lineHeight: 1.35,
-	color: "var(--jeu-nuit-profonde)",
+	position: "absolute",
+	top: 16,
 } as const;
 
 /**
@@ -603,13 +636,13 @@ const APPOINT_GAUCHE = {
  * — ce que la capture ne permet pas de mesurer. Écart assumé, et dit ici plutôt que caché.
  */
 const APPOINT_DROIT = {
-	position: "absolute",
-	top: 16,
-	right: 28,
+	color: "var(--jeu-nuit-profonde)",
 	fontSize: 13,
 	fontWeight: 800,
-	lineHeight: 1.25,
-	textAlign: "right",
 	letterSpacing: "0.06em",
-	color: "var(--jeu-nuit-profonde)",
+	lineHeight: 1.25,
+	position: "absolute",
+	right: 28,
+	textAlign: "right",
+	top: 16,
 } as const;

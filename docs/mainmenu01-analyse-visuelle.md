@@ -33,17 +33,35 @@ VFS**, pas ici.
 | Remplissage | 66,92 % (cohérent avec 8 parallélogrammes séparés par des blancs) |
 | Bleu dominant | `#2D5DA1` 38,4 %, `#578FD8` 29,7 %, `#0C2F64` 23,1 %, `#CEE1F6` 8,8 % |
 
-**L'angle de pente n'est PAS mesuré.** Sur toutes les boîtes essayées, l'ajustement des bords
-rend un R² entre 0,004 et 0,45 — très en dessous du seuil de 0,95. L'outil refuse donc de
-donner un angle, et il a raison : le bord gauche d'une tuile suit le **contenu du sprite**
-(un ciel presque blanc en haut à gauche) et non la géométrie du cadre, et toute boîte qui coupe
-la forme aplatit le bord opposé. Écrire un `skewX(-18°)` dans une feuille de style à partir de
-ces chiffres serait inventé.
+**L'angle de pente EST mesurable — corrigé le 2026-09-06.** Ce paragraphe affirmait le
+contraire (« R² entre 0,004 et 0,45, l'outil refuse de donner un angle »). Ce n'était pas la
+forme qui résistait, c'était la méthode : ajuster les **bords d'une boîte** mêle le cadre au
+contenu du sprite, et une seule ligne aberrante — celle où la fenêtre touche le bas de la forme
+— fait tomber le R² de 1,00 à 0,07.
 
-**Ce qu'il faut faire à la place** : lire la géométrie dans le layout runtime
-(`nie-game --menu mainmenu01 --runtime --export-layout`), pas dans la capture. C'est la règle
-générale de la skill — la capture sert aux couleurs et aux ordres de grandeur, le layout sert
-aux positions.
+En lisant le **premier pixel non-fond de chaque ligne**, dans une fenêtre qui ne contient qu'un
+seul bord, la même image rend :
+
+| Bord | `dx/dy` | Angle | R² |
+|---|---|---|---|
+| 1ʳᵉ tuile de la rangée, bord gauche | −0,400 | −21,80° | 1,000 |
+| 8ᵉ tuile, bord droit | −0,400 | −21,80° | 1,000 |
+| 3ᵉ tuile de la rangée basse, bord droit | −0,403 | −21,95° | 1,000 |
+| Panneau droit, bord gauche | −0,546 | −28,63° | 1,000 |
+
+Trois bords indépendants s'accordent à 0,003 près : la pente des tuiles est **−0,4**, et le
+`skewX` qui la reproduit décale le **haut vers la droite**. Les panneaux, eux, penchent plus et
+**dans l'autre sens**. Le bord droit du panneau gauche reste refusé (R² = 0,875 < 0,95, le
+sprite du personnage déborde du cadre) : on lui applique la pente du panneau droit en miroir, et
+on le dit.
+
+Script : `uv run scripts/validation/mesurer-mainmenu.py`. Valeurs figées dans
+`packages/inacord-ui/src/shell/geometrie-mainmenu.ts`.
+
+**Ce que la capture ne remplace pas** : la géométrie de vérité reste le layout runtime
+(`nie-game --menu mainmenu01 --runtime --export-layout`) — mais il ne porte pas la position des
+widgets de cet écran (§ 5), et c'est pour cela seulement qu'on mesure une image. Un écran
+reconstruit ainsi n'est pas pixel-vérifié.
 
 ## 3. Carte des sources dans le VFS
 
