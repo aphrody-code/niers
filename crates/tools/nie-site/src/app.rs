@@ -90,19 +90,31 @@ macro_rules! declarer_routes {
 /// Les chemins qui acceptent autre chose que `GET`, montés par [`routeur`] par-dessus la macro.
 ///
 /// Elle est **écrite**, et c'est voulu : la lecture seule du site est une garantie, et une
-/// garantie qu'on ne peut pas énumérer n'en est pas une. Un test fige cette liste — une seconde
-/// entrée y arrivera par une décision visible, jamais par inadvertance.
-pub const CHEMINS_HORS_GET: &[&str] = &["/api/v1/regles/comparaison"];
+/// garantie qu'on ne peut pas énumérer n'en est pas une. Un test fige cette liste — une entrée
+/// y arrive par une décision visible, jamais par inadvertance.
+///
+/// **Aucune des trois n'écrit quoi que ce soit.** Le `POST` dit ici la **taille de l'entrée**,
+/// jamais un effet de bord : deux personnages entiers, onze joueurs avec leurs statistiques, ou
+/// des milliers d'identifiants d'effectif ne tiennent pas dans une query string. Chacune a un
+/// `GET` de même chemin qui publie son contrat, plutôt que de rendre un `405` muet au premier
+/// client qui explore.
+pub const CHEMINS_HORS_GET: &[&str] = &[
+    "/api/v1/regles/comparaison",
+    "/api/v1/team/synergy",
+    "/api/v1/save/roster",
+    "/api/v1/inspect/compare",
+    "/api/v1/inspect/plate",
+];
 
 // Le site ne prend **aucune écriture** : ni base, ni disque, ni état. C'est la garantie que la
 // macro rend structurelle, et le défaut de la déclaration est `GET`.
 //
-// Une seule route sort du `GET`, et elle n'écrit rien non plus : `POST /api/v1/regles/comparaison`
-// CALCULE sur un corps que la query string ne peut pas porter (deux personnages entiers, leurs
-// stats et leurs techniques). Le verbe dit la taille de l'entrée, pas un effet de bord — et son
-// pendant `GET` publie le contrat plutôt que de rendre un `405` muet au premier client qui
-// explore. Le test `seules_les_routes_declarees_sortent_du_get` fige cette liste à une entrée :
-// une seconde y entrera par une décision visible, jamais par inadvertance.
+// Cinq routes sortent du `GET`, et aucune n'écrit : elles CALCULENT sur un corps que la query
+// string ne peut pas porter (deux personnages entiers, un effectif de onze joueurs, une liste
+// d'identifiants de sauvegarde, deux images RGBA). Le verbe dit la taille de l'entrée, pas un
+// effet de bord — et chacune a son pendant `GET`, qui publie le contrat plutôt que de rendre un
+// `405` muet au premier client qui explore. Le test `seules_les_routes_declarees_sortent_du_get`
+// fige la liste : une sixième y entrera par une décision visible, jamais par inadvertance.
 declarer_routes! {
     "/healthz" => crate::routes::health::healthz,
     "/robots.txt" => crate::routes::well_known::robots,
@@ -161,6 +173,19 @@ declarer_routes! {
     "/api/v1/lua/desassemblage/{*chemin}" => crate::routes::lua::desassemblage,
     "/api/v1/formats" => crate::routes::formats::capacites,
     "/api/v1/formats/decode/{*chemin}" => crate::routes::formats::decode,
+    // Les modules de `nie-formats` que le decodage generique n'atteint pas : ils prennent une
+    // structure DEJA lue (un atlas, un canvas RGBA, deux images a comparer) et n'ont donc rien
+    // a voir avec `decode/{chemin}`, qui part des octets d'un fichier. Sept inspecteurs, tous
+    // sous `std` seul — `images`/`textures` restent ETEINTES, et `routes::formats` continue de
+    // le dire. Cf. `routes::inspect`.
+    "/api/v1/inspect" => crate::routes::inspect::catalog,
+    "/api/v1/inspect/spritesheet/{*path}" => crate::routes::inspect::spritesheet,
+    "/api/v1/inspect/font/{*path}" => crate::routes::inspect::font_metrics,
+    "/api/v1/inspect/menu/{*path}" => crate::routes::inspect::menu,
+    "/api/v1/inspect/texture-chunk/{*path}" => crate::routes::inspect::texture_chunk,
+    "/api/v1/inspect/color" => crate::routes::inspect::color,
+    "/api/v1/inspect/compare" => crate::routes::inspect::compare_contract,
+    "/api/v1/inspect/plate" => crate::routes::inspect::plate_contract,
     // Chercher un fichier dans TOUT le VFS. `/b` ne filtre qu'un niveau — verifie :
     // `/b/data?q=chara_base` rend 0. Cf. `routes::recherche`.
     "/api/v1/recherche" => crate::routes::recherche::recherche,
@@ -174,6 +199,29 @@ declarer_routes! {
     "/api/v1/donnees/familles" => crate::routes::donnees::familles,
     "/api/v1/donnees/famille/{cle}" => crate::routes::donnees::famille,
     "/api/v1/donnees/{*chemin}" => crate::routes::donnees::donnees,
+    // Trois vues que la facade `decode_by_key(cle, root)` ne peut PAS exprimer, et qui
+    // restaient donc `manquant` dans la matrice alors que leur parseur etait ecrit et teste :
+    //
+    // - `passives` joint CINQ fichiers (trois de donnees, deux de texte x trois langues) —
+    //   `parse_player_passives` prend trois tables de texte en plus du conteneur ;
+    // - `playstyle` lit le MEME fichier que `chara_param`, dont la cle est deja prise : une
+    //   facade ne peut pas rendre deux structures pour une cle ;
+    // - `cond`/`unlock_condition` prennent une CHAINE base64, pas un conteneur.
+    //
+    // Aucune des trois n'etait un manque de code. C'etait un manque d'adresse.
+    "/api/v1/passives" => crate::routes::passives::catalog,
+    "/api/v1/passives/{kind}" => crate::routes::passives::kind,
+    "/api/v1/playstyles" => crate::routes::playstyles::catalog,
+    "/api/v1/playstyles/{id}" => crate::routes::playstyles::playstyle,
+    "/api/v1/conditions" => crate::routes::conditions::capabilities,
+    "/api/v1/conditions/{blob}" => crate::routes::conditions::condition,
+    // Deux capacites de la CLI que le web n'exposait pas. `nie-cli` n'a PAS de cible `[lib]`
+    // (que `[[bin]] name = "niers"`) : rien n'y est importable, et la logique est donc reecrite
+    // ici contre `nie-formats`/`nie-lua`, sans une feature de plus. Cf. `routes::screens`.
+    "/api/v1/icons" => crate::routes::screens::icons,
+    "/api/v1/icons/{name}" => crate::routes::screens::icon,
+    "/api/v1/modes" => crate::routes::screens::modes,
+    "/api/v1/modes/{slug}" => crate::routes::screens::mode,
     // Le texte localise du jeu, adresse par LANGUE et par FAMILLE. `/api/v1/donnees/{chemin}`
     // le sert deja, mais seulement a qui connait le chemin VFS exact AVEC son numero de version
     // (`menu_text_1.03.98.00.cfg.bin`) : inutilisable pour un consommateur. Neuf langues,
@@ -186,6 +234,11 @@ declarer_routes! {
     "/api/v1/text/search" => crate::routes::text::search,
     "/api/v1/text/{language}/{family}" => crate::routes::text::family,
     "/api/v1/text/{language}/{family}/{hash}" => crate::routes::text::line,
+    // La traduction s'appuie sur ce qui aligne REELLEMENT deux langues dans les fichiers du
+    // jeu : le hash. Elle ne devine rien, la ou l'outil equivalent d'Azalee interroge sept
+    // tables avec un score flou. Un segment, comme `/search` : aucune ambiguite avec
+    // `{language}/{family}`, qui en a deux.
+    "/api/v1/text/translate" => crate::routes::text::translate,
     // Les 219 tables du miroir, en lecture generique — 165 249 lignes. Ce qu'elle remplace est
     // mesure (`docs/inagle/05-service-et-types.md`) : 71 acces directs `from("inagle_…")` ecrits
     // a la main dans les pages du wiki, et 28 methodes de facade que plus rien n'appelle.
@@ -207,6 +260,16 @@ declarer_routes! {
     "/api/v1/regles/comparaison" => crate::routes::regles::contrat_comparaison,
     "/api/v1/regles/rarete" => crate::routes::regles::rarete,
     "/api/v1/regles/builds" => crate::routes::regles::builds,
+    // L'autre moitie de `nie_core::optimisation`, celle que `routes::regles` disait « pas
+    // routee ici » : elle prend un effectif complet, donc un corps de requete. Espace de noms
+    // NEUF et entierement anglais — `/api/v1/regles/*` est deja servi en francais et ne se
+    // renomme pas au fil de l'eau, mais un nouveau nom est anglais sans exception
+    // (CLAUDE.md § Language, 2026-09-06). Cf. `routes::team`.
+    "/api/v1/team/synergy" => crate::routes::team::contract,
+    // Resoudre en LOT les identifiants d'un effectif. Ce qui traverse le reseau n'est jamais
+    // une sauvegarde — `nie-save` tourne en wasm chez le joueur — mais une liste de codes du
+    // jeu. Cf. `routes::save`.
+    "/api/v1/save/roster" => crate::routes::save::contract,
     // La matrice de couverture du plan (§ 4). Elle est LUE, jamais mesuree ici : mesurer,
     // c'est lancer `niers --help`, lire quatre arbres de sources et parcourir 255 308 lignes
     // d'inventaire. Cf. `routes::couverture`.
@@ -257,16 +320,23 @@ pub fn correspond(motif: &str, uri: &str) -> bool {
 /// **panique** au `route()` — elle ne dégrade pas.
 pub fn routeur(etat: EtatSite) -> Router {
     monter(Router::new())
-        // La SEULE route du site qui accepte autre chose qu'un `GET` — et elle n'écrit rien
-        // non plus. Deux personnages entiers, leurs stats et leurs techniques ne tiennent pas
-        // dans une query string : le verbe dit ici la taille de l'entrée, pas un effet de bord.
-        // Le `GET` du même chemin, déclaré dans la macro, publie le contrat au lieu de rendre
-        // un `405` muet au premier client qui explore ; axum fusionne les deux méthodes sur un
-        // chemin déjà monté, si bien que `chemins()` continue de le compter une fois.
+        // Les cinq routes du site qui acceptent autre chose qu'un `GET` — et aucune n'écrit.
+        // Deux personnages entiers, un effectif de onze joueurs, une liste d'identifiants de
+        // sauvegarde, deux images : le verbe dit ici la taille de l'entrée, pas un effet de bord. Le `GET`
+        // de chaque chemin, déclaré dans la macro, publie le contrat au lieu de rendre un
+        // `405` muet au premier client qui explore ; axum fusionne les deux méthodes sur un
+        // chemin déjà monté, si bien que `chemins()` continue de les compter une fois.
         .route(
             CHEMINS_HORS_GET[0],
             post(crate::routes::regles::comparaison),
         )
+        .route(CHEMINS_HORS_GET[1], post(crate::routes::team::synergy))
+        .route(CHEMINS_HORS_GET[2], post(crate::routes::save::roster))
+        // Les deux inspecteurs qui prennent des PIXELS en entrée : `imgmetric::comparer` reçoit
+        // deux images RGBA, `planche::mesurer` en reçoit une. Aucune query string ne les porte,
+        // et ni l'une ni l'autre n'écrit quoi que ce soit.
+        .route(CHEMINS_HORS_GET[3], post(crate::routes::inspect::compare))
+        .route(CHEMINS_HORS_GET[4], post(crate::routes::inspect::plate))
         .fallback(crate::routes::static_files::statique)
         // Les couches s'empilent de la plus INTERNE à la plus externe, et l'ordre est ici un
         // choix, pas une habitude :
@@ -359,8 +429,14 @@ mod tests {
         // coûté à cette crate.
         assert_eq!(
             CHEMINS_HORS_GET,
-            ["/api/v1/regles/comparaison"],
-            "une seule route sort du GET, et elle CALCULE : elle n'écrit ni base ni disque"
+            [
+                "/api/v1/regles/comparaison",
+                "/api/v1/team/synergy",
+                "/api/v1/save/roster",
+                "/api/v1/inspect/compare",
+                "/api/v1/inspect/plate",
+            ],
+            "cinq routes sortent du GET, et les cinq CALCULENT : aucune n'écrit ni base ni disque"
         );
         // Et son chemin est bien déclaré par la macro : sans cela, `chemins()` ne le compterait
         // pas et la matrice de couverture rétrograderait la capacité qu'il sert.
@@ -375,7 +451,7 @@ mod tests {
     #[test]
     fn contrat_de_routes() {
         let routes = chemins();
-        assert_eq!(routes.len(), 56, "56 routes montees");
+        assert_eq!(routes.len(), 77, "77 routes montees");
         for r in &routes {
             assert!(r.starts_with('/'), "{r}");
             // Syntaxe axum 0.7 (`:id`, `*path`) : elle PANIQUE au `route()`, elle ne degrade

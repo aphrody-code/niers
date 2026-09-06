@@ -190,10 +190,12 @@ mod tests {
     fn matrice_temoin() -> crate::couverture::Matrice {
         let entrees = vec![
             // Une capacite manquante — le cas que la page doit rendre visible, avec son
-            // detail et pas seulement son compte.
+            // detail et pas seulement son compte. C'est le FILET de `nie-data` qui la classe
+            // (`data-familles`, `Motif::Tout`), pas une capacite reelle : un temoin choisi
+            // parmi le travail restant se perime au lot suivant, cf. `couverture::tests`.
             mesure::Entree {
-                source: Source::Azalee,
-                nom: "/tools/compare".to_string(),
+                source: Source::NieData,
+                nom: "module_ajoute_demain_sans_route".to_string(),
                 poids: 1,
             },
             mesure::Entree {
@@ -211,9 +213,12 @@ mod tests {
         assert!(html.contains("71101"), "le poids servi est affiché");
         assert!(html.contains("gate maîtresse"));
         assert!(html.contains("rompue"), "manquant = 1 : la gate est rompue");
-        assert!(html.contains("/tools/compare"), "la capacité manquante est nommée");
         assert!(
-            html.contains("les dix 308"),
+            html.contains("module_ajoute_demain_sans_route"),
+            "la capacité manquante est nommée"
+        );
+        assert!(
+            html.contains("parseur typé, golden testé, sans route"),
             "la raison est publiée, pas seulement le compte"
         );
     }

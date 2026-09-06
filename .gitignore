@@ -116,7 +116,17 @@ logs/
 .secrets/
 
 
-/var
+# `/var` reste exclu en bloc : 15,5 Go de base de connaissance, le miroir date, la forge.
+# Git NE DESCEND PAS dans un repertoire exclu, donc une re-inclusion se fait en trois temps —
+# rouvrir le parent, refermer son contenu direct, puis re-inclure la cible (cf. CLAUDE.md
+# § .gitignore). Le cout est borne : `/var/*` referme les 59 entrees directes, git ne descend
+# donc dans aucun sous-arbre. Mesure : `git status --short` = 0,03 s avant, 0,03 s apres.
+!/var/
+/var/*
+# La matrice de couverture du site (docs/PLAN-SITE-ULTIME.md § 4). Le plan exige qu'elle soit
+# **versionnee** et regeneree par une commande — sans cela elle n'est qu'un fichier local, et
+# personne ne peut relire l'ecart entre deux etats de la gate.
+!/var/couverture-site.json
 
 
 # Artefacts RE bruts (ne JAMAIS committer le binaire du jeu ni ses dumps)

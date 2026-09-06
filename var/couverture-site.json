@@ -1,0 +1,5002 @@
+{
+  "genere_le": "2026-09-06T14:20:32Z",
+  "version": "0.5.9",
+  "routes_montees": 77,
+  "total": {
+    "capacites": 582,
+    "poids": 255847
+  },
+  "par_etat": {
+    "bloque": {
+      "capacites": 10,
+      "poids": 3600
+    },
+    "interne": {
+      "capacites": 294,
+      "poids": 5805
+    },
+    "manquant": {
+      "capacites": 0,
+      "poids": 0
+    },
+    "partiel": {
+      "capacites": 0,
+      "poids": 0
+    },
+    "servi": {
+      "capacites": 278,
+      "poids": 246442
+    }
+  },
+  "par_source": [
+    {
+      "source": "niers",
+      "libelle": "niers — sous-commandes",
+      "commande": "niers --help",
+      "unite": "capacités",
+      "total": {
+        "capacites": 40,
+        "poids": 40
+      },
+      "par_etat": {
+        "bloque": {
+          "capacites": 0,
+          "poids": 0
+        },
+        "interne": {
+          "capacites": 27,
+          "poids": 27
+        },
+        "manquant": {
+          "capacites": 0,
+          "poids": 0
+        },
+        "partiel": {
+          "capacites": 0,
+          "poids": 0
+        },
+        "servi": {
+          "capacites": 13,
+          "poids": 13
+        }
+      },
+      "gate_tenue": true
+    },
+    {
+      "source": "inacord",
+      "libelle": "Inacord — commandes IPC",
+      "commande": "collect_commands! de apps/inacord/src-tauri/src/lib.rs",
+      "unite": "capacités",
+      "total": {
+        "capacites": 158,
+        "poids": 158
+      },
+      "par_etat": {
+        "bloque": {
+          "capacites": 0,
+          "poids": 0
+        },
+        "interne": {
+          "capacites": 90,
+          "poids": 90
+        },
+        "manquant": {
+          "capacites": 0,
+          "poids": 0
+        },
+        "partiel": {
+          "capacites": 0,
+          "poids": 0
+        },
+        "servi": {
+          "capacites": 68,
+          "poids": 68
+        }
+      },
+      "gate_tenue": true
+    },
+    {
+      "source": "azalee",
+      "libelle": "Azalée — pages",
+      "commande": "fd -t f page.tsx apps/azalee/app",
+      "unite": "capacités",
+      "total": {
+        "capacites": 81,
+        "poids": 81
+      },
+      "par_etat": {
+        "bloque": {
+          "capacites": 0,
+          "poids": 0
+        },
+        "interne": {
+          "capacites": 74,
+          "poids": 74
+        },
+        "manquant": {
+          "capacites": 0,
+          "poids": 0
+        },
+        "partiel": {
+          "capacites": 0,
+          "poids": 0
+        },
+        "servi": {
+          "capacites": 7,
+          "poids": 7
+        }
+      },
+      "gate_tenue": true
+    },
+    {
+      "source": "azalee-api",
+      "libelle": "Azalée — routes d'API",
+      "commande": "fd -t f route.ts apps/azalee/app",
+      "unite": "capacités",
+      "total": {
+        "capacites": 26,
+        "poids": 26
+      },
+      "par_etat": {
+        "bloque": {
+          "capacites": 0,
+          "poids": 0
+        },
+        "interne": {
+          "capacites": 24,
+          "poids": 24
+        },
+        "manquant": {
+          "capacites": 0,
+          "poids": 0
+        },
+        "partiel": {
+          "capacites": 0,
+          "poids": 0
+        },
+        "servi": {
+          "capacites": 2,
+          "poids": 2
+        }
+      },
+      "gate_tenue": true
+    },
+    {
+      "source": "nie-data",
+      "libelle": "nie-data — modules",
+      "commande": "rg '^pub mod ' crates/engine/nie-data/src/lib.rs",
+      "unite": "capacités",
+      "total": {
+        "capacites": 115,
+        "poids": 115
+      },
+      "par_etat": {
+        "bloque": {
+          "capacites": 0,
+          "poids": 0
+        },
+        "interne": {
+          "capacites": 2,
+          "poids": 2
+        },
+        "manquant": {
+          "capacites": 0,
+          "poids": 0
+        },
+        "partiel": {
+          "capacites": 0,
+          "poids": 0
+        },
+        "servi": {
+          "capacites": 113,
+          "poids": 113
+        }
+      },
+      "gate_tenue": true
+    },
+    {
+      "source": "nie-formats",
+      "libelle": "nie-formats — modules",
+      "commande": "rg '^pub mod ' crates/engine/nie-formats/src/lib.rs",
+      "unite": "capacités",
+      "total": {
+        "capacites": 46,
+        "poids": 46
+      },
+      "par_etat": {
+        "bloque": {
+          "capacites": 0,
+          "poids": 0
+        },
+        "interne": {
+          "capacites": 9,
+          "poids": 9
+        },
+        "manquant": {
+          "capacites": 0,
+          "poids": 0
+        },
+        "partiel": {
+          "capacites": 0,
+          "poids": 0
+        },
+        "servi": {
+          "capacites": 37,
+          "poids": 37
+        }
+      },
+      "gate_tenue": true
+    },
+    {
+      "source": "nie-lua",
+      "libelle": "nie-lua — fonctions publiques",
+      "commande": "rg '^pub fn ' crates/engine/nie-lua/src/",
+      "unite": "capacités",
+      "total": {
+        "capacites": 34,
+        "poids": 34
+      },
+      "par_etat": {
+        "bloque": {
+          "capacites": 0,
+          "poids": 0
+        },
+        "interne": {
+          "capacites": 28,
+          "poids": 28
+        },
+        "manquant": {
+          "capacites": 0,
+          "poids": 0
+        },
+        "partiel": {
+          "capacites": 0,
+          "poids": 0
+        },
+        "servi": {
+          "capacites": 6,
+          "poids": 6
+        }
+      },
+      "gate_tenue": true
+    },
+    {
+      "source": "iecode",
+      "libelle": "iecode — sous-commandes",
+      "commande": "fd -e cpp . src/cli/commands",
+      "unite": "capacités",
+      "total": {
+        "capacites": 39,
+        "poids": 39
+      },
+      "par_etat": {
+        "bloque": {
+          "capacites": 0,
+          "poids": 0
+        },
+        "interne": {
+          "capacites": 39,
+          "poids": 39
+        },
+        "manquant": {
+          "capacites": 0,
+          "poids": 0
+        },
+        "partiel": {
+          "capacites": 0,
+          "poids": 0
+        },
+        "servi": {
+          "capacites": 0,
+          "poids": 0
+        }
+      },
+      "gate_tenue": true
+    },
+    {
+      "source": "vfs",
+      "libelle": "VFS — fichiers du jeu, par extension",
+      "commande": "var/vfs/inventaire.txt, agrégé par extension",
+      "unite": "fichiers",
+      "total": {
+        "capacites": 43,
+        "poids": 255308
+      },
+      "par_etat": {
+        "bloque": {
+          "capacites": 10,
+          "poids": 3600
+        },
+        "interne": {
+          "capacites": 1,
+          "poids": 5512
+        },
+        "manquant": {
+          "capacites": 0,
+          "poids": 0
+        },
+        "partiel": {
+          "capacites": 0,
+          "poids": 0
+        },
+        "servi": {
+          "capacites": 32,
+          "poids": 246196
+        }
+      },
+      "gate_tenue": true
+    }
+  ],
+  "gate": {
+    "manquant": 0,
+    "partiel": 0,
+    "manquant_poids": 0,
+    "partiel_poids": 0,
+    "bloque": 10,
+    "tenue": true
+  },
+  "regles_mortes": [
+    "inacord-lua",
+    "data-familles",
+    "formats-restants"
+  ],
+  "incoherences": [],
+  "capacites": [
+    {
+      "source": "niers",
+      "nom": "cpp",
+      "poids": 1,
+      "regle": "niers-cpp",
+      "etat": "interne",
+      "raison": "façade vers le toolkit C++ : API d'administration, non affichée"
+    },
+    {
+      "source": "niers",
+      "nom": "cs",
+      "poids": 1,
+      "regle": "niers-cs",
+      "etat": "interne",
+      "raison": "façade vers l'outillage .NET : API d'administration, non affichée"
+    },
+    {
+      "source": "niers",
+      "nom": "backends",
+      "poids": 1,
+      "regle": "niers-backends",
+      "etat": "interne",
+      "raison": "dit ce qui est construit sur CETTE machine : sans objet en ligne"
+    },
+    {
+      "source": "niers",
+      "nom": "mod",
+      "poids": 1,
+      "regle": "niers-mod",
+      "etat": "interne",
+      "raison": "écrit dans l'installation du jeu : machine locale"
+    },
+    {
+      "source": "niers",
+      "nom": "viola",
+      "poids": 1,
+      "regle": "niers-viola",
+      "etat": "interne",
+      "raison": "modding LEVEL-5 : écriture, façade d'administration"
+    },
+    {
+      "source": "niers",
+      "nom": "format",
+      "poids": 1,
+      "regle": "niers-format",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "niers",
+      "nom": "decode",
+      "poids": 1,
+      "regle": "niers-decode",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "niers",
+      "nom": "refresh-typed-json",
+      "poids": 1,
+      "regle": "niers-refresh",
+      "etat": "interne",
+      "raison": "régénère des fichiers à côté du dump : écriture disque"
+    },
+    {
+      "source": "niers",
+      "nom": "steam",
+      "poids": 1,
+      "regle": "niers-steam",
+      "etat": "interne",
+      "raison": "identifiants Steam : secrets, jamais côté site"
+    },
+    {
+      "source": "niers",
+      "nom": "info",
+      "poids": 1,
+      "regle": "niers-info",
+      "etat": "servi",
+      "route": "/api/v1/health"
+    },
+    {
+      "source": "niers",
+      "nom": "convert",
+      "poids": 1,
+      "regle": "niers-convert",
+      "etat": "servi",
+      "route": "/assets/{*chemin}"
+    },
+    {
+      "source": "niers",
+      "nom": "render",
+      "poids": 1,
+      "regle": "niers-render",
+      "etat": "servi",
+      "route": "/model/{famille}/{fichier}"
+    },
+    {
+      "source": "niers",
+      "nom": "lua",
+      "poids": 1,
+      "regle": "niers-lua",
+      "etat": "servi",
+      "route": "/api/v1/lua/scripts/{*chemin}"
+    },
+    {
+      "source": "niers",
+      "nom": "seed",
+      "poids": 1,
+      "regle": "niers-reverse",
+      "etat": "interne",
+      "raison": "boucle de reverse-engineering : coûteuse, privilégiée, sans public (§ 5, lot 1)"
+    },
+    {
+      "source": "niers",
+      "nom": "seed-ui",
+      "poids": 1,
+      "regle": "niers-seed-ui",
+      "etat": "interne",
+      "raison": "ingère dans la base de connaissance : écriture"
+    },
+    {
+      "source": "niers",
+      "nom": "strings",
+      "poids": 1,
+      "regle": "niers-strings",
+      "etat": "interne",
+      "raison": "reverse du binaire : coûteux, privilégié, sans public"
+    },
+    {
+      "source": "niers",
+      "nom": "find",
+      "poids": 1,
+      "regle": "niers-recherche",
+      "etat": "interne",
+      "raison": "cherche sur le DISQUE de la machine (moteur `ignore`) ; la recherche dans le VFS du jeu, elle, est servie par /api/v1/recherche"
+    },
+    {
+      "source": "niers",
+      "nom": "grep",
+      "poids": 1,
+      "regle": "niers-grep",
+      "etat": "interne",
+      "raison": "cherche dans le CONTENU des fichiers du disque : un service web ne lit pas l'arbre de la machine"
+    },
+    {
+      "source": "niers",
+      "nom": "img",
+      "poids": 1,
+      "regle": "niers-img",
+      "etat": "interne",
+      "raison": "édition d'image : elle écrit un fichier, un site en lecture seule n'écrit pas"
+    },
+    {
+      "source": "niers",
+      "nom": "mode",
+      "poids": 1,
+      "regle": "niers-mode",
+      "etat": "servi",
+      "route": "/api/v1/modes/{slug}"
+    },
+    {
+      "source": "niers",
+      "nom": "icons",
+      "poids": 1,
+      "regle": "niers-icons",
+      "etat": "servi",
+      "route": "/api/v1/icons"
+    },
+    {
+      "source": "niers",
+      "nom": "avatar",
+      "poids": 1,
+      "regle": "niers-avatar",
+      "etat": "servi",
+      "route": "/api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "niers",
+      "nom": "coverage",
+      "poids": 1,
+      "regle": "niers-coverage",
+      "etat": "interne",
+      "raison": "couverture du RE : mesure interne du dépôt, pas une capacité du jeu"
+    },
+    {
+      "source": "niers",
+      "nom": "queue",
+      "poids": 1,
+      "regle": "niers-reverse",
+      "etat": "interne",
+      "raison": "boucle de reverse-engineering : coûteuse, privilégiée, sans public (§ 5, lot 1)"
+    },
+    {
+      "source": "niers",
+      "nom": "propagate",
+      "poids": 1,
+      "regle": "niers-reverse",
+      "etat": "interne",
+      "raison": "boucle de reverse-engineering : coûteuse, privilégiée, sans public (§ 5, lot 1)"
+    },
+    {
+      "source": "niers",
+      "nom": "rtti",
+      "poids": 1,
+      "regle": "niers-reverse",
+      "etat": "interne",
+      "raison": "boucle de reverse-engineering : coûteuse, privilégiée, sans public (§ 5, lot 1)"
+    },
+    {
+      "source": "niers",
+      "nom": "index",
+      "poids": 1,
+      "regle": "niers-reverse",
+      "etat": "interne",
+      "raison": "boucle de reverse-engineering : coûteuse, privilégiée, sans public (§ 5, lot 1)"
+    },
+    {
+      "source": "niers",
+      "nom": "disasm",
+      "poids": 1,
+      "regle": "niers-reverse",
+      "etat": "interne",
+      "raison": "boucle de reverse-engineering : coûteuse, privilégiée, sans public (§ 5, lot 1)"
+    },
+    {
+      "source": "niers",
+      "nom": "pdata",
+      "poids": 1,
+      "regle": "niers-reverse",
+      "etat": "interne",
+      "raison": "boucle de reverse-engineering : coûteuse, privilégiée, sans public (§ 5, lot 1)"
+    },
+    {
+      "source": "niers",
+      "nom": "rebuild",
+      "poids": 1,
+      "regle": "niers-reverse",
+      "etat": "interne",
+      "raison": "boucle de reverse-engineering : coûteuse, privilégiée, sans public (§ 5, lot 1)"
+    },
+    {
+      "source": "niers",
+      "nom": "recover",
+      "poids": 1,
+      "regle": "niers-reverse",
+      "etat": "interne",
+      "raison": "boucle de reverse-engineering : coûteuse, privilégiée, sans public (§ 5, lot 1)"
+    },
+    {
+      "source": "niers",
+      "nom": "save",
+      "poids": 1,
+      "regle": "niers-save",
+      "etat": "interne",
+      "raison": "sauvegardes de joueur : données personnelles, hors périmètre contractuel"
+    },
+    {
+      "source": "niers",
+      "nom": "wiki",
+      "poids": 1,
+      "regle": "niers-wiki",
+      "etat": "servi",
+      "route": "/api/v1/chara"
+    },
+    {
+      "source": "niers",
+      "nom": "uniform-map",
+      "poids": 1,
+      "regle": "niers-uniform-map",
+      "etat": "interne",
+      "raison": "construction d'un manifeste d'index : outil de build, consommé par l'amont"
+    },
+    {
+      "source": "niers",
+      "nom": "textures",
+      "poids": 1,
+      "regle": "niers-textures",
+      "etat": "servi",
+      "route": "/api/v1/{vue}"
+    },
+    {
+      "source": "niers",
+      "nom": "menu-predecode",
+      "poids": 1,
+      "regle": "niers-menu-predecode",
+      "etat": "interne",
+      "raison": "pré-décode dans le dump disque : écriture disque"
+    },
+    {
+      "source": "niers",
+      "nom": "mem",
+      "poids": 1,
+      "regle": "niers-mem",
+      "etat": "interne",
+      "raison": "lit la mémoire d'un process du jeu : privilège, machine locale"
+    },
+    {
+      "source": "niers",
+      "nom": "vfs",
+      "poids": 1,
+      "regle": "niers-vfs",
+      "etat": "servi",
+      "route": "/b/{*prefixe}"
+    },
+    {
+      "source": "niers",
+      "nom": "vn",
+      "poids": 1,
+      "regle": "niers-vn",
+      "etat": "interne",
+      "raison": "produit un catalogue local jamais versionné"
+    },
+    {
+      "source": "niers",
+      "nom": "video",
+      "poids": 1,
+      "regle": "niers-video",
+      "etat": "servi",
+      "route": "/api/v1/{vue}"
+    },
+    {
+      "source": "inacord",
+      "nom": "aphrody_pet_etat",
+      "poids": 1,
+      "regle": "inacord-pet",
+      "etat": "servi",
+      "route": "/pet/aphrody.json"
+    },
+    {
+      "source": "inacord",
+      "nom": "aphrody_pet_frame_png_b64",
+      "poids": 1,
+      "regle": "inacord-pet",
+      "etat": "servi",
+      "route": "/pet/aphrody.json"
+    },
+    {
+      "source": "inacord",
+      "nom": "aphrody_pixel_mesurer",
+      "poids": 1,
+      "regle": "inacord-palette",
+      "etat": "servi",
+      "route": "/api/v1/aphrody/palette"
+    },
+    {
+      "source": "inacord",
+      "nom": "aphrody_pixel_tokens_css",
+      "poids": 1,
+      "regle": "inacord-tokens",
+      "etat": "servi",
+      "route": "/api/v1/aphrody/palette"
+    },
+    {
+      "source": "inacord",
+      "nom": "aphrody_pixel_comparer",
+      "poids": 1,
+      "regle": "inacord-pixel",
+      "etat": "interne",
+      "raison": "outillage de direction artistique local (comparer, vectoriser, planche)"
+    },
+    {
+      "source": "inacord",
+      "nom": "aphrody_pixel_vectoriser",
+      "poids": 1,
+      "regle": "inacord-pixel",
+      "etat": "interne",
+      "raison": "outillage de direction artistique local (comparer, vectoriser, planche)"
+    },
+    {
+      "source": "inacord",
+      "nom": "aphrody_pixel_planche",
+      "poids": 1,
+      "regle": "inacord-pixel",
+      "etat": "interne",
+      "raison": "outillage de direction artistique local (comparer, vectoriser, planche)"
+    },
+    {
+      "source": "inacord",
+      "nom": "default_game_dir",
+      "poids": 1,
+      "regle": "inacord-defaut",
+      "etat": "interne",
+      "raison": "chemins par défaut de la machine hôte : sans objet en ligne"
+    },
+    {
+      "source": "inacord",
+      "nom": "check_game_dir",
+      "poids": 1,
+      "regle": "inacord-hote",
+      "etat": "interne",
+      "raison": "relève de l'hôte desktop : disque, fenêtre, presse-papiers, corbeille (cf. `capacites()` du contrat asset-source)"
+    },
+    {
+      "source": "inacord",
+      "nom": "default_wiki_db",
+      "poids": 1,
+      "regle": "inacord-defaut",
+      "etat": "interne",
+      "raison": "chemins par défaut de la machine hôte : sans objet en ligne"
+    },
+    {
+      "source": "inacord",
+      "nom": "default_re_db",
+      "poids": 1,
+      "regle": "inacord-defaut",
+      "etat": "interne",
+      "raison": "chemins par défaut de la machine hôte : sans objet en ligne"
+    },
+    {
+      "source": "inacord",
+      "nom": "default_anime_db",
+      "poids": 1,
+      "regle": "inacord-defaut",
+      "etat": "interne",
+      "raison": "chemins par défaut de la machine hôte : sans objet en ligne"
+    },
+    {
+      "source": "inacord",
+      "nom": "preload_vfs",
+      "poids": 1,
+      "regle": "inacord-preload",
+      "etat": "interne",
+      "raison": "montage du VFS de l'hôte : le site le monte en fond au démarrage"
+    },
+    {
+      "source": "inacord",
+      "nom": "vfs_ls",
+      "poids": 1,
+      "regle": "inacord-vfs-lecture",
+      "etat": "servi",
+      "route": "/b/{*prefixe}"
+    },
+    {
+      "source": "inacord",
+      "nom": "vfs_find",
+      "poids": 1,
+      "regle": "inacord-vfs-recherche",
+      "etat": "servi",
+      "route": "/api/v1/recherche"
+    },
+    {
+      "source": "inacord",
+      "nom": "vfs_find_paged",
+      "poids": 1,
+      "regle": "inacord-vfs-recherche-p",
+      "etat": "servi",
+      "route": "/api/v1/recherche"
+    },
+    {
+      "source": "inacord",
+      "nom": "vfs_stats",
+      "poids": 1,
+      "regle": "inacord-vfs-lecture",
+      "etat": "servi",
+      "route": "/b/{*prefixe}"
+    },
+    {
+      "source": "inacord",
+      "nom": "vfs_entry_meta",
+      "poids": 1,
+      "regle": "inacord-vfs-lecture",
+      "etat": "servi",
+      "route": "/b/{*prefixe}"
+    },
+    {
+      "source": "inacord",
+      "nom": "vfs_describe",
+      "poids": 1,
+      "regle": "inacord-vfs-lecture",
+      "etat": "servi",
+      "route": "/b/{*prefixe}"
+    },
+    {
+      "source": "inacord",
+      "nom": "vfs_read_b64",
+      "poids": 1,
+      "regle": "inacord-vfs-lecture",
+      "etat": "servi",
+      "route": "/b/{*prefixe}"
+    },
+    {
+      "source": "inacord",
+      "nom": "vfs_texture_png_b64",
+      "poids": 1,
+      "regle": "inacord-vfs-texture",
+      "etat": "servi",
+      "route": "/assets/{*chemin}"
+    },
+    {
+      "source": "inacord",
+      "nom": "vfs_texture_thumb_png_b64",
+      "poids": 1,
+      "regle": "inacord-vfs-texture",
+      "etat": "servi",
+      "route": "/assets/{*chemin}"
+    },
+    {
+      "source": "inacord",
+      "nom": "vfs_texture_list",
+      "poids": 1,
+      "regle": "inacord-vfs-texture",
+      "etat": "servi",
+      "route": "/assets/{*chemin}"
+    },
+    {
+      "source": "inacord",
+      "nom": "vfs_texture_named_png_b64",
+      "poids": 1,
+      "regle": "inacord-vfs-texture",
+      "etat": "servi",
+      "route": "/assets/{*chemin}"
+    },
+    {
+      "source": "inacord",
+      "nom": "vfs_texture_named_thumb_png_b64",
+      "poids": 1,
+      "regle": "inacord-vfs-texture",
+      "etat": "servi",
+      "route": "/assets/{*chemin}"
+    },
+    {
+      "source": "inacord",
+      "nom": "vfs_extract_to",
+      "poids": 1,
+      "regle": "inacord-vfs-extract",
+      "etat": "interne",
+      "raison": "écrit un fichier sur la machine de l'utilisateur"
+    },
+    {
+      "source": "inacord",
+      "nom": "vfs_export_formats",
+      "poids": 1,
+      "regle": "inacord-vfs-export",
+      "etat": "interne",
+      "raison": "écrit un fichier sur la machine de l'utilisateur"
+    },
+    {
+      "source": "inacord",
+      "nom": "vfs_export_default_name",
+      "poids": 1,
+      "regle": "inacord-vfs-export",
+      "etat": "interne",
+      "raison": "écrit un fichier sur la machine de l'utilisateur"
+    },
+    {
+      "source": "inacord",
+      "nom": "vfs_export_as",
+      "poids": 1,
+      "regle": "inacord-vfs-export",
+      "etat": "interne",
+      "raison": "écrit un fichier sur la machine de l'utilisateur"
+    },
+    {
+      "source": "inacord",
+      "nom": "vfs_export_many",
+      "poids": 1,
+      "regle": "inacord-vfs-export",
+      "etat": "interne",
+      "raison": "écrit un fichier sur la machine de l'utilisateur"
+    },
+    {
+      "source": "inacord",
+      "nom": "vfs_write_b64",
+      "poids": 1,
+      "regle": "inacord-vfs-ecriture",
+      "etat": "interne",
+      "raison": "écrit dans le VFS : un site en lecture seule n'écrit pas"
+    },
+    {
+      "source": "inacord",
+      "nom": "vfs_write_loose_override_b64",
+      "poids": 1,
+      "regle": "inacord-vfs-ecriture",
+      "etat": "interne",
+      "raison": "écrit dans le VFS : un site en lecture seule n'écrit pas"
+    },
+    {
+      "source": "inacord",
+      "nom": "save_bytes_b64",
+      "poids": 1,
+      "regle": "inacord-save",
+      "etat": "interne",
+      "raison": "sauvegardes de joueur : données personnelles"
+    },
+    {
+      "source": "inacord",
+      "nom": "vfs_related",
+      "poids": 1,
+      "regle": "inacord-vfs-lecture",
+      "etat": "servi",
+      "route": "/b/{*prefixe}"
+    },
+    {
+      "source": "inacord",
+      "nom": "vfs_all_entries",
+      "poids": 1,
+      "regle": "inacord-vfs-lecture",
+      "etat": "servi",
+      "route": "/b/{*prefixe}"
+    },
+    {
+      "source": "inacord",
+      "nom": "vfs_index_scan_start",
+      "poids": 1,
+      "regle": "inacord-vfs-index",
+      "etat": "interne",
+      "raison": "pilote l'indexation locale de l'hôte : sans objet côté serveur"
+    },
+    {
+      "source": "inacord",
+      "nom": "vfs_index_scan_cancel",
+      "poids": 1,
+      "regle": "inacord-vfs-index",
+      "etat": "interne",
+      "raison": "pilote l'indexation locale de l'hôte : sans objet côté serveur"
+    },
+    {
+      "source": "inacord",
+      "nom": "vfs_index_scan_take",
+      "poids": 1,
+      "regle": "inacord-vfs-index",
+      "etat": "interne",
+      "raison": "pilote l'indexation locale de l'hôte : sans objet côté serveur"
+    },
+    {
+      "source": "inacord",
+      "nom": "game_data_skills",
+      "poids": 1,
+      "regle": "inacord-gamedata",
+      "etat": "servi",
+      "route": "/api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "inacord",
+      "nom": "game_data_items",
+      "poids": 1,
+      "regle": "inacord-gamedata",
+      "etat": "servi",
+      "route": "/api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "inacord",
+      "nom": "game_data_auras",
+      "poids": 1,
+      "regle": "inacord-gamedata",
+      "etat": "servi",
+      "route": "/api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "inacord",
+      "nom": "game_data_trophies",
+      "poids": 1,
+      "regle": "inacord-gamedata",
+      "etat": "servi",
+      "route": "/api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "inacord",
+      "nom": "game_data_quests",
+      "poids": 1,
+      "regle": "inacord-gamedata",
+      "etat": "servi",
+      "route": "/api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "inacord",
+      "nom": "game_data_shops",
+      "poids": 1,
+      "regle": "inacord-gamedata",
+      "etat": "servi",
+      "route": "/api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "inacord",
+      "nom": "game_data_stadiums",
+      "poids": 1,
+      "regle": "inacord-gamedata",
+      "etat": "servi",
+      "route": "/api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "inacord",
+      "nom": "game_data_passives",
+      "poids": 1,
+      "regle": "inacord-gamedata",
+      "etat": "servi",
+      "route": "/api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "inacord",
+      "nom": "game_data_special_tactics",
+      "poids": 1,
+      "regle": "inacord-gamedata",
+      "etat": "servi",
+      "route": "/api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "inacord",
+      "nom": "game_data_emblems",
+      "poids": 1,
+      "regle": "inacord-gamedata",
+      "etat": "servi",
+      "route": "/api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "inacord",
+      "nom": "game_data_gallery",
+      "poids": 1,
+      "regle": "inacord-gamedata",
+      "etat": "servi",
+      "route": "/api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "inacord",
+      "nom": "game_data_tricks",
+      "poids": 1,
+      "regle": "inacord-gamedata",
+      "etat": "servi",
+      "route": "/api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "inacord",
+      "nom": "game_data_activities",
+      "poids": 1,
+      "regle": "inacord-gamedata",
+      "etat": "servi",
+      "route": "/api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "inacord",
+      "nom": "game_data_belong_teams",
+      "poids": 1,
+      "regle": "inacord-gamedata",
+      "etat": "servi",
+      "route": "/api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "inacord",
+      "nom": "game_data_formations",
+      "poids": 1,
+      "regle": "inacord-gamedata",
+      "etat": "servi",
+      "route": "/api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "inacord",
+      "nom": "game_data_uniforms",
+      "poids": 1,
+      "regle": "inacord-gamedata",
+      "etat": "servi",
+      "route": "/api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "inacord",
+      "nom": "game_data_chara_picker",
+      "poids": 1,
+      "regle": "inacord-chara-picker",
+      "etat": "servi",
+      "route": "/api/v1/chara"
+    },
+    {
+      "source": "inacord",
+      "nom": "game_data_charas",
+      "poids": 1,
+      "regle": "inacord-charas",
+      "etat": "servi",
+      "route": "/api/v1/chara"
+    },
+    {
+      "source": "inacord",
+      "nom": "game_data_opponent_teams",
+      "poids": 1,
+      "regle": "inacord-gamedata",
+      "etat": "servi",
+      "route": "/api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "inacord",
+      "nom": "game_data_movies",
+      "poids": 1,
+      "regle": "inacord-movies",
+      "etat": "servi",
+      "route": "/api/v1/{vue}"
+    },
+    {
+      "source": "inacord",
+      "nom": "game_data_musics",
+      "poids": 1,
+      "regle": "inacord-musics",
+      "etat": "servi",
+      "route": "/api/v1/{vue}"
+    },
+    {
+      "source": "inacord",
+      "nom": "game_data_dictionary",
+      "poids": 1,
+      "regle": "inacord-gamedata",
+      "etat": "servi",
+      "route": "/api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "inacord",
+      "nom": "game_data_exp_table",
+      "poids": 1,
+      "regle": "inacord-gamedata",
+      "etat": "servi",
+      "route": "/api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "inacord",
+      "nom": "game_data_drops",
+      "poids": 1,
+      "regle": "inacord-gamedata",
+      "etat": "servi",
+      "route": "/api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "inacord",
+      "nom": "game_data_capsule_rates",
+      "poids": 1,
+      "regle": "inacord-gamedata",
+      "etat": "servi",
+      "route": "/api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "inacord",
+      "nom": "game_data_noms",
+      "poids": 1,
+      "regle": "inacord-gamedata",
+      "etat": "servi",
+      "route": "/api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "inacord",
+      "nom": "game_data_calculate_stats",
+      "poids": 1,
+      "regle": "inacord-gamedata",
+      "etat": "servi",
+      "route": "/api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "inacord",
+      "nom": "vfs_decode_cfgbin",
+      "poids": 1,
+      "regle": "inacord-vfs-cfgbin",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "inacord",
+      "nom": "vfs_decode_cfgbin_typed",
+      "poids": 1,
+      "regle": "inacord-vfs-cfgbin",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "inacord",
+      "nom": "vfs_apercu_camera",
+      "poids": 1,
+      "regle": "inacord-vfs-camera",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "inacord",
+      "nom": "vfs_apercu_navmesh",
+      "poids": 1,
+      "regle": "inacord-vfs-navmesh",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "inacord",
+      "nom": "vfs_cache_stats",
+      "poids": 1,
+      "regle": "inacord-vfs-cache",
+      "etat": "interne",
+      "raison": "cache de l'hôte : le site a le sien (moka), non pilotable de l'extérieur"
+    },
+    {
+      "source": "inacord",
+      "nom": "vfs_cache_vider",
+      "poids": 1,
+      "regle": "inacord-vfs-cache",
+      "etat": "interne",
+      "raison": "cache de l'hôte : le site a le sien (moka), non pilotable de l'extérieur"
+    },
+    {
+      "source": "inacord",
+      "nom": "encode_cfgbin_config",
+      "poids": 1,
+      "regle": "inacord-hote",
+      "etat": "interne",
+      "raison": "relève de l'hôte desktop : disque, fenêtre, presse-papiers, corbeille (cf. `capacites()` du contrat asset-source)"
+    },
+    {
+      "source": "inacord",
+      "nom": "list_packs_dir",
+      "poids": 1,
+      "regle": "inacord-hote",
+      "etat": "interne",
+      "raison": "relève de l'hôte desktop : disque, fenêtre, presse-papiers, corbeille (cf. `capacites()` du contrat asset-source)"
+    },
+    {
+      "source": "inacord",
+      "nom": "open_raw_cpk",
+      "poids": 1,
+      "regle": "inacord-open",
+      "etat": "interne",
+      "raison": "ouvre une application locale"
+    },
+    {
+      "source": "inacord",
+      "nom": "raw_cpk_describe",
+      "poids": 1,
+      "regle": "inacord-cpk",
+      "etat": "interne",
+      "raison": "ouvre un CPK arbitraire du disque : le site ne sert que le VFS monté"
+    },
+    {
+      "source": "inacord",
+      "nom": "raw_cpk_read_b64",
+      "poids": 1,
+      "regle": "inacord-cpk",
+      "etat": "interne",
+      "raison": "ouvre un CPK arbitraire du disque : le site ne sert que le VFS monté"
+    },
+    {
+      "source": "inacord",
+      "nom": "raw_cpk_extract_to",
+      "poids": 1,
+      "regle": "inacord-cpk",
+      "etat": "interne",
+      "raison": "ouvre un CPK arbitraire du disque : le site ne sert que le VFS monté"
+    },
+    {
+      "source": "inacord",
+      "nom": "raw_cpk_extract_all",
+      "poids": 1,
+      "regle": "inacord-cpk",
+      "etat": "interne",
+      "raison": "ouvre un CPK arbitraire du disque : le site ne sert que le VFS monté"
+    },
+    {
+      "source": "inacord",
+      "nom": "raw_cpk_audio_preview_b64",
+      "poids": 1,
+      "regle": "inacord-cpk",
+      "etat": "interne",
+      "raison": "ouvre un CPK arbitraire du disque : le site ne sert que le VFS monté"
+    },
+    {
+      "source": "inacord",
+      "nom": "raw_cpk_video_preview_b64",
+      "poids": 1,
+      "regle": "inacord-cpk",
+      "etat": "interne",
+      "raison": "ouvre un CPK arbitraire du disque : le site ne sert que le VFS monté"
+    },
+    {
+      "source": "inacord",
+      "nom": "copy_disk_file_to_appdata",
+      "poids": 1,
+      "regle": "inacord-hote",
+      "etat": "interne",
+      "raison": "relève de l'hôte desktop : disque, fenêtre, presse-papiers, corbeille (cf. `capacites()` du contrat asset-source)"
+    },
+    {
+      "source": "inacord",
+      "nom": "disk_file_exists",
+      "poids": 1,
+      "regle": "inacord-disque",
+      "etat": "interne",
+      "raison": "accès au disque de l'utilisateur"
+    },
+    {
+      "source": "inacord",
+      "nom": "stage_texture_replacement",
+      "poids": 1,
+      "regle": "inacord-hote",
+      "etat": "interne",
+      "raison": "relève de l'hôte desktop : disque, fenêtre, presse-papiers, corbeille (cf. `capacites()` du contrat asset-source)"
+    },
+    {
+      "source": "inacord",
+      "nom": "export_mod_as_cpk",
+      "poids": 1,
+      "regle": "inacord-hote",
+      "etat": "interne",
+      "raison": "relève de l'hôte desktop : disque, fenêtre, presse-papiers, corbeille (cf. `capacites()` du contrat asset-source)"
+    },
+    {
+      "source": "inacord",
+      "nom": "set_titlebar_theme",
+      "poids": 1,
+      "regle": "inacord-hote",
+      "etat": "interne",
+      "raison": "relève de l'hôte desktop : disque, fenêtre, presse-papiers, corbeille (cf. `capacites()` du contrat asset-source)"
+    },
+    {
+      "source": "inacord",
+      "nom": "take_pending_open",
+      "poids": 1,
+      "regle": "inacord-hote",
+      "etat": "interne",
+      "raison": "relève de l'hôte desktop : disque, fenêtre, presse-papiers, corbeille (cf. `capacites()` du contrat asset-source)"
+    },
+    {
+      "source": "inacord",
+      "nom": "describe_disk_file",
+      "poids": 1,
+      "regle": "inacord-hote",
+      "etat": "interne",
+      "raison": "relève de l'hôte desktop : disque, fenêtre, presse-papiers, corbeille (cf. `capacites()` du contrat asset-source)"
+    },
+    {
+      "source": "inacord",
+      "nom": "read_disk_file_b64",
+      "poids": 1,
+      "regle": "inacord-hote",
+      "etat": "interne",
+      "raison": "relève de l'hôte desktop : disque, fenêtre, presse-papiers, corbeille (cf. `capacites()` du contrat asset-source)"
+    },
+    {
+      "source": "inacord",
+      "nom": "open_in_blender",
+      "poids": 1,
+      "regle": "inacord-open",
+      "etat": "interne",
+      "raison": "ouvre une application locale"
+    },
+    {
+      "source": "inacord",
+      "nom": "install_niers_blender_addon",
+      "poids": 1,
+      "regle": "inacord-blender-addon",
+      "etat": "interne",
+      "raison": "installe un greffon sur la machine de l'utilisateur"
+    },
+    {
+      "source": "inacord",
+      "nom": "blender_preview_png_b64",
+      "poids": 1,
+      "regle": "inacord-blender",
+      "etat": "interne",
+      "raison": "pilote Blender sur la machine de l'utilisateur"
+    },
+    {
+      "source": "inacord",
+      "nom": "blender_open_scene",
+      "poids": 1,
+      "regle": "inacord-blender",
+      "etat": "interne",
+      "raison": "pilote Blender sur la machine de l'utilisateur"
+    },
+    {
+      "source": "inacord",
+      "nom": "blender_build_skill_scene",
+      "poids": 1,
+      "regle": "inacord-blender",
+      "etat": "interne",
+      "raison": "pilote Blender sur la machine de l'utilisateur"
+    },
+    {
+      "source": "inacord",
+      "nom": "remote_search_chara",
+      "poids": 1,
+      "regle": "inacord-remote",
+      "etat": "servi",
+      "route": "/api/v1/chara"
+    },
+    {
+      "source": "inacord",
+      "nom": "remote_search_waza",
+      "poids": 1,
+      "regle": "inacord-remote",
+      "etat": "servi",
+      "route": "/api/v1/chara"
+    },
+    {
+      "source": "inacord",
+      "nom": "remote_cpk_search",
+      "poids": 1,
+      "regle": "inacord-remote",
+      "etat": "servi",
+      "route": "/api/v1/chara"
+    },
+    {
+      "source": "inacord",
+      "nom": "remote_resolve_roster",
+      "poids": 1,
+      "regle": "inacord-remote",
+      "etat": "servi",
+      "route": "/api/v1/chara"
+    },
+    {
+      "source": "inacord",
+      "nom": "model_service_avatar_catalog",
+      "poids": 1,
+      "regle": "inacord-model-avatar",
+      "etat": "servi",
+      "route": "/api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "inacord",
+      "nom": "model_service_avatar_glb_b64",
+      "poids": 1,
+      "regle": "inacord-model-avatar",
+      "etat": "servi",
+      "route": "/api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "inacord",
+      "nom": "model_service_menu_png_b64",
+      "poids": 1,
+      "regle": "inacord-model",
+      "etat": "servi",
+      "route": "/assets/{*chemin}"
+    },
+    {
+      "source": "inacord",
+      "nom": "default_save_path",
+      "poids": 1,
+      "regle": "inacord-defaut",
+      "etat": "interne",
+      "raison": "chemins par défaut de la machine hôte : sans objet en ligne"
+    },
+    {
+      "source": "inacord",
+      "nom": "save_open",
+      "poids": 1,
+      "regle": "inacord-save",
+      "etat": "interne",
+      "raison": "sauvegardes de joueur : données personnelles"
+    },
+    {
+      "source": "inacord",
+      "nom": "save_list_blobs",
+      "poids": 1,
+      "regle": "inacord-save",
+      "etat": "interne",
+      "raison": "sauvegardes de joueur : données personnelles"
+    },
+    {
+      "source": "inacord",
+      "nom": "save_blob_hex_b64",
+      "poids": 1,
+      "regle": "inacord-save",
+      "etat": "interne",
+      "raison": "sauvegardes de joueur : données personnelles"
+    },
+    {
+      "source": "inacord",
+      "nom": "save_export",
+      "poids": 1,
+      "regle": "inacord-save",
+      "etat": "interne",
+      "raison": "sauvegardes de joueur : données personnelles"
+    },
+    {
+      "source": "inacord",
+      "nom": "write_text_file",
+      "poids": 1,
+      "regle": "inacord-hote",
+      "etat": "interne",
+      "raison": "relève de l'hôte desktop : disque, fenêtre, presse-papiers, corbeille (cf. `capacites()` du contrat asset-source)"
+    },
+    {
+      "source": "inacord",
+      "nom": "vfs_video_preview_b64",
+      "poids": 1,
+      "regle": "inacord-vfs-video",
+      "etat": "servi",
+      "route": "/assets/{*chemin}"
+    },
+    {
+      "source": "inacord",
+      "nom": "video_catalog",
+      "poids": 1,
+      "regle": "inacord-video",
+      "etat": "servi",
+      "route": "/api/v1/{vue}"
+    },
+    {
+      "source": "inacord",
+      "nom": "video_info",
+      "poids": 1,
+      "regle": "inacord-video",
+      "etat": "servi",
+      "route": "/api/v1/{vue}"
+    },
+    {
+      "source": "inacord",
+      "nom": "video_precharger",
+      "poids": 1,
+      "regle": "inacord-video",
+      "etat": "servi",
+      "route": "/api/v1/{vue}"
+    },
+    {
+      "source": "inacord",
+      "nom": "open_in_scene_editor",
+      "poids": 1,
+      "regle": "inacord-open",
+      "etat": "interne",
+      "raison": "ouvre une application locale"
+    },
+    {
+      "source": "inacord",
+      "nom": "lua_chunk_info",
+      "poids": 1,
+      "regle": "inacord-lua-chunk",
+      "etat": "servi",
+      "route": "/api/v1/lua/scripts/{*chemin}"
+    },
+    {
+      "source": "inacord",
+      "nom": "lua_disassemble",
+      "poids": 1,
+      "regle": "inacord-lua-disasm",
+      "etat": "servi",
+      "route": "/api/v1/lua/desassemblage/{*chemin}"
+    },
+    {
+      "source": "inacord",
+      "nom": "lua_execute",
+      "poids": 1,
+      "regle": "inacord-lua-execute",
+      "etat": "interne",
+      "raison": "exécute du Lua : refus structurel, cf. `routes::lua`"
+    },
+    {
+      "source": "inacord",
+      "nom": "lua_globals",
+      "poids": 1,
+      "regle": "inacord-lua-globals",
+      "etat": "interne",
+      "raison": "énumérer les globales APPELLE le script (cf. `discover_host_calls`) : c'est de l'exécution"
+    },
+    {
+      "source": "inacord",
+      "nom": "lua_eval",
+      "poids": 1,
+      "regle": "inacord-lua-eval",
+      "etat": "interne",
+      "raison": "évalue du Lua : refus structurel, cf. `routes::lua`"
+    },
+    {
+      "source": "inacord",
+      "nom": "lua_list_scripts",
+      "poids": 1,
+      "regle": "inacord-lua-scripts",
+      "etat": "servi",
+      "route": "/api/v1/lua/scripts"
+    },
+    {
+      "source": "inacord",
+      "nom": "lua_session_exec",
+      "poids": 1,
+      "regle": "inacord-lua-session",
+      "etat": "interne",
+      "raison": "attache une VM Lua vivante : aucun interpréteur n'est lié dans le service (nie-lua `default-features = false`)"
+    },
+    {
+      "source": "inacord",
+      "nom": "lua_session_attach",
+      "poids": 1,
+      "regle": "inacord-lua-session",
+      "etat": "interne",
+      "raison": "attache une VM Lua vivante : aucun interpréteur n'est lié dans le service (nie-lua `default-features = false`)"
+    },
+    {
+      "source": "inacord",
+      "nom": "lua_session_broadcast",
+      "poids": 1,
+      "regle": "inacord-lua-session",
+      "etat": "interne",
+      "raison": "attache une VM Lua vivante : aucun interpréteur n'est lié dans le service (nie-lua `default-features = false`)"
+    },
+    {
+      "source": "inacord",
+      "nom": "lua_session_eval",
+      "poids": 1,
+      "regle": "inacord-lua-session",
+      "etat": "interne",
+      "raison": "attache une VM Lua vivante : aucun interpréteur n'est lié dans le service (nie-lua `default-features = false`)"
+    },
+    {
+      "source": "inacord",
+      "nom": "lua_session_set_global",
+      "poids": 1,
+      "regle": "inacord-lua-session",
+      "etat": "interne",
+      "raison": "attache une VM Lua vivante : aucun interpréteur n'est lié dans le service (nie-lua `default-features = false`)"
+    },
+    {
+      "source": "inacord",
+      "nom": "lua_session_globals",
+      "poids": 1,
+      "regle": "inacord-lua-session",
+      "etat": "interne",
+      "raison": "attache une VM Lua vivante : aucun interpréteur n'est lié dans le service (nie-lua `default-features = false`)"
+    },
+    {
+      "source": "inacord",
+      "nom": "lua_session_reload",
+      "poids": 1,
+      "regle": "inacord-lua-session",
+      "etat": "interne",
+      "raison": "attache une VM Lua vivante : aucun interpréteur n'est lié dans le service (nie-lua `default-features = false`)"
+    },
+    {
+      "source": "inacord",
+      "nom": "lua_session_drain",
+      "poids": 1,
+      "regle": "inacord-lua-session",
+      "etat": "interne",
+      "raison": "attache une VM Lua vivante : aucun interpréteur n'est lié dans le service (nie-lua `default-features = false`)"
+    },
+    {
+      "source": "inacord",
+      "nom": "lua_session_api_report",
+      "poids": 1,
+      "regle": "inacord-lua-session",
+      "etat": "interne",
+      "raison": "attache une VM Lua vivante : aucun interpréteur n'est lié dans le service (nie-lua `default-features = false`)"
+    },
+    {
+      "source": "inacord",
+      "nom": "vfs_glb_bytes_b64",
+      "poids": 1,
+      "regle": "inacord-vfs-glb",
+      "etat": "servi",
+      "route": "/model/{famille}/{fichier}"
+    },
+    {
+      "source": "inacord",
+      "nom": "vfs_motion_clips",
+      "poids": 1,
+      "regle": "inacord-vfs-motion",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "inacord",
+      "nom": "raw_cpk_glb_bytes_b64",
+      "poids": 1,
+      "regle": "inacord-cpk",
+      "etat": "interne",
+      "raison": "ouvre un CPK arbitraire du disque : le site ne sert que le VFS monté"
+    },
+    {
+      "source": "inacord",
+      "nom": "vfs_audio_preview_b64",
+      "poids": 1,
+      "regle": "inacord-vfs-audio",
+      "etat": "servi",
+      "route": "/assets/{*chemin}"
+    },
+    {
+      "source": "inacord",
+      "nom": "vfs_audio_cues",
+      "poids": 1,
+      "regle": "inacord-vfs-audio",
+      "etat": "servi",
+      "route": "/assets/{*chemin}"
+    },
+    {
+      "source": "inacord",
+      "nom": "vfs_audio_cue_wav_b64",
+      "poids": 1,
+      "regle": "inacord-vfs-audio",
+      "etat": "servi",
+      "route": "/assets/{*chemin}"
+    },
+    {
+      "source": "inacord",
+      "nom": "clipboard_write_file_list",
+      "poids": 1,
+      "regle": "inacord-clipboard",
+      "etat": "interne",
+      "raison": "presse-papiers du système"
+    },
+    {
+      "source": "inacord",
+      "nom": "clipboard_read_file_list",
+      "poids": 1,
+      "regle": "inacord-clipboard",
+      "etat": "interne",
+      "raison": "presse-papiers du système"
+    },
+    {
+      "source": "inacord",
+      "nom": "trash_appdata_files",
+      "poids": 1,
+      "regle": "inacord-hote",
+      "etat": "interne",
+      "raison": "relève de l'hôte desktop : disque, fenêtre, presse-papiers, corbeille (cf. `capacites()` du contrat asset-source)"
+    },
+    {
+      "source": "inacord",
+      "nom": "forge::forge_report",
+      "poids": 1,
+      "regle": "inacord-forge",
+      "etat": "interne",
+      "raison": "la forge produit `nie.exe` : elle appartient à la machine de développement"
+    },
+    {
+      "source": "inacord",
+      "nom": "forge::forge_blockers",
+      "poids": 1,
+      "regle": "inacord-forge",
+      "etat": "interne",
+      "raison": "la forge produit `nie.exe` : elle appartient à la machine de développement"
+    },
+    {
+      "source": "inacord",
+      "nom": "re_trace_find_process",
+      "poids": 1,
+      "regle": "inacord-re",
+      "etat": "interne",
+      "raison": "reverse en direct : lit et écrit la mémoire d'un process"
+    },
+    {
+      "source": "inacord",
+      "nom": "re_trace_module_regions",
+      "poids": 1,
+      "regle": "inacord-re",
+      "etat": "interne",
+      "raison": "reverse en direct : lit et écrit la mémoire d'un process"
+    },
+    {
+      "source": "inacord",
+      "nom": "re_trace_read_bytes_b64",
+      "poids": 1,
+      "regle": "inacord-re",
+      "etat": "interne",
+      "raison": "reverse en direct : lit et écrit la mémoire d'un process"
+    },
+    {
+      "source": "inacord",
+      "nom": "re_trace_write_bytes_b64",
+      "poids": 1,
+      "regle": "inacord-re",
+      "etat": "interne",
+      "raison": "reverse en direct : lit et écrit la mémoire d'un process"
+    },
+    {
+      "source": "inacord",
+      "nom": "re_trace_dump_module",
+      "poids": 1,
+      "regle": "inacord-re",
+      "etat": "interne",
+      "raison": "reverse en direct : lit et écrit la mémoire d'un process"
+    },
+    {
+      "source": "inacord",
+      "nom": "re_dump_open",
+      "poids": 1,
+      "regle": "inacord-re",
+      "etat": "interne",
+      "raison": "reverse en direct : lit et écrit la mémoire d'un process"
+    },
+    {
+      "source": "inacord",
+      "nom": "re_dump_scan",
+      "poids": 1,
+      "regle": "inacord-re",
+      "etat": "interne",
+      "raison": "reverse en direct : lit et écrit la mémoire d'un process"
+    },
+    {
+      "source": "inacord",
+      "nom": "mcp::mcp_status",
+      "poids": 1,
+      "regle": "inacord-mcp",
+      "etat": "interne",
+      "raison": "installe et pilote un serveur MCP local"
+    },
+    {
+      "source": "inacord",
+      "nom": "mcp::mcp_install",
+      "poids": 1,
+      "regle": "inacord-mcp",
+      "etat": "interne",
+      "raison": "installe et pilote un serveur MCP local"
+    },
+    {
+      "source": "inacord",
+      "nom": "viola::viola_dump_start",
+      "poids": 1,
+      "regle": "inacord-viola",
+      "etat": "interne",
+      "raison": "modding : dump, pack, crypto — écriture"
+    },
+    {
+      "source": "inacord",
+      "nom": "viola::viola_cancel",
+      "poids": 1,
+      "regle": "inacord-viola",
+      "etat": "interne",
+      "raison": "modding : dump, pack, crypto — écriture"
+    },
+    {
+      "source": "inacord",
+      "nom": "viola::viola_pack",
+      "poids": 1,
+      "regle": "inacord-viola",
+      "etat": "interne",
+      "raison": "modding : dump, pack, crypto — écriture"
+    },
+    {
+      "source": "inacord",
+      "nom": "viola::viola_merge",
+      "poids": 1,
+      "regle": "inacord-viola",
+      "etat": "interne",
+      "raison": "modding : dump, pack, crypto — écriture"
+    },
+    {
+      "source": "inacord",
+      "nom": "viola::viola_crypto",
+      "poids": 1,
+      "regle": "inacord-viola",
+      "etat": "interne",
+      "raison": "modding : dump, pack, crypto — écriture"
+    },
+    {
+      "source": "inacord",
+      "nom": "live_mod::live_status",
+      "poids": 1,
+      "regle": "inacord-live",
+      "etat": "interne",
+      "raison": "modifie la mémoire du jeu en cours d'exécution"
+    },
+    {
+      "source": "inacord",
+      "nom": "live_mod::live_find_team",
+      "poids": 1,
+      "regle": "inacord-live",
+      "etat": "interne",
+      "raison": "modifie la mémoire du jeu en cours d'exécution"
+    },
+    {
+      "source": "inacord",
+      "nom": "live_mod::live_read_team",
+      "poids": 1,
+      "regle": "inacord-live",
+      "etat": "interne",
+      "raison": "modifie la mémoire du jeu en cours d'exécution"
+    },
+    {
+      "source": "inacord",
+      "nom": "live_mod::live_write_member",
+      "poids": 1,
+      "regle": "inacord-live",
+      "etat": "interne",
+      "raison": "modifie la mémoire du jeu en cours d'exécution"
+    },
+    {
+      "source": "inacord",
+      "nom": "live_mod::live_scan_u32",
+      "poids": 1,
+      "regle": "inacord-live",
+      "etat": "interne",
+      "raison": "modifie la mémoire du jeu en cours d'exécution"
+    },
+    {
+      "source": "inacord",
+      "nom": "live_mod::live_write_u32",
+      "poids": 1,
+      "regle": "inacord-live",
+      "etat": "interne",
+      "raison": "modifie la mémoire du jeu en cours d'exécution"
+    },
+    {
+      "source": "inacord",
+      "nom": "live_mod::launch_save_editor",
+      "poids": 1,
+      "regle": "inacord-live",
+      "etat": "interne",
+      "raison": "modifie la mémoire du jeu en cours d'exécution"
+    },
+    {
+      "source": "azalee",
+      "nom": "/",
+      "poids": 1,
+      "regle": "azalee-accueil",
+      "etat": "interne",
+      "raison": "accueil du wiki : Aphrody a le sien, dans la DA du jeu"
+    },
+    {
+      "source": "azalee",
+      "nom": "/2fa",
+      "poids": 1,
+      "regle": "azalee-2fa",
+      "etat": "interne",
+      "raison": "authentification du wiki"
+    },
+    {
+      "source": "azalee",
+      "nom": "/aura",
+      "poids": 1,
+      "regle": "azalee-catalogues",
+      "etat": "interne",
+      "raison": "fiche encyclopedique : Azalee demeure le wiki de reference (lot 6) ; la donnee du jeu, elle, est servie par /api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "azalee",
+      "nom": "/aura/[category]",
+      "poids": 1,
+      "regle": "azalee-catalogues",
+      "etat": "interne",
+      "raison": "fiche encyclopedique : Azalee demeure le wiki de reference (lot 6) ; la donnee du jeu, elle, est servie par /api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "azalee",
+      "nom": "/aura/[category]/[id]",
+      "poids": 1,
+      "regle": "azalee-catalogues",
+      "etat": "interne",
+      "raison": "fiche encyclopedique : Azalee demeure le wiki de reference (lot 6) ; la donnee du jeu, elle, est servie par /api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "azalee",
+      "nom": "/auth/auth-code-error",
+      "poids": 1,
+      "regle": "azalee-auth",
+      "etat": "interne",
+      "raison": "comptes utilisateurs : hors périmètre d'Aphrody"
+    },
+    {
+      "source": "azalee",
+      "nom": "/auth/reset-password",
+      "poids": 1,
+      "regle": "azalee-auth",
+      "etat": "interne",
+      "raison": "comptes utilisateurs : hors périmètre d'Aphrody"
+    },
+    {
+      "source": "azalee",
+      "nom": "/boutique",
+      "poids": 1,
+      "regle": "azalee-catalogues",
+      "etat": "interne",
+      "raison": "fiche encyclopedique : Azalee demeure le wiki de reference (lot 6) ; la donnee du jeu, elle, est servie par /api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "azalee",
+      "nom": "/boutique/[id]",
+      "poids": 1,
+      "regle": "azalee-catalogues",
+      "etat": "interne",
+      "raison": "fiche encyclopedique : Azalee demeure le wiki de reference (lot 6) ; la donnee du jeu, elle, est servie par /api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "azalee",
+      "nom": "/capsule",
+      "poids": 1,
+      "regle": "azalee-catalogues",
+      "etat": "interne",
+      "raison": "fiche encyclopedique : Azalee demeure le wiki de reference (lot 6) ; la donnee du jeu, elle, est servie par /api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "azalee",
+      "nom": "/capsule/[id]",
+      "poids": 1,
+      "regle": "azalee-catalogues",
+      "etat": "interne",
+      "raison": "fiche encyclopedique : Azalee demeure le wiki de reference (lot 6) ; la donnee du jeu, elle, est servie par /api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "azalee",
+      "nom": "/chara",
+      "poids": 1,
+      "regle": "azalee-chara",
+      "etat": "servi",
+      "route": "/api/v1/chara"
+    },
+    {
+      "source": "azalee",
+      "nom": "/chara/[id]",
+      "poids": 1,
+      "regle": "azalee-chara",
+      "etat": "servi",
+      "route": "/api/v1/chara"
+    },
+    {
+      "source": "azalee",
+      "nom": "/charte",
+      "poids": 1,
+      "regle": "azalee-charte",
+      "etat": "interne",
+      "raison": "éditorial Rose Griffon"
+    },
+    {
+      "source": "azalee",
+      "nom": "/contact",
+      "poids": 1,
+      "regle": "azalee-contact",
+      "etat": "interne",
+      "raison": "éditorial Rose Griffon"
+    },
+    {
+      "source": "azalee",
+      "nom": "/cross",
+      "poids": 1,
+      "regle": "azalee-catalogues",
+      "etat": "interne",
+      "raison": "fiche encyclopedique : Azalee demeure le wiki de reference (lot 6) ; la donnee du jeu, elle, est servie par /api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "azalee",
+      "nom": "/dashboard",
+      "poids": 1,
+      "regle": "azalee-dashboard",
+      "etat": "interne",
+      "raison": "administration du wiki : authentifiée, produit Rose Griffon"
+    },
+    {
+      "source": "azalee",
+      "nom": "/dashboard/admin/users",
+      "poids": 1,
+      "regle": "azalee-dashboard",
+      "etat": "interne",
+      "raison": "administration du wiki : authentifiée, produit Rose Griffon"
+    },
+    {
+      "source": "azalee",
+      "nom": "/dashboard/audit",
+      "poids": 1,
+      "regle": "azalee-dashboard",
+      "etat": "interne",
+      "raison": "administration du wiki : authentifiée, produit Rose Griffon"
+    },
+    {
+      "source": "azalee",
+      "nom": "/dashboard/database",
+      "poids": 1,
+      "regle": "azalee-dashboard",
+      "etat": "interne",
+      "raison": "administration du wiki : authentifiée, produit Rose Griffon"
+    },
+    {
+      "source": "azalee",
+      "nom": "/dashboard/database/[table]",
+      "poids": 1,
+      "regle": "azalee-dashboard",
+      "etat": "interne",
+      "raison": "administration du wiki : authentifiée, produit Rose Griffon"
+    },
+    {
+      "source": "azalee",
+      "nom": "/dashboard/database/[table]/[id]",
+      "poids": 1,
+      "regle": "azalee-dashboard",
+      "etat": "interne",
+      "raison": "administration du wiki : authentifiée, produit Rose Griffon"
+    },
+    {
+      "source": "azalee",
+      "nom": "/dashboard/database/images",
+      "poids": 1,
+      "regle": "azalee-dashboard",
+      "etat": "interne",
+      "raison": "administration du wiki : authentifiée, produit Rose Griffon"
+    },
+    {
+      "source": "azalee",
+      "nom": "/dashboard/database/verification",
+      "poids": 1,
+      "regle": "azalee-dashboard",
+      "etat": "interne",
+      "raison": "administration du wiki : authentifiée, produit Rose Griffon"
+    },
+    {
+      "source": "azalee",
+      "nom": "/dashboard/import-google-doc",
+      "poids": 1,
+      "regle": "azalee-dashboard",
+      "etat": "interne",
+      "raison": "administration du wiki : authentifiée, produit Rose Griffon"
+    },
+    {
+      "source": "azalee",
+      "nom": "/dashboard/import-sheet",
+      "poids": 1,
+      "regle": "azalee-dashboard",
+      "etat": "interne",
+      "raison": "administration du wiki : authentifiée, produit Rose Griffon"
+    },
+    {
+      "source": "azalee",
+      "nom": "/dashboard/news",
+      "poids": 1,
+      "regle": "azalee-dashboard",
+      "etat": "interne",
+      "raison": "administration du wiki : authentifiée, produit Rose Griffon"
+    },
+    {
+      "source": "azalee",
+      "nom": "/dashboard/news/[id]",
+      "poids": 1,
+      "regle": "azalee-dashboard",
+      "etat": "interne",
+      "raison": "administration du wiki : authentifiée, produit Rose Griffon"
+    },
+    {
+      "source": "azalee",
+      "nom": "/dashboard/news/[id]/versions",
+      "poids": 1,
+      "regle": "azalee-dashboard",
+      "etat": "interne",
+      "raison": "administration du wiki : authentifiée, produit Rose Griffon"
+    },
+    {
+      "source": "azalee",
+      "nom": "/dashboard/news/new",
+      "poids": 1,
+      "regle": "azalee-dashboard",
+      "etat": "interne",
+      "raison": "administration du wiki : authentifiée, produit Rose Griffon"
+    },
+    {
+      "source": "azalee",
+      "nom": "/dashboard/news/stats",
+      "poids": 1,
+      "regle": "azalee-dashboard",
+      "etat": "interne",
+      "raison": "administration du wiki : authentifiée, produit Rose Griffon"
+    },
+    {
+      "source": "azalee",
+      "nom": "/dashboard/settings",
+      "poids": 1,
+      "regle": "azalee-dashboard",
+      "etat": "interne",
+      "raison": "administration du wiki : authentifiée, produit Rose Griffon"
+    },
+    {
+      "source": "azalee",
+      "nom": "/dashboard/tweets",
+      "poids": 1,
+      "regle": "azalee-dashboard",
+      "etat": "interne",
+      "raison": "administration du wiki : authentifiée, produit Rose Griffon"
+    },
+    {
+      "source": "azalee",
+      "nom": "/dashboard/tweets/[id]",
+      "poids": 1,
+      "regle": "azalee-dashboard",
+      "etat": "interne",
+      "raison": "administration du wiki : authentifiée, produit Rose Griffon"
+    },
+    {
+      "source": "azalee",
+      "nom": "/dashboard/users",
+      "poids": 1,
+      "regle": "azalee-dashboard",
+      "etat": "interne",
+      "raison": "administration du wiki : authentifiée, produit Rose Griffon"
+    },
+    {
+      "source": "azalee",
+      "nom": "/dashboard/zukan-review",
+      "poids": 1,
+      "regle": "azalee-dashboard",
+      "etat": "interne",
+      "raison": "administration du wiki : authentifiée, produit Rose Griffon"
+    },
+    {
+      "source": "azalee",
+      "nom": "/drops",
+      "poids": 1,
+      "regle": "azalee-catalogues",
+      "etat": "interne",
+      "raison": "fiche encyclopedique : Azalee demeure le wiki de reference (lot 6) ; la donnee du jeu, elle, est servie par /api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "azalee",
+      "nom": "/entraineur",
+      "poids": 1,
+      "regle": "azalee-catalogues",
+      "etat": "interne",
+      "raison": "fiche encyclopedique : Azalee demeure le wiki de reference (lot 6) ; la donnee du jeu, elle, est servie par /api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "azalee",
+      "nom": "/entraineur/[id]",
+      "poids": 1,
+      "regle": "azalee-catalogues",
+      "etat": "interne",
+      "raison": "fiche encyclopedique : Azalee demeure le wiki de reference (lot 6) ; la donnee du jeu, elle, est servie par /api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "azalee",
+      "nom": "/equipe",
+      "poids": 1,
+      "regle": "azalee-catalogues",
+      "etat": "interne",
+      "raison": "fiche encyclopedique : Azalee demeure le wiki de reference (lot 6) ; la donnee du jeu, elle, est servie par /api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "azalee",
+      "nom": "/equipe/[id]",
+      "poids": 1,
+      "regle": "azalee-catalogues",
+      "etat": "interne",
+      "raison": "fiche encyclopedique : Azalee demeure le wiki de reference (lot 6) ; la donnee du jeu, elle, est servie par /api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "azalee",
+      "nom": "/gallery",
+      "poids": 1,
+      "regle": "azalee-catalogues",
+      "etat": "interne",
+      "raison": "fiche encyclopedique : Azalee demeure le wiki de reference (lot 6) ; la donnee du jeu, elle, est servie par /api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "azalee",
+      "nom": "/invocation",
+      "poids": 1,
+      "regle": "azalee-catalogues",
+      "etat": "interne",
+      "raison": "fiche encyclopedique : Azalee demeure le wiki de reference (lot 6) ; la donnee du jeu, elle, est servie par /api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "azalee",
+      "nom": "/item",
+      "poids": 1,
+      "regle": "azalee-catalogues",
+      "etat": "interne",
+      "raison": "fiche encyclopedique : Azalee demeure le wiki de reference (lot 6) ; la donnee du jeu, elle, est servie par /api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "azalee",
+      "nom": "/item/[id]",
+      "poids": 1,
+      "regle": "azalee-catalogues",
+      "etat": "interne",
+      "raison": "fiche encyclopedique : Azalee demeure le wiki de reference (lot 6) ; la donnee du jeu, elle, est servie par /api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "azalee",
+      "nom": "/keshin",
+      "poids": 1,
+      "regle": "azalee-catalogues",
+      "etat": "interne",
+      "raison": "fiche encyclopedique : Azalee demeure le wiki de reference (lot 6) ; la donnee du jeu, elle, est servie par /api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "azalee",
+      "nom": "/legal/cgu",
+      "poids": 1,
+      "regle": "azalee-legal",
+      "etat": "interne",
+      "raison": "mentions légales de Rose Griffon : propres à Azalée"
+    },
+    {
+      "source": "azalee",
+      "nom": "/legal/confidentialite",
+      "poids": 1,
+      "regle": "azalee-legal",
+      "etat": "interne",
+      "raison": "mentions légales de Rose Griffon : propres à Azalée"
+    },
+    {
+      "source": "azalee",
+      "nom": "/legal/mentions-legales",
+      "poids": 1,
+      "regle": "azalee-legal",
+      "etat": "interne",
+      "raison": "mentions légales de Rose Griffon : propres à Azalée"
+    },
+    {
+      "source": "azalee",
+      "nom": "/login",
+      "poids": 1,
+      "regle": "azalee-login",
+      "etat": "interne",
+      "raison": "authentification du wiki"
+    },
+    {
+      "source": "azalee",
+      "nom": "/maintenance",
+      "poids": 1,
+      "regle": "azalee-maintenance",
+      "etat": "interne",
+      "raison": "page de service du wiki"
+    },
+    {
+      "source": "azalee",
+      "nom": "/news",
+      "poids": 1,
+      "regle": "azalee-news",
+      "etat": "interne",
+      "raison": "éditorial du wiki : Azalée demeure le wiki de référence"
+    },
+    {
+      "source": "azalee",
+      "nom": "/news/[slug]",
+      "poids": 1,
+      "regle": "azalee-news",
+      "etat": "interne",
+      "raison": "éditorial du wiki : Azalée demeure le wiki de référence"
+    },
+    {
+      "source": "azalee",
+      "nom": "/news/tag/[tag]",
+      "poids": 1,
+      "regle": "azalee-news",
+      "etat": "interne",
+      "raison": "éditorial du wiki : Azalée demeure le wiki de référence"
+    },
+    {
+      "source": "azalee",
+      "nom": "/news/tweet/[id]",
+      "poids": 1,
+      "regle": "azalee-news",
+      "etat": "interne",
+      "raison": "éditorial du wiki : Azalée demeure le wiki de référence"
+    },
+    {
+      "source": "azalee",
+      "nom": "/niveau",
+      "poids": 1,
+      "regle": "azalee-catalogues",
+      "etat": "interne",
+      "raison": "fiche encyclopedique : Azalee demeure le wiki de reference (lot 6) ; la donnee du jeu, elle, est servie par /api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "azalee",
+      "nom": "/passive",
+      "poids": 1,
+      "regle": "azalee-catalogues",
+      "etat": "interne",
+      "raison": "fiche encyclopedique : Azalee demeure le wiki de reference (lot 6) ; la donnee du jeu, elle, est servie par /api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "azalee",
+      "nom": "/passive/[id]",
+      "poids": 1,
+      "regle": "azalee-catalogues",
+      "etat": "interne",
+      "raison": "fiche encyclopedique : Azalee demeure le wiki de reference (lot 6) ; la donnee du jeu, elle, est servie par /api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "azalee",
+      "nom": "/patch-notes",
+      "poids": 1,
+      "regle": "azalee-patch",
+      "etat": "interne",
+      "raison": "éditorial du wiki : Azalée demeure le wiki de référence"
+    },
+    {
+      "source": "azalee",
+      "nom": "/patch-notes/[id]",
+      "poids": 1,
+      "regle": "azalee-patch",
+      "etat": "interne",
+      "raison": "éditorial du wiki : Azalée demeure le wiki de référence"
+    },
+    {
+      "source": "azalee",
+      "nom": "/profil/[username]",
+      "poids": 1,
+      "regle": "azalee-profil",
+      "etat": "interne",
+      "raison": "profils d'utilisateurs : données personnelles, jamais migrées"
+    },
+    {
+      "source": "azalee",
+      "nom": "/quete",
+      "poids": 1,
+      "regle": "azalee-catalogues",
+      "etat": "interne",
+      "raison": "fiche encyclopedique : Azalee demeure le wiki de reference (lot 6) ; la donnee du jeu, elle, est servie par /api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "azalee",
+      "nom": "/quete/[id]",
+      "poids": 1,
+      "regle": "azalee-catalogues",
+      "etat": "interne",
+      "raison": "fiche encyclopedique : Azalee demeure le wiki de reference (lot 6) ; la donnee du jeu, elle, est servie par /api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "azalee",
+      "nom": "/search",
+      "poids": 1,
+      "regle": "azalee-catalogues",
+      "etat": "interne",
+      "raison": "fiche encyclopedique : Azalee demeure le wiki de reference (lot 6) ; la donnee du jeu, elle, est servie par /api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "azalee",
+      "nom": "/settings",
+      "poids": 1,
+      "regle": "azalee-compte",
+      "etat": "interne",
+      "raison": "réglages de compte : hors périmètre d'Aphrody"
+    },
+    {
+      "source": "azalee",
+      "nom": "/skill",
+      "poids": 1,
+      "regle": "azalee-catalogues",
+      "etat": "interne",
+      "raison": "fiche encyclopedique : Azalee demeure le wiki de reference (lot 6) ; la donnee du jeu, elle, est servie par /api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "azalee",
+      "nom": "/skill/[id]",
+      "poids": 1,
+      "regle": "azalee-catalogues",
+      "etat": "interne",
+      "raison": "fiche encyclopedique : Azalee demeure le wiki de reference (lot 6) ; la donnee du jeu, elle, est servie par /api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "azalee",
+      "nom": "/soutenir",
+      "poids": 1,
+      "regle": "azalee-soutenir",
+      "etat": "interne",
+      "raison": "éditorial Rose Griffon"
+    },
+    {
+      "source": "azalee",
+      "nom": "/stade",
+      "poids": 1,
+      "regle": "azalee-catalogues",
+      "etat": "interne",
+      "raison": "fiche encyclopedique : Azalee demeure le wiki de reference (lot 6) ; la donnee du jeu, elle, est servie par /api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "azalee",
+      "nom": "/stade/[id]",
+      "poids": 1,
+      "regle": "azalee-catalogues",
+      "etat": "interne",
+      "raison": "fiche encyclopedique : Azalee demeure le wiki de reference (lot 6) ; la donnee du jeu, elle, est servie par /api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "azalee",
+      "nom": "/succes",
+      "poids": 1,
+      "regle": "azalee-catalogues",
+      "etat": "interne",
+      "raison": "fiche encyclopedique : Azalee demeure le wiki de reference (lot 6) ; la donnee du jeu, elle, est servie par /api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "azalee",
+      "nom": "/succes/[id]",
+      "poids": 1,
+      "regle": "azalee-catalogues",
+      "etat": "interne",
+      "raison": "fiche encyclopedique : Azalee demeure le wiki de reference (lot 6) ; la donnee du jeu, elle, est servie par /api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "azalee",
+      "nom": "/tactic",
+      "poids": 1,
+      "regle": "azalee-catalogues",
+      "etat": "interne",
+      "raison": "fiche encyclopedique : Azalee demeure le wiki de reference (lot 6) ; la donnee du jeu, elle, est servie par /api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "azalee",
+      "nom": "/tactic/[id]",
+      "poids": 1,
+      "regle": "azalee-catalogues",
+      "etat": "interne",
+      "raison": "fiche encyclopedique : Azalee demeure le wiki de reference (lot 6) ; la donnee du jeu, elle, est servie par /api/v1/donnees/famille/{cle}"
+    },
+    {
+      "source": "azalee",
+      "nom": "/tools",
+      "poids": 1,
+      "regle": "azalee-outils",
+      "etat": "interne",
+      "raison": "page d'index sans donnée : cinq cartes de navigation écrites en dur. L'équivalent d'Aphrody est son menu, engendré par le serveur — une page de liens ne se porte pas, elle se remplace"
+    },
+    {
+      "source": "azalee",
+      "nom": "/tools/compare",
+      "poids": 1,
+      "regle": "azalee-outils-comparaison",
+      "etat": "servi",
+      "route": "/api/v1/regles/comparaison"
+    },
+    {
+      "source": "azalee",
+      "nom": "/tools/my-team",
+      "poids": 1,
+      "regle": "azalee-outils-equipe",
+      "etat": "servi",
+      "route": "/api/v1/team/synergy"
+    },
+    {
+      "source": "azalee",
+      "nom": "/tools/niers",
+      "poids": 1,
+      "regle": "azalee-outils-updater",
+      "etat": "interne",
+      "raison": "point de mise à jour d'Inacord : il doit rester à l'URL que les 0.5.x interrogent"
+    },
+    {
+      "source": "azalee",
+      "nom": "/tools/random-team",
+      "poids": 1,
+      "regle": "azalee-outils-tirage",
+      "etat": "servi",
+      "route": "/api/v1/entites/{table}"
+    },
+    {
+      "source": "azalee",
+      "nom": "/tools/stats",
+      "poids": 1,
+      "regle": "azalee-outils-stats",
+      "etat": "servi",
+      "route": "/api/v1/regles/stats"
+    },
+    {
+      "source": "azalee",
+      "nom": "/tools/translator",
+      "poids": 1,
+      "regle": "azalee-outils-traduction",
+      "etat": "servi",
+      "route": "/api/v1/text/translate"
+    },
+    {
+      "source": "azalee-api",
+      "nom": "/api/admin/discord/role/[roleId]/members",
+      "poids": 1,
+      "regle": "azalee-api-admin",
+      "etat": "interne",
+      "raison": "administration du wiki"
+    },
+    {
+      "source": "azalee-api",
+      "nom": "/api/admin/news/draft",
+      "poids": 1,
+      "regle": "azalee-api-admin",
+      "etat": "interne",
+      "raison": "administration du wiki"
+    },
+    {
+      "source": "azalee-api",
+      "nom": "/api/articles/export",
+      "poids": 1,
+      "regle": "azalee-api-editorial",
+      "etat": "interne",
+      "raison": "éditorial et métadonnées du wiki : Azalée demeure le wiki de référence"
+    },
+    {
+      "source": "azalee-api",
+      "nom": "/api/auth/[...all]",
+      "poids": 1,
+      "regle": "azalee-api-auth",
+      "etat": "interne",
+      "raison": "authentification du wiki"
+    },
+    {
+      "source": "azalee-api",
+      "nom": "/api/auth/magic-login",
+      "poids": 1,
+      "regle": "azalee-api-auth",
+      "etat": "interne",
+      "raison": "authentification du wiki"
+    },
+    {
+      "source": "azalee-api",
+      "nom": "/api/common",
+      "poids": 1,
+      "regle": "azalee-api-editorial",
+      "etat": "interne",
+      "raison": "éditorial et métadonnées du wiki : Azalée demeure le wiki de référence"
+    },
+    {
+      "source": "azalee-api",
+      "nom": "/api/cron/publish-scheduled",
+      "poids": 1,
+      "regle": "azalee-api-cron",
+      "etat": "interne",
+      "raison": "tâches planifiées du wiki"
+    },
+    {
+      "source": "azalee-api",
+      "nom": "/api/graphql",
+      "poids": 1,
+      "regle": "azalee-api-editorial",
+      "etat": "interne",
+      "raison": "éditorial et métadonnées du wiki : Azalée demeure le wiki de référence"
+    },
+    {
+      "source": "azalee-api",
+      "nom": "/api/health",
+      "poids": 1,
+      "regle": "azalee-api-health",
+      "etat": "servi",
+      "route": "/api/v1/health"
+    },
+    {
+      "source": "azalee-api",
+      "nom": "/api/llm/[model]",
+      "poids": 1,
+      "regle": "azalee-api-llm",
+      "etat": "interne",
+      "raison": "passerelle vers un service tiers facturé"
+    },
+    {
+      "source": "azalee-api",
+      "nom": "/api/news/feed",
+      "poids": 1,
+      "regle": "azalee-api-editorial",
+      "etat": "interne",
+      "raison": "éditorial et métadonnées du wiki : Azalée demeure le wiki de référence"
+    },
+    {
+      "source": "azalee-api",
+      "nom": "/api/news/share-count",
+      "poids": 1,
+      "regle": "azalee-api-editorial",
+      "etat": "interne",
+      "raison": "éditorial et métadonnées du wiki : Azalée demeure le wiki de référence"
+    },
+    {
+      "source": "azalee-api",
+      "nom": "/api/rag/search",
+      "poids": 1,
+      "regle": "azalee-api-rag",
+      "etat": "interne",
+      "raison": "index vectoriel du wiki : propre à Azalée"
+    },
+    {
+      "source": "azalee-api",
+      "nom": "/api/save/resolve-roster",
+      "poids": 1,
+      "regle": "azalee-api-save",
+      "etat": "servi",
+      "route": "/api/v1/save/roster"
+    },
+    {
+      "source": "azalee-api",
+      "nom": "/api/supabase-token",
+      "poids": 1,
+      "regle": "azalee-api-jeton",
+      "etat": "interne",
+      "raison": "émet un jeton : un secret ne traverse jamais Aphrody"
+    },
+    {
+      "source": "azalee-api",
+      "nom": "/api/tags/popular",
+      "poids": 1,
+      "regle": "azalee-api-editorial",
+      "etat": "interne",
+      "raison": "éditorial et métadonnées du wiki : Azalée demeure le wiki de référence"
+    },
+    {
+      "source": "azalee-api",
+      "nom": "/api/vroid/callback",
+      "poids": 1,
+      "regle": "azalee-api-vroid",
+      "etat": "interne",
+      "raison": "OAuth VRoid : session utilisateur et secrets tiers"
+    },
+    {
+      "source": "azalee-api",
+      "nom": "/api/vroid/image",
+      "poids": 1,
+      "regle": "azalee-api-vroid",
+      "etat": "interne",
+      "raison": "OAuth VRoid : session utilisateur et secrets tiers"
+    },
+    {
+      "source": "azalee-api",
+      "nom": "/api/vroid/login",
+      "poids": 1,
+      "regle": "azalee-api-vroid",
+      "etat": "interne",
+      "raison": "OAuth VRoid : session utilisateur et secrets tiers"
+    },
+    {
+      "source": "azalee-api",
+      "nom": "/api/vroid/models",
+      "poids": 1,
+      "regle": "azalee-api-vroid",
+      "etat": "interne",
+      "raison": "OAuth VRoid : session utilisateur et secrets tiers"
+    },
+    {
+      "source": "azalee-api",
+      "nom": "/api/vroid/models/[id]",
+      "poids": 1,
+      "regle": "azalee-api-vroid",
+      "etat": "interne",
+      "raison": "OAuth VRoid : session utilisateur et secrets tiers"
+    },
+    {
+      "source": "azalee-api",
+      "nom": "/api/vroid/session",
+      "poids": 1,
+      "regle": "azalee-api-vroid",
+      "etat": "interne",
+      "raison": "OAuth VRoid : session utilisateur et secrets tiers"
+    },
+    {
+      "source": "azalee-api",
+      "nom": "/api/vroid/vrm/[id]",
+      "poids": 1,
+      "regle": "azalee-api-vroid",
+      "etat": "interne",
+      "raison": "OAuth VRoid : session utilisateur et secrets tiers"
+    },
+    {
+      "source": "azalee-api",
+      "nom": "/auth/post-login",
+      "poids": 1,
+      "regle": "azalee-api-editorial",
+      "etat": "interne",
+      "raison": "éditorial et métadonnées du wiki : Azalée demeure le wiki de référence"
+    },
+    {
+      "source": "azalee-api",
+      "nom": "/news/feed.xml",
+      "poids": 1,
+      "regle": "azalee-api-editorial",
+      "etat": "interne",
+      "raison": "éditorial et métadonnées du wiki : Azalée demeure le wiki de référence"
+    },
+    {
+      "source": "azalee-api",
+      "nom": "/tools/niers/latest.json",
+      "poids": 1,
+      "regle": "azalee-api-updater",
+      "etat": "interne",
+      "raison": "point de mise à jour d'Inacord : les 0.5.x déjà installés interrogent CETTE URL, elle ne bouge pas"
+    },
+    {
+      "source": "nie-data",
+      "nom": "ability_learning",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "academic_year",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "activity",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "add_content_equip",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "add_model",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "ai",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "ai_type",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "aura",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "banner",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "basara",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "belong_team",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "boost_grp",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "capsule",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "cfgbin",
+      "poids": 1,
+      "regle": "data-cfgbin",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "change_aura_skill_config",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "chara_bank",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "chara_base",
+      "poids": 1,
+      "regle": "data-chara-base",
+      "etat": "servi",
+      "route": "/api/v1/chara"
+    },
+    {
+      "source": "nie-data",
+      "nom": "chara_costume",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "chara_description",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "chara_details",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "chara_edit",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "chara_menu_resource",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "chara_param",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "chara_series",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "chara_text",
+      "poids": 1,
+      "regle": "data-chara-text",
+      "etat": "servi",
+      "route": "/api/v1/chara"
+    },
+    {
+      "source": "nie-data",
+      "nom": "chat_emote",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "chronicle_top",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "command",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "cond",
+      "poids": 1,
+      "regle": "data-cond",
+      "etat": "servi",
+      "route": "/api/v1/conditions/{blob}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "craft",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "ctrl_chara",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "dictionary",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "dungeon",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "emblems",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "enjoy_mode_team",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "event_bustup",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "event_map_tag",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "event_subtitle",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "exp",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "extend_story",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "fast_travel",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "flag_config",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "font_color",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "formation",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "friendmap",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "gallery",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "game_quest",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "growth",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "happen_event_npc",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "hash",
+      "poids": 1,
+      "regle": "data-hash",
+      "etat": "interne",
+      "raison": "table de hachage interne du décodage : ce n'est pas une donnée du jeu"
+    },
+    {
+      "source": "nie-data",
+      "nom": "help",
+      "poids": 1,
+      "regle": "data-help",
+      "etat": "interne",
+      "raison": "textes d'aide du décodeur : outillage"
+    },
+    {
+      "source": "nie-data",
+      "nom": "inacode",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "input",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "item",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "item_emission",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "light",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "menu_setting",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "mission",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "movie",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "music_app",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "nfc",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "opponent_team",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "override_skill",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "party",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "passive",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "passives",
+      "poids": 1,
+      "regle": "data-passives",
+      "etat": "servi",
+      "route": "/api/v1/passives"
+    },
+    {
+      "source": "nie-data",
+      "nom": "phase",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "phase_set",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "photo_mode",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "players_universe",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "playstyle",
+      "poids": 1,
+      "regle": "data-playstyle",
+      "etat": "servi",
+      "route": "/api/v1/playstyles"
+    },
+    {
+      "source": "nie-data",
+      "nom": "post",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "quest",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "real_skill_config",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "record",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "rpg_battle",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "scene_archive",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "search_word",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "setting_menu",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "shop",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "skill",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "skill_technic",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "skill_view",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "soccer",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "soccer_chara_unique_rarity",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "soccer_drop",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "soccer_fixed_reward",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "soccer_map_env",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "soccer_opponent",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "soccer_performance",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "soccer_placement",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "soccer_player_record",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "soccer_rank",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "soccer_suggest",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "special_tactics",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "stadium",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "super_tactics",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "system_unlock",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "talk_select",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "team_build_config",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "telop_waza",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "text",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "trial_take_over",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "trick",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "trigger",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "trophy",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "typed",
+      "poids": 1,
+      "regle": "data-typed",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "uniform",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "unlock_condition",
+      "poids": 1,
+      "regle": "data-unlock",
+      "etat": "servi",
+      "route": "/api/v1/conditions/{blob}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "update_notice",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "user_name_plate",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "video_waza",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "vsroute",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "weather",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-data",
+      "nom": "win_treasure",
+      "poids": 1,
+      "regle": "data-typees",
+      "etat": "servi",
+      "route": "/api/v1/donnees/{*chemin}"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "assemble",
+      "poids": 1,
+      "regle": "formats-assemble",
+      "etat": "servi",
+      "route": "/model/{famille}/{fichier}"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "cfgbin",
+      "poids": 1,
+      "regle": "formats-cfgbin",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "col",
+      "poids": 1,
+      "regle": "formats-col",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "cpk",
+      "poids": 1,
+      "regle": "formats-cpk",
+      "etat": "servi",
+      "route": "/b/{*prefixe}"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "cpk_encode",
+      "poids": 1,
+      "regle": "formats-encodeurs",
+      "etat": "interne",
+      "raison": "encodeur : écriture, et `encode_t2b` n'est pas encore fidèle (cf. CLAUDE.md § modding)"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "cri_audio",
+      "poids": 1,
+      "regle": "formats-audio",
+      "etat": "servi",
+      "route": "/assets/{*chemin}"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "crilayla",
+      "poids": 1,
+      "regle": "formats-crilayla",
+      "etat": "servi",
+      "route": "/f/{*chemin}"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "decode",
+      "poids": 1,
+      "regle": "formats-decode",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "dxbc",
+      "poids": 1,
+      "regle": "formats-dxbc",
+      "etat": "servi",
+      "route": "/assets/{*chemin}"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "font",
+      "poids": 1,
+      "regle": "formats-font",
+      "etat": "servi",
+      "route": "/api/v1/inspect/font/{*path}"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "g4cm",
+      "poids": 1,
+      "regle": "formats-g4cm",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "g4la",
+      "poids": 1,
+      "regle": "formats-g4la",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "g4ma",
+      "poids": 1,
+      "regle": "formats-g4ma",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "g4md",
+      "poids": 1,
+      "regle": "formats-g4md",
+      "etat": "servi",
+      "route": "/api/v1/3d"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "g4mg",
+      "poids": 1,
+      "regle": "formats-g4mg",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "g4mt",
+      "poids": 1,
+      "regle": "formats-g4mt",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "g4pk",
+      "poids": 1,
+      "regle": "formats-geometrie",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "g4pkm",
+      "poids": 1,
+      "regle": "formats-geometrie",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "g4pkm_motion",
+      "poids": 1,
+      "regle": "formats-geometrie",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "g4sk",
+      "poids": 1,
+      "regle": "formats-g4sk",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "g4tx",
+      "poids": 1,
+      "regle": "formats-g4tx",
+      "etat": "servi",
+      "route": "/assets/{*chemin}"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "g4tx_decode",
+      "poids": 1,
+      "regle": "formats-g4tx",
+      "etat": "servi",
+      "route": "/assets/{*chemin}"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "g4tx_encode",
+      "poids": 1,
+      "regle": "formats-encodeurs",
+      "etat": "interne",
+      "raison": "encodeur : écriture, et `encode_t2b` n'est pas encore fidèle (cf. CLAUDE.md § modding)"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "g4vs",
+      "poids": 1,
+      "regle": "formats-g4vs",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "image_out",
+      "poids": 1,
+      "regle": "formats-image-out",
+      "etat": "servi",
+      "route": "/assets/{*chemin}"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "imgmetric",
+      "poids": 1,
+      "regle": "formats-imgmetric",
+      "etat": "servi",
+      "route": "/api/v1/inspect/compare"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "level5",
+      "poids": 1,
+      "regle": "formats-level5",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "lip",
+      "poids": 1,
+      "regle": "formats-lip",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "menu",
+      "poids": 1,
+      "regle": "formats-menu",
+      "etat": "servi",
+      "route": "/api/v1/inspect/menu/{*path}"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "mevbin",
+      "poids": 1,
+      "regle": "formats-mevbin",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "mp4",
+      "poids": 1,
+      "regle": "formats-mp4",
+      "etat": "servi",
+      "route": "/api/v1/{vue}"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "navm",
+      "poids": 1,
+      "regle": "formats-navm",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "nxtch",
+      "poids": 1,
+      "regle": "formats-nxtch",
+      "etat": "servi",
+      "route": "/api/v1/inspect/texture-chunk/{*path}"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "objbin",
+      "poids": 1,
+      "regle": "formats-objbin",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "pathname",
+      "poids": 1,
+      "regle": "formats-pathname",
+      "etat": "interne",
+      "raison": "portage byte-exact d'une fonction du binaire : brique, pas capacité"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "planche",
+      "poids": 1,
+      "regle": "formats-planche",
+      "etat": "servi",
+      "route": "/api/v1/inspect/plate"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "raster2d",
+      "poids": 1,
+      "regle": "formats-raster2d",
+      "etat": "interne",
+      "raison": "primitives 2D pures (rognage, mise à l'échelle au plus proche) sur un tampon RGBA fourni : brique de calcul, pas une capacité — même classement que `pathname` et les portages libc"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "rdbn_patch",
+      "poids": 1,
+      "regle": "formats-patch",
+      "etat": "interne",
+      "raison": "patch d'octets en place : écriture, modding"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "sprite_sheet",
+      "poids": 1,
+      "regle": "formats-spritesheet",
+      "etat": "servi",
+      "route": "/api/v1/inspect/spritesheet/{*path}"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "strcmp",
+      "poids": 1,
+      "regle": "formats-libc",
+      "etat": "interne",
+      "raison": "portages byte-exact des fonctions chaîne du binaire : briques du RE"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "strlen",
+      "poids": 1,
+      "regle": "formats-libc",
+      "etat": "interne",
+      "raison": "portages byte-exact des fonctions chaîne du binaire : briques du RE"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "strncmp",
+      "poids": 1,
+      "regle": "formats-libc",
+      "etat": "interne",
+      "raison": "portages byte-exact des fonctions chaîne du binaire : briques du RE"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "t2b_patch",
+      "poids": 1,
+      "regle": "formats-patch",
+      "etat": "interne",
+      "raison": "patch d'octets en place : écriture, modding"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "usm",
+      "poids": 1,
+      "regle": "formats-usm",
+      "etat": "servi",
+      "route": "/api/v1/{vue}"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "vfs",
+      "poids": 1,
+      "regle": "formats-vfs",
+      "etat": "servi",
+      "route": "/f/{*chemin}"
+    },
+    {
+      "source": "nie-formats",
+      "nom": "webm",
+      "poids": 1,
+      "regle": "formats-webm",
+      "etat": "servi",
+      "route": "/api/v1/{vue}"
+    },
+    {
+      "source": "nie-lua",
+      "nom": "analyze",
+      "poids": 1,
+      "regle": "lua-analyse",
+      "etat": "interne",
+      "raison": "analyse de Lua SOURCE : le jeu n'en contient aucun (0 `.lua` pour 1 197 `.lua.bin` sur 255 308 entrees)"
+    },
+    {
+      "source": "nie-lua",
+      "nom": "analyze_dir",
+      "poids": 1,
+      "regle": "lua-analyse",
+      "etat": "interne",
+      "raison": "analyse de Lua SOURCE : le jeu n'en contient aucun (0 `.lua` pour 1 197 `.lua.bin` sur 255 308 entrees)"
+    },
+    {
+      "source": "nie-lua",
+      "nom": "analyze_file",
+      "poids": 1,
+      "regle": "lua-analyse",
+      "etat": "interne",
+      "raison": "analyse de Lua SOURCE : le jeu n'en contient aucun (0 `.lua` pour 1 197 `.lua.bin` sur 255 308 entrees)"
+    },
+    {
+      "source": "nie-lua",
+      "nom": "collect_lua_files",
+      "poids": 1,
+      "regle": "lua-liste",
+      "etat": "servi",
+      "route": "/api/v1/lua/scripts"
+    },
+    {
+      "source": "nie-lua",
+      "nom": "command_name",
+      "poids": 1,
+      "regle": "lua-exec",
+      "etat": "interne",
+      "raison": "VM, hôte de menu, capture de `print`, découverte d'appels : TOUT ceci exécute le script — `nie-site` lie `nie-lua` avec `default-features = false` et un test le vérifie"
+    },
+    {
+      "source": "nie-lua",
+      "nom": "crc32",
+      "poids": 1,
+      "regle": "lua-crc32",
+      "etat": "interne",
+      "raison": "brique de calcul : pas une capacité du site"
+    },
+    {
+      "source": "nie-lua",
+      "nom": "decode_instruction",
+      "poids": 1,
+      "regle": "lua-decode",
+      "etat": "servi",
+      "route": "/api/v1/lua/desassemblage/{*chemin}"
+    },
+    {
+      "source": "nie-lua",
+      "nom": "disassemble",
+      "poids": 1,
+      "regle": "lua-disasm",
+      "etat": "servi",
+      "route": "/api/v1/lua/desassemblage/{*chemin}"
+    },
+    {
+      "source": "nie-lua",
+      "nom": "discover_host_calls",
+      "poids": 1,
+      "regle": "lua-exec",
+      "etat": "interne",
+      "raison": "VM, hôte de menu, capture de `print`, découverte d'appels : TOUT ceci exécute le script — `nie-site` lie `nie-lua` avec `default-features = false` et un test le vérifie"
+    },
+    {
+      "source": "nie-lua",
+      "nom": "drive_menu",
+      "poids": 1,
+      "regle": "lua-exec",
+      "etat": "interne",
+      "raison": "VM, hôte de menu, capture de `print`, découverte d'appels : TOUT ceci exécute le script — `nie-site` lie `nie-lua` avec `default-features = false` et un test le vérifie"
+    },
+    {
+      "source": "nie-lua",
+      "nom": "drive_menu_for_frames",
+      "poids": 1,
+      "regle": "lua-exec",
+      "etat": "interne",
+      "raison": "VM, hôte de menu, capture de `print`, découverte d'appels : TOUT ceci exécute le script — `nie-site` lie `nie-lua` avec `default-features = false` et un test le vérifie"
+    },
+    {
+      "source": "nie-lua",
+      "nom": "enumerate_header_tabs",
+      "poids": 1,
+      "regle": "lua-exec",
+      "etat": "interne",
+      "raison": "VM, hôte de menu, capture de `print`, découverte d'appels : TOUT ceci exécute le script — `nie-site` lie `nie-lua` avec `default-features = false` et un test le vérifie"
+    },
+    {
+      "source": "nie-lua",
+      "nom": "eval_expression",
+      "poids": 1,
+      "regle": "lua-exec",
+      "etat": "interne",
+      "raison": "VM, hôte de menu, capture de `print`, découverte d'appels : TOUT ceci exécute le script — `nie-site` lie `nie-lua` avec `default-features = false` et un test le vérifie"
+    },
+    {
+      "source": "nie-lua",
+      "nom": "execute",
+      "poids": 1,
+      "regle": "lua-exec",
+      "etat": "interne",
+      "raison": "VM, hôte de menu, capture de `print`, découverte d'appels : TOUT ceci exécute le script — `nie-site` lie `nie-lua` avec `default-features = false` et un test le vérifie"
+    },
+    {
+      "source": "nie-lua",
+      "nom": "execute_with_include",
+      "poids": 1,
+      "regle": "lua-exec",
+      "etat": "interne",
+      "raison": "VM, hôte de menu, capture de `print`, découverte d'appels : TOUT ceci exécute le script — `nie-site` lie `nie-lua` avec `default-features = false` et un test le vérifie"
+    },
+    {
+      "source": "nie-lua",
+      "nom": "execute_with_script_paths",
+      "poids": 1,
+      "regle": "lua-exec",
+      "etat": "interne",
+      "raison": "VM, hôte de menu, capture de `print`, découverte d'appels : TOUT ceci exécute le script — `nie-site` lie `nie-lua` avec `default-features = false` et un test le vérifie"
+    },
+    {
+      "source": "nie-lua",
+      "nom": "include_logical_base",
+      "poids": 1,
+      "regle": "lua-exec",
+      "etat": "interne",
+      "raison": "VM, hôte de menu, capture de `print`, découverte d'appels : TOUT ceci exécute le script — `nie-site` lie `nie-lua` avec `default-features = false` et un test le vérifie"
+    },
+    {
+      "source": "nie-lua",
+      "nom": "index_script_paths",
+      "poids": 1,
+      "regle": "lua-exec",
+      "etat": "interne",
+      "raison": "VM, hôte de menu, capture de `print`, découverte d'appels : TOUT ceci exécute le script — `nie-site` lie `nie-lua` avec `default-features = false` et un test le vérifie"
+    },
+    {
+      "source": "nie-lua",
+      "nom": "install_host_stubs",
+      "poids": 1,
+      "regle": "lua-exec",
+      "etat": "interne",
+      "raison": "VM, hôte de menu, capture de `print`, découverte d'appels : TOUT ceci exécute le script — `nie-site` lie `nie-lua` avec `default-features = false` et un test le vérifie"
+    },
+    {
+      "source": "nie-lua",
+      "nom": "install_include",
+      "poids": 1,
+      "regle": "lua-exec",
+      "etat": "interne",
+      "raison": "VM, hôte de menu, capture de `print`, découverte d'appels : TOUT ceci exécute le script — `nie-site` lie `nie-lua` avec `default-features = false` et un test le vérifie"
+    },
+    {
+      "source": "nie-lua",
+      "nom": "install_menu_host",
+      "poids": 1,
+      "regle": "lua-exec",
+      "etat": "interne",
+      "raison": "VM, hôte de menu, capture de `print`, découverte d'appels : TOUT ceci exécute le script — `nie-site` lie `nie-lua` avec `default-features = false` et un test le vérifie"
+    },
+    {
+      "source": "nie-lua",
+      "nom": "install_print_capture",
+      "poids": 1,
+      "regle": "lua-exec",
+      "etat": "interne",
+      "raison": "VM, hôte de menu, capture de `print`, découverte d'appels : TOUT ceci exécute le script — `nie-site` lie `nie-lua` avec `default-features = false` et un test le vérifie"
+    },
+    {
+      "source": "nie-lua",
+      "nom": "is_interesting_string",
+      "poids": 1,
+      "regle": "lua-chaines",
+      "etat": "interne",
+      "raison": "predicat de l'analyse statique de Lua source : meme corpus vide"
+    },
+    {
+      "source": "nie-lua",
+      "nom": "is_lua52_bytecode",
+      "poids": 1,
+      "regle": "lua-detection",
+      "etat": "servi",
+      "route": "/api/v1/lua/scripts/{*chemin}"
+    },
+    {
+      "source": "nie-lua",
+      "nom": "list_globals",
+      "poids": 1,
+      "regle": "lua-exec",
+      "etat": "interne",
+      "raison": "VM, hôte de menu, capture de `print`, découverte d'appels : TOUT ceci exécute le script — `nie-site` lie `nie-lua` avec `default-features = false` et un test le vérifie"
+    },
+    {
+      "source": "nie-lua",
+      "nom": "load_bytecode",
+      "poids": 1,
+      "regle": "lua-exec",
+      "etat": "interne",
+      "raison": "VM, hôte de menu, capture de `print`, découverte d'appels : TOUT ceci exécute le script — `nie-site` lie `nie-lua` avec `default-features = false` et un test le vérifie"
+    },
+    {
+      "source": "nie-lua",
+      "nom": "new_vm",
+      "poids": 1,
+      "regle": "lua-exec",
+      "etat": "interne",
+      "raison": "VM, hôte de menu, capture de `print`, découverte d'appels : TOUT ceci exécute le script — `nie-site` lie `nie-lua` avec `default-features = false` et un test le vérifie"
+    },
+    {
+      "source": "nie-lua",
+      "nom": "parse",
+      "poids": 1,
+      "regle": "lua-bytecode",
+      "etat": "servi",
+      "route": "/api/v1/lua/scripts/{*chemin}"
+    },
+    {
+      "source": "nie-lua",
+      "nom": "resolve_script_path",
+      "poids": 1,
+      "regle": "lua-exec",
+      "etat": "interne",
+      "raison": "VM, hôte de menu, capture de `print`, découverte d'appels : TOUT ceci exécute le script — `nie-site` lie `nie-lua` avec `default-features = false` et un test le vérifie"
+    },
+    {
+      "source": "nie-lua",
+      "nom": "run_menu",
+      "poids": 1,
+      "regle": "lua-exec",
+      "etat": "interne",
+      "raison": "VM, hôte de menu, capture de `print`, découverte d'appels : TOUT ceci exécute le script — `nie-site` lie `nie-lua` avec `default-features = false` et un test le vérifie"
+    },
+    {
+      "source": "nie-lua",
+      "nom": "script_logical_base",
+      "poids": 1,
+      "regle": "lua-chemins",
+      "etat": "interne",
+      "raison": "résolution de chemins de l'hôte d'exécution"
+    },
+    {
+      "source": "nie-lua",
+      "nom": "validate_bytecode",
+      "poids": 1,
+      "regle": "lua-validation",
+      "etat": "servi",
+      "route": "/api/v1/lua/scripts/{*chemin}"
+    },
+    {
+      "source": "nie-lua",
+      "nom": "value_to_string",
+      "poids": 1,
+      "regle": "lua-exec",
+      "etat": "interne",
+      "raison": "VM, hôte de menu, capture de `print`, découverte d'appels : TOUT ceci exécute le script — `nie-site` lie `nie-lua` avec `default-features = false` et un test le vérifie"
+    },
+    {
+      "source": "nie-lua",
+      "nom": "value_type_name",
+      "poids": 1,
+      "regle": "lua-exec",
+      "etat": "interne",
+      "raison": "VM, hôte de menu, capture de `print`, découverte d'appels : TOUT ceci exécute le script — `nie-site` lie `nie-lua` avec `default-features = false` et un test le vérifie"
+    },
+    {
+      "source": "iecode",
+      "nom": "analyze_cmd",
+      "poids": 1,
+      "regle": "iecode-admin",
+      "etat": "interne",
+      "raison": "toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)"
+    },
+    {
+      "source": "iecode",
+      "nom": "archive_cmd",
+      "poids": 1,
+      "regle": "iecode-admin",
+      "etat": "interne",
+      "raison": "toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)"
+    },
+    {
+      "source": "iecode",
+      "nom": "audio_cmd",
+      "poids": 1,
+      "regle": "iecode-admin",
+      "etat": "interne",
+      "raison": "toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)"
+    },
+    {
+      "source": "iecode",
+      "nom": "benchmark_cmd",
+      "poids": 1,
+      "regle": "iecode-admin",
+      "etat": "interne",
+      "raison": "toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)"
+    },
+    {
+      "source": "iecode",
+      "nom": "bin_cmd",
+      "poids": 1,
+      "regle": "iecode-admin",
+      "etat": "interne",
+      "raison": "toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)"
+    },
+    {
+      "source": "iecode",
+      "nom": "config_cmd",
+      "poids": 1,
+      "regle": "iecode-admin",
+      "etat": "interne",
+      "raison": "toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)"
+    },
+    {
+      "source": "iecode",
+      "nom": "convert_cmd",
+      "poids": 1,
+      "regle": "iecode-admin",
+      "etat": "interne",
+      "raison": "toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)"
+    },
+    {
+      "source": "iecode",
+      "nom": "crypto_cmd",
+      "poids": 1,
+      "regle": "iecode-admin",
+      "etat": "interne",
+      "raison": "toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)"
+    },
+    {
+      "source": "iecode",
+      "nom": "dump_cmd",
+      "poids": 1,
+      "regle": "iecode-admin",
+      "etat": "interne",
+      "raison": "toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)"
+    },
+    {
+      "source": "iecode",
+      "nom": "dump_gamedata_cmd",
+      "poids": 1,
+      "regle": "iecode-admin",
+      "etat": "interne",
+      "raison": "toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)"
+    },
+    {
+      "source": "iecode",
+      "nom": "dump_playstyle_cmd",
+      "poids": 1,
+      "regle": "iecode-admin",
+      "etat": "interne",
+      "raison": "toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)"
+    },
+    {
+      "source": "iecode",
+      "nom": "extract_cmd",
+      "poids": 1,
+      "regle": "iecode-admin",
+      "etat": "interne",
+      "raison": "toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)"
+    },
+    {
+      "source": "iecode",
+      "nom": "format_cmd",
+      "poids": 1,
+      "regle": "iecode-admin",
+      "etat": "interne",
+      "raison": "toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)"
+    },
+    {
+      "source": "iecode",
+      "nom": "g4cm_cmd",
+      "poids": 1,
+      "regle": "iecode-admin",
+      "etat": "interne",
+      "raison": "toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)"
+    },
+    {
+      "source": "iecode",
+      "nom": "g4md_cmd",
+      "poids": 1,
+      "regle": "iecode-admin",
+      "etat": "interne",
+      "raison": "toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)"
+    },
+    {
+      "source": "iecode",
+      "nom": "g4mg_cmd",
+      "poids": 1,
+      "regle": "iecode-admin",
+      "etat": "interne",
+      "raison": "toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)"
+    },
+    {
+      "source": "iecode",
+      "nom": "g4pk_cmd",
+      "poids": 1,
+      "regle": "iecode-admin",
+      "etat": "interne",
+      "raison": "toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)"
+    },
+    {
+      "source": "iecode",
+      "nom": "g4ra_cmd",
+      "poids": 1,
+      "regle": "iecode-admin",
+      "etat": "interne",
+      "raison": "toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)"
+    },
+    {
+      "source": "iecode",
+      "nom": "g4sk_cmd",
+      "poids": 1,
+      "regle": "iecode-admin",
+      "etat": "interne",
+      "raison": "toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)"
+    },
+    {
+      "source": "iecode",
+      "nom": "g4tx_cmd",
+      "poids": 1,
+      "regle": "iecode-admin",
+      "etat": "interne",
+      "raison": "toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)"
+    },
+    {
+      "source": "iecode",
+      "nom": "info_cmd",
+      "poids": 1,
+      "regle": "iecode-admin",
+      "etat": "interne",
+      "raison": "toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)"
+    },
+    {
+      "source": "iecode",
+      "nom": "merge_cmd",
+      "poids": 1,
+      "regle": "iecode-admin",
+      "etat": "interne",
+      "raison": "toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)"
+    },
+    {
+      "source": "iecode",
+      "nom": "mevbin_cmd",
+      "poids": 1,
+      "regle": "iecode-admin",
+      "etat": "interne",
+      "raison": "toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)"
+    },
+    {
+      "source": "iecode",
+      "nom": "mod_cmd",
+      "poids": 1,
+      "regle": "iecode-admin",
+      "etat": "interne",
+      "raison": "toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)"
+    },
+    {
+      "source": "iecode",
+      "nom": "nie_cmd",
+      "poids": 1,
+      "regle": "iecode-admin",
+      "etat": "interne",
+      "raison": "toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)"
+    },
+    {
+      "source": "iecode",
+      "nom": "p3lip_cmd",
+      "poids": 1,
+      "regle": "iecode-admin",
+      "etat": "interne",
+      "raison": "toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)"
+    },
+    {
+      "source": "iecode",
+      "nom": "pack_cmd",
+      "poids": 1,
+      "regle": "iecode-admin",
+      "etat": "interne",
+      "raison": "toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)"
+    },
+    {
+      "source": "iecode",
+      "nom": "passive_cmd",
+      "poids": 1,
+      "regle": "iecode-admin",
+      "etat": "interne",
+      "raison": "toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)"
+    },
+    {
+      "source": "iecode",
+      "nom": "pipeline_cmd",
+      "poids": 1,
+      "regle": "iecode-admin",
+      "etat": "interne",
+      "raison": "toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)"
+    },
+    {
+      "source": "iecode",
+      "nom": "prepare_menu_cmd",
+      "poids": 1,
+      "regle": "iecode-admin",
+      "etat": "interne",
+      "raison": "toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)"
+    },
+    {
+      "source": "iecode",
+      "nom": "push_cmd",
+      "poids": 1,
+      "regle": "iecode-admin",
+      "etat": "interne",
+      "raison": "toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)"
+    },
+    {
+      "source": "iecode",
+      "nom": "render_cmd",
+      "poids": 1,
+      "regle": "iecode-admin",
+      "etat": "interne",
+      "raison": "toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)"
+    },
+    {
+      "source": "iecode",
+      "nom": "scene_cmd",
+      "poids": 1,
+      "regle": "iecode-admin",
+      "etat": "interne",
+      "raison": "toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)"
+    },
+    {
+      "source": "iecode",
+      "nom": "search_cmd",
+      "poids": 1,
+      "regle": "iecode-admin",
+      "etat": "interne",
+      "raison": "toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)"
+    },
+    {
+      "source": "iecode",
+      "nom": "serve_cmd",
+      "poids": 1,
+      "regle": "iecode-admin",
+      "etat": "interne",
+      "raison": "toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)"
+    },
+    {
+      "source": "iecode",
+      "nom": "usm_cmd",
+      "poids": 1,
+      "regle": "iecode-admin",
+      "etat": "interne",
+      "raison": "toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)"
+    },
+    {
+      "source": "iecode",
+      "nom": "utf_cmd",
+      "poids": 1,
+      "regle": "iecode-admin",
+      "etat": "interne",
+      "raison": "toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)"
+    },
+    {
+      "source": "iecode",
+      "nom": "vfs_cmd",
+      "poids": 1,
+      "regle": "iecode-admin",
+      "etat": "interne",
+      "raison": "toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)"
+    },
+    {
+      "source": "iecode",
+      "nom": "vfx_cmd",
+      "poids": 1,
+      "regle": "iecode-admin",
+      "etat": "interne",
+      "raison": "toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)"
+    },
+    {
+      "source": "vfs",
+      "nom": "(sans extension)",
+      "poids": 2,
+      "regle": "vfs-sans-extension",
+      "etat": "servi",
+      "route": "/f/{*chemin}"
+    },
+    {
+      "source": "vfs",
+      "nom": ".acb",
+      "poids": 5512,
+      "regle": "vfs-acb",
+      "etat": "servi",
+      "route": "/assets/{*chemin}"
+    },
+    {
+      "source": "vfs",
+      "nom": ".acf",
+      "poids": 1,
+      "regle": "vfs-acf",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "vfs",
+      "nom": ".awb",
+      "poids": 5512,
+      "regle": "vfs-awb",
+      "etat": "interne",
+      "raison": "banque de 7,49 Gio catalogée par son `.acb` (0,10 Gio) : l'exposer fichier par fichier dupliquerait le catalogue et servirait des pistes sans nom"
+    },
+    {
+      "source": "vfs",
+      "nom": ".bin",
+      "poids": 10,
+      "regle": "vfs-bin-inconnu",
+      "etat": "bloque",
+      "raison": "10 fichiers `.bin` hors `.cfg.bin` et `.lua.bin`, non identifiés"
+    },
+    {
+      "source": "vfs",
+      "nom": ".cfg",
+      "poids": 2,
+      "regle": "vfs-texte-cfg",
+      "etat": "servi",
+      "route": "/f/{*chemin}"
+    },
+    {
+      "source": "vfs",
+      "nom": ".cfg.bin",
+      "poids": 71101,
+      "regle": "vfs-cfgbin",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "vfs",
+      "nom": ".cfxo",
+      "poids": 29,
+      "regle": "vfs-effets",
+      "etat": "bloque",
+      "raison": "shaders, effets, particules, tissu : aucun parseur dans le dépôt, du reverse est nécessaire avant toute route"
+    },
+    {
+      "source": "vfs",
+      "nom": ".clobin",
+      "poids": 39,
+      "regle": "vfs-effets",
+      "etat": "bloque",
+      "raison": "shaders, effets, particules, tissu : aucun parseur dans le dépôt, du reverse est nécessaire avant toute route"
+    },
+    {
+      "source": "vfs",
+      "nom": ".col",
+      "poids": 1150,
+      "regle": "vfs-col",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "vfs",
+      "nom": ".fxbin",
+      "poids": 372,
+      "regle": "vfs-effets",
+      "etat": "bloque",
+      "raison": "shaders, effets, particules, tissu : aucun parseur dans le dépôt, du reverse est nécessaire avant toute route"
+    },
+    {
+      "source": "vfs",
+      "nom": ".g4cm",
+      "poids": 1217,
+      "regle": "vfs-g4cm",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "vfs",
+      "nom": ".g4la",
+      "poids": 4,
+      "regle": "vfs-g4la",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "vfs",
+      "nom": ".g4ma",
+      "poids": 35,
+      "regle": "vfs-g4ma",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "vfs",
+      "nom": ".g4md",
+      "poids": 8955,
+      "regle": "vfs-g4md",
+      "etat": "servi",
+      "route": "/api/v1/3d"
+    },
+    {
+      "source": "vfs",
+      "nom": ".g4mg",
+      "poids": 15875,
+      "regle": "vfs-g4mg",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "vfs",
+      "nom": ".g4mt",
+      "poids": 71,
+      "regle": "vfs-g4mt",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "vfs",
+      "nom": ".g4nv",
+      "poids": 160,
+      "regle": "vfs-g4nv",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "vfs",
+      "nom": ".g4pk",
+      "poids": 45591,
+      "regle": "vfs-g4pk",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "vfs",
+      "nom": ".g4pkm",
+      "poids": 6992,
+      "regle": "vfs-g4pkm",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "vfs",
+      "nom": ".g4sk",
+      "poids": 339,
+      "regle": "vfs-g4sk",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "vfs",
+      "nom": ".g4tg",
+      "poids": 9,
+      "regle": "vfs-g4tg",
+      "etat": "bloque",
+      "raison": "non identifié : sans magic, motif `7f 7f ff ff`, 9 fichiers sous `dx11/` — une hypothèse de format n'est pas une identification"
+    },
+    {
+      "source": "vfs",
+      "nom": ".g4tx",
+      "poids": 54203,
+      "regle": "vfs-g4tx",
+      "etat": "servi",
+      "route": "/assets/{*chemin}"
+    },
+    {
+      "source": "vfs",
+      "nom": ".g4vs",
+      "poids": 4,
+      "regle": "vfs-g4vs",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "vfs",
+      "nom": ".gfxo",
+      "poids": 20,
+      "regle": "vfs-effets",
+      "etat": "bloque",
+      "raison": "shaders, effets, particules, tissu : aucun parseur dans le dépôt, du reverse est nécessaire avant toute route"
+    },
+    {
+      "source": "vfs",
+      "nom": ".linb",
+      "poids": 16,
+      "regle": "vfs-effets",
+      "etat": "bloque",
+      "raison": "shaders, effets, particules, tissu : aucun parseur dans le dépôt, du reverse est nécessaire avant toute route"
+    },
+    {
+      "source": "vfs",
+      "nom": ".log",
+      "poids": 10,
+      "regle": "vfs-texte",
+      "etat": "servi",
+      "route": "/f/{*chemin}"
+    },
+    {
+      "source": "vfs",
+      "nom": ".lua.bin",
+      "poids": 1197,
+      "regle": "vfs-luabin",
+      "etat": "servi",
+      "route": "/api/v1/lua/scripts/{*chemin}"
+    },
+    {
+      "source": "vfs",
+      "nom": ".mevbin",
+      "poids": 328,
+      "regle": "vfs-mevbin",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "vfs",
+      "nom": ".objbin",
+      "poids": 12190,
+      "regle": "vfs-objbin",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "vfs",
+      "nom": ".p3lip",
+      "poids": 21047,
+      "regle": "vfs-p3lip",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "vfs",
+      "nom": ".pfxo",
+      "poids": 1113,
+      "regle": "vfs-effets",
+      "etat": "bloque",
+      "raison": "shaders, effets, particules, tissu : aucun parseur dans le dépôt, du reverse est nécessaire avant toute route"
+    },
+    {
+      "source": "vfs",
+      "nom": ".ptlb",
+      "poids": 657,
+      "regle": "vfs-effets",
+      "etat": "bloque",
+      "raison": "shaders, effets, particules, tissu : aucun parseur dans le dépôt, du reverse est nécessaire avant toute route"
+    },
+    {
+      "source": "vfs",
+      "nom": ".r41000",
+      "poids": 4,
+      "regle": "vfs-revision",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "vfs",
+      "nom": ".r41152",
+      "poids": 4,
+      "regle": "vfs-revision",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "vfs",
+      "nom": ".r47819",
+      "poids": 2,
+      "regle": "vfs-revision",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "vfs",
+      "nom": ".r47929",
+      "poids": 2,
+      "regle": "vfs-revision",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "vfs",
+      "nom": ".r51265",
+      "poids": 1,
+      "regle": "vfs-revision",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "vfs",
+      "nom": ".r51528",
+      "poids": 1,
+      "regle": "vfs-revision",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "vfs",
+      "nom": ".r65902",
+      "poids": 1,
+      "regle": "vfs-revision",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "vfs",
+      "nom": ".r66286",
+      "poids": 1,
+      "regle": "vfs-revision",
+      "etat": "servi",
+      "route": "/api/v1/formats/decode/{*chemin}"
+    },
+    {
+      "source": "vfs",
+      "nom": ".usm",
+      "poids": 194,
+      "regle": "vfs-usm",
+      "etat": "servi",
+      "route": "/api/v1/{vue}"
+    },
+    {
+      "source": "vfs",
+      "nom": ".vfxo",
+      "poids": 1335,
+      "regle": "vfs-effets",
+      "etat": "bloque",
+      "raison": "shaders, effets, particules, tissu : aucun parseur dans le dépôt, du reverse est nécessaire avant toute route"
+    }
+  ]
+}

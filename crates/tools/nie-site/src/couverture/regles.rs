@@ -92,10 +92,22 @@ pub static REGLES: &[Regle] = &[
     // et l'ignore.
     r!("niers-recherche", Niers, Motif::Exact("find"), interne("cherche sur le DISQUE de la machine (moteur `ignore`) ; la recherche dans le VFS du jeu, elle, est servie par /api/v1/recherche")),
     r!("niers-grep", Niers, Motif::Exact("grep"), interne("cherche dans le CONTENU des fichiers du disque : un service web ne lit pas l'arbre de la machine")),
-    r!("niers-icons", Niers, Motif::Exact("icons"), manquant("nie_explore::icons — index nom → atlas + rectangle")),
-    r!("niers-avatar", Niers, Motif::Exact("avatar"), manquant("nie_data::chara_edit — catalogue, parts, recettes")),
-    r!("niers-mode", Niers, Motif::Exact("mode"), manquant("nie_explore::mode_index — écrans, calques, scripts par mode")),
-    r!("niers-convert", Niers, Motif::Exact("convert"), manquant("nie_formats::assemble / image_out")),
+    // Ces quatre-là ont été câblées le 2026-09-06, et trois des quatre raisons écrites
+    // ci-dessus étaient FAUSSES : `nie_explore::icons` et `nie_explore::mode_index` n'existent
+    // pas — les deux modules vivent dans `nie-cli`, qui n'a pas de cible `[lib]` et n'est donc
+    // importable par personne. La logique a été réécrite dans `routes::screens` contre
+    // `nie-formats`/`nie-lua`, sans une feature de plus. Une raison qui cite un chemin
+    // inexistant envoie le lot suivant chercher au mauvais endroit.
+    r!("niers-icons", Niers, Motif::Exact("icons"), servi("/api/v1/icons")),
+    r!("niers-mode", Niers, Motif::Exact("mode"), servi("/api/v1/modes/{slug}")),
+    // L'avatar, lui, n'a jamais rien demandé de neuf : `chara_edit` et
+    // `chara_edit_parts_type_config` sont dans `typed::decode_by_key` depuis le 2026-09-06, et
+    // `/api/v1/donnees/famille/{cle}` les sert sans qu'on ait à connaître le chemin VFS.
+    r!("niers-avatar", Niers, Motif::Exact("avatar"), servi("/api/v1/donnees/famille/{cle}")),
+    // `convert` a deux moitiés. Les feuilles de sprites (CSS/SVG/JSON) sont pur `std` et sont
+    // servies en process ; l'encodage d'image (8 formats) reste chez `nie-model-serve`, qui
+    // porte les features `images`/`textures` que ce service refuse délibérément d'allumer.
+    r!("niers-convert", Niers, Motif::Exact("convert"), servi("/assets/{*chemin}")),
     r!("niers-img", Niers, Motif::Exact("img"), interne("édition d'image : elle écrit un fichier, un site en lecture seule n'écrit pas")),
     r!("niers-save", Niers, Motif::Exact("save"), interne("sauvegardes de joueur : données personnelles, hors périmètre contractuel")),
     r!("niers-strings", Niers, Motif::Exact("strings"), interne("reverse du binaire : coûteux, privilégié, sans public")),
@@ -154,7 +166,7 @@ pub static REGLES: &[Regle] = &[
     r!("inacord-lua-disasm", Inacord, Motif::Exact("lua_disassemble"), servi("/api/v1/lua/desassemblage/{*chemin}")),
     r!("inacord-lua", Inacord, Motif::Prefixe("lua_"), interne("touche à l'exécution de scripts : refus structurel")),
     // La 3D et l'amont.
-    r!("inacord-model-avatar", Inacord, Motif::Prefixe("model_service_avatar"), manquant("nie_data::chara_edit + l'amont : le catalogue d'avatar n'a pas de route ici")),
+    r!("inacord-model-avatar", Inacord, Motif::Prefixe("model_service_avatar"), servi("/api/v1/donnees/famille/{cle}")),
     r!("inacord-model", Inacord, Motif::Prefixe("model_service_"), servi("/assets/{*chemin}")),
     r!("inacord-video", Inacord, Motif::Prefixe("video_"), servi("/api/v1/{vue}")),
     r!("inacord-remote", Inacord, Motif::Prefixe("remote_"), servi("/api/v1/chara")),
@@ -176,7 +188,24 @@ pub static REGLES: &[Regle] = &[
 
     // ------------------------------------------------------------------ Azalée (pages)
     r!("azalee-outils-updater", Azalee, Motif::Exact("/tools/niers"), interne("point de mise à jour d'Inacord : il doit rester à l'URL que les 0.5.x interrogent")),
-    r!("azalee-outils", Azalee, Motif::Prefixe("/tools"), manquant("les données sont dans le miroir ; ces pages sont redirigées vers Aphrody (les dix 308) sans y avoir d'équivalent")),
+    // Les cinq outils du wiki, un par un. La règle de préfixe qui les couvrait toutes les
+    // classait `manquant` en bloc ; la mesure du 2026-09-06 dit qu'elles n'étaient pas dans le
+    // même état — deux étaient déjà servies sans que personne l'ait vu, et deux ne demandaient
+    // qu'une route sur du moteur déjà écrit. Un état unique pour cinq capacités différentes,
+    // c'est exactement ce que la matrice existe pour empêcher.
+    r!("azalee-outils-stats", Azalee, Motif::Exact("/tools/stats"), servi("/api/v1/regles/stats")),
+    r!("azalee-outils-comparaison", Azalee, Motif::Exact("/tools/compare"), servi("/api/v1/regles/comparaison")),
+    // Le tirage est du hasard d'interface ; ce qui manquait était l'accès aux viviers, et
+    // `/api/v1/entites/{table}` les sert avec ses filtres par colonne depuis le 2026-09-06.
+    r!("azalee-outils-tirage", Azalee, Motif::Exact("/tools/random-team"), servi("/api/v1/entites/{table}")),
+    // La notation d'équipe : `nie_core::optimisation::calculer_synergie_equipe`, écrite,
+    // testée, et routée nulle part jusqu'ici — pendant que le wiki la recalculait en
+    // TypeScript dans le navigateur. Deux implémentations d'une règle divergent.
+    r!("azalee-outils-equipe", Azalee, Motif::Exact("/tools/my-team"), servi("/api/v1/team/synergy")),
+    // La traduction. Celle du wiki interroge sept tables avec un score flou ; celle-ci aligne
+    // les langues par le HASH du texte du jeu, qui est ce qui les aligne réellement.
+    r!("azalee-outils-traduction", Azalee, Motif::Exact("/tools/translator"), servi("/api/v1/text/translate")),
+    r!("azalee-outils", Azalee, Motif::Prefixe("/tools"), interne("page d'index sans donnée : cinq cartes de navigation écrites en dur. L'équivalent d'Aphrody est son menu, engendré par le serveur — une page de liens ne se porte pas, elle se remplace")),
     r!("azalee-dashboard", Azalee, Motif::Prefixe("/dashboard"), interne("administration du wiki : authentifiée, produit Rose Griffon")),
     r!("azalee-auth", Azalee, Motif::Prefixe("/auth"), interne("comptes utilisateurs : hors périmètre d'Aphrody")),
     r!("azalee-legal", Azalee, Motif::Prefixe("/legal"), interne("mentions légales de Rose Griffon : propres à Azalée")),
@@ -205,7 +234,7 @@ pub static REGLES: &[Regle] = &[
     // -------------------------------------------------------------- Azalée (routes d'API)
     r!("azalee-api-updater", AzaleeApi, Motif::Exact("/tools/niers/latest.json"), interne("point de mise à jour d'Inacord : les 0.5.x déjà installés interrogent CETTE URL, elle ne bouge pas")),
     r!("azalee-api-health", AzaleeApi, Motif::Exact("/api/health"), servi("/api/v1/health")),
-    r!("azalee-api-save", AzaleeApi, Motif::Prefixe("/api/save"), manquant("nie-save — la résolution d'effectif depuis une sauvegarde n'a pas de route ici")),
+    r!("azalee-api-save", AzaleeApi, Motif::Prefixe("/api/save"), servi("/api/v1/save/roster")),
     r!("azalee-api-vroid", AzaleeApi, Motif::Prefixe("/api/vroid"), interne("OAuth VRoid : session utilisateur et secrets tiers")),
     r!("azalee-api-auth", AzaleeApi, Motif::Prefixe("/api/auth"), interne("authentification du wiki")),
     r!("azalee-api-admin", AzaleeApi, Motif::Prefixe("/api/admin"), interne("administration du wiki")),
@@ -227,8 +256,21 @@ pub static REGLES: &[Regle] = &[
     // montre.
     r!("data-typees", NieData, Motif::Parmi(MODULES_TYPES), servi("/api/v1/donnees/{*chemin}")),
     // Deux modules que la facade ne peut PAS porter telle quelle, et il faut le dire :
-    r!("data-passives", NieData, Motif::Exact("passives"), manquant("`parse_player_passives(root, text_fr, text_en)` prend DEUX tables de texte en plus du conteneur : la facade `decode_by_key(cle, root)` ne les a pas")),
-    r!("data-team", NieData, Motif::Exact("team"), manquant("`team::parse_enjoy_mode_team_config` fait doublon avec `enjoy_mode_team`, deja servi — c'est une fusion a faire, pas une route")),
+    // Le diagnostic tenait : `parse_player_passives` prend TROIS tables de texte (pas deux) en
+    // plus du conteneur, et aucune façade à un argument ne peut l'exprimer. La réponse n'était
+    // donc pas une entrée de plus dans `decode_by_key` mais une route qui joint cinq fichiers.
+    r!("data-passives", NieData, Motif::Exact("passives"), servi("/api/v1/passives")),
+    // Pas de règle `team` : le module a été FUSIONNÉ dans `enjoy_mode_team` le 2026-09-06 (deux
+    // ports du même fichier, arrivés dans le même commit, sans antériorité pour les départager).
+    // Lui laisser une pierre tombale ici serait un piège : un futur `team.rs`, sans rapport,
+    // hériterait de son classement. La règle fourre-tout le rattraperait en `manquant`, ce qui
+    // est le bon défaut. L'histoire de la fusion vit dans `enjoy_mode_team::parse_enjoy_mode_teams`.
+    r!("data-playstyle", NieData, Motif::Exact("playstyle"), servi("/api/v1/playstyles")),
+    // `cond` (cadrage) et `unlock_condition` (sémantique) lisent le MÊME blob base64, pris dans
+    // un champ d'un autre fichier. Ils ne prennent pas de conteneur : `decode_by_key` ne peut
+    // pas les appeler. C'était un manque d'adresse, pas de code.
+    r!("data-cond", NieData, Motif::Exact("cond"), servi("/api/v1/conditions/{blob}")),
+    r!("data-unlock", NieData, Motif::Exact("unlock_condition"), servi("/api/v1/conditions/{blob}")),
     r!("data-familles", NieData, Motif::Tout, manquant("crates/engine/nie-data/src/<module>.rs — parseur typé, golden testé, sans route")),
 
     // ---------------------------------------------------------------- nie-formats (modules)
@@ -263,8 +305,35 @@ pub static REGLES: &[Regle] = &[
     r!("formats-g4la", NieFormats, Motif::Exact("g4la"), servi("/api/v1/formats/decode/{*chemin}")),
     r!("formats-g4vs", NieFormats, Motif::Exact("g4vs"), servi("/api/v1/formats/decode/{*chemin}")),
     r!("formats-g4ma", NieFormats, Motif::Exact("g4ma"), servi("/api/v1/formats/decode/{*chemin}")),
-    r!("formats-font", NieFormats, Motif::Exact("font"), manquant("crates/engine/nie-formats/src/font.rs — les 9 fontes sont cataloguées, aucune route ne les rend")),
-    r!("formats-menu", NieFormats, Motif::Exact("menu"), manquant("crates/engine/nie-formats/src/menu.rs — dispositions d'écran, sans route")),
+    // Les sept inspecteurs, câblés le 2026-09-06. Ils partagent une propriété que la règle
+    // fourre-tout écrasait : ils ne partent PAS des octets d'un fichier mais d'une structure
+    // déjà lue — un atlas, un canvas RGBA, deux images à comparer. `decode/{chemin}` ne
+    // pouvait donc pas les servir, et ce n'était pas un manque de décodeur.
+    //
+    // Aucun n'a demandé d'allumer `images` ni `textures` : les six sont sous `std` seul, la
+    // feature par défaut. Encore la leçon du § 9 — le code était déjà lié dans le binaire.
+    r!("formats-font", NieFormats, Motif::Exact("font"), servi("/api/v1/inspect/font/{*path}")),
+    r!("formats-menu", NieFormats, Motif::Exact("menu"), servi("/api/v1/inspect/menu/{*path}")),
+    r!("formats-spritesheet", NieFormats, Motif::Exact("sprite_sheet"), servi("/api/v1/inspect/spritesheet/{*path}")),
+    r!("formats-imgmetric", NieFormats, Motif::Exact("imgmetric"), servi("/api/v1/inspect/compare")),
+    r!("formats-planche", NieFormats, Motif::Exact("planche"), servi("/api/v1/inspect/plate")),
+    // La route existe, décode et se teste — mais **le corpus de ce jeu est vide** : `niers vfs
+    // find 'nxtch'` rend 0, et le contenu d'un `.g4tx` est du DDS (vérifié sur `an000100.g4tx`,
+    // 6 magics `DDS `, 0 `NXTCH`). La réponse publie `corpus: 0` plutôt que de laisser croire à
+    // une panne. Servi veut dire « la route rend le contenu interprété », pas « ce jeu en a ».
+    r!("formats-nxtch", NieFormats, Motif::Exact("nxtch"), servi("/api/v1/inspect/texture-chunk/{*path}")),
+    // `raster2d` n'expose que `crop_rgba` et `scale_nearest` sur un tampon fourni : c'est une
+    // brique de calcul, comme `pathname` et les portages libc classés `interne` juste au-dessus.
+    r!("formats-raster2d", NieFormats, Motif::Exact("raster2d"), interne("primitives 2D pures (rognage, mise à l'échelle au plus proche) sur un tampon RGBA fourni : brique de calcul, pas une capacité — même classement que `pathname` et les portages libc")),
+    // `image_out` est le SEUL des huit hors d'atteinte en process : son module entier est
+    // `#[cfg(feature = "images")]`, et l'allumer tirerait `image` 0.25 et ses sept back-ends
+    // dans ce service. La capacité, elle, est servie — par l'amont qui porte la feature, comme
+    // `g4tx` juste au-dessus. Mesuré le 2026-09-06 à travers le proxy, pas supposé : les huit
+    // formats d'`ImageOut::TOUS` répondent 200 sur
+    // `/assets/export/dx11/menu/200_icon/02_icon_item/icon_item01.g4tx?format=<f>` —
+    // webp 56 534 o, png 58 844, gif 21 384, bmp 262 266, tga 127 420, tiff 262 358,
+    // qoi 62 879, jpg 27 315, chacun avec son `Content-Type`.
+    r!("formats-image-out", NieFormats, Motif::Exact("image_out"), servi("/assets/{*chemin}")),
     r!("formats-restants", NieFormats, Motif::Tout, manquant("crates/engine/nie-formats/src/<module>.rs — parseur écrit, aucune route ne l'appelle")),
 
     // -------------------------------------------------------------------- nie-lua (pub fn)

@@ -143,6 +143,45 @@ fn catalogue(index: &crate::vfs_index::IndexVfs) -> &'static Vec<CleFamille> {
     })
 }
 
+/// Résout le chemin VFS d'un `.cfg.bin` par sa **clé de famille**, sous un préfixe optionnel.
+///
+/// À égalité de clé, rend le chemin le plus court dans l'ordre lexicographique — un choix
+/// stable, pour qu'une même demande rende toujours le même fichier.
+///
+/// # Pourquoi le préfixe
+///
+/// Une clé ne suffit pas toujours à désigner un fichier. Mesuré sur ce jeu :
+/// `passive_skill_effect_config` existe **deux fois** (`gamedata/skill/` et `gamedata/soccer/`),
+/// et `skill_text` existe **dix fois**, une par langue. Sans préfixe, la résolution tomberait
+/// sur l'un ou l'autre selon l'ordre d'indexation, et personne ne verrait lequel a été pris.
+///
+/// C'est le seul point du site où l'on transforme une clé en chemin ; [`super::passives`] et
+/// [`super::playstyles`] passent par ici plutôt que d'écrire chacun son balayage.
+#[must_use]
+pub fn resoudre(
+    index: &crate::vfs_index::IndexVfs,
+    cle: &str,
+    prefixe: Option<&str>,
+) -> Option<(String, u32)> {
+    let (fichiers, _) = index.page_filtree(None, &crate::vfs_index::Requete::default());
+    let mut retenu: Option<(String, u32)> = None;
+    for f in fichiers {
+        if !f.chemin.ends_with(SUFFIXE) {
+            continue;
+        }
+        if prefixe.is_some_and(|p| !f.chemin.starts_with(p)) {
+            continue;
+        }
+        if nie_data::typed::family_key(&f.chemin) != cle {
+            continue;
+        }
+        if retenu.as_ref().is_none_or(|r| f.chemin < r.0) {
+            retenu = Some((f.chemin, f.taille));
+        }
+    }
+    retenu
+}
+
 /// `GET /api/v1/donnees/familles` — les clés de famille présentes dans ce jeu.
 ///
 /// **Ce catalogue ne prétend pas que toutes ces clés sont typées** : sur les 18 326 clés

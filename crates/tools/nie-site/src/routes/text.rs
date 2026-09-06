@@ -935,6 +935,290 @@ pub async fn search(
     }))
 }
 
+// ── Traduction ───────────────────────────────────────────────────────────────
+
+/// Nombre maximal de langues cibles par appel.
+///
+/// Le jeu en porte dix ; en demander plus que quatre à la fois fait décoder tout le corpus de
+/// chacune pour un résultat qu'aucune interface n'affiche.
+pub const TARGETS_MAX: usize = 4;
+
+/// Nombre maximal de correspondances traduites, avant pagination.
+///
+/// Plus bas que [`MAX_RESULTS`] : chaque correspondance coûte un balayage par langue cible.
+pub const TRANSLATE_MAX: usize = 200;
+
+/// Ce que la traduction accepte. Champs à plat, jamais `flatten` (cf. [`SearchQuery`]).
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct TranslateQuery {
+    /// Le terme cherché, dans la langue `from`. Au moins [`MIN_PATTERN`] caractères.
+    pub q: Option<String>,
+    /// La langue de départ. Obligatoire.
+    pub from: Option<String>,
+    /// Les langues d'arrivée, séparées par des virgules. Par défaut : **toutes** les autres,
+    /// plafonnées à [`TARGETS_MAX`].
+    pub to: Option<String>,
+    /// Numéro de page.
+    pub page: Option<u32>,
+    /// Taille de page.
+    pub per_page: Option<u32>,
+}
+
+/// Le même terme dans une autre langue.
+#[derive(Debug, Clone, Serialize)]
+pub struct Rendering {
+    /// Le code de langue.
+    pub language: String,
+    /// Les textes trouvés pour ce hash dans cette langue. **Une liste**, parce qu'un hash ne
+    /// désigne pas toujours une ligne unique.
+    pub texts: Vec<String>,
+}
+
+/// Une correspondance alignée entre langues.
+#[derive(Debug, Clone, Serialize)]
+pub struct Translation {
+    /// La famille où le terme a été trouvé — c'est elle qui rend la ligne adressable.
+    pub family: String,
+    /// Le hash de la ligne.
+    pub hash: u32,
+    /// Le même hash en hexadécimal.
+    pub hash_hex: String,
+    /// Le texte source.
+    pub source: String,
+    /// Les rendus dans les langues demandées.
+    pub renderings: Vec<Rendering>,
+    /// `true` quand le hash désigne **plusieurs** lignes d'un côté ou de l'autre : l'alignement
+    /// n'est alors pas certain, et le taire donnerait une traduction qui a l'air sûre.
+    pub ambiguous: bool,
+}
+
+/// Le résultat d'une traduction.
+#[derive(Debug, Clone, Serialize)]
+pub struct TranslateResults {
+    /// Le motif réellement appliqué.
+    pub q: String,
+    /// La langue de départ.
+    pub from: String,
+    /// Les langues d'arrivée réellement balayées.
+    pub to: Vec<String>,
+    /// `true` quand le balayage s'est arrêté à [`TRANSLATE_MAX`].
+    pub truncated: bool,
+    /// La page de correspondances.
+    pub results: Page<Translation>,
+}
+
+/// `GET /api/v1/text/translate` — le même terme d'une langue à l'autre, par le texte du jeu.
+///
+/// # Ce que ça remplace, et pourquoi c'est mieux fondé
+///
+/// L'outil « Traducteur » d'Azalée interroge **sept tables** `inagle_*` avec une normalisation
+/// kana↔romaji et un score flou. Il traduit des noms de fiches de wiki. Cette route-ci traduit
+/// le **texte du jeu**, en s'appuyant sur ce qui aligne réellement deux langues dans les
+/// fichiers : le **hash**. Elle ne devine rien — deux textes ne se correspondent que s'ils
+/// portent le même hash dans la même famille.
+///
+/// # Ce qu'elle ne promet pas
+///
+/// Un hash n'identifie pas une ligne : sur `de/map/w50_npc_text`, 155 lignes ne portent que 83
+/// hash distincts (mesuré, cf. [`load`]). Quand un hash désigne plusieurs lignes, la route rend
+/// **toutes** les occurrences et lève `ambiguous` plutôt que d'en choisir une par son rang.
+///
+/// # Errors
+///
+/// `400` si `q` manque ou est trop court, si `from` manque ou est inconnue, si une langue de
+/// `to` est inconnue ; `503` sans VFS.
+pub async fn translate(
+    State(state): State<EtatSite>,
+    Query(query): Query<TranslateQuery>,
+) -> Result<Json<TranslateResults>, ErreurSite> {
+    let s = survey(&state).await?;
+
+    let pattern = query
+        .q
+        .as_deref()
+        .map(str::trim)
+        .filter(|q| !q.is_empty())
+        .ok_or_else(|| {
+            ErreurSite::Demande("parametre `q` obligatoire : le terme a traduire".to_owned())
+        })?
+        .to_lowercase();
+    if pattern.chars().count() < MIN_PATTERN {
+        return Err(ErreurSite::Demande(format!(
+            "motif trop court : au moins {MIN_PATTERN} caracteres"
+        )));
+    }
+
+    let from = query
+        .from
+        .as_deref()
+        .map(str::trim)
+        .filter(|l| !l.is_empty())
+        .ok_or_else(|| {
+            ErreurSite::Demande(format!(
+                "parametre `from` obligatoire ; les langues mesurees sont : {}",
+                s.languages().join(", ")
+            ))
+        })?
+        .to_owned();
+    if !s.languages.contains_key(&from) {
+        return Err(ErreurSite::Demande(format!(
+            "langue inconnue `{from}` ; les langues mesurees sont : {}",
+            s.languages().join(", ")
+        )));
+    }
+
+    let to: Vec<String> = match query.to.as_deref().map(str::trim).filter(|t| !t.is_empty()) {
+        Some(liste) => {
+            let demandees: Vec<String> = liste
+                .split(',')
+                .map(|l| l.trim().to_owned())
+                .filter(|l| !l.is_empty())
+                .collect();
+            for l in &demandees {
+                if !s.languages.contains_key(l) {
+                    return Err(ErreurSite::Demande(format!(
+                        "langue d'arrivee inconnue `{l}` ; les langues mesurees sont : {}",
+                        s.languages().join(", ")
+                    )));
+                }
+            }
+            if demandees.len() > TARGETS_MAX {
+                return Err(ErreurSite::Demande(format!(
+                    "trop de langues d'arrivee : {} (borne {TARGETS_MAX})",
+                    demandees.len()
+                )));
+            }
+            demandees
+        }
+        None => s
+            .languages()
+            .into_iter()
+            .filter(|l| *l != from)
+            .take(TARGETS_MAX)
+            .map(str::to_owned)
+            .collect(),
+    };
+
+    let paths = s.paths_of_language(&from);
+    let cibles = to.clone();
+    let cibles_paths: Vec<(String, Vec<String>)> = cibles
+        .iter()
+        .map(|l| (l.clone(), s.paths_of_language(l)))
+        .collect();
+    let vfs = state.vfs()?;
+    let needle = pattern.clone();
+
+    let (translations, truncated) = tokio::task::spawn_blocking(move || {
+        // 1. Trouver les (famille, hash) qui portent le terme dans la langue de depart.
+        let mut trouves: Vec<(String, u32, String)> = Vec::new();
+        let mut truncated = false;
+        for path in &paths {
+            if trouves.len() >= TRANSLATE_MAX {
+                truncated = true;
+                break;
+            }
+            let Ok(bytes) = vfs.read(path) else { continue };
+            let Ok(lines) = decode(path, &bytes) else {
+                continue;
+            };
+            let family = nie_data::typed::family_key(path);
+            for l in lines {
+                if l.text.to_lowercase().contains(&needle) {
+                    trouves.push((family.clone(), l.hash, l.text));
+                    if trouves.len() >= TRANSLATE_MAX {
+                        truncated = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // 2. Pour chaque langue cible, relever les textes des memes (famille, hash).
+        //    Un seul balayage par langue, pas un par correspondance.
+        let voulus: std::collections::HashSet<(String, u32)> = trouves
+            .iter()
+            .map(|(f, h, _)| (f.clone(), *h))
+            .collect();
+        let mut par_langue: BTreeMap<String, BTreeMap<(String, u32), Vec<String>>> =
+            BTreeMap::new();
+        for (langue, chemins) in &cibles_paths {
+            let table = par_langue.entry(langue.clone()).or_default();
+            for path in chemins {
+                let family = nie_data::typed::family_key(path);
+                if !voulus.iter().any(|(f, _)| *f == family) {
+                    continue;
+                }
+                let Ok(bytes) = vfs.read(path) else { continue };
+                let Ok(lines) = decode(path, &bytes) else {
+                    continue;
+                };
+                for l in lines {
+                    let cle = (family.clone(), l.hash);
+                    if voulus.contains(&cle) {
+                        table.entry(cle).or_default().push(l.text);
+                    }
+                }
+            }
+        }
+
+        // 3. Compter les occurrences du hash dans la langue de depart, pour `ambiguous`.
+        let mut occurrences: BTreeMap<(String, u32), usize> = BTreeMap::new();
+        for (f, h, _) in &trouves {
+            *occurrences.entry((f.clone(), *h)).or_insert(0) += 1;
+        }
+
+        let out: Vec<Translation> = trouves
+            .into_iter()
+            .map(|(family, hash, source)| {
+                let cle = (family.clone(), hash);
+                let renderings: Vec<Rendering> = cibles
+                    .iter()
+                    .map(|langue| Rendering {
+                        language: langue.clone(),
+                        texts: par_langue
+                            .get(langue)
+                            .and_then(|t| t.get(&cle))
+                            .cloned()
+                            .unwrap_or_default(),
+                    })
+                    .collect();
+                let ambiguous = occurrences.get(&cle).copied().unwrap_or(0) > 1
+                    || renderings.iter().any(|r| r.texts.len() > 1);
+                Translation {
+                    family,
+                    hash,
+                    hash_hex: format!("0x{hash:08x}"),
+                    source,
+                    renderings,
+                    ambiguous,
+                }
+            })
+            .collect();
+        (out, truncated)
+    })
+    .await?;
+
+    let bounds = DemandePage {
+        page: query.page,
+        per_page: query.per_page,
+        q: None,
+    }
+    .bornee();
+    let total = translations.len();
+    let page: Vec<Translation> = translations
+        .into_iter()
+        .skip(bounds.offset())
+        .take(bounds.per_page as usize)
+        .collect();
+    Ok(Json(TranslateResults {
+        q: pattern,
+        from,
+        to,
+        truncated,
+        results: Page::nouvelle(page, bounds, total),
+    }))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

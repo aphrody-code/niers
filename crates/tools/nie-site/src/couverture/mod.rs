@@ -631,17 +631,24 @@ mod tests {
 
     #[test]
     fn les_agregats_somment_au_total() {
-        // Temoin de `manquant` : une page d'outils d'Azalee, redirigee vers Aphrody par les
-        // dix 308 sans y avoir d'equivalent. Ce test rougira le jour ou elle sera portee — et
-        // c'est voulu : un temoin de `manquant` qui survit a tout ne temoigne de rien. Le
-        // temoin precedent (`nie-data::shop`) a justement rougi quand `/api/v1/donnees` l'a
-        // servi, ce qui est la preuve que la garde fonctionne.
+        // Temoin de `manquant`. Les deux precedents etaient de VRAIES capacites —
+        // `nie-data::shop`, puis la page `/tools/compare` d'Azalee — et les deux ont fait
+        // rougir ce test le jour ou elles ont ete servies (`/api/v1/donnees` pour l'une,
+        // `/api/v1/regles/comparaison` pour l'autre, 2026-09-06). C'etait la preuve que la
+        // garde fonctionne, et aussi qu'un temoin choisi parmi le travail restant se perime
+        // a chaque lot : le plan vise `manquant = 0`, donc a la fin il n'en resterait aucun.
+        //
+        // Le temoin est donc desormais le FILET lui-meme : un module `nie-data` qui n'existe
+        // pas tombe dans `data-familles` (`Motif::Tout`), dont l'etat est `manquant`. Ce que
+        // ce test verifie n'est plus « telle capacite manque » mais « une capacite inconnue
+        // ressort manquante, et les agregats retombent sur le total » — un invariant, pas un
+        // etat d'avancement.
         let inv = inventaire(&[
             (Source::Vfs, ".cfg.bin", 71_101),
             (Source::Vfs, ".awb", 5_512),
             (Source::Vfs, ".g4tg", 9),
             (Source::Niers, "vfs", 1),
-            (Source::Azalee, "/tools/compare", 1),
+            (Source::NieData, "module_ajoute_demain_sans_route", 1),
         ]);
         let m = construire(&inv, &crate::app::chemins());
         assert_eq!(m.total.capacites, 5);

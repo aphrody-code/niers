@@ -91,7 +91,7 @@ fn json(corps: &[u8]) -> serde_json::Value {
 async fn toutes_les_routes_declarees_repondent() {
     let etat = etat();
     // Une instance concrète par route déclarée, dans le même ordre que `app::chemins()`.
-    let instances: [(&str, &[u16]); 57] = [
+    let instances: [(&str, &[u16]); 78] = [
         ("/healthz", &[200]),
         ("/robots.txt", &[200]),
         ("/.well-known/security.txt", &[200]),
@@ -175,6 +175,42 @@ async fn toutes_les_routes_declarees_repondent() {
         ("/api/v1/regles/comparaison", &[200]),
         ("/api/v1/regles/rarete", &[200]),
         ("/api/v1/regles/builds", &[200, 400]),
+        // Les trois vues que la facade typee ne peut pas exprimer. `passives` et `playstyles`
+        // LISENT le VFS (cinq fichiers pour l'une, `chara_param` pour l'autre) : sans montage,
+        // 503 en citant la source qui manque, jamais un catalogue vide.
+        ("/api/v1/passives", &[503]),
+        ("/api/v1/passives/player", &[503]),
+        ("/api/v1/playstyles", &[503]),
+        ("/api/v1/playstyles/0", &[503]),
+        // Les conditions, elles, ne lisent RIEN : elles decodent une chaine. Comme les regles
+        // de jeu, elles repondent 200 sur une machine nue — et c'est ce qui doit se voir ici.
+        ("/api/v1/conditions", &[200]),
+        ("/api/v1/conditions/AAAAAA8FNbkZNtoAAQAyAABOKnE=", &[200]),
+        // Les sept inspecteurs. `color`, `compare` et `plate` ne lisent RIEN — ils calculent
+        // sur ce qu'on leur donne : 200 sur une machine nue, comme les regles de jeu. Les
+        // quatre qui prennent un chemin VFS rendent 404 sur un chemin absent de l'index de
+        // test, ou 400 quand l'extension attendue n'y est pas.
+        ("/api/v1/inspect", &[200]),
+        ("/api/v1/inspect/spritesheet/data/x.g4tx", &[400, 404, 503]),
+        ("/api/v1/inspect/font/data/x.cfg.bin", &[400, 404, 503]),
+        ("/api/v1/inspect/menu/data/x.objbin", &[400, 404, 503]),
+        ("/api/v1/inspect/texture-chunk/data/x.g4tx", &[400, 404, 503]),
+        ("/api/v1/inspect/color", &[200, 400]),
+        ("/api/v1/inspect/compare", &[200]),
+        ("/api/v1/inspect/plate", &[200]),
+        // L'index d'icones et le catalogue des modes. Le catalogue des modes est une table
+        // EDITORIALE (`MODES`), il ne lit rien : 200 sur une machine nue. L'index d'icones et
+        // le contenu d'un mode, eux, parsent des atlas et des objbin du VFS : 503 sans montage.
+        ("/api/v1/icons", &[503]),
+        ("/api/v1/icons/inconnue", &[404, 503]),
+        ("/api/v1/modes", &[200]),
+        ("/api/v1/modes/victory-road", &[503]),
+        // La traduction s'appuie sur le catalogue de texte : sans `q`, 400 ; sans VFS, 503.
+        ("/api/v1/text/translate", &[400, 503]),
+        // Les deux contrats des routes de calcul. Leur `GET` ne touche ni VFS ni miroir : il
+        // publie ce que le `POST` attend, plutot que de rendre un 405 muet.
+        ("/api/v1/team/synergy", &[200]),
+        ("/api/v1/save/roster", &[200]),
         // La matrice de couverture : elle est LUE sur disque, jamais mesuree par le service.
         // Dans l'etat de test elle n'a pas ete produite, donc 503 en citant la commande qui
         // la produit — la meme regle que le VFS, le miroir et l'amont.
@@ -184,7 +220,7 @@ async fn toutes_les_routes_declarees_repondent() {
     ];
 
     let declarees = nie_site::app::chemins();
-    assert_eq!(declarees.len(), 56, "le routeur monte 56 routes");
+    assert_eq!(declarees.len(), 77, "le routeur monte 77 routes");
     assert!(
         instances.len() >= declarees.len(),
         "au moins une instance par route declaree"
@@ -216,7 +252,7 @@ async fn toutes_les_routes_declarees_repondent() {
         );
         vus += 1;
     }
-    assert_eq!(vus, 57, "57 instances interrogees pour 56 routes");
+    assert_eq!(vus, 78, "78 instances interrogees pour 77 routes");
 }
 
 /// Vrai quand `uri` est une instance du motif de route `motif` (syntaxe axum 0.8).
