@@ -87,6 +87,91 @@
 > d'Inacord et les 81 pages d'Azalée restent non classées. Dire « gate maîtresse atteinte » sans
 > cette phrase serait exactement le genre de raccourci que le § 3 recense.
 
+> **Amendement du 2026-09-06 (6) — la gate maîtresse est TENUE : `manquant = 0`, `partiel = 0`.**
+> Vingt-deux routes plus tard, l'instrument construit le matin même rend `tenue: true`. Le
+> compte, par `nie-site --regenerer-couverture var/couverture-site.json` :
+>
+> | État | Le matin | Ce soir |
+> |---|---:|---:|
+> | `servi` | 255 | **278** |
+> | `manquant` | **26** | **0** |
+> | `partiel` | 0 | 0 |
+> | `bloqué` | 10 | 10 |
+> | `interne` | 292 | 294 |
+> | routes montées | 56 | **77** |
+> | incohérences | 0 | 0 |
+>
+> **Aucune des vingt-deux n'a demandé une feature de plus.** C'est, à la lettre, ce que le
+> § 9 avait déjà mesuré : le code était compilé dans le binaire, il manquait une adresse. Les
+> six `nie-formats` servis en process sont sous `std` — la feature par défaut — et
+> `images`/`textures` restent éteintes, comme le `Cargo.toml` de la crate l'écrit et comme
+> `routes::formats` continue de le publier.
+>
+> **Ce que la matrice a fait, et qu'aucune relecture n'aurait fait :** elle a désigné 26
+> capacités, et la moitié n'était pas ce que sa raison annonçait.
+>
+> - **Trois raisons écrites étaient fausses.** `nie_explore::icons` et
+>   `nie_explore::mode_index` n'existent pas — les deux modules vivent dans `nie-cli`, qui n'a
+>   **pas de cible `[lib]`** et n'est donc importable par personne ; et
+>   `parse_player_passives` prend **trois** tables de texte, pas deux. Une raison qui cite un
+>   chemin inexistant envoie le lot suivant chercher au mauvais endroit : elle coûte plus qu'une
+>   ligne vide.
+> - **Deux capacités étaient déjà servies** sans que personne l'ait vu : `niers avatar` et les
+>   deux commandes d'avatar d'Inacord le sont par `/api/v1/donnees/famille/chara_edit`
+>   (16 listes), depuis que `chara_edit` est entré dans `decode_by_key` le matin même. Deux des
+>   six pages `/tools/*` d'Azalée l'étaient aussi (`/tools/stats` par `/api/v1/regles/stats`,
+>   `/tools/compare` par `/api/v1/regles/comparaison`) — la règle de préfixe les classait
+>   `manquant` **en bloc**, ce qui est exactement le défaut que l'état `partiel` avait été créé
+>   pour empêcher, transposé d'un corpus à une source.
+> - **Un doublon a été fusionné plutôt que servi.** `nie-data::team` et
+>   `nie-data::enjoy_mode_team` étaient deux ports du même fichier, arrivés dans le **même
+>   commit** : mêmes 7 variables, même parseur d'inagle en référence. Servir le doublon aurait
+>   fait un `servi` de plus et un défaut de fond de moins visible. `nie-data` passe de 116 à
+>   115 modules.
+>
+> **Les comptes, relevés sur le binaire lancé avec le VFS monté (255 308 entrées) — jamais
+> relus dans le diff :**
+>
+> | Route | Ce qu'elle rend | Compte mesuré |
+> |---|---|---|
+> | `/api/v1/passives` | joueur, équipe, lots, **5 fichiers joints** | 1 716 / 21 / 653, 128 effets ; `?q=tir` → 1 716 **→ 221** |
+> | `/api/v1/playstyles` | style de jeu et sa distribution | 6 166 personnages, **{1055, 1034, 1059, 1003, 989, 1026}** |
+> | `/api/v1/conditions/{blob}` | cadrage **et** sémantique d'un blob | blob réel → v0 valide, `story`, seuil 20010, épisode 1 |
+> | `/api/v1/inspect/font/{path}` | métriques de fonte | `font_def` : **7 469 glyphes**, atlas 4096×2048, ascent 46 / cell 71 |
+> | `/api/v1/inspect/menu/{path}` | géométrie d'un `.objbin` | `mainmenu01_00_background` : priorité 650, et le `.g4pkm` **absent est nommé** |
+> | `/api/v1/icons` | index nom → atlas + rectangle | **3 770** icônes, 212 atlas ; `?q=abl` → **3** ; PNG amont 200 / 71 200 o |
+> | `/api/v1/modes/{slug}` | écrans, calques, scripts d'un mode | `victory-road` : 28 écrans, 919 composants, 32 scripts, funcLua 3 659 |
+> | `POST /api/v1/team/synergy` | notation d'équipe | score 67, 2 synergies, 1 recommandation |
+> | `/api/v1/text/translate` | le même terme d'une langue à l'autre | « Tornade » fr → en/ja : **69** correspondances |
+> | `POST /api/v1/save/roster` | résolution d'effectif en lot | 5 identifiants → 2 nommés, 1 doublon, 1 rejeté, 1 `name: null` |
+> | `/assets/export/…?format=` | les 8 formats d'`ImageOut::TOUS` | 8/8 en 200, chacun avec son `Content-Type` |
+>
+> **La distribution des styles de jeu mérite d'être notée** : elle retombe **exactement** sur
+> celle documentée dans `nie-data/src/playstyle.rs`, obtenue par un chemin entièrement
+> indépendant (route HTTP contre dump de développement). C'est le genre de recoupement que ce
+> plan réclame et qu'il obtient rarement.
+>
+> **Deux leçons, au-delà du lot.**
+>
+> 1. **Un témoin de `manquant` choisi parmi le travail restant se périme à chaque lot.** Les
+>    deux précédents (`nie-data::shop`, puis `/tools/compare`) ont fait rougir
+>    `couverture::tests` le jour où ils ont été servis. Le plan visant `manquant = 0`, il n'en
+>    resterait aucun à la fin — et le test serait devenu immaintenable au moment précis où il
+>    compte. Le témoin est désormais le **filet** (`data-familles`, `Motif::Tout`) : un
+>    invariant, pas un état d'avancement.
+> 2. **La matrice n'était pas versionnée**, alors que le § 4 l'exige en toutes lettres. Elle
+>    vivait sous `/var`, exclu en bloc pour une raison mesurée (15,5 Go). La ré-inclusion en
+>    trois temps (`!/var/`, `/var/*`, `!/var/couverture-site.json`) ne fait descendre git dans
+>    aucun sous-arbre : **`git status --short` = 0,03 s avant, 0,02 s après**. Le coût invoqué
+>    n'existait pas ; il n'avait jamais été mesuré.
+>
+> **Ce que cet amendement ne dit pas.** `bloqué = 10` (3 600 fichiers : shaders, particules,
+> tissu, navigation) ne descend pas par du câblage — il descend par du reverse, et rien ici n'y
+> touche. La gate maîtresse porte sur `manquant` et `partiel` ; les quatre autres conditions du
+> § 8 — les 475 écrans, la SSIM par écran, le sas `legacy/` à 87 fichiers — restent ouvertes.
+
+---
+
 ---
 
 ## 1. Ce que « ultime » veut dire ici

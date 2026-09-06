@@ -11,6 +11,34 @@ La stack est **gelée** : [`docs/stack/`](docs/stack/README.md) (décisions, ver
 alternatives rejetées, gates). Ce fichier est le plan d'exécution de cette semaine ; le plan
 maître du moteur et de la forge reste [`docs/PLAN.md`](docs/PLAN.md).
 
+> **Amendement du 2026-09-06 (7) — la gate maîtresse est TENUE.** `manquant = 0`,
+> `partiel = 0`, `tenue: true`, mesuré par la commande du § 4 :
+> `nie-site --regenerer-couverture var/couverture-site.json`. En une journée, **26 → 0**, en
+> **22 routes** (56 → 77 montées, 0 incohérence, `cargo test -p nie-site` 269 + 22 + 1,
+> clippy 0). Aucune n'a exigé une feature de plus : le code était déjà lié dans le binaire.
+>
+> Ce que la matrice a trouvé et qu'aucune relecture n'aurait trouvé : **trois de ses propres
+> raisons étaient fausses** (`nie_explore::icons` et `nie_explore::mode_index` n'existent pas —
+> les modules vivent dans `nie-cli`, qui n'a **pas de cible `[lib]`** ; et
+> `parse_player_passives` prend **trois** tables de texte, pas deux), **deux capacités étaient
+> déjà servies** sans que personne l'ait vu, et **un doublon** (`nie-data::team`) a été fusionné
+> plutôt que servi — `nie-data` passe de 116 à 115 modules.
+>
+> Trois trouvailles hors périmètre, réparées au passage : **`nie-core --features serde` ne
+> compilait plus** (`derive(Deserialize)` sur un `&'static str`), donc **`nie-ffi` et `nie-wasm`
+> non plus — les deux revérifiées vertes** ; la **matrice n'était pas versionnée** alors que le
+> § 4 l'exige, et le coût invoqué (`/var`, 15,5 Go) n'existait pas : `git status --short` mesure
+> 0,03 s avant ré-inclusion, 0,02 s après ; et le **témoin de `manquant`** des tests, choisi
+> parmi le travail restant, se périmait à chaque lot — il porte désormais sur le filet, donc sur
+> un invariant.
+>
+> Détail complet et comptes route par route : amendement 6 de
+> [`docs/PLAN-SITE-ULTIME.md`](docs/PLAN-SITE-ULTIME.md).
+>
+> **Reste ouvert :** `bloqué = 10` (3 600 fichiers — shaders, particules, tissu, navigation) ne
+> descend que par du reverse ; et les quatre autres conditions du § 8 du cap (475 écrans, SSIM
+> par écran, sas `legacy/` à 87 fichiers) ne sont pas touchées.
+
 > **Amendement du 2026-09-06 (6) — la matrice de couverture existe, et la gate est rompue.**
 > Le § 4 du cap prévoyait « une seule table, régénérée par une commande, jamais tenue à la
 > main » ; elle n'existait pas, et c'était le trou le plus coûteux du plan — sans instrument, le
