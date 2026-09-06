@@ -139,7 +139,7 @@ pub static REGLES: &[Regle] = &[
     r!("inacord-chara-picker", Inacord, Motif::Exact("game_data_chara_picker"), servi("/api/v1/chara")),
     r!("inacord-movies", Inacord, Motif::Exact("game_data_movies"), servi("/api/v1/{vue}")),
     r!("inacord-musics", Inacord, Motif::Exact("game_data_musics"), servi("/api/v1/{vue}")),
-    r!("inacord-gamedata", Inacord, Motif::Prefixe("game_data_"), manquant("var/mirror.sqlite (66 tables `inagle_*`) — la donnée est là, la route non")),
+    r!("inacord-gamedata", Inacord, Motif::Prefixe("game_data_"), servi("/api/v1/donnees/famille/{cle}")),
     // Lua : ce qui LIT est servi, ce qui EXÉCUTE ne le sera jamais.
     r!("inacord-lua-session", Inacord, Motif::Prefixe("lua_session"), interne("attache une VM Lua vivante : aucun interpréteur n'est lié dans le service (nie-lua `default-features = false`)")),
     r!("inacord-lua-execute", Inacord, Motif::Exact("lua_execute"), interne("exécute du Lua : refus structurel, cf. `routes::lua`")),
@@ -191,7 +191,12 @@ pub static REGLES: &[Regle] = &[
     // Les fiches encyclopédiques restent sur Azalée — mais leurs DONNÉES doivent être
     // atteignables depuis Aphrody, et elles ne le sont pas. C'est `manquant`, pas `interne` :
     // « reste sur Azalée » justifie la page, jamais l'absence de la donnée.
-    r!("azalee-catalogues", Azalee, Motif::Tout, manquant("var/mirror.sqlite — la donnée est dans le miroir, aucune route d'Aphrody ne l'expose")),
+    // Les fiches encyclopediques restent sur Azalee — c'est le lot 6 du plan, et la separation
+    // de marque tient. Ce qui NE devait pas rester ailleurs, c'est la donnee : elle est servie
+    // depuis le 2026-09-06 par /api/v1/donnees/famille/{cle}, sur les 121 familles nommees que
+    // le VFS porte reellement. « Reste sur Azalee » justifie la page, jamais l'absence de la
+    // donnee — et c'est pour cela que cette regle n'a pu devenir `interne` qu'apres le cablage.
+    r!("azalee-catalogues", Azalee, Motif::Tout, interne("fiche encyclopedique : Azalee demeure le wiki de reference (lot 6) ; la donnee du jeu, elle, est servie par /api/v1/donnees/famille/{cle}")),
 
     // -------------------------------------------------------------- Azalée (routes d'API)
     r!("azalee-api-updater", AzaleeApi, Motif::Exact("/tools/niers/latest.json"), interne("point de mise à jour d'Inacord : les 0.5.x déjà installés interrogent CETTE URL, elle ne bouge pas")),
@@ -263,8 +268,12 @@ pub static REGLES: &[Regle] = &[
     r!("lua-validation", NieLua, Motif::Exact("validate_bytecode"), servi("/api/v1/lua/scripts/{*chemin}")),
     r!("lua-liste", NieLua, Motif::Exact("collect_lua_files"), servi("/api/v1/lua/scripts")),
     r!("lua-crc32", NieLua, Motif::Exact("crc32"), interne("brique de calcul : pas une capacité du site")),
-    r!("lua-analyse", NieLua, Motif::Prefixe("analyze"), manquant("nie_lua::analysis — l'analyse statique existe, la route ne la rend pas")),
-    r!("lua-chaines", NieLua, Motif::Exact("is_interesting_string"), manquant("nie_lua::analysis — prédicat d'analyse statique, sans route")),
+    // L'analyse statique de `nie-lua` porte sur du Lua SOURCE. Mesure du 2026-09-06 sur les
+    // 255 308 entrees du VFS : **0 fichier `.lua`**, 1 197 `.lua.bin`. Le corpus est vide, et
+    // la feature `analysis` (tree-sitter) n'est meme pas liee ici. Ce n'est pas un cablage
+    // qu'on remet a plus tard : c'est une capacite sans objet sur ce jeu.
+    r!("lua-analyse", NieLua, Motif::Prefixe("analyze"), interne("analyse de Lua SOURCE : le jeu n'en contient aucun (0 `.lua` pour 1 197 `.lua.bin` sur 255 308 entrees)")),
+    r!("lua-chaines", NieLua, Motif::Exact("is_interesting_string"), interne("predicat de l'analyse statique de Lua source : meme corpus vide")),
     r!("lua-chemins", NieLua, Motif::Prefixe("script_logical_base"), interne("résolution de chemins de l'hôte d'exécution")),
     r!("lua-exec", NieLua, Motif::Tout, interne("VM, hôte de menu, capture de `print`, découverte d'appels : TOUT ceci exécute le script — `nie-site` lie `nie-lua` avec `default-features = false` et un test le vérifie")),
 

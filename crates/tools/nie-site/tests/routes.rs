@@ -91,7 +91,7 @@ fn json(corps: &[u8]) -> serde_json::Value {
 async fn toutes_les_routes_declarees_repondent() {
     let etat = etat();
     // Une instance concrète par route déclarée, dans le même ordre que `app::chemins()`.
-    let instances: [(&str, &[u16]); 43] = [
+    let instances: [(&str, &[u16]); 45] = [
         ("/healthz", &[200]),
         ("/robots.txt", &[200]),
         ("/.well-known/security.txt", &[200]),
@@ -150,6 +150,10 @@ async fn toutes_les_routes_declarees_repondent() {
         // de test est un 404 — mais la route existe et le decodage est en process.
         ("/api/v1/donnees", &[200]),
         ("/api/v1/donnees/data/x.cfg.bin", &[404]),
+        // Le catalogue des cles : l'index de test ne porte aucun `.cfg.bin`, donc une liste
+        // vide et un total de 0 — mais la route repond, elle ne 503 pas.
+        ("/api/v1/donnees/familles", &[200]),
+        ("/api/v1/donnees/famille/chara_base", &[404]),
         // La matrice de couverture : elle est LUE sur disque, jamais mesuree par le service.
         // Dans l'etat de test elle n'a pas ete produite, donc 503 en citant la commande qui
         // la produit — la meme regle que le VFS, le miroir et l'amont.
@@ -159,7 +163,7 @@ async fn toutes_les_routes_declarees_repondent() {
     ];
 
     let declarees = nie_site::app::chemins();
-    assert_eq!(declarees.len(), 42, "le routeur monte 42 routes");
+    assert_eq!(declarees.len(), 44, "le routeur monte 44 routes");
     assert!(
         instances.len() >= declarees.len(),
         "au moins une instance par route declaree"
@@ -191,7 +195,7 @@ async fn toutes_les_routes_declarees_repondent() {
         );
         vus += 1;
     }
-    assert_eq!(vus, 43, "43 instances interrogees pour 42 routes");
+    assert_eq!(vus, 45, "45 instances interrogees pour 44 routes");
 }
 
 /// Vrai quand `uri` est une instance du motif de route `motif` (syntaxe axum 0.8).

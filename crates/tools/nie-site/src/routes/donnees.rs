@@ -25,7 +25,7 @@
 //! vide qu'un client prendrait pour « cette famille est vide dans ce jeu ».
 
 use axum::Json;
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use serde::Serialize;
 
 use crate::error::ErreurSite;
@@ -95,6 +95,112 @@ pub struct Decodage {
     pub famille: &'static str,
     /// Les données typées.
     pub donnees: serde_json::Value,
+}
+
+/// Une clé de famille présente dans le VFS, avec le nombre de fichiers qui la portent.
+#[derive(Debug, Clone, Serialize)]
+pub struct CleFamille {
+    /// La clé, dérivée du nom de fichier par `nie_data::typed::family_key`.
+    pub cle: String,
+    /// Nombre de `.cfg.bin` du jeu qui portent cette clé.
+    pub fichiers: usize,
+    /// Un chemin représentatif — celui que `/api/v1/donnees/famille/{cle}` décodera.
+    pub exemple: String,
+}
+
+/// Le catalogue des clés, calculé une fois puis gardé.
+///
+/// Il est **calculé**, jamais écrit à la main : dériver 71 101 clés coûte quelques
+/// millisecondes et se refait à chaque démarrage, là où une liste versionnée se périmerait à
+/// la première mise à jour du jeu.
+static CATALOGUE: std::sync::OnceLock<Vec<CleFamille>> = std::sync::OnceLock::new();
+
+/// Construit (ou rend) le catalogue des clés de famille du VFS.
+fn catalogue(index: &crate::vfs_index::IndexVfs) -> &'static Vec<CleFamille> {
+    CATALOGUE.get_or_init(|| {
+        let requete = crate::vfs_index::Requete::default();
+        let (fichiers, _) = index.page_filtree(None, &requete);
+        let mut par_cle: std::collections::BTreeMap<String, (usize, String)> =
+            std::collections::BTreeMap::new();
+        for f in fichiers {
+            if !f.chemin.ends_with(SUFFIXE) {
+                continue;
+            }
+            let cle = nie_data::typed::family_key(&f.chemin);
+            let e = par_cle.entry(cle).or_insert((0, f.chemin.clone()));
+            e.0 += 1;
+        }
+        let mut v: Vec<CleFamille> = par_cle
+            .into_iter()
+            .map(|(cle, (fichiers, exemple))| CleFamille {
+                cle,
+                fichiers,
+                exemple,
+            })
+            .collect();
+        v.sort_unstable_by(|a, b| b.fichiers.cmp(&a.fichiers).then_with(|| a.cle.cmp(&b.cle)));
+        v
+    })
+}
+
+/// `GET /api/v1/donnees/familles` — les clés de famille présentes dans ce jeu.
+///
+/// **Ce catalogue ne prétend pas que toutes ces clés sont typées** : sur les 18 326 clés
+/// distinctes du VFS, la mesure du 2026-09-06 en trouve 1 056 qui rendent une famille nommée,
+/// en 121 familles. Les autres sont des événements, des placements, des configurations de son —
+/// des `.cfg.bin` bien réels, servis par la route générique. Annoncer 18 326 familles typées
+/// serait exactement le genre de compte qui rassure sans rien mesurer.
+pub async fn familles(
+    State(etat): State<EtatSite>,
+    Query(demande): Query<crate::routes::DemandePage>,
+) -> Result<Json<crate::routes::Page<CleFamille>>, ErreurSite> {
+    let index = etat.index()?;
+    let tout = catalogue(&index);
+    let motif = demande.q.as_deref().map(str::to_lowercase);
+    let retenus: Vec<&CleFamille> = tout
+        .iter()
+        .filter(|c| motif.as_ref().is_none_or(|m| c.cle.to_lowercase().contains(m)))
+        .collect();
+    let bornes = demande.bornee();
+    let items: Vec<CleFamille> = retenus
+        .iter()
+        .skip(bornes.offset())
+        .take(bornes.per_page as usize)
+        .map(|c| (*c).clone())
+        .collect();
+    Ok(Json(crate::routes::Page::nouvelle(items, bornes, retenus.len())))
+}
+
+/// `GET /api/v1/donnees/famille/{cle}` — la famille nommée, sans avoir à connaître le chemin.
+///
+/// C'est ce qui manquait aux 23 commandes `game_data_*` d'Inacord et aux catalogues d'Azalée :
+/// la donnée était atteignable, mais seulement pour qui savait déjà où vit le fichier — et les
+/// fichiers du jeu portent un numéro de version (`chara_base_1.03.98.00.cfg.bin`) que personne
+/// ne devine.
+pub async fn famille(
+    State(etat): State<EtatSite>,
+    Path(cle): Path<String>,
+) -> Result<Json<Decodage>, ErreurSite> {
+    let index = etat.index()?;
+    let entree = catalogue(&index)
+        .iter()
+        .find(|c| c.cle == cle)
+        .ok_or_else(|| {
+            ErreurSite::Introuvable(format!(
+                "aucun fichier de ce jeu ne porte la cle `{cle}` ;                  les cles presentes sont sur /api/v1/donnees/familles"
+            ))
+        })?;
+    let chemin = entree.exemple.clone();
+    let vfs = etat.vfs()?;
+    let a_lire = chemin.clone();
+    let octets = tokio::task::spawn_blocking(move || vfs.read(&a_lire))
+        .await?
+        .map_err(|e| {
+            tracing::debug!(erreur = %e, "lecture VFS impossible");
+            ErreurSite::Introuvable("fichier indexe mais illisible sur ce montage".to_owned())
+        })?;
+    let decodage = tokio::task::spawn_blocking(move || decoder(&chemin, &octets)).await??;
+    Ok(Json(decodage))
 }
 
 /// `GET /api/v1/donnees/{chemin}` — la structure nommée d'un `.cfg.bin`.

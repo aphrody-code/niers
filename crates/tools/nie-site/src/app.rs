@@ -155,6 +155,11 @@ declarer_routes! {
     // structure generique du conteneur : un consommateur typé qui lit le générique y trouve
     // zero element en annoncant un succes. Cf. `routes::donnees`.
     "/api/v1/donnees" => crate::routes::donnees::capacites,
+    // Declarees AVANT le joker : `{*chemin}` est terminal chez axum, et un chemin VFS reel
+    // commence toujours par `data/` — aucune ambiguite, mais l'ordre de lecture doit dire ce
+    // que fait le routeur.
+    "/api/v1/donnees/familles" => crate::routes::donnees::familles,
+    "/api/v1/donnees/famille/{cle}" => crate::routes::donnees::famille,
     "/api/v1/donnees/{*chemin}" => crate::routes::donnees::donnees,
     // La matrice de couverture du plan (§ 4). Elle est LUE, jamais mesuree ici : mesurer,
     // c'est lancer `niers --help`, lire quatre arbres de sources et parcourir 255 308 lignes
@@ -293,7 +298,7 @@ mod tests {
     #[test]
     fn contrat_de_routes() {
         let routes = chemins();
-        assert_eq!(routes.len(), 42, "42 routes montees");
+        assert_eq!(routes.len(), 44, "44 routes montees");
         for r in &routes {
             assert!(r.starts_with('/'), "{r}");
             // Syntaxe axum 0.7 (`:id`, `*path`) : elle PANIQUE au `route()`, elle ne degrade
