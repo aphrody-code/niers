@@ -1,21 +1,11 @@
 import { creerWebSource, type VueCatalogue } from "@niers/asset-source";
 import { type SanteApi, sante } from "@niers/asset-source/nie-site";
-import {
-	AssetSourceProvider,
-	Badge,
-	Callout,
-	HeaderBanner,
-	SidePanel,
-	SkewTile,
-	TileRow,
-	TitleBand,
-	useCapacites,
-	useErreurSource,
-	VersionChip,
-} from "@niers/inacord-ui";
+import { AssetSourceProvider, useCapacites, useErreurSource } from "@niers/inacord-ui";
 import "@niers/inacord-ui/shell/game-tokens.css";
 import { useEffect, useMemo, useState } from "react";
+import { EXPLORATEUR, entreesMenu } from "./entrees";
 import { Catalogue } from "./pages/Catalogue";
+import { EcranSecondaire, Note } from "./pages/Ecran";
 import { Explorateur } from "./pages/Explorateur";
 import { MenuPrincipal } from "./pages/MenuPrincipal";
 import { ACCUEIL, cheminPourEntree, entreeDemandee, separerLangue } from "./routage";
@@ -33,76 +23,45 @@ export function App() {
 	const source = useMemo(() => creerWebSource(), []);
 	return (
 		<AssetSourceProvider source={source}>
-			<Accueil />
+			<Site />
 		</AssetSourceProvider>
 	);
 }
 
-/** Les quatre filtres enregistrés, dans l'ordre où `nie-site` les publie. */
-const VUES = ["textures", "modeles", "sons", "videos"] as const;
-
-/** L'explorateur n'est pas un filtre : il montre la STRUCTURE, pas une selection. */
-const EXPLORATEUR = "explorateur";
-
 /**
- * Les entrées reconnues dans l'URL.
+ * L'application : une entrée courante, un écran.
  *
- * L'accueil n'en fait PAS partie : il vit à la racine, et `entreeDemandee` rend `null` pour
- * elle. Y ajouter `accueil` créerait un second chemin vers la même page.
+ * Il n'y a plus qu'UNE coquille. L'accueil est le menu principal reconstruit, les autres écrans
+ * sont le même décor avec la rangée d'entrées réduite à une barre — voir `pages/Ecran.tsx` pour
+ * ce que cette unification a remplacé.
  */
-const ENTREES: readonly (VueCatalogue | typeof EXPLORATEUR)[] = [...VUES, EXPLORATEUR];
-
-/** Ce que l'application peut afficher. */
-type Vue = VueCatalogue | typeof EXPLORATEUR | typeof ACCUEIL;
-
-/**
- * Ce que le serveur déclare savoir servir, ici et maintenant.
- *
- * L'index du VFS se monte en tâche de fond : l'interface distingue « on ne sait pas encore » de
- * « rien ne marche », au lieu d'afficher des vues vides pendant la première seconde.
- */
-function Accueil() {
+function Site() {
 	const capacites = useCapacites();
-	const erreur = useErreurSource();
+	const erreurSource = useErreurSource();
 	const [etat, setEtat] = useState<SanteApi | null>(null);
-	// L'entree courante vit dans l'URL, pas seulement en memoire.
-	//
-	// Sans cela, un lien vers un catalogue ne mene qu'a l'accueil, le bouton « precedent » du
-	// navigateur quitte le site au lieu de revenir a la vue precedente, et un rechargement perd
-	// ou l'on etait. Une interface qui ne se laisse pas mettre en signet oblige a refaire le
-	// chemin a chaque visite.
+
 	// Le prefixe de langue de l'URL courante. Il ne change pas pendant la session : changer de
 	// langue est une navigation entiere, servie par nie-site, pas un changement d'etat local.
 	const prefixe = useMemo(() => separerLangue(window.location.pathname).prefixe, []);
 
-	// La racine rend le MENU PRINCIPAL, pas le premier catalogue. C'est le recadrage : Aphrody
-	// est un site d'outils dont l'accueil est un menu ; lister des fichiers est le métier
-	// d'Inacord.
-	const [vue, setVueEtat] = useState<Vue>(() => {
+	// Les entrees reconnues dans l'URL. L'accueil n'en fait PAS partie : il vit a la racine, et
+	// `entreeDemandee` rend `null` pour elle — y ajouter `accueil` creerait un second chemin
+	// vers la meme page.
+	const entrees = useMemo(() => entreesMenu(etat).map((e) => e.vue), [etat]);
+
+	// L'entree courante vit dans l'URL, pas seulement en memoire : sans cela, un lien vers un
+	// catalogue ne mene qu'a l'accueil, le bouton « precedent » quitte le site, et un
+	// rechargement perd ou l'on etait.
+	const [vue, setVueEtat] = useState<string>(() => {
 		const routeServeur = document.getElementById("racine")?.dataset.route;
-		const demandee = entreeDemandee(ENTREES as readonly string[], window.location, routeServeur);
-		return (demandee as Vue | null) ?? ACCUEIL;
+		return entreeDemandee(DEPART, window.location, routeServeur) ?? ACCUEIL;
 	});
 
-	// Une ancienne URL `?vue=` doit continuer a fonctionner, mais pas a subsister : elle est
-	// reecrite vers la forme canonique en `replaceState`, donc sans ajouter d'entree
-	// d'historique — sinon le bouton « precedent » ramenerait a la meme page.
-	useEffect(() => {
-		if (!new URLSearchParams(window.location.search).get("vue")) {
-			return;
-		}
-		const url = new URL(window.location.href);
-		url.searchParams.delete("vue");
-		url.pathname = cheminPourEntree(prefixe, vue);
-		window.history.replaceState({ vue }, "", url);
-	}, [prefixe, vue]);
-
 	/** Change de vue ET d'URL, sans recharger la page. */
-	const setVue = (suivante: Vue) => {
+	const setVue = (suivante: string) => {
 		setVueEtat(suivante);
 		const url = new URL(window.location.href);
 		url.pathname = cheminPourEntree(prefixe, suivante);
-		url.searchParams.delete("vue");
 		window.history.pushState({ vue: suivante }, "", url);
 	};
 
@@ -111,12 +70,11 @@ function Accueil() {
 	// catalogue.
 	useEffect(() => {
 		const surRetour = () => {
-			const demandee = entreeDemandee(ENTREES as readonly string[], window.location);
-			setVueEtat((demandee as Vue | null) ?? ACCUEIL);
+			setVueEtat(entreeDemandee(entrees, window.location) ?? ACCUEIL);
 		};
 		window.addEventListener("popstate", surRetour);
 		return () => window.removeEventListener("popstate", surRetour);
-	}, []);
+	}, [entrees]);
 
 	useEffect(() => {
 		const ac = new AbortController();
@@ -128,7 +86,10 @@ function Accueil() {
 		return () => ac.abort();
 	}, []);
 
-	const totaux = new Map(etat?.vues.map((v) => [v.nom, v.total]) ?? []);
+	// Le catalogue est-il consultable ? `capacites` vaut `null` tant que la mesure court : on
+	// distingue « on ne sait pas encore » de « rien ne marche », au lieu d'afficher des vues
+	// vides pendant la premiere seconde.
+	const pret = Boolean(capacites?.vfs);
 
 	// L'accueil occupe tout l'écran : le menu principal EST la page, pas un panneau dedans.
 	if (vue === ACCUEIL) {
@@ -138,97 +99,41 @@ function Accueil() {
 			// soit plus courte que la fenetre. Le canevas se met alors a l'echelle d'une hauteur
 			// qu'il n'a pas, et laisse une bande vide en bas — sans qu'aucune valeur soit fausse.
 			<div style={{ position: "fixed", inset: 0, background: "var(--jeu-ciel-clair)" }}>
-				<MenuPrincipal
-					vue={vue}
-					onChoisir={(suivante) => setVue(suivante as Vue)}
-					etat={etat}
-					vfsPret={Boolean(capacites?.vfs)}
-				/>
+				<MenuPrincipal vue={vue} onChoisir={setVue} etat={etat} pret={pret} />
 			</div>
 		);
 	}
 
 	return (
-		<div
-			style={{
-				minHeight: "100vh",
-				display: "flex",
-				flexDirection: "column",
-				background: "var(--jeu-fond-abysse)",
-				color: "var(--jeu-texte-vif)",
-				fontFamily: "system-ui, sans-serif",
-			}}
-		>
-			<HeaderBanner
-				titre={
-					// Le titre ramène au menu : sans ce chemin de retour, on n'atteint l'accueil
-					// qu'en réécrivant l'URL à la main.
-					<button
-						type="button"
-						onClick={() => setVue(ACCUEIL)}
-						style={{
-							border: 0,
-							background: "transparent",
-							color: "inherit",
-							font: "inherit",
-							fontWeight: 800,
-							letterSpacing: "var(--jeu-titre-espacement)",
-							cursor: "pointer",
-							padding: 0,
-						}}
-					>
-						← Aphrody
-					</button>
-				}
-				actions={etat ? <VersionChip version={`${etat.service} ${etat.version || "—"}`} /> : null}
-			/>
-
-			<div style={{ display: "flex", flex: 1, minHeight: 0 }}>
-				<SidePanel>
-					<TitleBand>Catalogues</TitleBand>
-					<div style={{ marginTop: "var(--jeu-espace-m)" }}>
-						<TileRow>
-							{ENTREES.map((nom) => {
-								const total = totaux.get(nom);
-								return (
-									<SkewTile
-										key={nom}
-										actif={nom === vue}
-										// Tant que l'index n'est pas prêt, la tuile est en sourdine : elle
-										// ne promet pas un contenu qu'elle ne peut pas encore montrer.
-										sourdine={!capacites?.vfs}
-										onClick={() => setVue(nom)}
-									>
-										<span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-											<span style={{ flex: 1, textTransform: "capitalize" }}>{nom}</span>
-											{typeof total === "number" ? (
-												<Badge>{total.toLocaleString("fr")}</Badge>
-											) : null}
-										</span>
-									</SkewTile>
-								);
-							})}
-						</TileRow>
-					</div>
-				</SidePanel>
-
-				<main style={{ flex: 1, padding: "var(--jeu-espace-xl)", overflowY: "auto" }}>
-					{erreur ? (
-						<Callout ton="alerte">nie-site injoignable : {erreur}</Callout>
-					) : !capacites ? (
-						<Callout>Mesure des capacités…</Callout>
-					) : !capacites.vfs ? (
-						<Callout>
-							L'index du VFS n'est pas encore monté. Les catalogues apparaîtront dès qu'il sera
-							prêt.
-						</Callout>
-					) : vue === EXPLORATEUR ? (
-						<Explorateur />
-					) : (
-						<Catalogue vue={vue} />
-					)}
-				</main>
-			</div>
-		</div>
+		<EcranSecondaire vue={vue} onChoisir={setVue} etat={etat}>
+			{erreurSource ? (
+				// Le detail technique de la panne ne s'affiche pas : il ne dit rien a qui consulte
+				// le site, et le seul geste utile — reessayer — ne depend pas de lui.
+				<Note ton="alerte">
+					Le site ne parvient pas à joindre ses ressources. Réessayez dans un instant.
+				</Note>
+			) : !capacites ? (
+				<Note>Chargement…</Note>
+			) : !pret ? (
+				<Note>Le catalogue est en cours de préparation. Il s'affichera dès qu'il sera prêt.</Note>
+			) : vue === EXPLORATEUR ? (
+				<Explorateur />
+			) : (
+				// La vue vient de l'URL, et l'URL n'a ete acceptee que parce qu'elle figure dans
+				// les entrees connues — celles du serveur, ou les quatre catalogues qu'il publie
+				// dans son document. Le type ne couvre que ces quatre-la ; si le serveur en
+				// annonce un cinquieme, la page le demande sous SON nom plutot que de le refuser.
+				<Catalogue vue={vue as VueCatalogue} />
+			)}
+		</EcranSecondaire>
 	);
 }
+
+/**
+ * Les entrées reconnues au tout premier rendu, avant la réponse du serveur.
+ *
+ * Elles servent à lire l'URL d'arrivée : sans elles, ouvrir `/textures` directement afficherait
+ * l'accueil le temps d'un aller-retour réseau, puis basculerait — un saut visible qu'aucune
+ * donnée ne justifie.
+ */
+const DEPART = entreesMenu(null).map((e) => e.vue);

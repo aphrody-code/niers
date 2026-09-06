@@ -8,10 +8,15 @@
  * Cette page utilise `parcourir()`, la seule méthode du contrat que les deux hôtes implémentent
  * de la même façon : Aphrody par `/b/<préfixe>`, Inacord par sa commande `ls`. C'est donc la
  * surface la plus portable du contrat, et celle qui marche même sans catalogue paginé.
+ *
+ * Les chemins du jeu sont le CONTENU de cette page, et à ce titre ils s'affichent. Ce qui n'y a
+ * pas sa place, et en a disparu, c'est le vocabulaire d'implémentation — index, montage, hôte,
+ * message d'erreur du transport : le lecteur explore des fichiers, il n'exploite pas un service.
  */
 import type { ContenuDossier } from "@niers/asset-source";
-import { Badge, Callout, TitleBand, useAssetSource, useCapacites } from "@niers/inacord-ui";
+import { useAssetSource, useCapacites } from "@niers/inacord-ui";
 import { useEffect, useState } from "react";
+import { accorde, Note, TitreVue } from "./Ecran";
 
 /** Formate une taille en octets. */
 function taille(octets: number): string {
@@ -37,44 +42,44 @@ export function Explorateur() {
 	const capacites = useCapacites();
 	const [prefixe, setPrefixe] = useState("");
 	const [contenu, setContenu] = useState<ContenuDossier | null>(null);
-	const [erreur, setErreur] = useState<string | null>(null);
+	const [erreur, setErreur] = useState(false);
 
 	useEffect(() => {
 		if (!capacites?.vfs) return;
 		const ac = new AbortController();
-		setErreur(null);
+		setErreur(false);
 		source
 			.parcourir(prefixe, ac.signal)
 			.then((c) => {
 				if (!ac.signal.aborted) setContenu(c);
 			})
-			.catch((e: unknown) => {
-				if (!ac.signal.aborted) setErreur(e instanceof Error ? e.message : String(e));
+			.catch(() => {
+				if (!ac.signal.aborted) setErreur(true);
 			});
 		return () => ac.abort();
 	}, [source, capacites?.vfs, prefixe]);
 
-	if (!capacites) return <Callout>Mesure des capacités…</Callout>;
-	if (!capacites.vfs) return <Callout>L'index du VFS n'est pas monté.</Callout>;
-	if (erreur) return <Callout ton="alerte">Dossier illisible : {erreur}</Callout>;
+	if (!capacites) return <Note>Chargement…</Note>;
+	if (!capacites.vfs) {
+		return <Note>L'arborescence est en cours de préparation. Elle s'affichera dès qu'elle sera prête.</Note>;
+	}
+	if (erreur) {
+		return <Note ton="alerte">Ce dossier n'a pas pu être ouvert. Réessayez dans un instant.</Note>;
+	}
 
 	const segments = fil(prefixe);
+	const elements = contenu ? contenu.dossiers.length + contenu.fichiers.length : 0;
 
 	return (
 		<section>
-			<TitleBand>
-				Explorateur{" "}
-				{contenu ? (
-					<Badge>
-						{contenu.dossiers.length + contenu.fichiers.length}
-					</Badge>
-				) : null}
-			</TitleBand>
+			<TitreVue appoint={contenu ? accorde(elements, "entrée") : undefined}>
+				Explorer
+			</TitreVue>
 
 			{/* Fil d'Ariane. `nav` + `aria-label` pour que la remontée soit annoncée comme telle. */}
-			<nav aria-label="Chemin" style={{ margin: "var(--jeu-espace-m) 0", fontSize: "0.85rem" }}>
+			<nav aria-label="Chemin" style={{ margin: "var(--jeu-espace-m) 0", fontSize: "0.9rem" }}>
 				<button type="button" onClick={() => setPrefixe("")} style={lien}>
-					racine
+					Racine
 				</button>
 				{segments.map((s) => (
 					<span key={s.chemin}>
@@ -87,7 +92,7 @@ export function Explorateur() {
 			</nav>
 
 			{!contenu ? (
-				<Callout>Chargement…</Callout>
+				<Note>Chargement…</Note>
 			) : (
 				<ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
 					{/*
@@ -103,9 +108,9 @@ export function Explorateur() {
 							<button
 								type="button"
 								onClick={() => setPrefixe(d)}
-								style={{ ...ligne, color: "var(--jeu-accent-cyan)" }}
+								style={{ ...ligne, fontWeight: 800 }}
 							>
-								<span aria-hidden="true">📁</span> {d.split("/").filter(Boolean).at(-1) ?? d}
+								<IconeDossier /> {d.split("/").filter(Boolean).at(-1) ?? d}
 							</button>
 						</li>
 					))}
@@ -116,27 +121,52 @@ export function Explorateur() {
 								<span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
 									{f.nom}
 								</span>
-								<span style={{ color: "var(--jeu-surface-cendre)", fontSize: "0.8rem" }}>
+								<span style={{ color: "var(--jeu-tuile-bas)", fontSize: "0.8rem" }}>
 									{taille(f.taille)}
 								</span>
 							</a>
 						</li>
 					))}
-					{contenu.dossiers.length === 0 && contenu.fichiers.length === 0 ? (
-						<Callout>Ce dossier est vide.</Callout>
-					) : null}
+					{elements === 0 ? <Note>Ce dossier est vide.</Note> : null}
 				</ul>
 			)}
 		</section>
 	);
 }
 
+/**
+ * Le pictogramme d'un dossier — un tracé, pas une émoji.
+ *
+ * `📁` dépend d'une police d'émojis installée sur la machine du lecteur : là où elle manque, le
+ * caractère se rend en rectangle vide, et rien ne le signale. Un `svg` se dessine partout, prend
+ * la couleur du texte et suit sa taille.
+ */
+function IconeDossier() {
+	return (
+		<svg
+			width="15"
+			height="15"
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			strokeWidth="2"
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			aria-hidden="true"
+			focusable="false"
+		>
+			<path d="M4 5h6l2 2h8v12H4z" />
+		</svg>
+	);
+}
+
 const lien: React.CSSProperties = {
 	background: "none",
 	border: "none",
-	color: "var(--jeu-texte-doux)",
+	color: "var(--jeu-tuile-bas)",
 	cursor: "pointer",
 	font: "inherit",
+	fontWeight: 700,
 	padding: 0,
 	textDecoration: "underline",
 };
@@ -149,8 +179,8 @@ const ligne: React.CSSProperties = {
 	padding: "var(--jeu-espace-xs) var(--jeu-espace-s)",
 	background: "none",
 	border: "none",
-	borderBottom: "1px solid rgb(99 216 252 / 12%)",
-	color: "var(--jeu-texte-vif)",
+	borderBottom: "1px solid var(--jeu-tuile-bord)",
+	color: "var(--jeu-nuit-profonde)",
 	font: "inherit",
 	textAlign: "left",
 	cursor: "pointer",

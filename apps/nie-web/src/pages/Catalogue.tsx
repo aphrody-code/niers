@@ -24,10 +24,18 @@
  * qui retient les extensions d'image (amendement A3). Le `chemin` de chaque élément est donc son
  * adresse complète et verbatim — c'est lui qu'on passe à `urlFichier()` ou `vignette()`, jamais
  * un chemin reconstruit à partir du nom.
+ *
+ * ## L'habillage suit celui de l'accueil
+ *
+ * Fond clair, titres en bandeau biseauté, cartes blanches cerclées de bleu : les mêmes formes
+ * que le menu principal. La page était auparavant rendue sur fond noir, avec ses propres
+ * bandeaux et ses propres pastilles — un second thème pour le même site.
  */
 import type { EntreeVfs, VueCatalogue } from "@niers/asset-source";
-import { Badge, Callout, TitleBand, useAssetSource, useCapacites } from "@niers/inacord-ui";
+import { useAssetSource, useCapacites } from "@niers/inacord-ui";
 import { useEffect, useState } from "react";
+import { libelleEntree } from "../entrees";
+import { accorde, Note, TitreVue } from "./Ecran";
 
 /** Taille de page. Le serveur borne à 200 ; 60 tient dans une grille sans peser. */
 const PAR_PAGE = 60;
@@ -38,14 +46,6 @@ function taille(octets: number): string {
 	if (octets < 1024 * 1024) return `${(octets / 1024).toFixed(1)} ko`;
 	return `${(octets / (1024 * 1024)).toFixed(1)} Mo`;
 }
-
-/** Libellés affichés, au singulier près — le code du jeu ne les porte pas. */
-const LIBELLES: Record<VueCatalogue, string> = {
-	textures: "Textures",
-	modeles: "Modèles",
-	sons: "Sons",
-	videos: "Vidéos",
-};
 
 export function Catalogue({ vue }: { vue: VueCatalogue }) {
 	const source = useAssetSource();
@@ -61,7 +61,7 @@ export function Catalogue({ vue }: { vue: VueCatalogue }) {
 	const [elements, setElements] = useState<EntreeVfs[]>([]);
 	const [total, setTotal] = useState(0);
 	const [pages, setPages] = useState(0);
-	const [erreur, setErreur] = useState<string | null>(null);
+	const [erreur, setErreur] = useState(false);
 	const [charge, setCharge] = useState(false);
 	// `saisie` suit le champ, `filtre` ce qui a ete envoye : sans ce decalage, chaque frappe
 	// declencherait une requete sur 143 246 chemins.
@@ -74,7 +74,7 @@ export function Catalogue({ vue }: { vue: VueCatalogue }) {
 		if (!capacites?.vfs || !source.catalogue) return;
 		const ac = new AbortController();
 		setCharge(false);
-		setErreur(null);
+		setErreur(false);
 		source
 			.catalogue(vue, { page, parPage: PAR_PAGE, q: filtre, signal: ac.signal })
 			.then((p) => {
@@ -84,26 +84,30 @@ export function Catalogue({ vue }: { vue: VueCatalogue }) {
 				setPages(p.pages);
 				setCharge(true);
 			})
-			.catch((e: unknown) => {
-				if (!ac.signal.aborted) setErreur(e instanceof Error ? e.message : String(e));
+			.catch(() => {
+				// Le message d'erreur du transport ne s'affiche pas : « Failed to fetch » ou un
+				// code HTTP ne dit rien à qui consulte la page, et le seul geste utile ne dépend
+				// pas de lui.
+				if (!ac.signal.aborted) setErreur(true);
 			});
 		return () => ac.abort();
 	}, [source, capacites?.vfs, page, vue, filtre]);
 
-	if (!capacites) return <Callout>Mesure des capacités…</Callout>;
-	if (!capacites.vfs) {
-		return <Callout>L'index du VFS n'est pas monté : le catalogue n'est pas encore lisible.</Callout>;
+	const titre = libelleEntree(vue);
+
+	if (!capacites) return <Note>Chargement…</Note>;
+	if (!capacites.vfs || !source.catalogue) {
+		return <Note>Le catalogue est en cours de préparation. Il s'affichera dès qu'il sera prêt.</Note>;
 	}
-	if (!source.catalogue) {
-		return <Callout ton="alerte">Cet hôte ne sait pas paginer les catalogues.</Callout>;
+	if (erreur) {
+		return <Note ton="alerte">Ce catalogue n'a pas pu être chargé. Réessayez dans un instant.</Note>;
 	}
-	if (erreur) return <Callout ton="alerte">Catalogue illisible : {erreur}</Callout>;
 
 	return (
 		<section>
-			<TitleBand>
-				{LIBELLES[vue]} {total ? <Badge>{total.toLocaleString("fr")}</Badge> : null}
-			</TitleBand>
+			<TitreVue appoint={total ? accorde(total, "élément") : undefined}>
+				{titre}
+			</TitreVue>
 
 			<form
 				onSubmit={(e) => {
@@ -117,19 +121,21 @@ export function Catalogue({ vue }: { vue: VueCatalogue }) {
 					type="search"
 					value={saisie}
 					onChange={(e) => setSaisie(e.target.value)}
-					placeholder="Chercher dans les chemins…"
-					aria-label={`Chercher dans ${LIBELLES[vue]}`}
+					placeholder={`Chercher dans les ${titre.toLowerCase()}…`}
+					aria-label={`Chercher dans ${titre}`}
 					style={{
 						flex: 1,
-						padding: "var(--jeu-espace-s)",
-						background: "var(--jeu-fond-abysse)",
-						border: "1px solid rgb(99 216 252 / 30%)",
+						padding: "var(--jeu-espace-s) var(--jeu-espace-m)",
+						background: "#fff",
+						border: "2px solid var(--jeu-tuile-bord)",
 						borderRadius: "var(--jeu-rayon)",
-						color: "var(--jeu-texte-vif)",
+						color: "var(--jeu-nuit-profonde)",
 						font: "inherit",
 					}}
 				/>
-				<button type="submit">Chercher</button>
+				<button type="submit" style={BOUTON}>
+					Chercher
+				</button>
 				{filtre ? (
 					<button
 						type="button"
@@ -138,6 +144,7 @@ export function Catalogue({ vue }: { vue: VueCatalogue }) {
 							setFiltre("");
 							setPage(1);
 						}}
+						style={BOUTON}
 					>
 						Effacer
 					</button>
@@ -145,7 +152,9 @@ export function Catalogue({ vue }: { vue: VueCatalogue }) {
 			</form>
 
 			{!charge ? (
-				<Callout>Chargement…</Callout>
+				<Note>Chargement…</Note>
+			) : elements.length === 0 ? (
+				<Note>Aucun élément ne correspond à cette recherche.</Note>
 			) : (
 				<ul
 					style={{
@@ -165,12 +174,13 @@ export function Catalogue({ vue }: { vue: VueCatalogue }) {
 								href={vue === "sons" || vue === "videos" ? undefined : source.urlFichier(t.chemin)}
 								style={{
 									display: "block",
-									background: "var(--jeu-fond-nuit)",
-									border: "1px solid rgb(99 216 252 / 25%)",
+									background: "#fff",
+									border: "2px solid var(--jeu-tuile-bord)",
 									borderRadius: "var(--jeu-rayon)",
-									color: "var(--jeu-texte-vif)",
+									color: "var(--jeu-nuit-profonde)",
 									textDecoration: "none",
 									overflow: "hidden",
+									boxShadow: "var(--jeu-ombre-tuile)",
 								}}
 							>
 								{/* La vignette est produite par l'hôte : URL HTTP ici, `data:` sur le
@@ -186,7 +196,7 @@ export function Catalogue({ vue }: { vue: VueCatalogue }) {
 										preload="none"
 										playsInline
 										src={source.urlVideo(t.chemin)}
-										style={{ width: "100%", aspectRatio: "16/9", background: "var(--jeu-fond-abysse)" }}
+										style={{ width: "100%", aspectRatio: "16/9", background: "var(--jeu-nuit-profonde)" }}
 									/>
 								) : vue === "sons" && source.urlAudio ? (
 									// `preload="none"` : 60 lecteurs sur une page ne doivent pas declencher
@@ -210,7 +220,7 @@ export function Catalogue({ vue }: { vue: VueCatalogue }) {
 											width: "100%",
 											aspectRatio: "1",
 											objectFit: "contain",
-											background: "var(--jeu-fond-abysse)",
+											background: "var(--jeu-ciel-clair)",
 											imageRendering: "pixelated",
 										}}
 									/>
@@ -220,6 +230,7 @@ export function Catalogue({ vue }: { vue: VueCatalogue }) {
 									<div
 										style={{
 											fontSize: "0.8rem",
+											fontWeight: 700,
 											overflow: "hidden",
 											textOverflow: "ellipsis",
 											whiteSpace: "nowrap",
@@ -228,7 +239,7 @@ export function Catalogue({ vue }: { vue: VueCatalogue }) {
 									>
 										{t.nom}
 									</div>
-									<div style={{ fontSize: "0.7rem", color: "var(--jeu-surface-cendre)" }}>
+									<div style={{ fontSize: "0.7rem", color: "var(--jeu-tuile-bas)" }}>
 										{taille(t.taille)}
 									</div>
 								</div>
@@ -243,13 +254,23 @@ export function Catalogue({ vue }: { vue: VueCatalogue }) {
 					aria-label="Pagination"
 					style={{ display: "flex", alignItems: "center", gap: "var(--jeu-espace-m)" }}
 				>
-					<button type="button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+					<button
+						type="button"
+						disabled={page <= 1}
+						onClick={() => setPage((p) => p - 1)}
+						style={BOUTON}
+					>
 						Précédent
 					</button>
-					<span aria-live="polite">
+					<span aria-live="polite" style={{ fontWeight: 700 }}>
 						Page {page} sur {pages.toLocaleString("fr")}
 					</span>
-					<button type="button" disabled={page >= pages} onClick={() => setPage((p) => p + 1)}>
+					<button
+						type="button"
+						disabled={page >= pages}
+						onClick={() => setPage((p) => p + 1)}
+						style={BOUTON}
+					>
 						Suivant
 					</button>
 				</nav>
@@ -257,3 +278,15 @@ export function Catalogue({ vue }: { vue: VueCatalogue }) {
 		</section>
 	);
 }
+
+/** Les boutons de la page, dans la teinte des tuiles du menu. */
+const BOUTON: React.CSSProperties = {
+	padding: "var(--jeu-espace-s) var(--jeu-espace-l)",
+	border: 0,
+	borderRadius: "var(--jeu-rayon)",
+	background: "linear-gradient(180deg, var(--jeu-tuile-haut), var(--jeu-tuile-bas))",
+	color: "var(--jeu-texte-vif)",
+	font: "inherit",
+	fontWeight: 800,
+	cursor: "pointer",
+};

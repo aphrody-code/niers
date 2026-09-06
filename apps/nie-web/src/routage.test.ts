@@ -26,7 +26,9 @@ describe("separerLangue", () => {
 });
 
 describe("entreeDemandee", () => {
-	const emplacement = (pathname: string, search = "") => ({ pathname, search });
+	// Le seul champ lu est le chemin. Le type l'impose désormais : la compatibilité `?vue=`
+	// a été retirée, et un test qui passerait encore une chaîne de requête ne compilerait pas.
+	const emplacement = (pathname: string) => ({ pathname });
 
 	test("le chemin fait foi", () => {
 		expect(entreeDemandee(ENTREES, emplacement("/textures"))).toBe("textures");
@@ -41,16 +43,6 @@ describe("entreeDemandee", () => {
 
 	test("une route inconnue ne désigne aucune entrée", () => {
 		expect(entreeDemandee(ENTREES, emplacement("/inexistante"))).toBeNull();
-	});
-
-	test("l'ancienne forme `?vue=` reste comprise", () => {
-		// Un signet ou un lien déjà partagé ne doit pas se casser.
-		expect(entreeDemandee(ENTREES, emplacement("/", "?vue=sons"))).toBe("sons");
-		expect(entreeDemandee(ENTREES, emplacement("/ja", "?vue=modeles"))).toBe("modeles");
-	});
-
-	test("le chemin l'emporte sur l'ancien paramètre", () => {
-		expect(entreeDemandee(ENTREES, emplacement("/textures", "?vue=sons"))).toBe("textures");
 	});
 
 	test("la route annoncée par le serveur sert de repli", () => {
@@ -75,7 +67,7 @@ describe("cheminPourEntree", () => {
 			for (const entree of ENTREES) {
 				const chemin = cheminPourEntree(prefixe, entree);
 				expect(separerLangue(chemin).prefixe).toBe(prefixe);
-				expect(entreeDemandee(ENTREES, { pathname: chemin, search: "" })).toBe(entree);
+				expect(entreeDemandee(ENTREES, { pathname: chemin })).toBe(entree);
 			}
 		}
 	});

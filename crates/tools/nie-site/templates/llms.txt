@@ -12,12 +12,13 @@ declared to each other with `hreflang`; the content behind them is the same cata
 If you are an agent, prefer the JSON API below over the HTML pages. It is paginated, stable,
 and returns the same identifiers the game uses.
 
-## Catalogues (HTML)
+## Sections (HTML)
 
 - [Textures]({{ origine }}/textures): every texture, at its original path, converted on demand.
 - [Models]({{ origine }}/modeles): assembled and exportable models.
 - [Sounds]({{ origine }}/sons): audio banks (ACB, AWB, HCA), decoded on demand.
 - [Videos]({{ origine }}/videos): in-game videos (USM).
+- [Browse]({{ origine }}/explorateur): walk the directory tree instead of filtering by kind.
 
 ## JSON API
 

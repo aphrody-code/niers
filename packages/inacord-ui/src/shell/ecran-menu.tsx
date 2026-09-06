@@ -212,7 +212,12 @@ export function HeroPanel({
 	hauteur = BOITES.panneaux.h,
 	penche = Math.round(PENTE_PANNEAU * BOITES.panneaux.h),
 }: {
-	titre: string;
+	/**
+	 * Le titre, du côté extérieur. Optionnel : le panneau sert aussi de DÉCOR, et lui imposer
+	 * un libellé conduisait à en inventer un — puis à dupliquer une entrée déjà présente
+	 * ailleurs à l'écran, faute d'avoir quelque chose de neuf à y écrire.
+	 */
+	titre?: string;
 	cote: "gauche" | "droite";
 	children?: ReactNode;
 	onClick?: () => void;
@@ -255,22 +260,24 @@ export function HeroPanel({
 			    x = 28 du canevas, « VOTRE EQUIPE » finit a 26 du bord droit). Le poser du cote
 			    interieur le ferait tomber dans le biseau de 98 px, sans qu'aucun message ne le
 			    signale : le texte serait toujours la, simplement coupe. */}
-			<span
-				style={{
-					position: "absolute",
-					bottom: 8,
-					left: gauche ? 28 : undefined,
-					right: gauche ? undefined : 28,
-					fontSize: 38,
-					fontWeight: 800,
-					letterSpacing: "0.12em",
-					textTransform: "uppercase",
-					color: "var(--jeu-texte-vif)",
-					textShadow: "0 2px 6px rgb(10 47 102 / 80%)",
-				}}
-			>
-				{titre}
-			</span>
+			{titre ? (
+				<span
+					style={{
+						position: "absolute",
+						bottom: 8,
+						left: gauche ? 28 : undefined,
+						right: gauche ? undefined : 28,
+						fontSize: 38,
+						fontWeight: 800,
+						letterSpacing: "0.12em",
+						textTransform: "uppercase",
+						color: "var(--jeu-texte-vif)",
+						textShadow: "0 2px 6px rgb(10 47 102 / 80%)",
+					}}
+				>
+					{titre}
+				</span>
+			) : null}
 			{children}
 		</Balise>
 	);

@@ -1,163 +1,55 @@
 /**
- * L'accueil d'Aphrody : le menu principal, et non une liste de fichiers.
+ * L'accueil d'Aphrody : le menu principal, et rien d'autre.
  *
- * ## Le recadrage
+ * ## Ce que cet écran a cessé d'afficher, et pourquoi
  *
- * Aphrody n'est ni le wiki (c'est Azalée) ni l'explorateur de fichiers (c'est Inacord). C'est le
- * site d'outils, et son écran d'accueil est un MENU — les catalogues y sont des entrées, pas la
- * page d'arrivée. Ce fichier est ce changement : la racine rend le menu, `/textures` et ses
- * voisines rendent un catalogue.
+ * Il portait, tous en même temps : le total des ressources à trois endroits (l'encart d'état,
+ * la plaque centrale, le panneau gauche), le compte de chaque catalogue à deux (le panneau
+ * gauche et l'appoint des tuiles), un bouton « Calque » à trois, deux chemins vers l'explorateur
+ * et deux vers le flux Atom. S'y ajoutaient le nom et la version du service (« nie-site 0.5.9 »),
+ * le nombre d'entrées indexées du VFS, une tuile vers `/api/v1/health`, des bannières vers
+ * `sitemap.xml`, `llms.txt` et GitHub, le domaine du site écrit sur le site lui-même, et deux
+ * guides de touches — « F » et « V » — que rien n'écoutait : aucun raccourci clavier n'existe
+ * dans cette application.
  *
- * ## Deux couches, deux natures — et il ne faut pas les confondre
+ * Le calque exporté du jeu, enfin, était rendu SOUS l'interface à 18 % d'opacité. Son texte
+ * restait dans le document : « Photos commémoratives disponibles après », « Exclure plusieurs
+ * joueurs », « Fusion rapide », « Bonus d'équipe » — des libellés d'un autre écran du jeu, lus
+ * par les lecteurs d'écran et les moteurs, superposés au milieu de la page d'accueil. C'est un
+ * outil de comparaison ; sa place est dans la validation, pas en façade.
  *
- * 1. **Le calque exporté** (`LayoutRender`) dessine `mainmenu01.layout.json`, produit par
- *    `nie-game --runtime --menu mainmenu01 --export-layout`. C'est de la DONNÉE : un réexport
- *    le met à jour sans qu'une ligne d'ici change.
- * 2. **La reconstruction** (les `CanvasItem` ci-dessous) pose les panneaux, la rangée de tuiles
- *    et les bandeaux. Ses positions viennent de `BOITES`, MESURÉES sur une capture du jeu par
- *    `scripts/validation/mesurer-mainmenu.py` — pas du binaire, et pas de l'œil.
+ * ## Ce qui reste
  *
- * La distinction n'est pas cosmétique : l'export ne donne pas la place des widgets du menu — 24
- * de ses 34 objets restent sur le centre par défaut et 5 sortent du canevas. Présenter la
- * seconde couche comme une mesure du jeu serait faire passer une reconstruction pour une
- * preuve. Le panneau de diagnostic (touche « Calque ») affiche ces comptes plutôt que de les
- * taire.
+ * Le titre, les entrées, la mention légale. Une information n'apparaît qu'à un seul endroit, et
+ * aucune ne décrit l'infrastructure : ni service, ni version, ni endpoint, ni compte d'index.
  *
- * ## Ce qui a changé après comparaison avec une vraie capture
+ * ## La géométrie reste mesurée — une seule position est recalculée, et elle le dit
  *
- * La première version posait ses positions à l'œil. Mise à côté de la capture, elle avait huit
- * écarts, dont quatre structurels : un fond en dégradé bleu là où l'écran du jeu est presque
- * blanc, deux panneaux qui se rejoignaient au centre au lieu de laisser 330 px au logo, un
- * biseau penché dans le MAUVAIS SENS (le jeu décale le haut vers la droite), et deux blocs
- * entiers absents — la rangée basse et la pile de bannières. Chaque position est désormais un
- * nombre mesuré, et le script qui les produit est versionné à côté.
+ * Les positions viennent de `BOITES`, mesurées sur une capture du jeu par
+ * `scripts/validation/mesurer-mainmenu.py` — pas de l'œil. Panneaux, logo et mention légale
+ * gardent la place que la mesure leur donne. La rangée de tuiles fait exception : le jeu la
+ * pose haut parce que trois blocs la suivent, et ces blocs n'existent plus ici. Elle est donc
+ * recentrée dans l'espace libre, entre deux bornes qui restent, elles, des mesures (§
+ * [`Y_RANGEE`]). Un écart assumé et écrit, plutôt qu'une fidélité affichée et fausse.
  */
-import type { SanteApi, VueCatalogue } from "@niers/asset-source";
+import type { SanteApi } from "@niers/asset-source";
 import {
-	Badge,
-	Banniere,
-	bilanLayout,
 	BOITES,
 	CanvasItem,
-	CenterPlate,
-	CornerChip,
 	ECART_TUILE,
 	FOND_MENU,
 	GameCanvas,
 	GLYPHES,
 	HeroPanel,
 	IconTile,
-	KeyCap,
-	LARGEUR_TUILE,
-	LayoutRender,
-	lireLayout,
-	type NomGlyphe,
-	NoticeCard,
 	PENTE_PANNEAU,
-	RibbonBand,
 	TileStrip,
 } from "@niers/inacord-ui";
-import { useCallback, useMemo, useState } from "react";
-import brut from "../donnees/mainmenu01.layout.json";
+import { useMemo } from "react";
+import { entreesMenu } from "../entrees";
 
-/**
- * Le layout, validé au chargement du module.
- *
- * `lireLayout` plutôt qu'un `as` : un réexport qui perdrait `canvas` ou renommerait `objects`
- * rendrait sinon une page vide, sans message, avec un typecheck vert.
- */
-const LAYOUT = lireLayout(brut);
-
-/** Ce que le layout contient réellement — compté, jamais affirmé. */
-const BILAN = bilanLayout(LAYOUT);
-
-/** Une entrée du menu. `vue` désigne la route ; `glyphe` n'est qu'un appui visuel. */
-interface EntreeMenu {
-	vue: string;
-	libelle: string;
-	glyphe: NomGlyphe;
-	/** Le total publié par le serveur pour cette vue, ou `null` s'il ne le connaît pas encore. */
-	total: number | null;
-}
-
-/**
- * L'habillage d'une vue : son libellé et son pictogramme.
- *
- * Ce sont les deux SEULES choses figées ici, et elles ne sont pas de la donnée — un nom de vue
- * qui n'y figure pas s'affiche tel que le serveur l'a nommé, avec un pictogramme neutre. La
- * liste des entrées et leurs comptes, eux, viennent entièrement de `/api/v1/health`.
- */
-const HABILLAGE: Record<string, { libelle: string; glyphe: NomGlyphe }> = {
-	textures: { libelle: "Textures", glyphe: "image" },
-	modeles: { libelle: "Modèles", glyphe: "cube" },
-	sons: { libelle: "Sons", glyphe: "onde" },
-	videos: { libelle: "Vidéos", glyphe: "film" },
-};
-
-/**
- * La rangée principale, construite depuis ce que le SERVEUR publie.
- *
- * Rien n'est figé : le jour où `nie-site` expose une vue de plus, elle apparaît dans le menu
- * sans qu'une ligne d'ici bouge — avec son nom et son compte à lui. Une liste écrite en dur
- * aurait au contraire continué d'afficher cinq tuiles et quatre totaux périmés, sans erreur
- * nulle part. C'est la même raison qui interdit de reprendre les chiffres de la capture du jeu
- * (« VICTOIRES 221 », « NIVEAU DE L'ÉQUIPE 99 ») : ils décrivent UNE sauvegarde, pas l'écran.
- *
- * L'explorateur est la seule entrée qui ne vienne pas de là : il ne parcourt pas un catalogue
- * mais le VFS, et le serveur ne le publie pas comme une vue. Il n'a donc pas de total.
- */
-function entreesPrincipales(etat: SanteApi | null): EntreeMenu[] {
-	const vues = (etat?.vues ?? []).map((v) => ({
-		vue: v.nom,
-		libelle: HABILLAGE[v.nom]?.libelle ?? v.nom,
-		glyphe: HABILLAGE[v.nom]?.glyphe ?? ("arbre" as NomGlyphe),
-		total: v.total,
-	}));
-	return [
-		...vues,
-		{ vue: "explorateur", libelle: "Explorateur", glyphe: "arbre", total: null },
-	];
-}
-
-/** Une entrée de la rangée basse : trois liens de service, comme les trois tuiles du jeu. */
-interface EntreeService {
-	libelle: string;
-	glyphe: NomGlyphe;
-	href?: string;
-	action?: "calque";
-}
-
-/**
- * La rangée basse.
- *
- * Le jeu y met glossaire, réglages et informations. Ces trois-là sont des routes RÉELLES de
- * `nie-site` — vérifiables d'un `curl` — et non des tuiles décoratives.
- */
-const SERVICES: readonly EntreeService[] = [
-	{ libelle: "Calque", glyphe: "livre", action: "calque" },
-	{ libelle: "API", glyphe: "engrenage", href: "/api/v1/health" },
-	{ libelle: "Flux", glyphe: "info", href: "/feed.atom" },
-];
-
-/** L'état du calque exporté. Trois valeurs, parce qu'il y a trois questions distinctes. */
-type ModeCalque = "masque" | "calque" | "diagnostic";
-
-const SUIVANT: Record<ModeCalque, ModeCalque> = {
-	masque: "calque",
-	calque: "diagnostic",
-	diagnostic: "masque",
-};
-
-const LIBELLE_CALQUE: Record<ModeCalque, string> = {
-	masque: "Calque masqué",
-	calque: "Calque du jeu",
-	diagnostic: "Diagnostic",
-};
-
-/** Formate un compte, ou rend `null` quand le serveur ne le connaît pas encore. */
-function compte(n: number | null | undefined): string | null {
-	return typeof n === "number" ? n.toLocaleString("fr") : null;
-}
+/** Le canevas du menu, en pixels du jeu. Les enfants travaillent tous dans ce repère. */
+const CANEVAS = { w: 1280, h: 720 };
 
 /** Le décalage du bord intérieur d'un panneau, entre son haut et son bas. */
 const BISEAU_PANNEAU = Math.round(PENTE_PANNEAU * BOITES.panneaux.h);
@@ -165,109 +57,83 @@ const BISEAU_PANNEAU = Math.round(PENTE_PANNEAU * BOITES.panneaux.h);
 /**
  * La largeur des deux panneaux, déduite de leurs bords mesurés.
  *
- * Le panneau gauche va du bord de l'écran jusqu'à son bord intérieur le plus large (en bas) ;
- * le droit part de son bord le plus large (en bas également, côté gauche) jusqu'au bord droit.
+ * Le panneau gauche va du bord de l'écran à son bord intérieur le plus large (en bas) ; le
+ * droit part du sien jusqu'au bord droit. Les 228 px qu'ils laissent entre eux sont ce qui
+ * donne sa place au logo.
  */
 const PANNEAU_GAUCHE_L = BOITES.panneauGaucheBord.bas;
 const PANNEAU_DROIT_X = BOITES.panneauDroitBord.bas;
-const PANNEAU_DROIT_L = LAYOUT.canvas.w - PANNEAU_DROIT_X;
+const PANNEAU_DROIT_L = CANEVAS.w - PANNEAU_DROIT_X;
 
 /** Le centre mesuré de la rangée principale — la rangée du jeu n'est pas centrée sur l'écran. */
 const CENTRE_RANGEE = BOITES.rangee.x + BOITES.rangee.l / 2;
+
+/**
+ * La hauteur où poser la rangée, recalculée au lieu d'être reprise telle quelle.
+ *
+ * `BOITES.rangee.y` vaut 377 : dans le jeu, la rangée est haute parce que TROIS blocs
+ * l'accompagnent en dessous — un bandeau, une seconde rangée de trois tuiles, et la pile de
+ * bannières du coin. Ces blocs contenaient ici des liens vers l'API, le plan du site, `llms.txt`
+ * et GitHub ; les retirer laissait 212 px de vide sous la rangée, et une géométrie qui ne
+ * décrivait plus l'écran qu'elle habillait.
+ *
+ * La rangée est donc centrée dans l'espace réellement libre — entre le bas des panneaux et le
+ * haut de la mention légale. Les bornes restent des mesures ; seule leur combinaison change.
+ */
+const BAS_PANNEAUX = BOITES.panneaux.y + BOITES.panneaux.h;
+const Y_RANGEE = Math.round(
+	BAS_PANNEAUX + (BOITES.mention.y - BAS_PANNEAUX - BOITES.rangee.h) / 2,
+);
+
+/**
+ * Le ciel du menu.
+ *
+ * La quantification par région rend `#f9fdf9` — la teinte dominante, celle de `FOND_MENU`. Mais
+ * la référence n'est pas un aplat : elle s'éclaire en bleu vers le haut à droite, derrière le
+ * logo. Un aplat seul donne un écran plat que rien ne rattache à la capture ; le dégradé part
+ * de la teinte mesurée et ne fait que retrouver cette montée, sans inventer de troisième
+ * couleur — `--jeu-ciel-brume` est elle aussi une valeur relevée.
+ */
+const CIEL = `radial-gradient(70% 55% at 88% -8%, var(--jeu-ciel-brume) 0%, ${FOND_MENU} 70%)`;
 
 export function MenuPrincipal({
 	vue,
 	onChoisir,
 	etat,
-	vfsPret,
+	pret,
 }: {
 	/** L'entrée courante, pour marquer la tuile correspondante. */
 	vue: string;
 	onChoisir: (vue: string) => void;
+	/** Ce que le serveur publie. `null` tant qu'il n'a pas répondu. */
 	etat: SanteApi | null;
-	/** L'index du VFS est-il monté ? Une tuile ne promet pas ce qu'elle ne peut pas montrer. */
-	vfsPret: boolean;
+	/** Le catalogue est-il consultable ? Une tuile ne promet pas ce qu'elle ne peut pas montrer. */
+	pret: boolean;
 }) {
-	const [calque, setCalque] = useState<ModeCalque>("calque");
-	// Le résultat RÉEL du chargement de chaque texture, mesuré dans la page plutôt que déduit
-	// d'un test passé ailleurs sur un autre état du serveur.
-	const [textures, setTextures] = useState<Record<string, boolean>>({});
-	const surTexture = useCallback((nom: string, chargee: boolean) => {
-		setTextures((connu) => (connu[nom] === chargee ? connu : { ...connu, [nom]: chargee }));
-	}, []);
-
-	const principales = useMemo(() => entreesPrincipales(etat), [etat]);
-	/** La première vue publiée : ce que le panneau « Ressources » ouvre. */
-	const premiere = principales[0];
-	const totalGeneral = useMemo(
-		() => etat?.vues.reduce((s, v) => s + (v.total ?? 0), 0) ?? 0,
-		[etat],
-	);
-
-	const chargees = Object.values(textures).filter(Boolean).length;
-	const echouees = Object.values(textures).filter((ok) => !ok).length;
+	const entrees = useMemo(() => entreesMenu(etat), [etat]);
 
 	return (
-		<GameCanvas canvas={LAYOUT.canvas} fond={FOND_MENU}>
-			{/* Le calque du jeu passe SOUS la reconstruction : c'est la donnée qui porte, pas
-			    l'habillage. `baseZ` négatif garde les priorités de dessin exportées entre elles. */}
-			{calque !== "masque" ? (
-				<LayoutRender
-					layout={LAYOUT}
-					diagnostic={calque === "diagnostic"}
-					// En calque, l'export s'efface derriere l'interface : 24 de ses objets sont
-					// empiles sur le centre du canevas faute de position, et les rendre a pleine
-					// opacite mettrait un tas de fragments au milieu de la page d'accueil. A 0,4
-					// ils restaient la tache la plus visible de la comparaison avec la capture,
-					// juste sous la plaque centrale ; 0,18 les laisse perceptibles sans les faire
-					// passer pour un element de l'ecran. En diagnostic, c'est l'inverse : on VIENT
-					// les lire, et l'opacite remonte a 1.
-					opacite={calque === "diagnostic" ? 1 : 0.18}
-					baseZ={-1000}
-					onTexture={surTexture}
-				/>
-			) : null}
-
-			{/* --- Coin haut-gauche : l'état du service, là où le jeu met ses informations --- */}
-			<CanvasItem x={BOITES.notice.x} y={BOITES.notice.y} largeur={BOITES.notice.l} z={10}>
-				<NoticeCard
-					titre="Aphrody — outils et ressources"
-					lignes={[
-						vfsPret ? "Le VFS du jeu est monté." : "Montage de l'index du VFS…",
-						`${totalGeneral.toLocaleString("fr")} ressources cataloguées`,
-					]}
-					bouton={LIBELLE_CALQUE[calque]}
-					onClick={() => setCalque(SUIVANT[calque])}
-				/>
+		<GameCanvas canvas={CANEVAS} fond={CIEL}>
+			{/* --- Les deux panneaux, de part et d'autre du titre -----------------------------
+			    Ils sont DÉCORATIFS : c'est leur forme qui signe l'écran, et le jeu y met des
+			    illustrations, pas des données. Leur donner un titre et un clic dupliquait deux
+			    entrées de la rangée juste en dessous — « Ressources » ouvrait le premier
+			    catalogue, « Explorer » l'explorateur, tous deux déjà là. `aria-hidden` parce
+			    qu'un décor annoncé est du bruit pour qui écoute la page. */}
+			<CanvasItem x={0} y={BOITES.panneaux.y} largeur={PANNEAU_GAUCHE_L} z={5}>
+				<div aria-hidden="true">
+					<HeroPanel cote="gauche" penche={BISEAU_PANNEAU} />
+				</div>
+			</CanvasItem>
+			<CanvasItem x={PANNEAU_DROIT_X} y={BOITES.panneaux.y} largeur={PANNEAU_DROIT_L} z={5}>
+				<div aria-hidden="true">
+					<HeroPanel cote="droite" penche={BISEAU_PANNEAU} />
+				</div>
 			</CanvasItem>
 
-			{/* --- Coin haut-droit : la version, en clair comme le jeu affiche la sienne ------
-			    Pas une pastille grise : le jeu écrit « ver.7.1.2 0.90 301 » en bleu, sans fond. */}
-			<CanvasItem
-				x={BOITES.version.x + BOITES.version.l}
-				y={BOITES.version.y}
-				ancreX={1}
-				z={10}
-			>
-				<span
-					style={{
-						fontSize: 17,
-						fontWeight: 800,
-						letterSpacing: "0.06em",
-						color: "var(--jeu-accent-azur)",
-						whiteSpace: "nowrap",
-					}}
-				>
-					{etat ? `${etat.service} ${etat.version || "—"}` : "hors ligne"}
-				</span>
-			</CanvasItem>
-
-			{/* --- Le titre, au centre haut, dans la boîte du logo du jeu --- */}
-			{/* Le titre occupe la boîte du logo du jeu — 412 px de large, ce que « APHRODY » à 82 px
-			    mesure exactement. Sa HAUTEUR, elle, ne peut pas y coller : le jeu a une
-			    illustration de 287 px, nous avons deux lignes de texte. Aligné en haut, comme le
-			    logo ; centré, il flottait 94 px plus bas que la référence. Écart de hauteur
-			    assumé — l'agrandir déborderait sur les deux panneaux. */}
+			{/* --- Le titre, dans la boîte du logo du jeu -------------------------------------
+			    Le sous-titre dit ce QU'EST le site. Il portait « Victory Road » — le sous-titre
+			    du jeu accolé au nom du site, qui laissait croire qu'Aphrody est le jeu. */}
 			<CanvasItem
 				x={BOITES.titre.x + BOITES.titre.l / 2}
 				y={BOITES.titre.y + 15}
@@ -275,320 +141,81 @@ export function MenuPrincipal({
 				z={10}
 			>
 				<div style={{ textAlign: "center", lineHeight: 1 }}>
-					<div
+					<h1
 						style={{
+							margin: 0,
 							fontSize: 82,
 							fontWeight: 900,
 							letterSpacing: "0.04em",
 							color: "var(--jeu-nuit-profonde)",
-							textShadow:
-								"0 3px 0 var(--jeu-texte-vif), 0 0 18px rgb(165 225 246 / 90%)",
+							textShadow: "0 3px 0 var(--jeu-texte-vif), 0 0 18px rgb(165 225 246 / 90%)",
 						}}
 					>
 						APHRODY
-					</div>
-					<div
+					</h1>
+					<p
 						style={{
-							marginTop: 34,
-							fontSize: 26,
+							margin: "30px 0 0",
+							fontSize: 19,
 							fontWeight: 800,
-							letterSpacing: "0.30em",
+							letterSpacing: "0.14em",
 							textTransform: "uppercase",
 							color: "var(--jeu-tuile-bas)",
 						}}
 					>
-						Victory Road
-					</div>
+						Les fichiers du jeu
+					</p>
 				</div>
 			</CanvasItem>
 
-			{/* --- L'encart du haut-droit : là où le jeu place « Inazuma Post » --- */}
-			<CanvasItem
-				x={BOITES.encartHautDroit.x}
-				y={BOITES.encartHautDroit.y}
-				largeur={BOITES.encartHautDroit.l}
-				z={10}
-			>
-				<a
-					href="/feed.atom"
-					style={{
-						display: "flex",
-						alignItems: "center",
-						justifyContent: "flex-end",
-						gap: 12,
-						height: BOITES.encartHautDroit.h,
-						color: "var(--jeu-accent-azur)",
-						fontWeight: 800,
-						fontSize: 22,
-						textDecoration: "none",
-					}}
-				>
-					<KeyCap>F</KeyCap>
-					<span>Nouveautés</span>
-					<span
-						style={{
-							display: "flex",
-							alignItems: "center",
-							justifyContent: "center",
-							width: BOITES.encartHautDroit.h,
-							height: BOITES.encartHautDroit.h,
-							background:
-								"linear-gradient(180deg, var(--jeu-tuile-active-haut), var(--jeu-tuile-active-bas))",
-							color: "var(--jeu-texte-vif)",
-						}}
-					>
-						{GLYPHES.info}
-					</span>
-				</a>
-			</CanvasItem>
-
-			{/* --- Les deux panneaux : ce que le site expose, de part et d'autre du titre ------
-			    Ils ne se touchent pas : la capture laisse 228 px entre leurs bords les plus
-			    larges, et c'est cet écart qui donne sa place au logo. */}
-			<CanvasItem x={0} y={BOITES.panneaux.y} largeur={PANNEAU_GAUCHE_L} z={5}>
-				<HeroPanel
-					titre="Ressources"
-					cote="gauche"
-					penche={BISEAU_PANNEAU}
-					// La première vue PUBLIÉE, pas « textures » écrit en dur : le panneau ouvre ce
-					// que le serveur expose en premier, et suit un changement d'ordre sans rien
-					// casser. Sans vue publiée, il n'ouvre rien plutôt que d'ouvrir une page vide.
-					onClick={premiere ? () => onChoisir(premiere.vue) : undefined}
-				>
-					<span style={APPOINT_GAUCHE}>
-						{etat?.vues.length
-							? etat.vues.map((v) => (
-									<span key={v.nom} style={{ display: "block" }}>
-										{compte(v.total) ?? "—"} {HABILLAGE[v.nom]?.libelle ?? v.nom}
-									</span>
-								))
-							: "catalogue en cours d'indexation…"}
-					</span>
-				</HeroPanel>
-			</CanvasItem>
-			<CanvasItem
-				x={PANNEAU_DROIT_X}
-				y={BOITES.panneaux.y}
-				largeur={PANNEAU_DROIT_L}
-				z={5}
-			>
-				<HeroPanel
-					titre="Explorer"
-					cote="droite"
-					penche={BISEAU_PANNEAU}
-					onClick={() => onChoisir("explorateur")}
-				>
-					<span style={APPOINT_DROIT}>
-						ENTRÉES INDEXÉES
-						<br />
-						<strong style={{ fontSize: 30 }}>
-							{etat?.capacites.vfs_entrees
-								? etat.capacites.vfs_entrees.toLocaleString("fr")
-								: "…"}
-						</strong>
-					</span>
-				</HeroPanel>
-			</CanvasItem>
-
-			{/* --- La plaque centrale --- */}
-			<CanvasItem
-				x={BOITES.plaque.x + BOITES.plaque.l / 2}
-				y={BOITES.plaque.y}
-				ancreX={0.5}
-				z={20}
-			>
-				<CenterPlate libelle="Ressources" valeur={totalGeneral.toLocaleString("fr")} />
-			</CanvasItem>
-
-			{/* --- La rangée principale : les entrées du menu --- */}
-			<CanvasItem x={CENTRE_RANGEE} y={BOITES.rangee.y} ancreX={0.5} z={20}>
-				<TileStrip ecart={ECART_TUILE}>
-					{principales.map((entree) => {
-						return (
+			{/* --- La rangée principale : les entrées du site, et la seule zone interactive ---
+			    Sans compte sous le libellé : le jeu n'en met pas, et le chiffre était déjà écrit
+			    dans le panneau de gauche. Une tuile sert à choisir une destination, pas à
+			    publier un inventaire. */}
+			<CanvasItem x={CENTRE_RANGEE} y={Y_RANGEE} ancreX={0.5} z={20}>
+				<nav aria-label="Entrées du site">
+					<TileStrip ecart={ECART_TUILE}>
+						{entrees.map((entree) => (
 							<IconTile
 								key={entree.vue}
 								icone={GLYPHES[entree.glyphe]}
 								libelle={entree.libelle}
-								appoint={compte(entree.total) ?? undefined}
 								actif={entree.vue === vue}
-								// Tant que l'index n'est pas prêt, la tuile est en sourdine : elle ne
-								// promet pas un contenu qu'elle ne peut pas encore montrer.
-								sourdine={!vfsPret}
+								// En sourdine tant que le catalogue n'est pas consultable : la tuile
+								// ne promet pas un contenu qu'elle ne peut pas encore montrer.
+								sourdine={!pret}
 								onClick={() => onChoisir(entree.vue)}
 							/>
-						);
-					})}
-				</TileStrip>
+						))}
+					</TileStrip>
+				</nav>
 			</CanvasItem>
 
-			{/* --- Le bandeau, sous la rangée. Il n'est PAS centré sur l'écran : son centre
-			    mesuré est à x = 813, décalé vers la droite comme dans le jeu. --- */}
-			<CanvasItem
-				x={BOITES.bandeau.x}
-				y={BOITES.bandeau.y}
-				largeur={BOITES.bandeau.l}
-				hauteur={BOITES.bandeau.h}
-				z={20}
-			>
-				<RibbonBand>
-					<span>Inazuma Eleven : Victory Road</span>
-				</RibbonBand>
-			</CanvasItem>
-
-			{/* --- La rangée basse : trois entrées de service --- */}
-			<CanvasItem
-				x={BOITES.rangeeBasse.x + BOITES.rangeeBasse.l / 2}
-				y={BOITES.rangeeBasse.y}
-				ancreX={0.5}
-				z={20}
-			>
-				<TileStrip ecart={ECART_TUILE}>
-					{SERVICES.map((service) =>
-						service.href ? (
-							<a
-								key={service.libelle}
-								href={service.href}
-								style={{ textDecoration: "none" }}
-							>
-								<IconTile
-									icone={GLYPHES[service.glyphe]}
-									libelle={service.libelle}
-									hauteur={BOITES.rangeeBasse.h}
-								/>
-							</a>
-						) : (
-							<IconTile
-								key={service.libelle}
-								icone={GLYPHES[service.glyphe]}
-								libelle={service.libelle}
-								// L'état du calque n'est PAS mis en appoint : « Calque masqué » ne
-								// tient pas dans 137 px et sort de la tuile par le biseau. Il est
-								// déjà écrit deux fois — sur le bouton de la notice et sous le
-								// guide de touche du bas.
-								hauteur={BOITES.rangeeBasse.h}
-								onClick={() => setCalque(SUIVANT[calque])}
-							/>
-						),
-					)}
-				</TileStrip>
-			</CanvasItem>
-
-			{/* --- Le détail, seulement en diagnostic : un panneau permanent serait du bruit ---
-			    Les comptes du calque vivent ICI et non sur l'écran par défaut : le jeu n'affiche
-			    rien à cet endroit, et une rangée de badges au milieu du menu est le genre de
-			    détail qui trahit une maquette. */}
-			{calque === "diagnostic" ? (
-				<CanvasItem x={640} y={566} ancreX={0.5} largeur={620} z={30}>
-					<div
+			{/* --- L'état, seulement quand il y a quelque chose à dire ------------------------
+			    Le jeu place ici un encart d'information. Aphrody n'en met un que si l'écran ne
+			    peut pas encore servir : un bandeau permanent qui répète « tout va bien » occupe
+			    l'œil sans rien apprendre. Le message ne nomme ni le service ni l'index — il dit
+			    ce que l'utilisateur peut faire, et quand. */}
+			{!pret ? (
+				<CanvasItem x={BOITES.notice.x} y={BOITES.notice.y} largeur={BOITES.notice.l} z={10}>
+					<p
 						style={{
+							margin: 0,
 							padding: "8px 14px",
-							background: "rgb(10 47 102 / 92%)",
-							color: "var(--jeu-surface-glace)",
-							fontSize: 12,
-							lineHeight: 1.5,
-							borderLeft: "4px solid var(--jeu-accent-ambre)",
+							background: "rgb(255 255 255 / 88%)",
+							borderLeft: "4px solid var(--jeu-accent-azur)",
+							color: "var(--jeu-nuit-profonde)",
+							fontSize: 13,
+							fontWeight: 700,
+							lineHeight: 1.4,
 						}}
 					>
-						<div
-							style={{
-								display: "flex",
-								gap: 8,
-								alignItems: "center",
-								marginBottom: 4,
-							}}
-						>
-							<Badge>{BILAN.total}</Badge>
-							<span>objets exportés</span>
-							<Badge teinte="ambre">{BILAN.avecSprite}</Badge>
-							<span>avec texture</span>
-							<Badge teinte={echouees > 0 ? "brique" : "cyan"}>
-								{chargees}/{BILAN.avecSprite}
-							</Badge>
-							<span>chargées</span>
-							{BILAN.muets > 0 ? (
-								<>
-									<Badge teinte="brique">{BILAN.muets}</Badge>
-									<span>muets</span>
-								</>
-							) : null}
-						</div>
-						<div>
-							<strong>{LAYOUT.screen}</strong> — {LAYOUT.canvas.w}×{LAYOUT.canvas.h},{" "}
-							{BILAN.total} objets, {BILAN.visibles} visibles, {BILAN.avecTexte} avec texte,{" "}
-							{BILAN.textures.length} textures distinctes.
-						</div>
-						<div>
-							<span style={{ color: "var(--jeu-accent-azur)" }}>
-								{BILAN.auCentre} restés au centre par défaut
-							</span>{" "}
-							·{" "}
-							<span style={{ color: "var(--jeu-accent-brique)" }}>
-								{BILAN.horsCanvas} hors canevas
-							</span>{" "}
-							·{" "}
-							<span style={{ color: "var(--jeu-accent-ambre)" }}>{BILAN.muets} muets</span>
-							{echouees > 0 ? ` · ${echouees} textures en échec` : ""}
-						</div>
-						<div style={{ opacity: 0.8 }}>
-							L'export ne donne pas la position des widgets du menu : ces objets-là sont
-							rendus là où la donnée les met, jamais déplacés pour faire joli.
-						</div>
-					</div>
+						Préparation du catalogue…
+					</p>
 				</CanvasItem>
 			) : null}
 
-			{/* --- Les angles bas : mention d'édition, bannières, aide, mention légale --- */}
-			<CanvasItem x={BOITES.coinBasGauche.x} y={BOITES.coinBasGauche.y} z={20}>
-				<CornerChip>Aphrody · aphrody.com</CornerChip>
-			</CanvasItem>
-
-			<CanvasItem
-				x={BOITES.bannieres.x}
-				y={BOITES.bannieres.y}
-				largeur={BOITES.bannieres.l}
-				z={20}
-			>
-				<div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-					<Banniere href="/sitemap.xml" teinte="nuit">
-						Plan du site
-					</Banniere>
-					<Banniere href="/llms.txt" teinte="azur">
-						llms.txt
-					</Banniere>
-					<Banniere href="https://github.com/aphrody-dev" teinte="ambre">
-						aphrody-dev
-					</Banniere>
-				</div>
-			</CanvasItem>
-
-			<CanvasItem
-				x={BOITES.aide.x + BOITES.aide.l / 2}
-				y={BOITES.aide.y}
-				ancreX={0.5}
-				z={20}
-			>
-				<button
-					type="button"
-					onClick={() => setCalque(SUIVANT[calque])}
-					style={{
-						display: "flex",
-						alignItems: "center",
-						gap: 8,
-						border: 0,
-						background: "transparent",
-						color: "var(--jeu-nuit-profonde)",
-						font: "inherit",
-						fontWeight: 800,
-						fontSize: 13,
-						cursor: "pointer",
-						whiteSpace: "nowrap",
-					}}
-				>
-					<KeyCap>V</KeyCap>
-					<span>Calque</span>
-				</button>
-			</CanvasItem>
-
+			{/* --- La mention légale, à la place où le jeu met la sienne --- */}
 			<CanvasItem
 				x={BOITES.mention.x + BOITES.mention.l}
 				y={BOITES.mention.y}
@@ -609,40 +236,3 @@ export function MenuPrincipal({
 		</GameCanvas>
 	);
 }
-
-/**
- * Le texte d'appoint du panneau gauche : en haut, du côté extérieur.
- *
- * Le bord extérieur est vertical — c'est le bord de l'écran — donc rien ne rogne ici. Poser ce
- * texte du côté intérieur le ferait entrer dans le biseau de 98 px : il resterait lisible en
- * étant coupé, ce qui est exactement le défaut qu'on ne voit pas (« 54 203 textures » devient
- * « 203 textures », un chiffre plausible).
- */
-const APPOINT_GAUCHE = {
-	color: "var(--jeu-nuit-profonde)",
-	fontSize: 15,
-	fontWeight: 800,
-	left: 28,
-	lineHeight: 1.35,
-	position: "absolute",
-	top: 16,
-} as const;
-
-/**
- * L'appoint du panneau droit : en haut, du côté extérieur.
- *
- * Le jeu, lui, pose son « NIVEAU DE L'ÉQUIPE 99 » du côté INTÉRIEUR, sur le biseau. Le faire
- * demanderait de rentrer le texte de 98 px et de le décaler ligne à ligne pour suivre la pente
- * — ce que la capture ne permet pas de mesurer. Écart assumé, et dit ici plutôt que caché.
- */
-const APPOINT_DROIT = {
-	color: "var(--jeu-nuit-profonde)",
-	fontSize: 13,
-	fontWeight: 800,
-	letterSpacing: "0.06em",
-	lineHeight: 1.25,
-	position: "absolute",
-	right: 28,
-	textAlign: "right",
-	top: 16,
-} as const;

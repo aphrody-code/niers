@@ -32,7 +32,7 @@ pub struct UrlPlan {
 
 /// Les routes de navigation publiées au plan de site. Les espaces `/f` et `/b` n'y sont
 /// **jamais** : ce sont 255 000 fichiers, et un plan de site n'est pas un index d'assets.
-pub const PLAN: [UrlPlan; 5] = [
+pub const PLAN: [UrlPlan; 6] = [
     UrlPlan {
         chemin: "/",
         frequence: "daily",
@@ -55,6 +55,11 @@ pub const PLAN: [UrlPlan; 5] = [
     },
     UrlPlan {
         chemin: "/videos",
+        frequence: "weekly",
+        priorite: "0.6",
+    },
+    UrlPlan {
+        chemin: "/explorateur",
         frequence: "weekly",
         priorite: "0.6",
     },
@@ -373,24 +378,27 @@ mod tests {
 
     #[test]
     fn plan_complet() {
-        assert_eq!(PLAN.len(), 5);
+        assert_eq!(PLAN.len(), 6);
         let urls = plan_trilingue("https://aphrody.com");
-        assert_eq!(urls.len(), 15, "5 routes x 3 langues");
+        assert_eq!(urls.len(), 18, "6 routes x 3 langues");
         let rendu = Plan {
             urls: &urls,
             lastmod: Some("2026-09-05".to_owned()),
         }
         .render()
         .unwrap();
-        assert_eq!(rendu.matches("<url>").count(), 15);
+        assert_eq!(rendu.matches("<url>").count(), 18);
         assert!(rendu.starts_with("<?xml"));
         assert!(rendu.contains("https://aphrody.com/textures"));
         assert!(rendu.contains("https://aphrody.com/ja/textures"));
         assert!(rendu.contains("https://aphrody.com/en/videos"));
-        // Chaque entrée porte son groupe complet : 15 x 4 liens alternatifs.
-        assert_eq!(rendu.matches("xhtml:link").count(), 60);
-        assert_eq!(rendu.matches("hreflang=\"x-default\"").count(), 15);
-        assert_eq!(rendu.matches("<lastmod>2026-09-05</lastmod>").count(), 15);
+        // L'explorateur est une entrée du site : il a sa page, donc sa place au plan.
+        assert!(rendu.contains("https://aphrody.com/explorateur"));
+        assert!(rendu.contains("https://aphrody.com/ja/explorateur"));
+        // Chaque entrée porte son groupe complet : 18 x 4 liens alternatifs.
+        assert_eq!(rendu.matches("xhtml:link").count(), 72);
+        assert_eq!(rendu.matches("hreflang=\"x-default\"").count(), 18);
+        assert_eq!(rendu.matches("<lastmod>2026-09-05</lastmod>").count(), 18);
         // L'espace de noms xhtml doit être déclaré, sinon les `xhtml:link` sont du bruit.
         assert!(rendu.contains("xmlns:xhtml=\"http://www.w3.org/1999/xhtml\""));
     }
@@ -430,8 +438,8 @@ mod tests {
     #[test]
     fn robots_autorise_les_trois_langues() {
         let chemins = chemins_autorises();
-        // 5 routes x 3 langues, moins la racine française déjà couverte par `Allow: /$`.
-        assert_eq!(chemins.len(), 14);
+        // 6 routes x 3 langues, moins la racine française déjà couverte par `Allow: /$`.
+        assert_eq!(chemins.len(), 17);
         for attendu in ["/textures", "/en/textures", "/ja/textures", "/en", "/ja"] {
             assert!(
                 chemins.iter().any(|c| c == attendu),
@@ -445,11 +453,11 @@ mod tests {
         }
         .render()
         .unwrap();
-        // 22 : 14 chemins + `/$` + `/llms.txt` + `/feed.atom` pour le regime general, puis les
+        // 25 : 17 chemins + `/$` + `/llms.txt` + `/feed.atom` pour le regime general, puis les
         // 5 du regime des agents (`/`, `/llms.txt`, `/llms-full.txt`, `/feed.atom`, `/api/v1/`).
         assert_eq!(
             r.matches("Allow: ").count(),
-            22,
+            25,
             "les deux regimes, chemin par chemin"
         );
         assert!(r.contains("Allow: /$"));

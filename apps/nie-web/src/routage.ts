@@ -12,11 +12,12 @@
  * Un paramètre de requête n'est de toute façon pas une page distincte pour un moteur, et il ne
  * se traduit pas : `/ja/textures` doit désigner la version japonaise du catalogue de textures.
  *
- * ## Compatibilité
+ * ## La compatibilité `?vue=` a été retirée
  *
- * `?vue=` reste compris en entrée — un signet ou un lien partagé ne doit pas se casser — mais
- * il est réécrit vers la forme canonique dès le premier rendu, sans entrée d'historique
- * supplémentaire.
+ * Elle datait de la forme précédente du routage et n'a jamais servi qu'à elle : le site n'est
+ * pas encore public sous cette adresse, aucun lien `?vue=` n'existe hors du dépôt, et la
+ * réécriture qui l'accompagnait ajoutait un effet de bord à chaque rendu de l'application pour
+ * un cas qui ne se produit pas. Une URL inconnue mène à l'accueil, comme n'importe quelle autre.
  */
 
 /** Les préfixes de langue servis par `nie-site`. Le français est à la racine, sans préfixe. */
@@ -71,19 +72,18 @@ export function cheminPourEntree(prefixe: string, entree: string): string {
 /**
  * L'entrée demandée par l'URL courante, ou `null` si l'URL n'en désigne aucune.
  *
- * Trois sources, dans cet ordre : le chemin (la forme canonique), l'attribut `data-route` posé
- * par le serveur (qui a déjà fait la séparation, et fait autorité si le chemin a été réécrit
- * par un proxy), puis l'ancien `?vue=`.
+ * Deux sources, dans cet ordre : le chemin (la forme canonique), puis l'attribut `data-route`
+ * posé par le serveur — qui a déjà fait la séparation, et fait autorité si le chemin a été
+ * réécrit par un proxy.
  */
 export function entreeDemandee(
 	entrees: readonly string[],
-	emplacement: { pathname: string; search: string },
+	emplacement: { pathname: string },
 	routeServeur?: string | null,
 ): string | null {
 	const candidats = [
 		separerLangue(emplacement.pathname).route.replace(/^\//, ""),
 		(routeServeur ?? "").replace(/^\//, ""),
-		new URLSearchParams(emplacement.search).get("vue") ?? "",
 	];
 	for (const candidat of candidats) {
 		if (candidat && entrees.includes(candidat)) {

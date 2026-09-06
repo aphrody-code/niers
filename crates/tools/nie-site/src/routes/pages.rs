@@ -76,8 +76,14 @@ struct Entree {
     descriptions: [&'static str; 3],
 }
 
-/// Les quatre catalogues d'Aphrody, dans l'ordre où ils sont présentés.
-const ENTREES: [Entree; 4] = [
+/// Les entrées d'Aphrody, dans l'ordre où elles sont présentées.
+///
+/// L'explorateur en fait partie. Il n'y figurait pas, et il n'était donc décrit nulle part
+/// côté serveur : `/explorateur` sortait avec `<title>explorateur — Aphrody</title>` — le
+/// segment d'URL brut, en minuscule, identique dans les trois langues — parce qu'il tombait
+/// dans la branche générique de [`metadonnees`]. Une entrée du menu que le serveur ne connaît
+/// pas est une page sans titre, absente du plan du site et non déclarée à `robots.txt`.
+const ENTREES: [Entree; 5] = [
     Entree {
         segment: "textures",
         titres: ["Textures", "Textures", "テクスチャ"],
@@ -114,6 +120,15 @@ const ENTREES: [Entree; 4] = [
             "ゲームのムービー（USM）を、元のパスから再生できます。",
         ],
     },
+    Entree {
+        segment: "explorateur",
+        titres: ["Explorer", "Browse", "ファイルを辿る"],
+        descriptions: [
+            "Parcourir l'arborescence du jeu dossier par dossier, telle qu'elle existe dedans.",
+            "Walk the game's directory tree folder by folder, exactly as it exists inside.",
+            "ゲーム内のディレクトリ構造を、フォルダーごとにそのまま辿れます。",
+        ],
+    },
 ];
 
 /// Index de la langue dans les tables de libellés.
@@ -125,19 +140,29 @@ const fn rang(langue: Langue) -> usize {
     }
 }
 
+/// Le titre de l'accueil : le nom du site, seul.
+///
+/// Il portait le nom du jeu en apposition — « Aphrody — les fichiers d'Inazuma Eleven: Victory
+/// Road ». Trois défauts, chacun suffisant : l'onglet du navigateur, qui tronque vers 30
+/// caractères, n'affichait plus que le nom du jeu ; la page d'accueil se présentait donc sous
+/// un titre qui n'est pas le sien ; et le nom du jeu revenait ensuite dans la description, dans
+/// le `og:title`, dans le balisage structuré et sur l'écran lui-même. La description, elle, dit
+/// toujours ce que le site fait — c'est sa place.
+pub const SITE: &str = "Aphrody";
+
 /// Titre et description de l'accueil.
 fn accueil(langue: Langue) -> (String, String) {
     match langue {
         Langue::Fr => (
-            format!("Aphrody — les fichiers d'{JEU}"),
+            SITE.to_owned(),
             "Explorer, décoder et exporter les textures, modèles, sons et vidéos du jeu, depuis leur chemin d'origine.".to_owned(),
         ),
         Langue::En => (
-            format!("Aphrody — the files of {JEU}"),
+            SITE.to_owned(),
             "Browse, decode and export the game's textures, models, sounds and videos, straight from their original path.".to_owned(),
         ),
         Langue::Ja => (
-            format!("Aphrody — {JEU} のファイル"),
+            SITE.to_owned(),
             "ゲームのテクスチャ・モデル・サウンド・ムービーを、元のパスのまま閲覧・デコード・書き出しできます。".to_owned(),
         ),
     }
@@ -547,10 +572,13 @@ pub fn construire(
             hreflang: l.code(),
         })
         .collect();
+    // « Catalogues » ne couvrait plus la liste : l'explorateur y figure désormais, et il
+    // n'en est pas un — il parcourt l'arborescence au lieu de filtrer par extension. Le
+    // libellé nomme ce que la liste contient réellement, comme le fait la barre du site.
     let (libelle_catalogues, libelle_langues) = match langue {
-        Langue::Fr => ("Catalogues", "Langues"),
-        Langue::En => ("Catalogues", "Languages"),
-        Langue::Ja => ("カタログ", "言語"),
+        Langue::Fr => ("Entrées", "Langues"),
+        Langue::En => ("Sections", "Languages"),
+        Langue::Ja => ("セクション", "言語"),
     };
     let (libelle_precedent, libelle_suivant) = match langue {
         Langue::Fr => ("Page précédente", "Page suivante"),
