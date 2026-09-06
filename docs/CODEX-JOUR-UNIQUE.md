@@ -126,6 +126,15 @@ L'installation et le redémarrage, eux, sont au § 5.
 - Docs : `CLAUDE.md`, `AGENTS.md`, `docs/README.md`, `docs/stack` (amendement **daté** si une
   brique a bougé), et `/PLAN.md` — chaque ligne marquée avec son compte.
 
+### Bloc 7 — enchainer sur la couverture totale
+
+La journee finie, la cible suivante est deja ecrite :
+[`docs/PLAN-SITE-ULTIME.md`](PLAN-SITE-ULTIME.md). Elle ne demande pas d'ecrire des capacites
+nouvelles — elle demande de **servir celles qui existent** : 41 sous-commandes `niers` et
+155 commandes Tauri pour 14 chemins d'API aujourd'hui. Son instrument est une matrice de
+couverture ou chaque capacite est `servi`, `interne` (avec sa raison) ou `manquant`, et sa
+gate maitresse est **`manquant = 0`**.
+
 ## 4. Les gates de la journée, toutes chiffrées
 
 Une gate qui ne rend pas un nombre n'est pas une gate.

@@ -11,6 +11,12 @@ La stack est **gelée** : [`docs/stack/`](docs/stack/README.md) (décisions, ver
 alternatives rejetées, gates). Ce fichier est le plan d'exécution de cette semaine ; le plan
 maître du moteur et de la forge reste [`docs/PLAN.md`](docs/PLAN.md).
 
+> **Amendement du 2026-09-06 (2) — l'horizon change d'echelle.** L'utilisateur demande un
+> niveau d'exigence couvrant **toute la surface du depot** vers **un seul site ultime** :
+> [`docs/PLAN-SITE-ULTIME.md`](docs/PLAN-SITE-ULTIME.md). Mesure de depart : 41 sous-commandes
+> `niers` et 155 commandes Tauri pour **14 chemins d'API** — le depot sait faire dix fois ce
+> qu'il expose. Ce plan-ci reste la reference pour la bascule Azalee vers Vercel et ses gates.
+>
 > **Amendement du 2026-09-06 — la semaine est compressée en une journée.** L'utilisateur confie
 > **tout** ce plan à **Codex**, qui l'exécute en un jour, en raisonnement maximal et en
 > exécution proactive. La frontière du 2026-09-05 (« Codex dans `rg`, Claude dans `niers` ») ne

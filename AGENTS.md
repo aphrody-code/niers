@@ -8,6 +8,7 @@ moteur. Il tient sur un écran : le détail est ailleurs, et dit où.
 |---|---|
 | Les règles complètes du dépôt | `CLAUDE.md` — vaut pour **tous** les agents, pas seulement Claude |
 | **La mission en cours** | **`docs/CODEX-JOUR-UNIQUE.md`** — tout le plan en une journée |
+| **Le niveau d'exigence** | **`docs/PLAN-SITE-ULTIME.md`** — couverture de TOUTE la surface du dépôt |
 | Le protocole de coexistence | `docs/A2A-CODEX.md` |
 | La carte machine (A2A v1.0) | `ai.json` à la racine |
 
