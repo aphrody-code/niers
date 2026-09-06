@@ -33,7 +33,7 @@
  */
 import type { EntreeVfs, VueCatalogue } from "@niers/asset-source";
 import { useAssetSource, useCapacites } from "@niers/inacord-ui";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { libelleEntree } from "../entrees";
 import { accorde, Note, TitreVue } from "./Ecran";
 import { Modeles3D } from "./Modeles3D";
@@ -107,23 +107,107 @@ function ecrireUrl(e: EtatFiltre) {
 	window.history.replaceState(window.history.state, "", url);
 }
 
+/** Les quatre vues, dans l'ordre où elles s'affichent, avec leur libellé. */
+const VUES: { vue: VueCatalogue; libelle: string }[] = [
+	{ vue: "textures", libelle: "Textures" },
+	{ vue: "modeles", libelle: "Modèles" },
+	{ vue: "sons", libelle: "Sons" },
+	{ vue: "videos", libelle: "Vidéos" },
+];
+
 /**
- * L'aiguillage des quatre vues — et la seule qui ne soit pas un filtre d'extensions.
+ * Les médias — **une seule page**, décidé par l'utilisateur le 2026-09-06.
  *
- * `modeles` a quitté ce fichier : le filtre `.g4md`/`.g4mg`/`.g4sk`/`.g4mt`/`.g4pk` liste des
- * PIÈCES, pas des modèles. Un `.g4mg` seul n'est qu'un tampon de géométrie — ni texture, ni
- * squelette, ni recette — et la grille n'en montrait donc qu'un nom et une taille : 143 000
- * fichiers dont aucun ne s'affichait. `Modeles3D` liste les 6 191 **codes assemblables** que
- * publie `/api/v1/3d`, avec le rendu réel de chacun.
+ * Quatre entrées de menu pour quatre filtres du même index faisaient quatre destinations là où
+ * il n'y a qu'une question : *montre-moi ce que le jeu contient, de ce type-là*. Passer des
+ * textures aux sons obligeait à repasser par l'accueil, et le filtre en cours était perdu en
+ * chemin. La vue est donc un **réglage de la page**, au même titre que le tri.
  *
- * L'aiguillage est un composant à part, sans le moindre hook, et ce n'est pas un détail : un
+ * Les quatre URL (`/textures`, `/modeles`, `/sons`, `/videos`) continuent de mener ici, sur
+ * leur vue : casser une adresse publiée pour changer un menu, ce serait payer une décision
+ * d'affichage avec les liens des autres.
+ *
+ * ## Ce que l'aiguillage protège, et pourquoi il reste un composant
+ *
+ * `modeles` n'est pas un filtre d'extensions comme les trois autres : `.g4mg`/`.g4sk`/`.g4mt`
+ * listent des **pièces**, pas des modèles — un `.g4mg` seul est un tampon de géométrie, sans
+ * texture, sans squelette et sans recette, et la grille n'en montrait qu'un nom et une taille.
+ * `Modeles3D` liste les 6 191 **codes assemblables** de `/api/v1/3d`, avec le rendu réel.
+ *
+ * L'aiguillage reste donc un composant sans le moindre hook, et ce n'est pas un détail : un
  * `if` posé au milieu de `CatalogueVfs` changerait le nombre de hooks appelés d'un rendu à
  * l'autre en passant de `textures` à `modeles`, ce que React refuse. Ici, changer de vue
- * démonte un composant et en monte un autre.
+ * démonte un composant et en monte un autre — aucun état ne fuit d'une vue vers la suivante.
  */
-export function Catalogue({ vue }: { vue: VueCatalogue }) {
-	if (vue === "modeles") return <Modeles3D />;
-	return <CatalogueVfs vue={vue} />;
+export function Catalogue({ vue: route }: { vue: VueCatalogue }) {
+	// La vue vient de l'URL — le paramètre d'abord, la route ensuite, pour que `/sons` mène
+	// bien aux sons. Elle vit en état parce que le sélecteur la change sans naviguer.
+	const [vue, setVueEtat] = useState<VueCatalogue>(() => {
+		const demandee = new URLSearchParams(window.location.search).get("vue");
+		return VUES.some((v) => v.vue === demandee) ? (demandee as VueCatalogue) : route;
+	});
+
+	/**
+	 * Change de vue, et n'emporte AUCUN filtre.
+	 *
+	 * `ext=dds` n'a aucun sens sur les sons, et `tri=taille` sur des modèles trie des codes.
+	 * Transporter les filtres donnerait des réglages qui semblent suivre et qui, en réalité,
+	 * changent de sens en chemin.
+	 */
+	const setVue = (suivante: VueCatalogue) => {
+		setVueEtat(suivante);
+		const url = new URL(window.location.href);
+		url.search = `vue=${suivante}`;
+		window.history.replaceState(window.history.state, "", url);
+	};
+
+	return (
+		<>
+			{/*
+			  * `tablist` et non quatre boutons : c'est ce qui fait annoncer « onglet 2 sur 4 »
+			  * par un lecteur d'écran. Le rôle décrit ce que la chose EST, pas ce à quoi elle
+			  * ressemble.
+			  */}
+			<div
+				role="tablist"
+				aria-label="Type de média"
+				style={{
+					display: "flex",
+					flexWrap: "wrap",
+					gap: "var(--jeu-espace-xs)",
+					margin: "0 0 var(--jeu-espace-m)",
+					borderBottom: "2px solid var(--jeu-tuile-bord)",
+				}}
+			>
+				{VUES.map((v) => (
+					<button
+						key={v.vue}
+						type="button"
+						role="tab"
+						aria-selected={vue === v.vue}
+						onClick={() => setVue(v.vue)}
+						style={{
+							padding: "var(--jeu-espace-s) var(--jeu-espace-m)",
+							background: vue === v.vue ? "var(--jeu-tuile-bord)" : "none",
+							border: "none",
+							borderBottom:
+								vue === v.vue
+									? "3px solid var(--jeu-nuit-profonde)"
+									: "3px solid transparent",
+							color: "var(--jeu-nuit-profonde)",
+							font: "inherit",
+							fontWeight: vue === v.vue ? 800 : 600,
+							cursor: "pointer",
+						}}
+					>
+						{v.libelle}
+					</button>
+				))}
+			</div>
+
+			{vue === "modeles" ? <Modeles3D /> : <CatalogueVfs key={vue} vue={vue} />}
+		</>
+	);
 }
 
 /** Formate une taille en octets pour l'affichage. */
@@ -157,18 +241,14 @@ function CatalogueVfs({ vue }: { vue: VueCatalogue }) {
 	const initial = useMemo(etatDeLUrl, []);
 	const [etat, setEtat] = useState<EtatFiltre>(initial);
 	const { page, q: filtre, ext, tri, ordre, parPage } = etat;
-	// Changer de vue ramene a la page 1 : garder la page 900 en passant d'un catalogue de 904
-	// pages a un catalogue de 4 afficherait un vide que rien n'expliquerait. Les filtres, eux,
-	// sont remis a zero pour la meme raison — `ext=dds` n'a aucun sens sur les sons.
-	const premier = useRef(true);
-	useEffect(() => {
-		if (premier.current) {
-			premier.current = false;
-			return;
-		}
-		setSaisie("");
-		setEtat({ q: "", ext: "", tri: "nom", ordre: "asc", parPage: PAR_PAGE, page: 1 });
-	}, [vue]);
+	// Changer de vue remet TOUT à zéro — page comprise : garder la page 900 en passant d'un
+	// catalogue de 904 pages à un catalogue de 4 afficherait un vide que rien n'expliquerait,
+	// et `ext=dds` n'a aucun sens sur les sons.
+	//
+	// C'est la `key={vue}` posée par l'aiguillage qui s'en charge, pas un effet : React démonte
+	// ce composant et en monte un neuf. Un effet de remise à zéro devait, lui, se garder de son
+	// PREMIER passage (`useRef`) pour ne pas effacer l'état lu dans l'URL — un `useRef` dont
+	// l'oubli ne se voit qu'en partageant un lien.
 	const [elements, setElements] = useState<EntreeVfs[]>([]);
 	const [total, setTotal] = useState(0);
 	const [pages, setPages] = useState(0);

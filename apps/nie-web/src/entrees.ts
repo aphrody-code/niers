@@ -48,6 +48,15 @@ export const ALIAS = ["recherche", "donnees"] as const;
  */
 export const CATALOGUES = ["textures", "modeles", "sons", "videos"] as const;
 
+/**
+ * Les médias — **une seule page**, décidé par l'utilisateur le 2026-09-06.
+ *
+ * Quatre entrées de menu pour quatre filtres du même index faisaient quatre destinations là où
+ * il n'y a qu'une question : *montre-moi ce que le jeu contient, de ce type-là*. La vue est
+ * devenue un réglage de la page, au même titre que le tri, et les quatre URL y mènent toujours.
+ */
+export const MEDIAS = "medias";
+
 /** Une entrée du menu : sa route, son libellé, son pictogramme. */
 export interface EntreeMenu {
 	/** Le segment d'URL — c'est aussi l'identité de l'entrée. */
@@ -67,6 +76,7 @@ const HABILLAGE: Record<string, { libelle: string; glyphe: NomGlyphe }> = {
 	modeles: { libelle: "Modèles", glyphe: "cube" },
 	sons: { libelle: "Sons", glyphe: "onde" },
 	videos: { libelle: "Vidéos", glyphe: "film" },
+	[MEDIAS]: { libelle: "Médias", glyphe: "image" },
 	[EXPLORATEUR]: { libelle: "Explorer", glyphe: "arbre" },
 };
 
@@ -76,14 +86,15 @@ export function libelleEntree(vue: string): string {
 }
 
 /**
- * Les routes que l'application reconnaît — le menu n'en montre qu'une partie.
+ * Les routes que l'application reconnaît — le menu n'en montre que deux.
  *
- * `/recherche` et `/donnees` sont ici sans être des tuiles : elles mènent à un MODE de
- * l'explorateur. Les retirer d'ici casserait des liens déjà publiés (`sitemap.xml` compris)
- * pour une décision d'affichage.
+ * `/recherche` et `/donnees` mènent à l'explorateur ; `/textures`, `/modeles`, `/sons` et
+ * `/videos` mènent aux médias, sur leur vue. Aucune n'est une tuile, et toutes restent
+ * servies : casser une adresse déjà publiée (`sitemap.xml` compris) pour changer un menu, ce
+ * serait payer une décision d'affichage avec les liens des autres.
  */
 export function routesReconnues(etat: SanteApi | null): string[] {
-	return [...entreesMenu(etat).map((e) => e.vue), ...ALIAS];
+	return [...entreesMenu(etat).map((e) => e.vue), ...ALIAS, ...CATALOGUES];
 }
 
 /**
@@ -94,11 +105,8 @@ export function routesReconnues(etat: SanteApi | null): string[] {
  * catalogue. L'explorateur ferme toujours la marche : il ne parcourt pas un catalogue mais
  * l'arborescence, et le serveur ne le publie pas comme une vue.
  */
-export function entreesMenu(etat: SanteApi | null): EntreeMenu[] {
-	const noms = etat?.vues.length
-		? etat.vues.map((v) => v.nom)
-		: [...CATALOGUES];
-	return [...noms, EXPLORATEUR].map((vue) => ({
+export function entreesMenu(_etat: SanteApi | null): EntreeMenu[] {
+	return [MEDIAS, EXPLORATEUR].map((vue) => ({
 		vue,
 		libelle: libelleEntree(vue),
 		glyphe: HABILLAGE[vue]?.glyphe ?? "arbre",

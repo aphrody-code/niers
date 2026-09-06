@@ -3,7 +3,7 @@ import { type SanteApi, sante } from "@niers/asset-source/nie-site";
 import { AssetSourceProvider, useCapacites, useErreurSource } from "@niers/inacord-ui";
 import "@niers/inacord-ui/shell/game-tokens.css";
 import { useEffect, useMemo, useState } from "react";
-import { ALIAS, EXPLORATEUR, entreesMenu, routesReconnues } from "./entrees";
+import { ALIAS, EXPLORATEUR, MEDIAS, entreesMenu, routesReconnues } from "./entrees";
 import { Catalogue } from "./pages/Catalogue";
 import { Chargement } from "./pages/Chargement";
 import { EcranSecondaire, Note } from "./pages/Ecran";
@@ -158,11 +158,11 @@ function Site() {
 				// de données, son panneau de droite en porte le contenu.
 				<Explorateur />
 			) : (
-				// La vue vient de l'URL, et l'URL n'a ete acceptee que parce qu'elle figure dans
-				// les entrees connues — celles du serveur, ou les quatre catalogues qu'il publie
-				// dans son document. Le type ne couvre que ces quatre-la ; si le serveur en
-				// annonce un cinquieme, la page le demande sous SON nom plutot que de le refuser.
-				<Catalogue vue={vue as VueCatalogue} />
+				// `/medias` et les quatre URL heritees menent toutes ici. La seconde arrive sur
+				// SA vue ; la premiere, qui n'en designe aucune, ouvre sur les textures — le
+				// catalogue le plus large (54 203 fichiers) et le seul dont la grille montre
+				// quelque chose sans qu'on ait rien reglé.
+				<Catalogue vue={(vue === MEDIAS ? "textures" : vue) as VueCatalogue} />
 			)}
 		</EcranSecondaire>
 	);

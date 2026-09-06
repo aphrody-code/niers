@@ -374,21 +374,23 @@ async fn documents_well_known() {
     );
     let texte = String::from_utf8(corps).unwrap();
     assert!(texte.starts_with("<?xml"));
-    // 6 routes x 3 langues, et chaque entree porte le groupe complet de ses traductions.
-    assert_eq!(texte.matches("<url>").count(), 18);
-    assert_eq!(texte.matches("<loc>").count(), 18);
+    // 3 routes x 3 langues, et chaque entree porte le groupe complet de ses traductions.
+    // Trois, et non huit : les quatre catalogues ont fusionne dans `/medias`, les trois vues
+    // d'exploration dans `/explorateur`. Une page, une URL canonique.
+    assert_eq!(texte.matches("<url>").count(), 9);
+    assert_eq!(texte.matches("<loc>").count(), 9);
     assert_eq!(
         texte.matches("xhtml:link").count(),
-        72,
+        36,
         "4 alternates par entree"
     );
-    assert_eq!(texte.matches(r#"hreflang="x-default""#).count(), 18);
+    assert_eq!(texte.matches(r#"hreflang="x-default""#).count(), 9);
     // Sans la declaration de l'espace de noms, les `xhtml:link` ne sont que du bruit.
     assert!(texte.contains(r#"xmlns:xhtml="http://www.w3.org/1999/xhtml""#));
     for attendu in [
-        "<loc>https://exemple.test/textures</loc>",
-        "<loc>https://exemple.test/en/textures</loc>",
-        "<loc>https://exemple.test/ja/textures</loc>",
+        "<loc>https://exemple.test/medias</loc>",
+        "<loc>https://exemple.test/en/medias</loc>",
+        "<loc>https://exemple.test/ja/medias</loc>",
     ] {
         assert!(texte.contains(attendu), "{attendu} absent du plan");
     }
