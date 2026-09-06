@@ -313,6 +313,185 @@ pub fn calculate_stats(tables: &GrowthTables, params: &GrowthParams, level: u8) 
     StatBlock::from_array(out)
 }
 
+/// Un point de la courbe de croissance : niveau, bloc de stats, total.
+///
+/// Reproduit l'élément du tableau rendu par `generateGrowthCurve`
+/// (`packages/inagle/src/stat-calculator.ts` L317-325) :
+/// `{ level, stats, total }`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct PointCroissance {
+    /// Niveau du personnage.
+    pub niveau: u8,
+    /// Bloc des 7 statistiques à ce niveau.
+    pub stats: StatBlock,
+    /// Somme des 7 statistiques ([`StatBlock::total`]).
+    pub total: u32,
+}
+
+/// Génère la courbe de croissance complète d'un personnage.
+///
+/// Reproduit EXACTEMENT `generateGrowthCurve` (stat-calculator.ts L317-334) :
+/// une entrée par niveau de `niveau_debut` à `niveau_fin` **inclus**, chacune
+/// portant ses stats et leur total.
+///
+/// Les défauts du TS (`startLevel = 1`, `endLevel = 99`) ne sont pas
+/// reproductibles en Rust ; les appelants passent `1, 99`. Une plage vide
+/// (`niveau_debut > niveau_fin`) rend un vecteur vide — comme la boucle `for`
+/// du TS, qui ne s'exécute simplement pas.
+///
+/// # Exemple
+///
+/// ```
+/// use nie_core::growth::{GrowthParams, GrowthTables, generate_growth_curve};
+///
+/// let tables = GrowthTables::default();
+/// let params = GrowthParams::default();
+/// // Tables vides : aucune entrée résolue, donc stats à zéro — mais la courbe
+/// // a bien la longueur demandée.
+/// assert_eq!(generate_growth_curve(&tables, &params, 10, 20).len(), 11);
+/// ```
+#[must_use]
+pub fn generate_growth_curve(
+    tables: &GrowthTables,
+    params: &GrowthParams,
+    niveau_debut: u8,
+    niveau_fin: u8,
+) -> Vec<PointCroissance> {
+    let mut courbe = Vec::new();
+    let mut niveau = niveau_debut;
+    while niveau <= niveau_fin {
+        let stats = calculate_stats(tables, params, niveau);
+        courbe.push(PointCroissance {
+            niveau,
+            stats,
+            total: stats.total(),
+        });
+        // `niveau_fin` peut valoir 255 : on sort avant de déborder.
+        let Some(suivant) = niveau.checked_add(1) else {
+            break;
+        };
+        niveau = suivant;
+    }
+    courbe
+}
+
+#[cfg(test)]
+mod tests_courbe {
+    use super::*;
+
+    /// Tables factices reprises telles quelles du test TS
+    /// (`stat-calculator.test.ts`, bloc `generateGrowthCurve` L237-292) :
+    /// lv1 = 10, lv30 = 30, lv50 = 50, lv99 = 100 sur les 7 stats.
+    fn tables_du_test_ts() -> GrowthTables {
+        GrowthTables {
+            lv1: vec![GrowthTableLv1 {
+                main_position: 1,
+                sub_position: 1,
+                play_style: 0,
+                stats: [10; 7],
+            }],
+            lv30: vec![GrowthTableLv30 {
+                main_position: 1,
+                sub_position: 1,
+                growth_pattern: 0,
+                chara_rank: 5,
+                stats: [30; 7],
+            }],
+            main: vec![GrowthTableMain {
+                main_position: 1,
+                growth_pattern: 0,
+                chara_rank: 5,
+                stats_50: [50; 7],
+                stats_99: [100; 7],
+            }],
+            sub: Vec::new(),
+        }
+    }
+
+    fn params_du_test_ts() -> GrowthParams {
+        GrowthParams {
+            main_position: 1,
+            sub_position: 1,
+            growth_pattern: 0,
+            chara_rank: 5,
+            play_style: 0,
+        }
+    }
+
+    /// TS : « should generate curve from level 1 to 99 by default ».
+    #[test]
+    fn courbe_1_a_99_fait_99_points() {
+        let courbe = generate_growth_curve(&tables_du_test_ts(), &params_du_test_ts(), 1, 99);
+        assert_eq!(courbe.len(), 99);
+        assert_eq!(courbe[0].niveau, 1);
+        assert_eq!(courbe[98].niveau, 99);
+    }
+
+    /// TS : « should generate curve for custom range » (10→20 = 11 points).
+    #[test]
+    fn courbe_plage_personnalisee() {
+        let courbe = generate_growth_curve(&tables_du_test_ts(), &params_du_test_ts(), 10, 20);
+        assert_eq!(courbe.len(), 11);
+        assert_eq!(courbe[0].niveau, 10);
+        assert_eq!(courbe[10].niveau, 20);
+    }
+
+    /// TS : « should include total power for each level » (7 stats × 10 = 70).
+    #[test]
+    fn courbe_porte_le_total() {
+        let courbe = generate_growth_curve(&tables_du_test_ts(), &params_du_test_ts(), 1, 1);
+        assert_eq!(courbe[0].total, 70);
+    }
+
+    /// TS : « should show progression in stats » (lv1 = 70 < lv99 = 700).
+    #[test]
+    fn courbe_progresse() {
+        let courbe = generate_growth_curve(&tables_du_test_ts(), &params_du_test_ts(), 1, 99);
+        assert_eq!(courbe[0].total, 70);
+        assert_eq!(courbe[98].total, 700);
+        assert!(courbe[0].total < courbe[98].total);
+    }
+
+    /// TS : `calculateStats` aux bornes (lv1 = 10 / lv99 = 100 sur toutes les stats).
+    #[test]
+    fn bornes_de_la_courbe_egalent_les_ancres() {
+        let t = tables_du_test_ts();
+        let p = params_du_test_ts();
+        assert_eq!(calculate_stats(&t, &p, 1).as_array(), [10; 7]);
+        assert_eq!(calculate_stats(&t, &p, 30).as_array(), [30; 7]);
+        assert_eq!(calculate_stats(&t, &p, 50).as_array(), [50; 7]);
+        assert_eq!(calculate_stats(&t, &p, 99).as_array(), [100; 7]);
+    }
+
+    /// TS : « should return default stats when growth data not found »
+    /// (mainPosition 99 inexistante → bloc à zéro, pas d'invention).
+    #[test]
+    fn position_inconnue_rend_zero() {
+        let t = tables_du_test_ts();
+        let p = GrowthParams {
+            main_position: 99,
+            ..params_du_test_ts()
+        };
+        assert_eq!(calculate_stats(&t, &p, 50), StatBlock::default());
+    }
+
+    /// Une plage inversée ne boucle pas — elle rend un vecteur vide.
+    #[test]
+    fn plage_inversee_rend_vide() {
+        let courbe = generate_growth_curve(&tables_du_test_ts(), &params_du_test_ts(), 20, 10);
+        assert!(courbe.is_empty());
+    }
+
+    /// `niveau_fin = 255` ne doit pas déborder le compteur `u8`.
+    #[test]
+    fn borne_haute_u8_ne_deborde_pas() {
+        let courbe = generate_growth_curve(&tables_du_test_ts(), &params_du_test_ts(), 250, 255);
+        assert_eq!(courbe.len(), 6);
+        assert_eq!(courbe[5].niveau, 255);
+    }
+}
+
 #[cfg(feature = "data")]
 mod loader {
     //! Chargement des tables réelles embarquées (`data/growth_table.json`).

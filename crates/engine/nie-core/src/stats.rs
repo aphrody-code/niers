@@ -224,6 +224,106 @@ pub fn rarity_to_growth_rank(rarity_code: u8) -> u8 {
     }
 }
 
+/// Convertit un code de rareté en libellé d'affichage français.
+///
+/// Portage verbatim de `rarityCodeToName` (`packages/inagle/src/lib/rarity.ts`
+/// L45-64), le module qui factorise trois copies auparavant divergentes
+/// (`parsers/star-sign.ts`, `parsers/chara-param.ts`, `stat-calculator.ts`).
+///
+/// Complète [`rarity_to_growth_rank`], qui répond à l'autre question du même
+/// code : *quelle ligne de la table de croissance lire*. Les deux ne se
+/// recouvrent pas — 1 et 4 partagent le libellé « Normal » mais pas le rang.
+///
+/// | Code | Libellé | Origine |
+/// |------|---------|---------|
+/// | 0, 1, 4 | `Normal` | `starSignCharaInfo.charaRarity` |
+/// | 2 | `Expérimenté` | idem |
+/// | 3 | `Émérite` | idem |
+/// | 5, 6, 7 | `Légendaire` | idem |
+/// | 10 | `Héros` | **pas** posé par le jeu — enrichissement `match-heroes` |
+/// | 20 | `BASARA` | `basaraBuildInfo` |
+/// | autre | `Rank<code>` | repli |
+///
+/// # Exemple
+///
+/// ```
+/// use nie_core::stats::rarity_code_to_name;
+///
+/// assert_eq!(rarity_code_to_name(0), "Normal");
+/// assert_eq!(rarity_code_to_name(20), "BASARA");
+/// assert_eq!(rarity_code_to_name(42), "Rank42");
+/// ```
+#[must_use]
+pub fn rarity_code_to_name(code: u8) -> String {
+    match code {
+        0 | 1 | 4 => "Normal".to_string(),
+        2 => "Expérimenté".to_string(),
+        3 => "Émérite".to_string(),
+        5..=7 => "Légendaire".to_string(),
+        10 => "Héros".to_string(),
+        20 => "BASARA".to_string(),
+        other => format!("Rank{other}"),
+    }
+}
+
+/// Libellés de position d'inagle, **portés verbatim et contredits par le RE**.
+///
+/// Source : `POSITION_LABELS` (`packages/inagle/src/stat-calculator.ts` L327-332).
+///
+/// # Divergence mesurée — ne pas s'en servir comme vérité terrain
+///
+/// Cette table dit `2 = DF` et `4 = FW`. La vérité terrain du dépôt dit
+/// l'inverse : `enum Position { GK=1, FW=2, MF=3, DF=4 }`
+/// (`refs/iecode-re/cli/include/iecode/gamedata/types.h:28`,
+/// `refs/iecode-re/cli/src/gamedata/loader.cpp:178`), et c'est cette
+/// convention-là que suivent [`crate::growth::GrowthParams::main_position`] et
+/// ses tests golden. Les positions 1 (GK) et 3 (MF) concordent ; 2 et 4 sont
+/// inversées côté inagle.
+///
+/// La table est portée telle quelle pour que le désaccord soit visible et
+/// testable, pas pour être utilisée. Trancher l'affichage est un arbitrage
+/// utilisateur — cf. `docs/inagle/03-migration-rust.md`.
+pub const LIBELLES_POSITION_INAGLE: [(u8, &str); 4] = [
+    (1, "GK (Goalkeeper)"),
+    (2, "DF (Defender)"),
+    (3, "MF (Midfielder)"),
+    (4, "FW (Forward)"),
+];
+
+/// Libellés de rang d'inagle, portés verbatim.
+///
+/// Source : `RANK_LABELS` (`packages/inagle/src/stat-calculator.ts` L334-340).
+///
+/// # Divergence mesurée
+///
+/// Cette table est indexée de 1 à 5 et nomme les rangs à l'anglaise
+/// (`N/R/SR/SSR/UR`), alors que [`rarity_code_to_name`] est indexée de 0 à 20 et
+/// rend des libellés français. Les deux ne décrivent donc pas la même échelle :
+/// `RANK_LABELS[2] = "R (Rare)"` quand `rarityCodeToName(2) = "Expérimenté"`.
+/// Aucune des deux n'est corrigée ici.
+pub const LIBELLES_RANG_INAGLE: [(u8, &str); 5] = [
+    (1, "N (Normal)"),
+    (2, "R (Rare)"),
+    (3, "SR (Super Rare)"),
+    (4, "SSR (Super Super Rare)"),
+    (5, "UR (Ultra Rare)"),
+];
+
+/// Libellés des 7 statistiques, dans l'ordre `[Kc, Cr, Tc, Pr, Ps, Ag, It]`.
+///
+/// Chaque entrée est `(clé, anglais, japonais)`. Portage verbatim de
+/// `STAT_LABELS` (`packages/inagle/src/stat-calculator.ts` L342-350). L'ordre
+/// est celui de [`StatBlock::as_array`], ce qui permet de zipper les deux.
+pub const LIBELLES_STATS: [(&str, &str, &str); 7] = [
+    ("Kc", "Kick", "シュート"),
+    ("Cr", "Control", "ドリブル"),
+    ("Tc", "Technique", "テクニック"),
+    ("Pr", "Power", "フィジカル"),
+    ("Ps", "Pressure", "プレッシャー"),
+    ("Ag", "Agility", "スピード"),
+    ("It", "Intelligence", "インテリジェンス"),
+];
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -345,5 +445,74 @@ mod tests {
     fn rarity_to_growth_rank_clamp() {
         // Code inconnu → clampé à 5
         assert_eq!(rarity_to_growth_rank(99), 5);
+    }
+
+    /// Parité avec `rarityCodeToName` (`lib/rarity.ts` L45-64), code par code.
+    #[test]
+    fn rarity_code_to_name_parite_inagle() {
+        assert_eq!(rarity_code_to_name(0), "Normal");
+        assert_eq!(rarity_code_to_name(1), "Normal");
+        assert_eq!(rarity_code_to_name(2), "Expérimenté");
+        assert_eq!(rarity_code_to_name(3), "Émérite");
+        assert_eq!(rarity_code_to_name(4), "Normal");
+        assert_eq!(rarity_code_to_name(5), "Légendaire");
+        assert_eq!(rarity_code_to_name(6), "Légendaire");
+        assert_eq!(rarity_code_to_name(7), "Légendaire");
+        assert_eq!(rarity_code_to_name(10), "Héros");
+        assert_eq!(rarity_code_to_name(20), "BASARA");
+        assert_eq!(rarity_code_to_name(8), "Rank8");
+        assert_eq!(rarity_code_to_name(42), "Rank42");
+    }
+
+    /// Le libellé et le rang de table répondent à deux questions différentes :
+    /// 1 et 4 sont « Normal » à l'affichage mais valent 1 et 4 en rang.
+    #[test]
+    fn libelle_et_rang_ne_se_recouvrent_pas() {
+        assert_eq!(rarity_code_to_name(1), rarity_code_to_name(4));
+        assert_ne!(rarity_to_growth_rank(1), rarity_to_growth_rank(4));
+    }
+
+    /// Fige la DIVERGENCE entre la table de libellés d'inagle et la vérité
+    /// terrain du RE (`types.h:28` — GK=1, FW=2, MF=3, DF=4). Si ce test se met
+    /// à échouer, c'est que quelqu'un a « corrigé » l'un des deux côtés sans le
+    /// documenter : c'est un arbitrage, pas un détail.
+    #[test]
+    fn libelles_position_inagle_contredisent_le_re() {
+        let libelle = |code: u8| {
+            LIBELLES_POSITION_INAGLE
+                .iter()
+                .find(|(c, _)| *c == code)
+                .map(|(_, l)| *l)
+                .expect("code de position présent dans la table")
+        };
+        // Concordent avec le RE.
+        assert!(libelle(1).starts_with("GK"));
+        assert!(libelle(3).starts_with("MF"));
+        // Inversés par rapport au RE : 2 est FW et 4 est DF côté jeu.
+        assert!(libelle(2).starts_with("DF"), "inagle dit DF pour 2");
+        assert!(libelle(4).starts_with("FW"), "inagle dit FW pour 4");
+    }
+
+    /// Les libellés de stats sont dans l'ordre de [`StatBlock::as_array`].
+    #[test]
+    fn libelles_stats_suivent_l_ordre_du_bloc() {
+        assert_eq!(LIBELLES_STATS.len(), StatBlock::default().as_array().len());
+        let cles: Vec<&str> = LIBELLES_STATS.iter().map(|(k, _, _)| *k).collect();
+        assert_eq!(cles, ["Kc", "Cr", "Tc", "Pr", "Ps", "Ag", "It"]);
+        assert_eq!(LIBELLES_STATS[0].1, "Kick");
+        assert_eq!(LIBELLES_STATS[6].1, "Intelligence");
+    }
+
+    /// `RANK_LABELS` et `rarityCodeToName` ne décrivent pas la même échelle.
+    #[test]
+    fn libelles_rang_inagle_divergent_du_libelle_de_rarete() {
+        let rang_2 = LIBELLES_RANG_INAGLE
+            .iter()
+            .find(|(c, _)| *c == 2)
+            .map(|(_, l)| *l)
+            .expect("rang 2 présent");
+        assert_eq!(rang_2, "R (Rare)");
+        assert_eq!(rarity_code_to_name(2), "Expérimenté");
+        assert_ne!(rang_2, rarity_code_to_name(2));
     }
 }
