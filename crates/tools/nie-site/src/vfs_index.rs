@@ -172,6 +172,14 @@ impl Ordre {
 /// ignoré ou borné, et la réponse porte un [`FiltresAppliques`] qui dit ce qui a compté.
 #[derive(Debug, Default, Clone, Deserialize)]
 pub struct DemandeFiltre {
+    /// Motif glob du jeu (`glob=data/dx11/**,!**/movie/**`).
+    ///
+    /// La syntaxe est celle de [`nie_viola::Filtre`], c'est-à-dire celle des presets de dump,
+    /// c'est-à-dire celle de `DumpService.GlobToRegex` côté IECODE : listes séparées par des
+    /// virgules, `!` pour exclure (et l'exclusion prime), `**` traverse les `/`, `*` et `?` ne
+    /// les traversent pas, le tout ancré et insensible à la casse. En écrire une seconde ici
+    /// aurait donné deux syntaxes divergentes pour la même question.
+    pub glob: Option<String>,
     /// Sous-arbre auquel restreindre la recherche (`prefixe=data/dx11/menu`).
     ///
     /// Sans lui, `?q=` cherche dans les 255 308 entrées et `/b?q=` ne regarde qu'un dossier :
@@ -216,6 +224,11 @@ pub struct FiltresAppliques {
     pub ordre: &'static str,
     /// Sous-arbre appliqué, normalisé avec sa barre finale.
     pub prefixe: Option<String>,
+    /// Motif glob appliqué, tel qu'il a été compilé.
+    pub glob: Option<String>,
+    /// `true` quand `?glob=` a été demandé mais ne compile qu'en filtre vide (donc n'exclut
+    /// rien) — dit plutôt que laissé croire.
+    pub glob_vide: bool,
     /// `true` quand `?ext=` a été demandé mais n'existe nulle part dans l'index.
     pub ext_inconnue: bool,
     /// `true` quand `?cpk=` a été demandé mais ne désigne aucun pack indexé.
@@ -229,12 +242,14 @@ impl Default for FiltresAppliques {
         Self {
             q: None,
             prefixe: None,
+            glob: None,
             ext: None,
             cpk: None,
             taille_min: None,
             taille_max: None,
             tri: Tri::Nom.nom(),
             ordre: Ordre::Asc.nom(),
+            glob_vide: false,
             ext_inconnue: false,
             cpk_inconnu: false,
         }
@@ -247,6 +262,9 @@ pub struct Filtre {
     q: Option<String>,
     /// Sous-arbre, normalisé (barre finale, jamais de barre initiale).
     prefixe: Option<String>,
+    /// Sélecteur glob compilé **une fois** — le réinterpréter par chemin coûterait 255 308
+    /// compilations, ce que le module de `nie-viola` documente comme son propre défaut d'avant.
+    glob: Option<nie_viola::Filtre>,
     ext: Option<String>,
     cpk: Option<u16>,
     /// `true` quand un `?cpk=`/`?ext=` a été demandé sans correspondance : rien ne peut passer.
@@ -262,6 +280,7 @@ impl Filtre {
         !self.impossible
             && self.q.is_none()
             && self.prefixe.is_none()
+            && self.glob.is_none()
             && self.ext.is_none()
             && self.cpk.is_none()
             && self.taille_min.is_none()
@@ -611,6 +630,18 @@ impl IndexVfs {
             f.prefixe = Some(p);
         }
 
+        if let Some(g) = dem.glob.as_deref().map(str::trim).filter(|g| !g.is_empty()) {
+            let compile = nie_viola::Filtre::parse(g);
+            // Un motif fait uniquement de separateurs compile en filtre vide, qui accepte
+            // tout : le republier comme applique laisserait croire a un filtre actif.
+            if compile.est_vide() {
+                a.glob_vide = true;
+            } else {
+                a.glob = Some(g.to_owned());
+                f.glob = Some(compile);
+            }
+        }
+
         if let Some(e) = dem.ext.as_deref().map(str::trim).filter(|e| !e.is_empty()) {
             let e = e.trim_start_matches('.').to_ascii_lowercase();
             if self.rang_ext(&e).is_some() {
@@ -732,6 +763,11 @@ impl IndexVfs {
         // deux.
         if let Some(p) = &f.prefixe
             && !chemin.starts_with(p.as_str())
+        {
+            return false;
+        }
+        if let Some(g) = &f.glob
+            && !g.accepte(chemin)
         {
             return false;
         }

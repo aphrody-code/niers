@@ -42,6 +42,8 @@ pub struct Demande {
     pub ext: Option<String>,
     /// Sous-arbre auquel restreindre la recherche (`prefixe=data/dx11/menu`).
     pub prefixe: Option<String>,
+    /// Motif glob du jeu (`glob=data/dx11/**,!**/movie/**`).
+    pub glob: Option<String>,
     /// Nom du CPK d'origine. Sans effet sur un montage dump.
     pub cpk: Option<String>,
     /// Critère de tri : `nom` (défaut) ou `taille`.
@@ -70,6 +72,7 @@ impl Demande {
     pub fn filtre(&self) -> DemandeFiltre {
         DemandeFiltre {
             prefixe: self.prefixe.clone(),
+            glob: self.glob.clone(),
             ext: self.ext.clone(),
             cpk: self.cpk.clone(),
             tri: self.tri.clone(),
@@ -208,6 +211,49 @@ mod tests {
             },
         );
         assert_eq!(index.page_filtree(None, &exact).1, 2);
+    }
+
+    #[test]
+    fn un_glob_retient_ce_qu_il_inclut_et_l_exclusion_prime() {
+        // Les trois constructions qui distinguent ce selecteur d'un `ext=` : `**` traverse les
+        // `/`, la liste separee par virgules, et `!` qui PRIME sur les inclusions.
+        let index = index_temoin();
+        let compte = |spec: &str| {
+            let r = index.resoudre(
+                None,
+                &DemandeFiltre {
+                    glob: Some(spec.to_owned()),
+                    ..DemandeFiltre::default()
+                },
+            );
+            index.page_filtree(None, &r).1
+        };
+        assert_eq!(compte("data/**"), 5, "tout l'index");
+        assert_eq!(compte("data/common/**"), 3);
+        assert_eq!(compte("data/**/*.g4tx"), 1);
+        assert_eq!(compte("data/common/**,data/dx11/**/*.g4tx"), 4, "la liste cumule");
+        // La moitie qui compte : sans la priorite de l'exclusion, ce serait 3.
+        assert_eq!(compte("data/common/**,!**/chara_text*"), 2, "l'exclusion prime");
+        // Et un motif qui ne designe rien rend 0, pas tout.
+        assert_eq!(compte("data/aucun/**"), 0);
+    }
+
+    #[test]
+    fn un_glob_vide_le_dit_au_lieu_de_passer_pour_un_filtre() {
+        // Un motif fait de separateurs compile en filtre qui accepte TOUT. Le republier comme
+        // applique laisserait croire a un filtre actif sur une liste entiere — exactement le
+        // defaut que ce depot a paye sur `/b?q=`.
+        let index = index_temoin();
+        let r = index.resoudre(
+            None,
+            &DemandeFiltre {
+                glob: Some(",,".to_owned()),
+                ..DemandeFiltre::default()
+            },
+        );
+        assert!(r.applique.glob_vide, "le service dit que le motif ne filtre rien");
+        assert_eq!(r.applique.glob, None, "et ne le republie pas comme applique");
+        assert_eq!(index.page_filtree(None, &r).1, 5);
     }
 
     #[test]

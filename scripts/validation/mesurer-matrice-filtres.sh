@@ -148,8 +148,12 @@ reduit  9 "taille min / max" \
 reduit 10 "CPK d'origine" \
         "/api/v1/recherche?per_page=1" \
         "/api/v1/recherche?per_page=1&cpk=672c0647c5ff4adf150dc88695184817.cpk"
-absent 11 "glob (**, !excl, listes)" \
-        "/api/v1/recherche?per_page=1" "/api/v1/recherche?per_page=1&glob=data/**/*.g4tx"
+# La syntaxe est celle des presets de dump — `**` traverse les `/`, `!` prime, la virgule
+# cumule. Le motif choisi EXCLUT une partie de ce qu'il inclut : un glob dont l'exclusion
+# serait ignoree rendrait le meme total que sans elle, et la ligne doit rougir dans ce cas.
+reduit 11 "glob (**, !excl, listes)" \
+        "/api/v1/recherche?per_page=1&glob=data/dx11/**" \
+        "/api/v1/recherche?per_page=1&glob=data/dx11/**,!**/menu/**"
 client 12 "vue liste / grille" "affichage, aucune donnee serveur"
 client 13 "taille de vignette" "affichage, aucune donnee serveur"
 existe 14 "per_page reglable" "/api/v1/recherche?per_page=7" '.per_page == 7'

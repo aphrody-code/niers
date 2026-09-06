@@ -279,7 +279,7 @@ vignette), compté à part et jamais comme un manque.
 | 8 | Tri par taille | — | ✅ | ❌ | **SERVI** | 0 / 2 099 267 008 |
 | 9 | Filtre par taille min/max | — | ❌ | ❌ | **SERVI** | 255 308 → 14 558 |
 | 10 | Filtre par **CPK d'origine** | — | ❌ | ❌ | **SERVI** | 255 308 → 19 913 |
-| 11 | Filtre glob (`**`, `!excl`, listes) | — | ✅ Viola | ❌ | **ABSENT** | paramètre avalé |
+| 11 | Filtre glob (`**`, `!excl`, listes) | — | ✅ Viola | ❌ | **SERVI** | `glob=data/dx11/**` 58 348, `,!**/menu/**` 17 156 |
 | 12 | Vue liste / grille | — | ✅ | ❌ | **CLIENT** | affichage |
 | 13 | Taille de vignette | — | ✅ | ❌ | **CLIENT** | affichage |
 | 14 | `per_page` réglable | ✅ | ❌ | ❌ (60 en dur) | **SERVI** | `per_page=7` honoré |
@@ -332,10 +332,10 @@ tort — c'est le gisement qui est pauvre, pas la route.
 ### Compte — 2026-09-06 au soir
 
 ```
-servis 39 · absents 7 · côté client 2 · à relire 0  (sur 48)
+servis 40 · absents 6 · côté client 2 · à relire 0  (sur 48)
 ```
 
-- **API : 39 servis, 7 absents, 2 hors périmètre.** Le matin, la même colonne comptait 6 servis.
+- **API : 40 servis, 6 absents, 2 hors périmètre.** Le matin, la même colonne comptait 6 servis.
 - Les deux derniers (#29, #32) ont été gagnés **le soir même, par la mesure** : le script les a
   classés `ABSENT` en disant *pourquoi* — « l'égalité ne sait dire ni l'intervalle ni la
   présence » — et cette phrase était le cahier des charges. `entites` a gagné `colonne__min` /
@@ -362,7 +362,7 @@ servis 39 · absents 7 · côté client 2 · à relire 0  (sur 48)
 ---
 
 
-## 6. Les 7 manques restants : source de données et coût
+## 6. Les 6 manques restants : source de données et coût
 
 > Réécrit le 2026-09-06 au soir contre la mesure. Les 26 lignes que cette section chiffrait le
 > matin (#1–#3, #7–#10, #14–#17, #17–#28, #33–#35, #42, #43, #47) sont **servies** : elles ne
@@ -370,7 +370,6 @@ servis 39 · absents 7 · côté client 2 · à relire 0  (sur 48)
 
 | # | Manque | Source de données | Coût |
 |---|---|---|---|
-| 11 | Glob (`**`, `!excl`, listes) | `crates/engine/nie-viola/src/filtre.rs` | **moteur déjà écrit et testé**, à rendre atteignable depuis `nie-site`. Double `ext=` pour un public plus étroit |
 | 36 | Langue / variante d'un asset | segment de chemin du VFS | lisible sans passe ; Inacord le fait déjà (`lib/galerie.ts:24-59`). Coût quasi nul une fois #6 fait |
 | 40/41 | Pertinence pondérée, fuzzy | — | **à écrire** ; `apps/inacord/src/lib/recherche.ts:186-295` est un portage direct |
 | 44/45 | RE, forge | `var/niers.sqlite` (`function`, `forge_unit`, `v_forge_function`) | **bloqué en amont, pas en code** : la KB du VPS est ancrée sur le build transitoire `4c2b91fbae6f…`, pas sur la cible. Une route servirait des chiffres faux. `niers rebuild` d'abord |
@@ -401,7 +400,10 @@ Trois restent une **forme** de filtre (glob, sous-arbre, fuzzy) plutôt qu'une d
    de 219 à **224 tables**, chacune étiquetée par son gisement (`extrait` / `anime`), et les
    trois filtres n'ont coûté aucune ligne qui leur soit propre. `/api/v1/episodes` reste ce
    qu'elle est : l'API de synchronisation des Inacord installés.
-5. **Glob (#11)** — moteur déjà écrit, à rendre atteignable.
+5. ~~Glob (#11).~~ **Fait le 2026-09-06** — `nie_viola::Filtre` réutilisé tel quel plutôt que
+   réécrit : une seconde syntaxe aurait divergé de celle des presets de dump au premier motif
+   tordu. Recoupement gratuit au passage — `glob=data/**/*.g4tx` rend **54 203**, exactement le
+   compte de `ext=g4tx`, par un chemin entièrement indépendant.
 6. ~~Export (#48).~~ **Fait le 2026-09-06** — `?format=csv` rend la MÊME page, filtrée et
    triée, avec un nom qui porte la table *et* la page : sans la seconde, deux exports du même
    corpus se recouvrent dans le dossier de téléchargement. Ce n'est pas un dump — la pagination

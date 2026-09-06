@@ -78,6 +78,10 @@ nie-aphrody = { path = "../../engine/nie-aphrody" }
 # GLB, il n'en fait pas d'image. Features par defaut (`gpu` eteinte) : le site rend en
 # logiciel, et tirer wgpu dans un service sans pilote graphique n'aurait aucun sens.
 nie-render3d = { path = "../../engine/nie-render3d" }
+# Pour son SEUL selecteur de chemins (`nie_viola::Filtre`) : la syntaxe glob du jeu, portee de
+# `DumpService.GlobToRegex` et deja testee. La reecrire ici donnerait une seconde syntaxe, qui
+# divergerait de celle des presets de dump au premier motif tordu.
+nie-viola = { path = "../../engine/nie-viola" }
 
 # Le decodeur de bytecode Lua 5.2 — le format des 1 199 `.lua.bin` du jeu.
 # `default-features = false` coupe `vm` (mlua, Lua 5.2 en C) ET `analysis` (tree-sitter) : il
