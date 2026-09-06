@@ -29,6 +29,11 @@ avec le même résolveur d’include et le même hôte.
 `lua-run` le rend dans `loadedIncludes` et `lua-audit` l’agrège par nom de module,
 ce qui rend la résolution VFS observable et vérifiable.
 
+La même instrumentation est maintenant disponible sur `LuaSession` via
+`take_loaded_includes()`. Elle survit à `reload()` et se prélève séparément,
+ce qui permet à une console ou à un pilotage live de distinguer un module
+réellement chargé d’un simple état global déjà présent.
+
 `menu_host` couvre les commandes Kizuna de visibilité, couleur RGBA, paramètres,
 texture et application de flags. Les commandes générales identifiées par le RE
 sont décodées avec leur protocole de retour ; les requêtes d’état sans donnée

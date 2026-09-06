@@ -136,6 +136,8 @@ pub struct LuaSession {
     include_resolver: Option<IncludeResolver>,
     /// Includes demandés mais absents depuis le dernier prélèvement.
     missing_includes: Rc<RefCell<Vec<String>>>,
+    /// Includes effectivement résolus depuis le dernier prélèvement, dans l'ordre de chargement.
+    loaded_includes: Rc<RefCell<Vec<String>>>,
 }
 
 impl LuaSession {
@@ -184,12 +186,14 @@ impl LuaSession {
     ) -> Result<Self, LuaError> {
         let stdout = Rc::new(RefCell::new(Vec::new()));
         let missing_includes = Rc::new(RefCell::new(Vec::new()));
+        let loaded_includes = Rc::new(RefCell::new(Vec::new()));
         let (lua, menu_state) = Self::build_vm(
             &registry,
             &stdout,
             with_menu_host,
             include_resolver.as_ref(),
             &missing_includes,
+            &loaded_includes,
         )?;
         Ok(Self {
             lua,
@@ -202,6 +206,7 @@ impl LuaSession {
             with_menu_host,
             include_resolver,
             missing_includes,
+            loaded_includes,
         })
     }
 
@@ -224,6 +229,7 @@ impl LuaSession {
         with_menu_host: bool,
         include_resolver: Option<&IncludeResolver>,
         missing_includes: &Rc<RefCell<Vec<String>>>,
+        loaded_includes: &Rc<RefCell<Vec<String>>>,
     ) -> Result<BuiltVm, LuaError> {
         let lua = crate::new_vm();
         install_print_capture(&lua, Rc::clone(stdout))?;
@@ -236,8 +242,12 @@ impl LuaSession {
         if let Some(resolver) = include_resolver {
             let resolver = Rc::clone(resolver);
             let missing = Rc::clone(missing_includes);
+            let loaded = Rc::clone(loaded_includes);
             crate::install_include(&lua, move |name| match resolver(name) {
-                Some(bytes) => Some(bytes),
+                Some(bytes) => {
+                    loaded.borrow_mut().push(name.to_string());
+                    Some(bytes)
+                }
                 None => {
                     missing.borrow_mut().push(name.to_string());
                     None
@@ -307,6 +317,12 @@ impl LuaSession {
         missing.sort_unstable();
         missing.dedup();
         missing
+    }
+
+    /// Includes VFS effectivement chargés depuis le dernier prélèvement, dans l'ordre réel.
+    #[must_use]
+    pub fn take_loaded_includes(&self) -> Vec<String> {
+        std::mem::take(&mut self.loaded_includes.borrow_mut())
     }
 
     /// Messages `Debug.*` accumulés depuis le dernier appel.
@@ -412,6 +428,7 @@ impl LuaSession {
             self.with_menu_host,
             self.include_resolver.as_ref(),
             &self.missing_includes,
+            &self.loaded_includes,
         )?;
         self.lua = lua;
         self.menu_state = menu_state;
@@ -512,6 +529,7 @@ mod tests {
         )
         .expect("premier include");
         assert_eq!(s.eval("main_value").unwrap(), "1");
+        assert_eq!(s.take_loaded_includes(), vec!["LUA_TEST_MODULE"]);
         s.reload().expect("rechargement");
         s.exec(
             "main",
@@ -519,6 +537,7 @@ mod tests {
         )
         .expect("include après rechargement");
         assert_eq!(s.eval("main_value").unwrap(), "1");
+        assert_eq!(s.take_loaded_includes(), vec!["LUA_TEST_MODULE"]);
         s.exec("missing", br#"INCLUDE("LUA_MISSING"); missing_value = 1"#)
             .expect("include absent toléré");
         assert_eq!(s.take_missing_includes(), vec!["LUA_MISSING"]);
