@@ -71,6 +71,12 @@ pub enum LuaError {
     /// Erreur remontée par la VM mlua (chargement ou exécution).
     #[error("erreur VM Lua : {0}")]
     Vm(#[from] mlua::Error),
+    /// Le décodeur Rust refuse le conteneur avant de le remettre à la VM.
+    ///
+    /// Le chemin live doit mesurer et charger le même bytecode : laisser mlua accepter un chunk
+    /// que notre décodeur ne sait pas lire rendrait les métriques d'audit trompeuses.
+    #[error("erreur de décodage Lua : {0}")]
+    Decode(#[from] bytecode::BytecodeError),
 }
 
 /// Vrai si `data` commence par la signature d'un bytecode Lua 5.2 PUC-Rio.
@@ -126,6 +132,9 @@ pub fn load_bytecode(lua: &mlua::Lua, data: &[u8], name: &str) -> Result<mlua::F
         sig.copy_from_slice(&data[..5.min(data.len())]);
         return Err(LuaError::NotLua52Bytecode(sig));
     }
+    // Valider avec le décodeur partagé avant le chargement VM : le runtime live et `lua-audit`
+    // doivent parler du même chunk, y compris pour les includes imbriqués.
+    bytecode::parse(data)?;
     let func = lua
         .load(data)
         .set_name(name)
@@ -154,6 +163,14 @@ where
         };
         // Un module peut être du bytecode (.lua.bin) ou de la source ; on tente le bytecode.
         let mode = if is_lua52_bytecode(&bytes) {
+            // Même garde que pour le chunk principal : un include binaire est décodé avant son
+            // exécution dans la VM persistante. L'erreur est remontée comme erreur Lua de
+            // callback, avec le nom logique pour rendre le défaut actionnable.
+            if let Err(error) = crate::bytecode::parse(&bytes) {
+                return Err(mlua::Error::RuntimeError(format!(
+                    "décodage de l'include {name} : {error}"
+                )));
+            }
             mlua::ChunkMode::Binary
         } else {
             mlua::ChunkMode::Text
@@ -460,6 +477,26 @@ mod tests {
             by_logical.get("bar").map(String::as_str),
             Some("data/lua/bar_1.10.lua.bin")
         );
+    }
+
+    #[test]
+    fn le_chargement_live_valide_le_chunk_et_ses_includes() {
+        let lua = new_vm();
+        let malformed = vec![0x1B, b'L', b'u', b'a', 0x52, 0x00];
+        assert!(matches!(
+            load_bytecode(&lua, &malformed, "principal"),
+            Err(LuaError::Decode(_))
+        ));
+
+        install_include(&lua, move |name| {
+            (name == "BAD").then(|| malformed.clone())
+        })
+        .expect("install include");
+        let error = lua
+            .load(r#"INCLUDE("BAD")"#)
+            .exec()
+            .expect_err("un include binaire invalide doit être refusé");
+        assert!(error.to_string().contains("décodage de l'include BAD"));
     }
 
     /// **Bout-en-bout sur le vrai jeu** : charge un `.lua.bin` réel dans la VM 5.2.
