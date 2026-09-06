@@ -38,21 +38,60 @@ trois écrasaient :
 
 | État | Fichiers | Part | Ce que ça veut dire |
 |---|---:|---:|---|
-| **servi** | 162219 | 63.54 % | une route l'expose, avec un code HTTP **mesuré** |
-| **manquant** | 67878 | 26.59 % | **le parseur existe dans le dépôt**, aucune route ne l'appelle — c'est du câblage, pas de la recherche |
+| **servi** | 230097 | 90.13 % | une route l'expose, avec un code HTTP **mesuré** |
+| **manquant** | **0** | 0 % | plus aucun : les 67 878 fichiers des huit familles géométriques ont été câblés le 2026-09-06 (§ 2 bis) |
 | **partiel** | 15875 | 6.22 % | une route existe, elle ne couvre pas tout le corpus |
 | **interne** | 5512 | 2.16 % | délibérément non exposé, **avec sa raison écrite** |
 | **bloqué** | 3776 | 1.48 % | aucune route **et aucun parseur** : reverse préalable |
 | **inconnu** | 48 | 0.02 % | extension non identifiée — ne rien router avant de savoir ce que c'est |
 | | **255308** | **100 %** | |
 
-**Le chiffre qui commande la suite : 67 878 fichiers (26,6 %) sont `manquant`, c'est-à-dire
-qu'un parseur les décode déjà dans ce dépôt et qu'aucune route ne l'appelle.** Ce n'est pas un
-trou de connaissance, c'est un trou de câblage — et c'est le motif de toute la session : le
-dépôt sait faire bien plus qu'il n'expose.
+**`manquant` est retombé à zéro le 2026-09-06.** Les 67 878 fichiers (26,6 %) qu'un parseur
+du dépôt décodait déjà sans qu'aucune route ne l'appelle sont servis par
+`/api/v1/formats/decode/{chemin}` — cf. § 2 bis. Le diagnostic tenait : ce n'était pas un trou
+de connaissance mais un trou de câblage, et il s'est refermé sans une dépendance de plus.
 
 À l'opposé, **3 776 fichiers (1,5 %) sont `bloqué`** : shaders, effets, particules, tissu,
 navigation. Aucune route n'est possible avant du reverse. Les promettre serait mentir.
+
+## 2 bis. Le câblage du 2026-09-06 — `manquant` : 67 878 → 0
+
+Les huit familles géométriques sont servies par `/api/v1/formats/decode/{chemin}`
+(`crates/tools/nie-site/src/routes/geometrie.rs`), `?forme=resume` par défaut,
+`?forme=complet` pour la structure entière.
+
+**Aucune dépendance nouvelle.** Les huit parseurs sont derrière `#[cfg(feature = "std")]`, une
+feature **par défaut** : ils étaient déjà liés dans le binaire du site, personne ne les
+appelait. Seule la feature `serde` de `nie-formats` a été ajoutée, pour que la forme complète
+rende la structure décodée au lieu d'un `Debug`.
+
+Mesure, `scripts/validation/mesurer-geometrie.sh <base> 25`, le 2026-09-06 :
+
+| Famille | Fichiers | Échantillon | Conformes |
+|---|---:|---:|---:|
+| `.g4pk` | 45 591 | 25 | 25 |
+| `.objbin` | 12 190 | 25 | 25 |
+| `.g4pkm` | 6 992 | 25 | 25 |
+| `.g4cm` | 1 217 | 25 | 25 |
+| `.col` | 1 150 | 25 | 25 |
+| `.g4sk` | 339 | 25 | 25 |
+| `.mevbin` | 328 | 25 | 25 |
+| `.g4mt` | 71 | 25 | 25 |
+| **total** | **67 878** | **200** | **200 (100 %)** |
+
+L'échantillon est pris à **pas régulier** dans l'inventaire, pas en tête de fichier : les
+premiers chemins d'une extension viennent tous du même dossier, donc du même producteur
+d'assets — un échantillon en tête aurait mesuré un seul cas.
+
+« Conforme » ne veut pas dire « 200 » : le script exige que le corps porte le **jeton de
+famille attendu**. Un 200 qui rendrait un résumé vide ou d'une autre famille compte comme un
+échec, parce que c'est exactement le défaut que ce document traque depuis `/chara` (200 en
+87 ms, 0 lien).
+
+Deux familles ne rendent qu'un en-tête, et le résumé le **dit** au lieu de le laisser croire :
+`.col` (`interieur_interprete: false` — l'intérieur est du PhysX *cooked*) et `.g4mt`
+(`animation_decodee: false` quand le conteneur n'est pas suivi par `Motion::parse`). Un compte
+à zéro parce que rien n'a été décodé n'est pas un compte à zéro.
 
 ## 3. État par extension
 
@@ -60,25 +99,25 @@ navigation. Aucune route n'est possible avant du reverse. Les promettre serait m
 |---|---:|---|---|
 | `.bin` | 72308 | servi | `.cfg.bin` (71 101) et `.lua.bin` (1 197) — `/api/v1/formats/decode/{chemin}` et `/api/v1/lua/scripts/{chemin}`, 200 mesurés |
 | `.g4tx` | 54203 | servi | `/assets/tex/<chemin>.png`, 200 mesuré — **sauf** les 14 de `common/font/font/`, qui rendent 404 |
-| `.g4pk` | 45591 | manquant | parseur `nie-formats/src/g4pk.rs:137` — aucune route, **400 mesuré** |
+| `.g4pk` | 45591 | servi | `/api/v1/formats/decode/{chemin}` — **200 mesuré**, 25/25 de l'échantillon conformes (table des sous-fichiers) |
 | `.p3lip` | 21047 | servi | `/lip/<chemin>.p3lip`, visèmes datés |
 | `.g4mg` | 15875 | partiel | servi pour les codes assemblables (`<code>/<code>.g4mg` présent), muet pour le reste — **7 466 codes assemblables sur 7 679** |
-| `.objbin` | 12190 | manquant | parseur `objbin.rs:66` — aucune route |
+| `.objbin` | 12190 | servi | `/api/v1/formats/decode/{chemin}` — **200 mesuré**, 25/25 de l'échantillon conformes (objet de menu et ses composants) |
 | `.g4md` | 8955 | servi | `/api/v1/3d` + `/model/{famille}/{code}.glb` |
-| `.g4pkm` | 6992 | manquant | parseur présent — aucune route |
+| `.g4pkm` | 6992 | servi | `/api/v1/formats/decode/{chemin}` — **200 mesuré**, 25/25 de l'échantillon conformes (squelette 2D et poses de liaison) |
 | `.awb` | 5512 | interne | une banque seule n'a **aucune** métadonnée exploitable (`cueCount: 0`) : l'accès correct passe toujours par son `.acb`. Ce n'est pas un manque, c'est un usage sans forme correcte |
 | `.acb` | 5512 | servi | `/audio-info/<x>.acb` puis `/audio/<x>.acb?id=<cue>` — **284 115 cues** mesurées sur les 5 512 banques |
 | `.vfxo` | 1335 | bloqué | **aucun parseur** — reverse préalable |
-| `.g4cm` | 1217 | manquant | parseur `g4cm.rs:336` (caméras d'événement) — aucune route |
-| `.col` | 1150 | manquant | parseur `col.rs` (collision) — aucune route |
+| `.g4cm` | 1217 | servi | `/api/v1/formats/decode/{chemin}` — **200 mesuré**, 25/25 de l'échantillon conformes (clips, objets et canaux) |
+| `.col` | 1150 | servi | `/api/v1/formats/decode/{chemin}` — **200 mesuré**, 25/25 conformes ; l'en-tête `PXCL` seul, l'intérieur PhysX *cooked* reste non interprété et le résumé le dit |
 | `.pfxo` | 1113 | bloqué | **aucun parseur** — reverse préalable |
 | `.ptlb` | 657 | bloqué | **aucun parseur** (particules) |
 | `.fxbin` | 372 | bloqué | **aucun parseur** — reverse préalable |
-| `.g4sk` | 339 | manquant | parseur présent (squelettes) — aucune route |
-| `.mevbin` | 328 | manquant | parseur `mevbin.rs:136` — aucune route |
+| `.g4sk` | 339 | servi | `/api/v1/formats/decode/{chemin}` — **200 mesuré**, 25/25 de l'échantillon conformes (hiérarchie d'os) |
+| `.mevbin` | 328 | servi | `/api/v1/formats/decode/{chemin}` — **200 mesuré**, 25/25 de l'échantillon conformes (motions et événements datés) |
 | `.usm` | 194 | servi | `/video/<x>.usm`, remux MP4 — **sauf** 2 fichiers MPEG-2 (`IE_15th`, `L5logo`), sans conteneur web |
 | `.g4nv` | 160 | bloqué | **aucun parseur** (navigation) |
-| `.g4mt` | 71 | manquant | parseur présent (animation) — aucune route |
+| `.g4mt` | 71 | servi | `/api/v1/formats/decode/{chemin}` — **200 mesuré**, 25/25 conformes ; `animation_decodee` distingue un conteneur non suivi d'une animation vide |
 | `.clobin` | 39 | bloqué | **aucun parseur** (tissu) |
 | `.g4ma` | 35 | bloqué | **aucun parseur** |
 | `.cfxo` | 29 | bloqué | **aucun parseur** — reverse préalable |

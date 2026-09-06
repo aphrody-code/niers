@@ -280,6 +280,11 @@ pub fn script_logical_base(basename: &str) -> String {
 /// La résolution d'include doit comparer `10.00` après `9.00`, même si l'ordre ASCII inverse
 /// les deux chaînes. Les composants sont comparés numériquement ; le chemin complet départage
 /// uniquement deux fichiers portant exactement la même version.
+///
+/// Gatée comme son unique appelant (`index_script_paths`, feature `vm`) : sans ce `cfg`, un
+/// consommateur qui coupe la VM — `nie-site` le fait pour n'embarquer aucun interpréteur —
+/// compile un `dead_code` de fond, et un avertissement permanent finit par masquer les vrais.
+#[cfg(feature = "vm")]
 fn script_version_key(path: &str) -> Vec<u64> {
     let basename = path.rsplit('/').next().unwrap_or(path);
     let without_ext = basename

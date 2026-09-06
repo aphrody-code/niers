@@ -25,9 +25,19 @@ workspace = true
 
 [dependencies]
 # Le VFS du jeu : `open_game()`/`resolve_game_dir()` — la MÊME résolution que le reste du
-# dépôt (aucun chemin machine compilé). Features par défaut (std + lua) : le site ne décode
-# rien lui-même, il sert des octets et délègue tout décodage à nie-model-serve.
-nie-formats = { path = "../../engine/nie-formats" }
+# dépôt (aucun chemin machine compilé).
+#
+# Features par défaut (`std` + `lua`) PLUS `serde`. Ce qu'elles décident, mesuré :
+# - `std` porte les huit parseurs géométriques (`g4pk`, `objbin`, `g4pkm`, `g4cm`, `col`,
+#   `g4sk`, `mevbin`, `g4mt`), tous derrière `#[cfg(feature = "std")]` — 67 878 fichiers du
+#   VFS, décodés EN PROCESS par `routes::geometrie`, sans une dépendance de plus ;
+# - `serde` ne fait qu'ajouter des `derive` sur ces structures : c'est ce qui permet à
+#   `?forme=complet` de rendre la structure décodée au lieu d'un `Debug` — un JSON public ne
+#   se sérialise pas par `Debug` ;
+# - `textures`, `images` et `audio-decode` restent ÉTEINTES : elles tireraient `image_dds`,
+#   `image` et `cridecoder` dans un service web. Ces familles-là sont déléguées à l'amont, et
+#   `/api/v1/formats` le dit au lieu de le promettre.
+nie-formats = { path = "../../engine/nie-formats", features = ["serde"] }
 
 # Le pet Aphrody : atlas, animations et poses de regard, embarques au build par
 # `include_bytes!`. Le site ne fait que republier ce package — il n'en garde aucune copie.

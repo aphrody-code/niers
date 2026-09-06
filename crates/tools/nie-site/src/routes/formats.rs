@@ -2,11 +2,12 @@
 //!
 //! ## Ce que cette crate décode elle-même, et ce qu'elle délègue
 //!
-//! `nie-formats` sait lire une trentaine de formats du jeu, mais **pas dans ce processus** :
-//! ses décodeurs de textures, d'images et d'audio sont derrière des features optionnelles
-//! (`textures`, `images`, `audio-decode`) que `nie-site` n'active pas, et ne peut pas activer
-//! sans tirer `image_dds`, `image` et `cridecoder` dans un service web. Le site déclare
-//! `nie-formats` avec ses features par défaut : `std` et `lua`.
+//! `nie-formats` sait lire une trentaine de formats du jeu, et la frontière ne passe pas où on
+//! l'attend : ce sont les **features** qui décident, pas la difficulté du format. Ses décodeurs
+//! de textures, d'images et d'audio sont derrière `textures`, `images` et `audio-decode`, que
+//! `nie-site` n'active pas — les tirer amènerait `image_dds`, `image` et `cridecoder` dans un
+//! service web. Ses parseurs géométriques, eux, sont derrière `std`, une feature **par défaut**
+//! que le site liait déjà : ils étaient présents dans le binaire, personne ne les appelait.
 //!
 //! Il en résulte une frontière nette, et [`capacites`] la **mesure** au lieu de la promettre :
 //!
@@ -14,6 +15,7 @@
 //! |---|---|---|
 //! | `cfg.bin` (RDBN et T2B) | cette crate, en process | `/api/v1/formats/decode/{chemin}` |
 //! | `lua.bin` (bytecode Lua 5.2) | cette crate, en process | `/api/v1/lua` (cf. [`super::lua`]) |
+//! | les 8 familles géométriques, 67 878 fichiers | cette crate, en process | `/api/v1/formats/decode/{chemin}` (cf. [`super::geometrie`]) |
 //! | textures, modèles, audio, vidéo | `nie-model-serve`, en amont | `/assets/…` (cf. [`super::assets`]) |
 //! | octets bruts, sans décodage | le VFS | `/f/{chemin}` (cf. [`super::vfs`]) |
 //!
@@ -83,7 +85,11 @@ async fn jeton_decodage() -> Result<tokio::sync::SemaphorePermit<'static>, Erreu
 /// `(suffixe, décodé en process, route qui le sert, ce que ça rend)`. Le tableau est court à
 /// dessein : chaque ligne doit être vraie, et une ligne dont la route répondrait `500` n'a rien
 /// à y faire.
-const FAMILLES: [(&str, bool, &str, &str); 8] = [
+///
+/// Il ne porte **pas** les huit familles géométriques : leur source unique est
+/// [`super::geometrie::FAMILLES`], et [`familles`] fusionne les deux. Recopier une liste, c'est
+/// s'engager à la mettre à jour deux fois.
+const FAMILLES_PROPRES: [(&str, bool, &str, &str); 8] = [
     (
         ".cfg.bin",
         true,
@@ -103,6 +109,26 @@ const FAMILLES: [(&str, bool, &str, &str); 8] = [
     (".awb", false, "/assets/audio-info/{chemin}", "application/json"),
     (".usm", false, "/f/{chemin}", "application/octet-stream"),
 ];
+
+/// Toutes les familles annoncées : celles de ce module, plus les huit géométriques.
+///
+/// Une seule liste est publiée, mais elle a deux sources et aucune n'est recopiée : c'est ce
+/// qui garantit qu'une famille ajoutée à [`super::geometrie::FAMILLES`] apparaît ici, dans les
+/// comptes de `/api/v1/formats` et dans l'aiguillage de `/decode`, sans autre geste.
+#[must_use]
+pub fn familles() -> Vec<(&'static str, bool, &'static str, &'static str)> {
+    FAMILLES_PROPRES
+        .into_iter()
+        .chain(super::geometrie::FAMILLES.into_iter().map(|(s, ..)| {
+            (
+                s,
+                true,
+                "/api/v1/formats/decode/{chemin}",
+                "application/json",
+            )
+        }))
+        .collect()
+}
 
 /// Ce que le service sait faire d'une famille de fichiers, avec son compte.
 #[derive(Debug, Clone, Serialize)]
@@ -151,13 +177,13 @@ static COMPTES: RwLock<ComptesMemorises> = RwLock::new(None);
 /// [`IndexVfs::dossier`] s'arrête dès que le préfixe ne correspond plus.
 #[must_use]
 pub fn compter(index: &IndexVfs) -> TableComptes {
-    let mut comptes: TableComptes =
-        FAMILLES.iter().map(|(s, ..)| (*s, (0, 0))).collect();
+    let table = familles();
+    let mut comptes: TableComptes = table.iter().map(|(s, ..)| (*s, (0, 0))).collect();
     let mut a_visiter = vec![String::new()];
     while let Some(prefixe) = a_visiter.pop() {
         let d = index.dossier(&prefixe, 0, usize::MAX);
         for f in &d.fichiers {
-            for (suffixe, ..) in FAMILLES {
+            for (suffixe, ..) in &table {
                 if f.chemin.ends_with(suffixe)
                     && let Some(e) = comptes.get_mut(suffixe)
                 {
@@ -199,13 +225,13 @@ pub fn features() -> Vec<&'static str> {
 
 /// Les features de `nie-formats` que `nie-site/Cargo.toml` demande, c'est-à-dire ses features
 /// par défaut. `textures`, `images`, `textures-encode` et `audio-decode` en sont absentes, et
-/// leur absence est ce qui décide de la colonne « qui décode » du tableau [`FAMILLES`].
+/// leur absence est ce qui décide de la colonne « qui décode » de [`familles`].
 pub const FEATURES_FORMATS: [&str; 2] = ["std", "lua"];
 
 /// `GET /api/v1/formats` — les formats du jeu, ce qui les décode, et combien il y en a.
 pub async fn capacites(State(etat): State<EtatSite>) -> Json<CapacitesFormats> {
     let index = etat.index().ok();
-    let table = match index.as_ref() {
+    let comptes_par_suffixe = match index.as_ref() {
         Some(i) => {
             let i = Arc::clone(i);
             tokio::task::spawn_blocking(move || comptes(&i)).await.ok()
@@ -213,10 +239,14 @@ pub async fn capacites(State(etat): State<EtatSite>) -> Json<CapacitesFormats> {
         None => None,
     };
 
-    let familles = FAMILLES
-        .into_iter()
-        .map(|(suffixe, en_process, route, sortie)| {
-            let compte = table.as_ref().and_then(|t| t.get(suffixe)).copied();
+    let table = familles();
+    let detail = table
+        .iter()
+        .map(|&(suffixe, en_process, route, sortie)| {
+            let compte = comptes_par_suffixe
+                .as_ref()
+                .and_then(|t| t.get(suffixe))
+                .copied();
             Famille {
                 suffixe,
                 decodage: if en_process { "en_process" } else { "delegue" },
@@ -234,11 +264,11 @@ pub async fn capacites(State(etat): State<EtatSite>) -> Json<CapacitesFormats> {
         vfs_pret: index.is_some(),
         vfs_entrees: index.as_ref().map_or(0, |i| i.len()),
         features: features(),
-        decodables: FAMILLES
-            .into_iter()
-            .filter_map(|(s, en_process, ..)| en_process.then_some(s))
+        decodables: table
+            .iter()
+            .filter_map(|&(s, en_process, ..)| en_process.then_some(s))
             .collect(),
-        familles,
+        familles: detail,
     })
 }
 
@@ -520,8 +550,13 @@ impl Forme {
 
 /// `GET /api/v1/formats/decode/{*chemin}` — un fichier du VFS décodé.
 ///
-/// `?forme=valeurs` (défaut) rend les données en forme canonique iecode ;
-/// `?forme=structure` rend le schéma que le fichier porte lui-même.
+/// Deux espaces de formes derrière une seule route, parce qu'il n'y a qu'une intention —
+/// « décode-moi ce chemin » — et qu'un client n'a pas à deviner le préfixe de sa famille :
+///
+/// - `.cfg.bin` : `?forme=valeurs` (défaut) rend les données en forme canonique iecode,
+///   `?forme=structure` rend le schéma que le fichier porte lui-même ;
+/// - les huit familles géométriques ([`super::geometrie::FAMILLES`]) : `?forme=resume`
+///   (défaut) rend des comptes, `?forme=complet` rend la structure entière.
 ///
 /// # Errors
 ///
@@ -533,19 +568,37 @@ pub async fn decode(
     Path(brut): Path<String>,
     Query(demande): Query<DemandeDecode>,
 ) -> Result<Json<serde_json::Value>, ErreurSite> {
-    let forme = Forme::depuis(demande.forme.as_deref())?;
     let chemin = super::vfs::normaliser(&brut)?;
     if chemin.ends_with(super::lua::SUFFIXE) {
         return Err(ErreurSite::Demande(
             "un script se lit sur /api/v1/lua/scripts, qui en rend l'analyse statique".to_owned(),
         ));
     }
-    if !chemin.ends_with(SUFFIXE_CFG) {
+
+    // La famille décide de tout ce qui suit : la forme acceptée, la borne de taille et le
+    // décodeur appelé. Elle est résolue AVANT la lecture — inutile de lire 12 Mio pour
+    // découvrir ensuite qu'aucun parseur ne les prend.
+    let geom = super::geometrie::Famille::depuis_chemin(&chemin);
+    if geom.is_none() && !chemin.ends_with(SUFFIXE_CFG) {
         return Err(ErreurSite::Demande(format!(
-            "cette route ne decode que {SUFFIXE_CFG} — les autres familles sont servies par les \
-             routes annoncees sur /api/v1/formats"
+            "cette route decode {SUFFIXE_CFG} et les familles geometriques ({}) — les autres \
+             sont servies par les routes annoncees sur /api/v1/formats",
+            super::geometrie::FAMILLES
+                .iter()
+                .map(|(s, ..)| *s)
+                .collect::<Vec<_>>()
+                .join(", ")
         )));
     }
+    let forme_geom = geom
+        .map(|_| super::geometrie::Forme::depuis(demande.forme.as_deref()))
+        .transpose()?;
+    let forme_cfg = if geom.is_some() {
+        None
+    } else {
+        Some(Forme::depuis(demande.forme.as_deref())?)
+    };
+
     let index = etat.index()?;
     if !index.contient(&chemin) {
         return Err(ErreurSite::Introuvable(format!(
@@ -561,20 +614,31 @@ pub async fn decode(
             tracing::debug!(erreur = %e, "lecture VFS impossible");
             ErreurSite::Introuvable("fichier indexe mais illisible sur ce montage".to_owned())
         })?;
-    if octets.len() > TAILLE_MAX {
+    // Deux bornes, parce qu'elles ne bornent pas la même chose : un résumé ne grossit pas avec
+    // sa source (16 Mio couvrent le plus gros `.g4pk` du jeu), un JSON complet, si.
+    let borne = match forme_geom {
+        Some(super::geometrie::Forme::Resume) => super::geometrie::TAILLE_MAX_RESUME,
+        _ => TAILLE_MAX,
+    };
+    if octets.len() > borne {
         return Err(ErreurSite::Demande(format!(
-            "fichier trop volumineux pour un decodage en JSON ({} octets, borne {TAILLE_MAX})",
+            "fichier trop volumineux pour un decodage en JSON ({} octets, borne {borne})",
             octets.len()
         )));
     }
 
     let _jeton = jeton_decodage().await?;
     let corps = tokio::task::spawn_blocking(move || {
-        let v = match forme {
-            Forme::Valeurs => serde_json::to_value(decoder(&chemin, &octets)?),
-            Forme::Structure => serde_json::to_value(structurer(&octets)?).map(|st| {
-                serde_json::json!({ "chemin": chemin, "octets": octets.len(), "structure": st })
-            }),
+        let v = match (geom, forme_geom, forme_cfg) {
+            (Some(f), Some(forme), _) => {
+                serde_json::to_value(super::geometrie::decoder(&chemin, &octets, f, forme)?)
+            }
+            (_, _, Some(Forme::Structure)) => {
+                serde_json::to_value(structurer(&octets)?).map(|st| {
+                    serde_json::json!({ "chemin": chemin, "octets": octets.len(), "structure": st })
+                })
+            }
+            _ => serde_json::to_value(decoder(&chemin, &octets)?),
         }
         .map_err(|e| ErreurSite::Interne(format!("reponse non serialisable: {e}")))?;
         Ok::<_, ErreurSite>(v)
@@ -589,19 +653,34 @@ mod tests {
 
     #[test]
     fn les_familles_declarent_une_route_et_un_type() {
-        for (suffixe, _, route, sortie) in FAMILLES {
+        let table = familles();
+        assert_eq!(table.len(), 16, "8 familles propres + 8 geometriques");
+        for (suffixe, _, route, sortie) in &table {
             assert!(suffixe.starts_with('.'), "{suffixe}");
             assert!(route.starts_with('/'), "{route}");
             assert!(sortie.contains('/'), "{sortie}");
         }
-        // Deux familles seulement sont decodees ici, et ce sont exactement celles dont les
-        // features sont compilees (`std` + `lua`).
-        let en_process: Vec<&str> = FAMILLES
-            .into_iter()
-            .filter_map(|(s, p, ..)| p.then_some(s))
+        // Dix familles sont decodees ici : les deux de ce module (`cfg.bin` via `std`,
+        // `lua.bin` via `lua`) et les huit geometriques, toutes derriere `std`. Les six autres
+        // exigeraient `textures` / `images` / `audio-decode`, qui restent eteintes.
+        let en_process: Vec<&str> = table
+            .iter()
+            .filter_map(|&(s, p, ..)| p.then_some(s))
             .collect();
-        assert_eq!(en_process, vec![".cfg.bin", ".lua.bin"]);
+        assert_eq!(
+            en_process,
+            vec![
+                ".cfg.bin", ".lua.bin", ".g4pk", ".objbin", ".g4pkm", ".g4cm", ".col", ".g4sk",
+                ".mevbin", ".g4mt",
+            ]
+        );
         assert_eq!(features(), vec!["std", "lua"]);
+        // Aucun suffixe en double : deux lignes pour un meme suffixe donneraient deux comptes
+        // du meme corpus, et l'un des deux serait faux.
+        let mut suffixes: Vec<&str> = table.iter().map(|&(s, ..)| s).collect();
+        suffixes.sort_unstable();
+        suffixes.dedup();
+        assert_eq!(suffixes.len(), table.len());
     }
 
     #[test]

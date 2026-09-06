@@ -11,7 +11,7 @@
 use axum::body::Body;
 use axum::http::{Request, StatusCode, header};
 use http_body_util::BodyExt as _;
-use nie_site::app::{NB_ENTETES_SECURITE, ROUTES, entetes_securite_liste};
+use nie_site::app::{NB_ENTETES_SECURITE, entetes_securite_liste};
 use nie_site::config::{Config, PER_PAGE_MAX};
 use nie_site::state::EtatSite;
 use nie_site::vfs_index::IndexVfs;
@@ -79,11 +79,19 @@ fn json(corps: &[u8]) -> serde_json::Value {
     serde_json::from_slice(corps).expect("corps JSON")
 }
 
+/// Chaque route déclarée par `app::chemins()` est interrogée par une instance concrète, et son
+/// code est **compté**.
+///
+/// La garde ne tient pas à une égalité de longueurs — deux instances peuvent viser la même
+/// route — mais à une **couverture de motifs** : toute route déclarée doit être atteinte par au
+/// moins une instance, et toute instance doit correspondre à une route. Ajouter une route au
+/// routeur sans l'instancier ici fait donc rougir la suite, ce que l'ancienne constante
+/// `ROUTES` (figée à 19 pour un routeur qui en montait 37) ne pouvait plus faire.
 #[tokio::test]
-async fn les_dix_neuf_routes_repondent() {
+async fn toutes_les_routes_declarees_repondent() {
     let etat = etat();
-    // Une instance concrète par route déclarée, dans le même ordre que `ROUTES`.
-    let instances: [(&str, &[u16]); 19] = [
+    // Une instance concrète par route déclarée, dans le même ordre que `app::chemins()`.
+    let instances: [(&str, &[u16]); 38] = [
         ("/healthz", &[200]),
         ("/robots.txt", &[200]),
         ("/.well-known/security.txt", &[200]),
@@ -108,14 +116,60 @@ async fn les_dix_neuf_routes_repondent() {
         // DIT plutot que de rendre une liste vide qu'un client prendrait pour un catalogue a
         // jour. C'est la porte de mise a jour des Inacord installes.
         ("/api/v1/episodes", &[503]),
+        // Aphrody : embarquee au build par `include_bytes!`, donc servie meme sur une machine
+        // sans jeu, sans miroir et sans amont. C'est ce qui la distingue de tout le reste.
+        ("/pet/aphrody.json", &[200]),
+        ("/pet/atlas.webp", &[200]),
+        ("/pet/aphrody.svg", &[200]),
+        ("/pet/frame/idle/0.png", &[200]),
+        ("/api/v1/aphrody", &[200]),
+        ("/api/v1/aphrody/diagnostic", &[200]),
+        ("/api/v1/aphrody/palette", &[200]),
+        // La 3D : les capacites repondent toujours, mais le CATALOGUE joint le miroir
+        // (`inagle_characters`) pour nommer les modeles — absent ici, il rend 503 plutot qu'un
+        // catalogue vide qu'un client prendrait pour « aucun modele dans ce jeu ».
+        ("/api/v1/3d", &[200]),
+        ("/api/v1/3d/modeles", &[503]),
+        ("/api/v1/3d/modeles/chara/c99999999", &[404]),
+        ("/api/v1/3d/modeles/chara/c99999999/analyse", &[404]),
+        ("/model/chara/c99999999.glb", &[404]),
+        // Lua et formats : les capacites repondent sans VFS, le decodage d'un chemin absent de
+        // l'index est un 404 — l'index de test ne porte ni `.lua.bin` ni `.cfg.bin`.
+        ("/api/v1/lua", &[200]),
+        ("/api/v1/lua/scripts", &[200]),
+        ("/api/v1/lua/scripts/data/x.lua.bin", &[404]),
+        ("/api/v1/lua/desassemblage/data/x.lua.bin", &[404]),
+        ("/api/v1/formats", &[200]),
+        ("/api/v1/formats/decode/data/x.cfg.bin", &[404]),
+        // Une famille geometrique, pour que le routage du lot 9.1 soit dans cette garde-la
+        // aussi : absente de l'index de test, donc 404 — mais routee.
+        ("/api/v1/formats/decode/data/x.g4pk", &[404]),
         ("/", &[200]),
     ];
-    assert_eq!(ROUTES.len(), 19);
-    assert_eq!(
-        instances.len(),
-        ROUTES.len(),
-        "une instance par route declaree"
+
+    let declarees = nie_site::app::chemins();
+    assert_eq!(declarees.len(), 37, "le routeur monte 37 routes");
+    assert!(
+        instances.len() >= declarees.len(),
+        "au moins une instance par route declaree"
     );
+
+    // La garde qui compte vraiment : chaque MOTIF de route doit etre atteint par au moins une
+    // instance. Une simple egalite de longueurs se satisferait de deux instances sur la meme
+    // route et d'une route jamais interrogee.
+    for motif in &declarees {
+        assert!(
+            instances.iter().any(|(uri, _)| correspond(motif, uri)),
+            "route jamais interrogee: {motif}"
+        );
+    }
+    for (uri, _) in instances {
+        assert!(
+            declarees.iter().any(|motif| correspond(motif, uri)),
+            "instance qui ne correspond a aucune route: {uri}"
+        );
+    }
+
     let mut vus = 0;
     for (uri, attendus) in instances {
         let (statut, _, _) = reponse(&etat, uri).await;
@@ -126,7 +180,34 @@ async fn les_dix_neuf_routes_repondent() {
         );
         vus += 1;
     }
-    assert_eq!(vus, 19);
+    assert_eq!(vus, 38, "38 instances interrogees pour 37 routes");
+}
+
+/// Vrai quand `uri` est une instance du motif de route `motif` (syntaxe axum 0.8).
+///
+/// `{param}` consomme un segment, `{*joker}` consomme tout le reste — c'est la regle de
+/// `matchit`, pas une approximation : un joker est terminal chez axum.
+fn correspond(motif: &str, uri: &str) -> bool {
+    let mut segments_uri = uri.trim_start_matches('/').split('/');
+    let segments_motif: Vec<&str> = motif.trim_start_matches('/').split('/').collect();
+    for m in &segments_motif {
+        if m.starts_with("{*") {
+            return segments_uri.next().is_some();
+        }
+        match segments_uri.next() {
+            None => return false,
+            Some(s) => {
+                if m.starts_with('{') {
+                    if s.is_empty() {
+                        return false;
+                    }
+                } else if *m != s {
+                    return false;
+                }
+            }
+        }
+    }
+    segments_uri.next().is_none()
 }
 
 #[tokio::test]

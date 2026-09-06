@@ -56,146 +56,108 @@ pub fn entetes_securite_liste() -> [(header::HeaderName, &'static str); NB_ENTET
 /// soit coupée ici.
 pub const DELAI_REQUETE: Duration = Duration::from_secs(15);
 
-/// Les routes exposées, dans l'ordre où elles sont déclarées. Sert de contrat vérifiable : les
-/// tests comptent cette liste et interrogent chacune de ses entrées.
+/// Déclare les routes **une seule fois**, et en tire deux sorties : le montage du routeur et la
+/// liste de leurs chemins.
 ///
-/// **Elle n'est plus exhaustive**, et le dire vaut mieux que le laisser croire : les sept
-/// routes d'`/pet` et d'`/api/v1/aphrody` (cf. [`crate::routes::aphrody`]) puis les cinq de la
-/// couche 3D (cf. [`crate::routes::modeles3d`]) ont été déclarées au routeur sans y entrer —
-/// `tests/routes.rs` fige `ROUTES.len() == 19` et une instance par entrée. Les remettre en
-/// phase demande de toucher ce fichier de tests, ce que ni l'un ni l'autre de ces lots n'avait
-/// dans son périmètre. Chaque module porte ses propres tests de contrat en attendant.
-pub const ROUTES: [&str; 19] = [
-    "/healthz",
-    "/robots.txt",
-    "/llms.txt",
-    "/llms-full.txt",
-    "/manifest.webmanifest",
-    "/en/manifest.webmanifest",
-    "/ja/manifest.webmanifest",
-    "/.well-known/security.txt",
-    "/sitemap.xml",
-    "/feed.atom",
-    "/api/v1/health",
-    "/api/v1/chara",
-    "/api/v1/{vue}",
-    "/f/{*chemin}",
-    "/b",
-    "/b/{*prefixe}",
-    "/api/v1/episodes",
-    "/assets/{*chemin}",
-    "/",
-];
+/// Ce qui l'a rendue nécessaire, mesuré : `ROUTES` était une constante tenue à la main que
+/// `tests/routes.rs` figeait à 19 entrées, alors que le routeur en montait 37. Les sept routes
+/// d'`/pet`, les cinq de la 3D puis les six de Lua et des formats y avaient été ajoutées sans
+/// entrer dans la liste — chaque lot ayant respecté son périmètre, et la liste n'appartenant à
+/// aucun. **Un inventaire qui ne suit pas ce qu'il inventorie n'est pas une garde, c'est un
+/// faux document** : il annonçait 19 routes servies sur un site qui en sert 37.
+///
+/// La macro supprime la classe entière de défaut : une route ajoutée ici est montée **et**
+/// listée, une route retirée disparaît des deux. Aucun ordre de déclaration à maintenir, aucune
+/// discipline à demander au prochain lot.
+macro_rules! declarer_routes {
+    ($($chemin:literal => $handler:path),+ $(,)?) => {
+        /// Les chemins réellement montés, dans l'ordre de déclaration.
+        ///
+        /// Cette liste **est** celle du routeur : elles descendent de la même déclaration, et
+        /// aucune ne peut être modifiée sans l'autre.
+        #[must_use]
+        pub fn chemins() -> Vec<&'static str> {
+            vec![$($chemin),+]
+        }
 
-/// Construit le routeur complet.
+        /// Monte les routes déclarées sur un routeur nu.
+        fn monter(routeur: Router<EtatSite>) -> Router<EtatSite> {
+            routeur $(.route($chemin, get($handler)))+
+        }
+    };
+}
+
+// Toutes les routes du site sont en `GET` : le site ne prend aucune écriture, et c'est
+// volontaire — la seule chose qu'un visiteur puisse faire est lire. La macro le rend
+// structurel plutôt que conventionnel.
+declarer_routes! {
+    "/healthz" => crate::routes::health::healthz,
+    "/robots.txt" => crate::routes::well_known::robots,
+    "/llms.txt" => crate::routes::well_known::llms,
+    "/llms-full.txt" => crate::routes::well_known::llms_complet,
+    // Une route par langue, declarees une par une. Un parametre `/{langue}/manifest…`
+    // capturerait n'importe quel segment et servirait le manifeste francais sous autant
+    // d'URL qu'on peut en inventer.
+    "/manifest.webmanifest" => crate::routes::well_known::manifeste,
+    "/en/manifest.webmanifest" => crate::routes::well_known::manifeste,
+    "/ja/manifest.webmanifest" => crate::routes::well_known::manifeste,
+    "/.well-known/security.txt" => crate::routes::well_known::security,
+    "/sitemap.xml" => crate::routes::well_known::sitemap,
+    "/feed.atom" => crate::routes::feed::atom,
+    "/api/v1/health" => crate::routes::api_v1::health,
+    "/api/v1/chara" => crate::routes::api_v1::chara,
+    "/api/v1/{vue}" => crate::routes::api_v1::vue,
+    "/f/{*chemin}" => crate::routes::vfs::fichier,
+    "/b" => crate::routes::vfs::parcours_racine,
+    "/b/{*prefixe}" => crate::routes::vfs::parcours,
+    "/api/v1/episodes" => crate::routes::episodes::episodes,
+    "/assets/{*chemin}" => crate::routes::assets::assets,
+    // Aphrody, le personnage du site. Sept routes explicites plutot qu'un
+    // `/pet/{*fichier}` : le package n'est pas un dossier de fichiers, et un joker
+    // inviterait a en deriver un espace qui n'existe pas. Cf. `routes::aphrody`.
+    "/pet/aphrody.json" => crate::routes::aphrody::manifeste,
+    "/pet/atlas.webp" => crate::routes::aphrody::atlas,
+    "/pet/aphrody.svg" => crate::routes::aphrody::svg,
+    "/pet/frame/{animation}/{fichier}" => crate::routes::aphrody::frame,
+    "/api/v1/aphrody" => crate::routes::aphrody::dossier,
+    "/api/v1/aphrody/diagnostic" => crate::routes::aphrody::diagnostic,
+    "/api/v1/aphrody/palette" => crate::routes::aphrody::palette,
+    // La couche 3D. Cinq routes, deux espaces : `/api/v1/3d` DECRIT (capacites, catalogue,
+    // fiche, geometrie mesuree), `/model` SERT (le GLB assemble, l'apercu rendu). Un
+    // catalogue qui rendrait aussi les octets melangerait deux durees de cache et deux
+    // politiques d'erreur — un catalogue absent est un 503, un modele absent un 404.
+    //
+    // `/api/v1/3d` est declare AVANT `/api/v1/{vue}` : matchit prefere de toute facon le
+    // segment litteral au parametre, mais l'ordre de lecture doit dire la meme chose que
+    // l'ordre de resolution.
+    "/api/v1/3d" => crate::routes::modeles3d::capacites,
+    "/api/v1/3d/modeles" => crate::routes::modeles3d::catalogue,
+    "/api/v1/3d/modeles/{famille}/{code}" => crate::routes::modeles3d::fiche,
+    "/api/v1/3d/modeles/{famille}/{code}/analyse" => crate::routes::modeles3d::analyse,
+    "/model/{famille}/{fichier}" => crate::routes::modeles3d::modele,
+    // La couche Lua et la couche formats. Elles sont declarees AVANT `/api/v1/{vue}`
+    // pour la meme raison que `/api/v1/3d` : matchit prefere de toute facon le segment
+    // litteral au parametre, mais l'ordre de lecture doit dire ce que fait le routeur.
+    //
+    // Le desassemblage a son PROPRE prefixe au lieu d'etre un suffixe de `/scripts` : un
+    // joker (`{*chemin}`) est terminal chez axum, et `/scripts/{*chemin}/desassemblage`
+    // ne se declare pas. Cf. `routes::lua`.
+    "/api/v1/lua" => crate::routes::lua::capacites,
+    "/api/v1/lua/scripts" => crate::routes::lua::scripts,
+    "/api/v1/lua/scripts/{*chemin}" => crate::routes::lua::script,
+    "/api/v1/lua/desassemblage/{*chemin}" => crate::routes::lua::desassemblage,
+    "/api/v1/formats" => crate::routes::formats::capacites,
+    "/api/v1/formats/decode/{*chemin}" => crate::routes::formats::decode,
+    "/" => crate::routes::pages::coquille,
+}
+
+/// Construit le routeur complet : les routes déclarées ci-dessus, le repli statique et les
+/// couches.
 ///
 /// Syntaxe de route d'axum 0.8 : `{param}` et `{*wildcard}`. L'ancienne forme (`:id`, `*path`)
 /// **panique** au `route()` — elle ne dégrade pas.
 pub fn routeur(etat: EtatSite) -> Router {
-    Router::new()
-        .route("/healthz", get(crate::routes::health::healthz))
-        .route("/robots.txt", get(crate::routes::well_known::robots))
-        .route("/llms.txt", get(crate::routes::well_known::llms))
-        .route(
-            "/llms-full.txt",
-            get(crate::routes::well_known::llms_complet),
-        )
-        // Une route par langue, declarees une par une. Un parametre `/{langue}/manifest…`
-        // capturerait n'importe quel segment et servirait le manifeste francais sous autant
-        // d'URL qu'on peut en inventer.
-        .route(
-            "/manifest.webmanifest",
-            get(crate::routes::well_known::manifeste),
-        )
-        .route(
-            "/en/manifest.webmanifest",
-            get(crate::routes::well_known::manifeste),
-        )
-        .route(
-            "/ja/manifest.webmanifest",
-            get(crate::routes::well_known::manifeste),
-        )
-        .route(
-            "/.well-known/security.txt",
-            get(crate::routes::well_known::security),
-        )
-        .route("/sitemap.xml", get(crate::routes::well_known::sitemap))
-        .route("/feed.atom", get(crate::routes::feed::atom))
-        .route("/api/v1/health", get(crate::routes::api_v1::health))
-        .route("/api/v1/chara", get(crate::routes::api_v1::chara))
-        .route("/api/v1/{vue}", get(crate::routes::api_v1::vue))
-        .route("/f/{*chemin}", get(crate::routes::vfs::fichier))
-        .route("/b", get(crate::routes::vfs::parcours_racine))
-        .route("/b/{*prefixe}", get(crate::routes::vfs::parcours))
-        .route("/api/v1/episodes", get(crate::routes::episodes::episodes))
-        .route("/assets/{*chemin}", get(crate::routes::assets::assets))
-        // Aphrody, le personnage du site. Sept routes explicites plutot qu'un
-        // `/pet/{*fichier}` : le package n'est pas un dossier de fichiers, et un joker
-        // inviterait a en deriver un espace qui n'existe pas. Cf. `routes::aphrody`.
-        .route("/pet/aphrody.json", get(crate::routes::aphrody::manifeste))
-        .route("/pet/atlas.webp", get(crate::routes::aphrody::atlas))
-        .route("/pet/aphrody.svg", get(crate::routes::aphrody::svg))
-        .route(
-            "/pet/frame/{animation}/{fichier}",
-            get(crate::routes::aphrody::frame),
-        )
-        .route("/api/v1/aphrody", get(crate::routes::aphrody::dossier))
-        .route(
-            "/api/v1/aphrody/diagnostic",
-            get(crate::routes::aphrody::diagnostic),
-        )
-        .route(
-            "/api/v1/aphrody/palette",
-            get(crate::routes::aphrody::palette),
-        )
-        // La couche 3D. Cinq routes, deux espaces : `/api/v1/3d` DECRIT (capacites, catalogue,
-        // fiche, geometrie mesuree), `/model` SERT (le GLB assemble, l'apercu rendu). Un
-        // catalogue qui rendrait aussi les octets melangerait deux durees de cache et deux
-        // politiques d'erreur — un catalogue absent est un 503, un modele absent un 404.
-        //
-        // `/api/v1/3d` est declare AVANT `/api/v1/{vue}` : matchit prefere de toute facon le
-        // segment litteral au parametre, mais l'ordre de lecture doit dire la meme chose que
-        // l'ordre de resolution.
-        .route("/api/v1/3d", get(crate::routes::modeles3d::capacites))
-        .route(
-            "/api/v1/3d/modeles",
-            get(crate::routes::modeles3d::catalogue),
-        )
-        .route(
-            "/api/v1/3d/modeles/{famille}/{code}",
-            get(crate::routes::modeles3d::fiche),
-        )
-        .route(
-            "/api/v1/3d/modeles/{famille}/{code}/analyse",
-            get(crate::routes::modeles3d::analyse),
-        )
-        .route(
-            "/model/{famille}/{fichier}",
-            get(crate::routes::modeles3d::modele),
-        )
-        // La couche Lua et la couche formats. Elles sont declarees AVANT `/api/v1/{vue}`
-        // pour la meme raison que `/api/v1/3d` : matchit prefere de toute facon le segment
-        // litteral au parametre, mais l'ordre de lecture doit dire ce que fait le routeur.
-        //
-        // Le desassemblage a son PROPRE prefixe au lieu d'etre un suffixe de `/scripts` : un
-        // joker (`{*chemin}`) est terminal chez axum, et `/scripts/{*chemin}/desassemblage`
-        // ne se declare pas. Cf. `routes::lua`.
-        .route("/api/v1/lua", get(crate::routes::lua::capacites))
-        .route("/api/v1/lua/scripts", get(crate::routes::lua::scripts))
-        .route(
-            "/api/v1/lua/scripts/{*chemin}",
-            get(crate::routes::lua::script),
-        )
-        .route(
-            "/api/v1/lua/desassemblage/{*chemin}",
-            get(crate::routes::lua::desassemblage),
-        )
-        .route("/api/v1/formats", get(crate::routes::formats::capacites))
-        .route(
-            "/api/v1/formats/decode/{*chemin}",
-            get(crate::routes::formats::decode),
-        )
-        .route("/", get(crate::routes::pages::coquille))
+    monter(Router::new())
         .fallback(crate::routes::static_files::statique)
         // Les couches s'empilent de la plus INTERNE à la plus externe, et l'ordre est ici un
         // choix, pas une habitude :
@@ -270,10 +232,20 @@ mod tests {
 
     #[test]
     fn contrat_de_routes() {
-        assert_eq!(ROUTES.len(), 19);
-        for r in ROUTES {
+        let routes = chemins();
+        assert_eq!(routes.len(), 37, "37 routes montees");
+        for r in &routes {
             assert!(r.starts_with('/'), "{r}");
+            // Syntaxe axum 0.7 (`:id`, `*path`) : elle PANIQUE au `route()`, elle ne degrade
+            // pas. Un test la refuse ici plutot qu'au demarrage du service.
             assert!(!r.contains(":{"), "syntaxe axum 0.7 interdite: {r}");
+            assert!(!r.contains("/:"), "syntaxe axum 0.7 interdite: {r}");
         }
+        // Aucun doublon : deux fois le meme chemin, et c'est la seconde declaration qui
+        // gagnerait en silence.
+        let mut tries = routes.clone();
+        tries.sort_unstable();
+        tries.dedup();
+        assert_eq!(tries.len(), routes.len(), "chemin declare deux fois");
     }
 }

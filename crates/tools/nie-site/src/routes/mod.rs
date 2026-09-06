@@ -6,6 +6,7 @@ pub mod assets;
 pub mod episodes;
 pub mod feed;
 pub mod formats;
+pub mod geometrie;
 pub mod health;
 pub mod lua;
 pub mod modeles3d;
