@@ -1,7 +1,21 @@
 # Filtres — état mesuré des quatre surfaces, et ce qui manque à Aphrody
 
-> Recensement en **lecture seule** du 2026-09-06, sur le VPS Linux. Aucun code n'a été modifié.
-> Chaque affirmation porte son `chemin:ligne`. Ce qui n'a pas été vérifié est dit tel quel.
+> **Deux dates, et il faut les distinguer.**
+>
+> Le corps de ce document est le recensement en **lecture seule** du 2026-09-06 matin : lu dans
+> le code, `chemin:ligne` à l'appui. Il a servi — c'est lui qui a trouvé le défaut n° 1 du lot 8,
+> `/b` déclarait `q` et l'ignorait.
+>
+> Le **§ 5 a été remesuré le 2026-09-06 au soir**, contre le service monté, après le lot 8. Il
+> n'est plus tenu à la main : `scripts/validation/mesurer-matrice-filtres.sh` interroge les 48
+> lignes et rend un verdict par ligne. La colonne « Servi par l'API » qui suit est **sa sortie**,
+> pas une lecture. Ce qu'il a corrigé était massif — le document annonçait « manquant = 42 »
+> alors que `/api/v1/entites/{table}` sert déjà `q`, le tri et l'égalité de colonne sur **219
+> tables**. Une matrice lue est vraie le jour où on l'écrit ; celle-ci est mesurée à chaque
+> exécution.
+>
+> Les colonnes **Azalée**, **Inacord** et **Aphrody (client)** restent celles du matin : aucun
+> code front n'a bougé entre les deux mesures.
 >
 > Périmètre : les pages qui **listent** quelque chose. Un formulaire, un lecteur, un éditeur
 > n'entrent pas dans le compte — une page sans filtre est en revanche recensée comme telle,
@@ -179,6 +193,13 @@ contrat de source (`source.tsx:39`, `:84`, `:102`) et les vignettes (`lib/thumbs
 
 ### 3.1 Ce que le serveur sait déjà filtrer
 
+> **Lecture du matin, dépassée par la mesure du soir.** Les tables qui suivent décrivent le
+> serveur *avant* le lot 8 : elles sont conservées parce que c'est en les écrivant qu'on a vu que
+> `/b` ignorait `q`. Pour l'état courant, lire le § 5, qui est mesuré et non lu — `/api/v1/recherche`
+> sert désormais `q`, `ext`, `cpk`, `taille_min`, `taille_max`, `tri`, `ordre`, et
+> `/api/v1/entites/{table}` sert `q`, `tri`, `ordre` et l'égalité sur **toute colonne** de
+> **219 tables**.
+
 **L'index VFS** — `crates/tools/nie-site/src/vfs_index.rs` :
 
 | Ce qu'il porte | Ligne | Exposé en query ? |
@@ -231,182 +252,176 @@ Catalogue affiche « Le catalogue est en cours de préparation » (`Catalogue.ts
 
 ---
 
-## 5. Matrice de couverture
+## 5. Matrice de couverture — **mesurée**, plus tenue à la main
 
-Légende : ✅ présent · ◐ partiel (existe mais amputé, ou hors URL, ou codé en dur) · ❌ absent ·
-`—` sans objet pour cette surface.
+```bash
+scripts/validation/mesurer-matrice-filtres.sh          # 2026-09-06 au soir, contre le service monté
+```
 
-| # | Filtre | Azalée | Inacord | **Aphrody** | Servi par l'API |
-|---|---|:--:|:--:|:--:|:--:|
+Légende des trois colonnes d'interface : ✅ présent · ◐ partiel (existe mais amputé, ou hors URL,
+ou codé en dur) · ❌ absent · `—` sans objet.
+
+Légende de la colonne mesurée, et **c'est elle qui compte** : **SERVI** le filtre réduit un total
+ou change un ordre — un `200` ne suffit pas · **ABSENT** le paramètre est avalé sans effet,
+refusé en `400`, ou la route n'existe pas · **CLIENT** sans objet côté serveur (une grille, une
+vignette), compté à part et jamais comme un manque.
+
+| # | Filtre | Azalée | Inacord | **Aphrody** | **API (mesuré)** | Preuve |
+|---|---|:--:|:--:|:--:|:--:|---|
 | **Fichiers / VFS** |
-| 1 | Recherche sous-chaîne sur le chemin | — | ✅ `ExplorerView.tsx:157` | ◐ catalogue oui, **explorateur non** | ✅ `?q=` `api_v1.rs:112` |
-| 2 | Recherche **dans le parcours** `/b` | — | ✅ | ❌ | ◐ `q` déclaré (`mod.rs:30`) mais **ignoré** (`vfs.rs:169-182`) |
-| 3 | Filtre par extension exacte | — | ✅ `ExplorerView.tsx:166` | ❌ | ❌ (extensions figées `vfs_index.rs:47-54`) |
-| 4 | Filtre par famille d'asset (models/textures/audio/configs) | — | ✅ `ContentBrowser.tsx:101` | ◐ 4 vues, couvrant 143 246/255 308 | ✅ `/api/v1/{vue}` |
-| 5 | Navigation par préfixe / dossier | — | ✅ | ✅ `Explorateur.tsx:43` | ✅ `/b/{*prefixe}` |
-| 6 | Recherche **restreinte à un sous-arbre** | — | ❌ | ❌ | ❌ |
-| 7 | Tri par nom | — | ✅ `ExplorerView.tsx:169` | ❌ | ❌ (ordre d'index figé) |
-| 8 | Tri par taille | — | ✅ | ❌ | ❌ |
-| 9 | Filtre par taille min/max | — | ❌ | ❌ | ❌ (`tailles` présent `vfs_index.rs:102`) |
-| 10 | Filtre par **CPK d'origine** | — | ❌ | ❌ | ❌ (donnée jetée `state.rs:266-269`) |
-| 11 | Filtre glob (`**`, `!excl`, listes) | — | ✅ Viola `ViolaView.tsx:86` | ❌ | ❌ |
-| 12 | Vue liste / grille | — | ✅ `ExplorerView.tsx:174` | ❌ | — |
-| 13 | Taille de vignette | — | ✅ `ExplorerView.tsx:178` | ❌ | — |
-| 14 | `per_page` réglable | ✅ `WikiPagination.tsx:37` | ❌ | ❌ (60 en dur `Catalogue.tsx:42`) | ✅ `per_page` `config.rs:27` |
-| 15 | **État de filtre dans l'URL** (partageable, indexable) | ✅ | ❌ (`localStorage`) | ❌ (`useState` `Catalogue.tsx:73`) | ✅ |
-| 16 | Compte total affiché | ✅ | ✅ `ExplorerView.tsx:1044` | ◐ page X/Y, pas de total par dossier | ✅ `Page.total` `mod.rs:52` |
+| 1 | Recherche sous-chaîne sur le chemin | — | ✅ | ◐ catalogue oui, **explorateur non** | **SERVI** | 255 308 → 1 |
+| 2 | Recherche **dans le parcours** `/b` | — | ✅ | ❌ | **SERVI** | 46 → 1 |
+| 3 | Filtre par extension exacte | — | ✅ | ❌ | **SERVI** | 255 308 → 54 203 |
+| 4 | Filtre par famille d'asset | — | ✅ | ◐ 4 vues, 143 246/255 308 | **SERVI** | `/api/v1/textures` |
+| 5 | Navigation par préfixe / dossier | — | ✅ | ✅ | **SERVI** | `/b/data/common` |
+| 6 | Recherche **restreinte à un sous-arbre** | — | ❌ | ❌ | **ABSENT** | `/b` filtre le dossier **direct** : 0 sous `gamedata`, des milliers plus bas |
+| 7 | Tri par nom | — | ✅ | ❌ | **SERVI** | `base_act…` / `system_text_platform…` |
+| 8 | Tri par taille | — | ✅ | ❌ | **SERVI** | 0 / 2 099 267 008 |
+| 9 | Filtre par taille min/max | — | ❌ | ❌ | **SERVI** | 255 308 → 14 558 |
+| 10 | Filtre par **CPK d'origine** | — | ❌ | ❌ | **SERVI** | 255 308 → 19 913 |
+| 11 | Filtre glob (`**`, `!excl`, listes) | — | ✅ Viola | ❌ | **ABSENT** | paramètre avalé |
+| 12 | Vue liste / grille | — | ✅ | ❌ | **CLIENT** | affichage |
+| 13 | Taille de vignette | — | ✅ | ❌ | **CLIENT** | affichage |
+| 14 | `per_page` réglable | ✅ | ❌ | ❌ (60 en dur) | **SERVI** | `per_page=7` honoré |
+| 15 | **État de filtre dans l'URL** | ✅ | ❌ | ❌ | **SERVI** | `?q=…&ext=…` republié |
+| 16 | Compte total affiché | ✅ | ✅ | ◐ page X/Y | **SERVI** | `total_fichiers` |
 | **Catalogue de personnages** |
-| 17 | Recherche par nom FR/EN/JA | ✅ `service.ts:1400` | ✅ `SearchView.tsx` | ❌ (aucune page) | ❌ `/api/v1/chara` n'a pas de `q` |
-| 18 | Élément (6 valeurs) | ✅ | ◐ recherche texte `GameDataView.tsx:137` | ❌ | ❌ (colonne lue `api_v1.rs:36`) |
-| 19 | Poste (5) | ✅ | ◐ | ❌ | ❌ (colonne lue `:37`) |
-| 20 | Rareté (4) | ✅ | ❌ | ❌ | ❌ (colonne lue `:38`) |
-| 21 | Série (9) | ✅ | ◐ | ❌ | ❌ (colonne lue `:39`) |
-| 22 | Genre (2) | ✅ | ❌ | ❌ | ❌ |
-| 23 | Style de jeu (6) | ✅ | ❌ | ❌ | ❌ |
-| 24 | Tranche d'âge (8) | ✅ | ❌ | ❌ | ❌ |
-| 25 | Équipe (199) | ✅ `TeamFilter.tsx:28` | ❌ | ❌ | ❌ |
-| 26 | Rôle (coach/coordinator) | ✅ | ❌ | ❌ | ❌ |
-| 27 | Tri du catalogue | ❌ (fixe) | ✅ `GameDataView.tsx:688` | ❌ | ❌ (`ORDER BY` figé `api_v1.rs:181`) |
+| 17 | Recherche par nom FR/EN/JA | ✅ | ✅ | ❌ | **SERVI** | 6 166 → 95 |
+| 18 | Élément | ✅ | ◐ | ❌ | **SERVI** | 6 166 → 1 528 |
+| 19 | Poste | ✅ | ◐ | ❌ | **SERVI** | 6 166 → 1 674 |
+| 20 | Rareté | ✅ | ❌ | ❌ | **SERVI** | 6 166 → 150 |
+| 21 | Série | ✅ | ◐ | ❌ | **SERVI** | 6 166 → 1 137 |
+| 22 | Genre | ✅ | ❌ | ❌ | **SERVI** | 6 166 → 5 078 |
+| 23 | Style de jeu (6) | ✅ | ❌ | ❌ | **SERVI** | `/api/v1/playstyles/{id}` |
+| 24 | Tranche d'âge | ✅ | ❌ | ❌ | **SERVI**\* | colonne acceptée / nom inconnu → 400. `age_group` est **vide** sur les 6 166 lignes |
+| 25 | Équipe | ✅ | ❌ | ❌ | **SERVI** | 6 166 → 789 |
+| 26 | Rôle (coach/coordinator) | ✅ | ❌ | ❌ | **SERVI** | `inagle_coordinators` |
+| 27 | Tri du catalogue | ❌ | ✅ | ❌ | **SERVI** | `0x0377CEAB` / `0xAF0720CB` |
 | **Techniques / objets / autres catalogues** |
-| 28 | Catégorie de technique (4) | ✅ | ◐ | ❌ | ❌ |
-| 29 | Présence d'une vidéo | ✅ `SkillFilterBar.tsx:187` | ❌ | ❌ | ❌ |
-| 30 | Inclure hyper/aura | ✅ `:205` | ❌ | ❌ | ❌ |
-| 31 | Overdrive | ✅ `:223` | ❌ | ❌ | ❌ |
-| 32 | Fourchette numérique (puissance 0→880) | ✅ `:111-143` | ❌ | ❌ | ❌ |
-| 33 | Tri par puissance / coût | ✅ `sort` | ✅ (générique) | ❌ | ❌ |
-| 34 | Catégorie d'objet (19) | ✅ `item/page.tsx:58-78` | ◐ | ❌ | ❌ |
-| 35 | Catégorie d'illustration (11) | ✅ `service.ts:120-132` | ✅ dossiers réels `GalleryView.tsx:288` | ❌ | ❌ |
-| 36 | Langue / variante d'un asset | ❌ | ✅ `GalleryView.tsx:290` | ❌ | ❌ |
+| 28 | Catégorie de technique | ✅ | ◐ | ❌ | **SERVI** | 1 002 → 433 |
+| 29 | Présence d'une vidéo | ✅ | ❌ | ❌ | **ABSENT** | l'égalité ne sait pas dire **non nul**, et `has_telop` vaut 1 sur les 1 002 |
+| 30 | Inclure hyper/aura | ✅ | ❌ | ❌ | **SERVI**\* | colonne acceptée ; `is_hyper` vaut 0 partout ici |
+| 31 | Overdrive (`is_eldorado`) | ✅ | ❌ | ❌ | **SERVI**\* | colonne acceptée ; constante à 0 ici |
+| 32 | Fourchette numérique (puissance) | ✅ | ❌ | ❌ | **ABSENT** | refusé en **400**, jamais avalé |
+| 33 | Tri par puissance / coût | ✅ | ✅ | ❌ | **SERVI** | 0 / 900 |
+| 34 | Catégorie d'objet | ✅ | ◐ | ❌ | **SERVI** | 1 807 → 334 |
+| 35 | Catégorie d'illustration | ✅ | ✅ | ❌ | **SERVI** | 360 → 1 |
+| 36 | Langue / variante d'un asset | ❌ | ✅ | ❌ | **ABSENT** | paramètre avalé |
 | **Épisodes / médias** |
-| 37 | Saison / numéro d'épisode | ❌ (pas de page) | ✅ `recherche.ts:46-64` (`s3e12`) | ❌ | ❌ (`/api/v1/episodes` n'a que `since`/`limit`) |
-| 38 | Langue de piste | ❌ | ✅ `CinemaView.tsx:1207` | ❌ | ❌ (colonne `language` `episodes.rs:78`) |
-| 39 | Sous-titres présents / vu | ❌ | ✅ | ❌ | ❌ |
-| 40 | Classement par pertinence pondérée | ❌ | ✅ `recherche.ts:186-201` | ❌ | ❌ |
-| 41 | Repli approché (fuzzy) | ❌ | ✅ `recherche.ts:292-295` | ❌ | ❌ |
+| 37 | Saison / numéro d'épisode | ❌ | ✅ | ❌ | **ABSENT** | 1 141 inchangé |
+| 38 | Langue de piste | ❌ | ✅ | ❌ | **ABSENT** | 1 141 inchangé |
+| 39 | Sous-titres présents / vu | ❌ | ✅ | ❌ | **ABSENT** | 1 141 inchangé |
+| 40 | Classement par pertinence pondérée | ❌ | ✅ | ❌ | **ABSENT** | 1 141 inchangé |
+| 41 | Repli approché (fuzzy) | ❌ | ✅ | ❌ | **ABSENT** | 0 inchangé |
 | **3D** |
-| 42 | Famille de modèle (6) | — | ❌ | ✅ `Modeles3D.tsx:141` | ✅ `modeles3d.rs:367` |
-| 43 | Recherche code **ou** nom | — | ❌ | ✅ `Modeles3D.tsx:143` | ✅ `modeles3d.rs:448-462` |
+| 42 | Famille de modèle (6) | — | ❌ | ✅ | **SERVI** | 5 490 → 273 |
+| 43 | Recherche code **ou** nom | — | ❌ | ✅ | **SERVI** | 5 490 → 1 014 |
 | **Reverse / forge** |
-| 44 | Recherche fonction par nom ou adresse | — | ✅ `reDb.ts:154-183` | ❌ | ❌ (aucune route RE) |
-| 45 | Filtre par statut de forge | — | ◐ en dur `DashboardView.tsx:295` | ❌ | ❌ |
+| 44 | Recherche fonction par nom ou adresse | — | ✅ | ❌ | **ABSENT** | 404 |
+| 45 | Filtre par statut de forge | — | ◐ | ❌ | **ABSENT** | 404 |
 | **Transverse** |
-| 46 | Recherche globale multi-gisements | ✅ `/search` (q seul) | ✅ `SearchView.tsx` (`kind`) | ❌ | ❌ |
-| 47 | Facettes avec **comptes** | ✅ `getGalleryCategoryCounts` `service.ts:2799` | ✅ `CinemaView.tsx:592-607` | ◐ totaux de famille 3D seulement | ◐ `/api/v1/health` donne 4 totaux (`api_v1.rs:75-82`) |
-| 48 | Export de la liste filtrée | ❌ | ✅ CSV/JSON `GameDataView.tsx:790-812` | ❌ | ❌ |
+| 46 | Recherche globale multi-gisements | ✅ | ✅ | ❌ | **ABSENT** | 160 inchangé |
+| 47 | Facettes avec **comptes** | ✅ | ✅ | ◐ 3D seule | **SERVI** | `/api/v1/playstyles` compte ses six styles |
+| 48 | Export de la liste filtrée | ❌ | ✅ | ❌ | **ABSENT** | refusé en **400** |
 
-### Compte
+\* **SERVI\*** veut dire *servi structurellement, sans donnée pour le montrer* : la colonne est
+acceptée et un nom hors schéma est refusé en `400`, mais elle est **constante ou vide dans ce
+gisement**. Mesurer ces trois lignes par la réduction d'un total les aurait déclarées absentes à
+tort — c'est le gisement qui est pauvre, pas la route.
 
-- **48 filtres recensés.**
-- Aphrody ✅ (pleinement) : **3** — #5 navigation par préfixe, #42 famille 3D, #43 recherche 3D.
-- Aphrody ◐ (partiels) : **3** — #1 recherche par chemin (catalogue oui, explorateur non),
-  #4 famille d'asset (4 vues seulement, 143 246 fichiers sur 255 308), #16 total affiché
-  (page X/Y, pas de total par dossier).
-- Aphrody ❌ : **42**.
+### Compte — 2026-09-06 au soir
 
-> **manquant = 42** (45 si l'on compte les trois partiels comme des manques, ce qui se défend pour
-> #1 et #4).
+```
+servis 32 · absents 14 · côté client 2 · à relire 0  (sur 48)
+```
 
-- Servis par l'API mais **non exposés par l'interface** : **1** seul — #14 (`per_page`, plafonné à
-  200, `config.rs:27`). Les 41 autres exigent du code serveur en plus du client.
-- Déclarés par l'API et **inopérants** : #2 (`q` sur `/b`) — un bug silencieux, pas un manque.
-- Azalée ✅ sur 26 des 48 ; Inacord ✅ sur 22. **Aucun filtre n'est présent dans Aphrody et absent
-  des deux autres** : Aphrody est un sous-ensemble strict, sauf sur la 3D (#42, #43) que ni Azalée
-  ni Inacord n'ont.
+- **API : 32 servis, 14 absents, 2 hors périmètre.** Le matin, la même colonne comptait 6 servis.
+- Ce qui a changé n'est pas 26 filtres écrits un par un, mais **deux routes génériques** :
+  `/api/v1/recherche` (`q`, `ext`, `cpk`, `taille_min`, `taille_max`, `tri`, `ordre`) couvre le
+  VFS, et `/api/v1/entites/{table}` (`q`, `tri`, `ordre`, **égalité sur toute colonne du schéma**)
+  couvre les **219 tables** du gisement d'un coup. Une facette de plus n'y coûte pas une ligne de
+  code : elle existe dès que la colonne existe.
+- **Les 14 absents forment trois familles**, et une seule est un manque de code :
+  - **la forme du filtre** (#6 sous-arbre, #11 glob, #29 « non nul », #32 fourchette, #41 fuzzy) —
+    l'égalité et la sous-chaîne ne savent pas l'exprimer. C'est là qu'il reste à écrire ;
+  - **le gisement absent de l'API entités** (#37–#40 épisodes) — `episodes.db` est servi par
+    `/api/v1/episodes`, une API de **synchronisation** (`since`/`limit`), pas un catalogue ;
+    #44/#45 (RE, forge) n'ont aucune route, délibérément — la KB du VPS est ancrée sur le build
+    transitoire, y brancher une route publierait des chiffres faux ;
+  - **le hors-périmètre serveur** (#36 langue d'asset, #46 recherche inter-gisements, #48 export).
+- **Aphrody côté interface n'a toujours que 3 ✅ et 3 ◐.** C'est désormais **le** retard : le
+  serveur sait filtrer, l'explorateur (`Explorateur.tsx:43-117`) n'offre toujours aucun filtre.
+  L'écart n'est plus « il manque du serveur », il est « le client n'utilise pas ce qui est servi ».
+- **#2 et #10 étaient les deux divergences du § 8** — `q` ignoré par `/b`, `cpk_filename` jeté à
+  la construction de l'index. Les deux sont corrigées et mesurées ci-dessus.
 
 ---
 
-## 6. Pour chaque manque : la source de données et son coût
 
-| # | Filtre manquant | Source de données | Coût |
+## 6. Les 14 manques restants : source de données et coût
+
+> Réécrit le 2026-09-06 au soir contre la mesure. Les 26 lignes que cette section chiffrait le
+> matin (#1–#3, #7–#10, #14–#17, #17–#28, #33–#35, #42, #43, #47) sont **servies** : elles ne
+> sont plus des coûts, ce sont des routes.
+
+| # | Manque | Source de données | Coût |
 |---|---|---|---|
-| 2 | `q` sur le parcours `/b` | déjà dans l'index | **déjà dans l'index** — `DemandePage.q` est parsé (`mod.rs:30`), il suffit de le lire dans `parcourir` (`vfs.rs:169`). ~10 lignes |
-| 3 | Extension exacte | `IndexVfs.chemins` | **calculable sans passe** : un `Vec<u32>` d'index par extension se construit dans `IndexVfs::depuis` (`vfs_index.rs:122-129`), au même parcours que les 4 vues. 44 extensions distinctes mesurées |
-| 7 / 8 | Tri nom / taille | `chemins` (déjà trié par nom), `tailles` (`vfs_index.rs:102`) | **déjà dans l'index**. Le tri par nom est l'ordre naturel ; le tri par taille demande un `Vec<u32>` d'index pré-trié (une passe à la construction) |
-| 9 | Taille min/max | `tailles` | **déjà dans l'index** — un `filter` sur la valeur déjà lue, coût nul |
-| 10 | CPK d'origine | `VfsEntry.cpk_filename` — `crates/engine/nie-formats/src/vfs.rs:131` | **déjà disponible, actuellement jeté**. Corriger `state.rs:266-269` pour porter le triplet, et interner les 936 noms de CPK (`u16` + table) : ~2 Ko de plus, pas 255 308 `String` |
-| 11 | Glob | `crates/engine/nie-viola/src/filtre.rs` | **réutilisable tel quel** — le moteur existe et est testé ; il faut le déplacer d'une crate `engine` vers une dépendance de `nie-site`, ou l'appeler par `nie-formats` |
-| 6 | Recherche + préfixe | index trié | **calculable** : `partition_point` sur le préfixe (`vfs_index.rs:224`) puis balayage filtré — c'est la combinaison des deux mécanismes existants |
-| 12/13/15 | Grille, vignette, état en URL | — | **client seul** (`apps/nie-web/src/pages/Catalogue.tsx`) : `useSearchParams` de React Router, aucune donnée nouvelle |
-| 14 | `per_page` réglable | — | **déjà servi** (`config.rs:27`) : un `<select>` à câbler côté client |
-| 16 | Total par dossier | `Dossier.total_fichiers` — `vfs_index.rs:95` | **déjà rendu**, jamais affiché par `Explorateur.tsx` |
-| 17–26 | Facettes personnage (nom, élément, poste, rareté, série, genre, style, âge, équipe, rôle) | `inagle_characters` — 40 colonnes mesurées, `var/mirror.sqlite` | **calculable en SQL** : ajouter des `WHERE` paramétrés à `api_v1.rs:180-184`. Cardinalités faibles (6/5/4/9/2/199), donc des facettes chiffrées par `GROUP BY` sont bon marché. `playstyle` et `ageGroup` sortent de `sheet_data->>` / `age_group` (cf. `service.ts:1458-1487`) et sont plus coûteux |
-| 27 | Tri du catalogue | mêmes colonnes | **calculable** — remplacer l'`ORDER BY` figé (`api_v1.rs:181-183`) par une whitelist de colonnes. Ne **jamais** accepter un nom de colonne venu du client, la crate a déjà cette doctrine (`api_v1.rs:9-11`) |
-| 28–34 | Techniques et objets | tables `inagle_*` du miroir | **calculable en SQL**, mais exige d'abord d'**écrire les routes `/api/v1/skill` et `/api/v1/item`** — elles n'existent pas (`app.rs:124-176`) |
-| 35/36 | Catégorie d'illustration, langue | sous-dossiers réels du VFS (`data/dx11/menu/220_img`) + `gallery_config` | **déjà dans l'index** pour la catégorie (ce sont des préfixes) ; la langue est un segment de chemin, donc lisible sans passe. Inacord le fait déjà (`lib/galerie.ts:24-59`) |
-| 37–39 | Saison, épisode, langue, vu | `data/anime/episodes.db` — colonnes `season`, `episode`, `language`, `duration` déjà lues (`episodes.rs:56-83`) | **calculable en SQL** — les colonnes sont là, seule la clause manque |
-| 40/41 | Pertinence pondérée, fuzzy | — | **à écrire**, mais `apps/inacord/src/lib/recherche.ts:186-295` est un portage direct (TypeScript → Rust, ou réutilisation côté client) |
-| 44/45 | RE, forge | `var/niers.sqlite` (`function`, `forge_unit`, `v_forge_function`) | **calculable en SQL**, mais exige une route neuve. **Attention** : la KB du VPS est ancrée sur le build transitoire `4c2b91fbae6f…`, pas sur la cible — toute mesure chiffrée exige un `niers rebuild` préalable |
-| 46 | Recherche globale | les 4 gisements, via `@niers/catalog` | **coûteux** : une jointure inter-gisements, sans clé commune entre le jeu et la série (cf. CLAUDE.md § *Les quatre gisements*) |
-| 47 | Facettes chiffrées | `GROUP BY` SQL ; `Vec<u32>` par facette côté index | **calculable** ; pour le VFS, gratuit si les listes par extension sont pré-calculées |
-| 48 | Export de la liste filtrée | la page déjà rendue | **client seul** |
+| 6 | Recherche restreinte à un sous-arbre | index trié (`vfs_index.rs:224`) | **calculable** : `partition_point` sur le préfixe puis balayage filtré. `/api/v1/recherche` a déjà `q`, il lui manque un `prefixe=` ; les deux mécanismes existent, il n'y a qu'à les composer |
+| 11 | Glob (`**`, `!excl`, listes) | `crates/engine/nie-viola/src/filtre.rs` | **moteur déjà écrit et testé**, à rendre atteignable depuis `nie-site`. Double `ext=` pour un public plus étroit |
+| 29 | Présence d'une valeur (non nul) | toute colonne du gisement | **forme de filtre manquante**, pas donnée manquante : `entites` ne sait dire qu'`égal`. Un `colonne=__present__` (ou `__absent__`) couvrirait #29 et toutes ses sœurs futures d'un coup |
+| 32 | Fourchette numérique (`power_max` 0→880) | mêmes colonnes | **même famille** : `colonne__min` / `colonne__max` sur les colonnes non-texte. `entites` connaît déjà le type SQL de chaque colonne (`Colonne.type_sql`), donc sait lesquelles l'acceptent |
+| 36 | Langue / variante d'un asset | segment de chemin du VFS | lisible sans passe ; Inacord le fait déjà (`lib/galerie.ts:24-59`). Coût quasi nul une fois #6 fait |
+| 37–39 | Saison, épisode, langue, sous-titres | `data/anime/episodes.db` — colonnes déjà lues (`episodes.rs:56-83`) | **décision avant code** : `/api/v1/episodes` est une API de **synchronisation** (`since`/`limit`), pas un catalogue. Soit on la dénature, soit on sert `episodes.db` par `entites` — la seconde donne les quatre filtres gratuitement, et c'est ce que la mesure suggère |
+| 40/41 | Pertinence pondérée, fuzzy | — | **à écrire** ; `apps/inacord/src/lib/recherche.ts:186-295` est un portage direct |
+| 44/45 | RE, forge | `var/niers.sqlite` (`function`, `forge_unit`, `v_forge_function`) | **bloqué en amont, pas en code** : la KB du VPS est ancrée sur le build transitoire `4c2b91fbae6f…`, pas sur la cible. Une route servirait des chiffres faux. `niers rebuild` d'abord |
+| 46 | Recherche globale multi-gisements | les 4 gisements, via `@niers/catalog` | **coûteux et incertain** : le jeu et la série n'ont aucune clé commune ; un rapprochement par le nom ne peut pas se présenter comme un fait |
+| 48 | Export de la liste filtrée | la page déjà rendue | **client seul** — la liste filtrée est déjà servie en JSON, l'exporter est un `<a download>` |
 
-**Aucun des 42 manques n'exige une passe sur les 255 308 entrées.** L'index est construit une fois
-au démarrage (`state.rs:260-278`) et le parcours qui pré-calcule les 4 vues (`vfs_index.rs:122-129`)
-peut, dans la même boucle, produire les listes par extension, par CPK et l'ordre par taille. Le
-surcoût est en mémoire (quelques `Vec<u32>` de 255 k éléments ≈ 1 Mio chacun), pas en temps.
+**Le constat central n'a pas changé de forme, il a changé de côté.** Le matin : « aucun des 42
+manques n'exige une passe sur les 255 308 entrées ». Le soir : il n'en reste 14, dont **5 sont une
+forme de filtre** (`non nul`, fourchette, glob, sous-arbre, fuzzy) et non des données à aller
+chercher. Deux d'entre elles — #29 et #32 — se traitent **ensemble**, dans `entites::analyser`, et
+couvriraient au passage toutes les colonnes des 219 tables.
 
 ---
 
-## 7. Ordre de priorité
+## 7. Ordre de priorité — réordonné sur la mesure du soir
 
-Du plus utile au moins utile, avec la raison.
-
-1. **`q` sur `/b` (#2)** — c'est un **bug**, pas un manque : le paramètre est déclaré (`mod.rs:30`)
-   et silencieusement ignoré (`vfs.rs:169-182`). Un client qui l'envoie croit filtrer. ~10 lignes.
-2. **État des filtres dans l'URL (#15)** — sans lui, aucun filtre d'Aphrody n'est partageable,
-   indexable, ni conservé au rechargement. C'est le préalable de tous les autres : ajouter dix
-   facettes en `useState` ne ferait que dupliquer la dette d'Inacord.
-3. **Recherche dans l'explorateur (#1 côté `/b`) + total par dossier (#16)** — l'explorateur
-   d'Aphrody n'a **strictement aucun** filtre (`Explorateur.tsx:43-117`), et `total_fichiers` est
-   déjà rendu par le serveur (`vfs_index.rs:95`). Deux gains immédiats sur la vue la plus utilisée.
-4. **Filtre par extension (#3)** — c'est le filtre le plus demandé du VFS, celui qu'Inacord a en
-   premier (`ExplorerView.tsx:166`) et le seul moyen d'atteindre les **112 062 fichiers hors des
-   quatre vues** (`.bin`, `.p3lip`, `.objbin`…). Pré-calculable au même parcours que les vues.
-5. **`per_page` réglable (#14)** — déjà servi et plafonné à 200 (`config.rs:27`), aucun code
-   serveur : un `<select>` transforme 60 résultats en 200 sur la même requête.
-6. **Facettes du catalogue personnages (#17–#22)** — `/api/v1/chara` lit déjà `element`,
-   `position`, `rarity`, `series` (`api_v1.rs:36-39`) et **ne les expose pas** : quatre `WHERE`
-   paramétrés suffisent pour transformer une liste de 6 166 lignes en catalogue navigable. C'est
-   aussi ce qui manque pour qu'Aphrody ait une page personnages du tout.
-7. **Tri (#7, #8, #27)** — un catalogue sans tri force à paginer pour trouver ; `tailles` et
-   `zukan_order` sont déjà là. Whitelist de colonnes obligatoire, jamais un `ORDER BY` venu du
-   client.
-8. **CPK d'origine (#10)** — la seule facette qui répond à « d'où vient ce fichier », donnée que le
-   VFS porte (`vfs.rs:131`) et que le site jette (`state.rs:266-269`). 936 valeurs, internables en
-   `u16`. Utile au modding et au diagnostic, moins au visiteur.
-9. **Taille min/max (#9)** — gratuit, mais d'intérêt étroit (chasse aux gros assets).
-10. **Facettes chiffrées (#47)** — un filtre qui annonce « 0 résultat » après le clic est un filtre
-    raté ; les comptes sont gratuits si les listes par facette existent (étapes 4 et 6).
-11. **Glob (#11)** — puissant, moteur déjà écrit et testé (`nie-viola/src/filtre.rs`), mais il
-    double le filtre par extension pour un public plus étroit.
-12. **Épisodes : saison / épisode / langue (#37–#39)** — colonnes déjà lues (`episodes.rs:56-83`),
-    mais `/api/v1/episodes` est aujourd'hui une **API de synchronisation** (`since`/`limit`) ; en
-    faire un catalogue est un changement de nature, à décider avant de coder.
-13. **Routes `/api/v1/skill` et `/api/v1/item` + leurs facettes (#28–#34)** — le plus gros gain
-    fonctionnel, mais tout est à écrire : deux routes, deux DTO, sept facettes. À faire après que
-    `chara` ait servi de patron.
-14. **Vue grille / taille de vignette (#12, #13)** — confort, client seul, sans effet sur ce qui
-    est atteignable.
-15. **Recherche restreinte à un sous-arbre (#6)** — combinaison des deux mécanismes existants,
-    mais peu réclamée tant que #1 et #3 manquent.
-16. **Pertinence pondérée et fuzzy (#40, #41)** — un portage de `recherche.ts:186-295`. Utile
-    seulement quand il y aura assez de champs cherchables pour que le classement compte.
-17. **Export de la liste filtrée (#48)** — client seul, faible enjeu tant que les listes ne sont
-    pas filtrables.
-18. **RE et forge (#44, #45)** — public d'experts, et la KB du VPS n'est **pas ancrée sur la
-    cible** : y brancher une route publierait des chiffres faux.
-19. **Recherche globale multi-gisements (#46)** — le plus coûteux et le moins sûr : le jeu et la
-    série n'ont aucune clé commune, un rapprochement par le nom ne peut pas se présenter comme un
-    fait.
+1. **Câbler l'interface d'Aphrody sur ce qui est déjà servi.** C'est le premier poste et de loin :
+   32 filtres servis, 3 utilisés. L'explorateur (`Explorateur.tsx:43-117`) n'a aucun champ de
+   recherche alors que `/b?q=` répond ; le catalogue fige `PAR_PAGE = 60` alors que `per_page`
+   monte à 200 ; aucun état ne passe par l'URL. **Zéro ligne de serveur.**
+2. **Les deux formes de filtre manquantes dans `entites` (#29, #32)** — `colonne__min`,
+   `colonne__max`, `colonne=__present__`. Un seul endroit (`entites::analyser`), et elles
+   s'appliquent aux 219 tables d'un coup. C'est le meilleur rapport ligne/couverture qui reste.
+3. **`prefixe=` sur `/api/v1/recherche` (#6)**, qui rend aussi #36 presque gratuit : chercher dans
+   un sous-arbre est la question qu'on pose vraiment sur 255 308 fichiers.
+4. **Servir `episodes.db` par `entites` (#37–#39)** plutôt que dénaturer `/api/v1/episodes` :
+   quatre filtres pour une inscription de gisement, et la route de synchronisation reste ce
+   qu'elle est.
+5. **Glob (#11)** — moteur déjà écrit, à rendre atteignable.
+6. **Export (#48)** — client seul, une balise.
+7. **Fuzzy et pertinence (#40, #41)** — utiles quand il y aura assez de champs cherchables pour
+   que le classement compte.
+8. **RE et forge (#44, #45)** — **ne pas commencer** avant `niers rebuild` : la KB n'est pas
+   ancrée sur la cible, et une route publierait des chiffres faux.
+9. **Recherche globale multi-gisements (#46)** — le plus coûteux, le moins sûr, et le seul dont le
+   résultat ne pourrait pas se présenter comme un fait.
 
 ---
 
-## 8. Divergences relevées au passage (non corrigées)
 
-1. `crates/tools/nie-site/src/routes/vfs.rs:169-182` — `DemandePage.q` est accepté par `/b` et
-   **jamais lu**. Silencieux.
-2. `crates/tools/nie-site/src/state.rs:266-269` — `cpk_filename` est jeté à la construction de
-   l'index alors que `VfsEntry` le porte.
+## 8. Divergences relevées au passage
+
+> Les deux premières sont **corrigées** depuis le lot 8 et mesurées au § 5 ; elles restent
+> écrites parce qu'elles disent comment on les a trouvées. Les suivantes tiennent toujours.
+
+1. ~~`crates/tools/nie-site/src/routes/vfs.rs:169-182` — `DemandePage.q` est accepté par `/b` et
+   **jamais lu**. Silencieux.~~ **Corrigé** : `/b?q=` réduit 46 → 1, et republie le filtre
+   appliqué (`scripts/validation/mesurer-filtres.sh`, 14/14).
+2. ~~`crates/tools/nie-site/src/state.rs:266-269` — `cpk_filename` est jeté à la construction de
+   l'index alors que `VfsEntry` le porte.~~ **Corrigé** : `/api/v1/recherche?cpk=…` réduit
+   255 308 → 19 913, et chaque fichier publie son CPK.
 3. `apps/inacord/src-tauri/src/lib.rs:1669` — `vfs_related` est **sensible à la casse**, contrairement
    à `vfs_find_paged` (`crates/engine/nie-explore/src/listing.rs:173-178`).
 4. `apps/inacord/src/lib/reDb.ts:183` et `:258` — le `LIKE` n'échappe ni `%` ni `_` ; un `%` tapé
