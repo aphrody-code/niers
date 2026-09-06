@@ -61,9 +61,41 @@ function fil(prefixe: string): { nom: string; chemin: string }[] {
  * Lu une fois au montage : c'est l'URL qui amorce la page, ensuite c'est la page qui écrit
  * l'URL. L'inverse — relire l'URL à chaque rendu — ferait de chaque frappe une navigation.
  */
-function etatDeLUrl(): { prefixe: string; q: string; ext: string } {
+type EtatExplorateur = {
+	prefixe: string;
+	q: string;
+	ext: string;
+	tri: "nom" | "taille";
+	ordre: "asc" | "desc";
+	/** Taille minimale en Mo, telle qu'elle est SAISIE. Vide = pas de borne. */
+	minMo: string;
+};
+
+function etatDeLUrl(): EtatExplorateur {
 	const p = new URLSearchParams(window.location.search);
-	return { prefixe: p.get("d") ?? "", q: p.get("q") ?? "", ext: p.get("ext") ?? "" };
+	return {
+		prefixe: p.get("d") ?? "",
+		q: p.get("q") ?? "",
+		ext: p.get("ext") ?? "",
+		tri: p.get("tri") === "taille" ? "taille" : "nom",
+		ordre: p.get("ordre") === "desc" ? "desc" : "asc",
+		minMo: p.get("min_mo") ?? "",
+	};
+}
+
+/** Un mégaoctet, en octets — l'unité que le serveur attend. */
+const MO = 1024 * 1024;
+
+/**
+ * Convertit une saisie en mégaoctets vers la borne en octets que le serveur attend.
+ *
+ * `undefined` pour une saisie vide **ou illisible** : envoyer `NaN` ferait un `400` sur une
+ * frappe en cours, et envoyer `0` filtrerait sur les fichiers de zéro octet — deux façons de
+ * transformer une hésitation en résultat.
+ */
+function bornesEnOctets(minMo: string): number | undefined {
+	const n = Number(minMo.replace(",", "."));
+	return minMo.trim() && Number.isFinite(n) && n >= 0 ? Math.round(n * MO) : undefined;
 }
 
 /**
@@ -73,12 +105,17 @@ function etatDeLUrl(): { prefixe: string; q: string; ext: string } {
  * pas coûter vingt appuis sur « précédent ». Le `pathname` n'est pas touché — c'est lui qui
  * porte la vue (`App.tsx:64-66`), et l'écraser ferait sortir de la page.
  */
-function ecrireUrl(etat: { prefixe: string; q: string; ext: string }) {
+function ecrireUrl(etat: EtatExplorateur) {
 	const url = new URL(window.location.href);
+	// Un DÉFAUT ne s'écrit pas : `?tri=nom&ordre=asc` donnerait deux adresses pour le même
+	// écran, et casserait le partage autant que l'absence d'état.
 	for (const [cle, valeur] of [
 		["d", etat.prefixe],
 		["q", etat.q],
 		["ext", etat.ext],
+		["tri", etat.tri === "nom" ? "" : etat.tri],
+		["ordre", etat.ordre === "asc" ? "" : etat.ordre],
+		["min_mo", etat.minMo],
 	] as const) {
 		if (valeur) url.searchParams.set(cle, valeur);
 		else url.searchParams.delete(cle);
@@ -96,6 +133,9 @@ export function Explorateur() {
 	const [saisie, setSaisie] = useState(initial.q);
 	const [q, setQ] = useState(initial.q);
 	const [ext, setExt] = useState(initial.ext);
+	const [tri, setTri] = useState<"nom" | "taille">(initial.tri);
+	const [ordre, setOrdre] = useState<"asc" | "desc">(initial.ordre);
+	const [minMo, setMinMo] = useState(initial.minMo);
 	const [contenu, setContenu] = useState<ContenuDossier | null>(null);
 	const [erreur, setErreur] = useState(false);
 
@@ -103,9 +143,16 @@ export function Explorateur() {
 		if (!capacites?.vfs) return;
 		const ac = new AbortController();
 		setErreur(false);
-		ecrireUrl({ prefixe, q, ext });
+		ecrireUrl({ prefixe, q, ext, tri, ordre, minMo });
 		source
-			.parcourir(prefixe, { q: q || undefined, ext: ext || undefined, signal: ac.signal })
+			.parcourir(prefixe, {
+				q: q || undefined,
+				ext: ext || undefined,
+				tri,
+				ordre,
+				tailleMin: bornesEnOctets(minMo),
+				signal: ac.signal,
+			})
 			.then((c) => {
 				if (!ac.signal.aborted) setContenu(c);
 			})
@@ -113,7 +160,7 @@ export function Explorateur() {
 				if (!ac.signal.aborted) setErreur(true);
 			});
 		return () => ac.abort();
-	}, [source, capacites?.vfs, prefixe, q, ext]);
+	}, [source, capacites?.vfs, prefixe, q, ext, tri, ordre, minMo]);
 
 	if (!capacites) return <Note>Chargement…</Note>;
 	if (!capacites.vfs) {
@@ -129,7 +176,7 @@ export function Explorateur() {
 	// deux diffèrent dès qu'une page est tronquée.
 	const retenus = contenu?.total ?? contenu?.fichiers.length ?? 0;
 	const avantFiltre = contenu?.totalSansFiltre ?? retenus;
-	const filtre = Boolean(q || ext);
+	const filtre = Boolean(q || ext || minMo || tri !== "nom" || ordre !== "asc");
 	// Le serveur distingue « 0 résultat » de « cette extension n'existe pas ici », et cette
 	// nuance est la seule qui aide : sans elle, une faute de frappe se présente comme un dossier
 	// vide. On lit donc son drapeau plutôt que d'en déduire un.
@@ -183,6 +230,9 @@ export function Explorateur() {
 							setSaisie("");
 							setQ("");
 							setExt("");
+							setTri("nom");
+							setOrdre("asc");
+							setMinMo("");
 						}}
 						style={{ ...bouton, fontWeight: 400 }}
 					>
@@ -190,6 +240,53 @@ export function Explorateur() {
 					</button>
 				) : null}
 			</form>
+
+			{/*
+			  * Trois réglages que `/b` sert déjà : le tri (nom ou taille) et la borne basse de
+			  * taille. Ils sont ici parce que la mesure du 2026-09-06 a montré que le serveur
+			  * servait 41 filtres et que cette page en utilisait deux.
+			  */}
+			<div
+				style={{
+					display: "flex",
+					flexWrap: "wrap",
+					alignItems: "center",
+					gap: "var(--jeu-espace-m)",
+					margin: "0 0 var(--jeu-espace-m)",
+					fontSize: "0.9rem",
+				}}
+			>
+				<label style={etiquette}>
+					Trier par
+					<select
+						value={`${tri}-${ordre}`}
+						onChange={(e) => {
+							const [t, o] = e.target.value.split("-");
+							setTri(t === "taille" ? "taille" : "nom");
+							setOrdre(o === "desc" ? "desc" : "asc");
+						}}
+						style={champ}
+					>
+						<option value="nom-asc">Nom (A→Z)</option>
+						<option value="nom-desc">Nom (Z→A)</option>
+						<option value="taille-asc">Taille (petits d'abord)</option>
+						<option value="taille-desc">Taille (gros d'abord)</option>
+					</select>
+				</label>
+				<label style={etiquette}>
+					Au moins
+					<input
+						type="text"
+						inputMode="decimal"
+						value={minMo}
+						onChange={(e) => setMinMo(e.target.value)}
+						placeholder="0"
+						aria-label="Taille minimale en mégaoctets"
+						style={{ ...champ, width: "5rem" }}
+					/>
+					Mo
+				</label>
+			</div>
 
 			{contenu ? (
 				<p style={{ margin: "0 0 var(--jeu-espace-m)", fontSize: "0.9rem", opacity: 0.8 }}>
@@ -299,6 +396,13 @@ const lien: React.CSSProperties = {
 	fontWeight: 700,
 	padding: 0,
 	textDecoration: "underline",
+};
+
+const etiquette: React.CSSProperties = {
+	display: "inline-flex",
+	alignItems: "center",
+	gap: "var(--jeu-espace-xs)",
+	fontWeight: 700,
 };
 
 const champ: React.CSSProperties = {

@@ -94,6 +94,14 @@ export interface OptionsParcours {
 	q?: string;
 	/** Extension exacte, sans le point. Absente : aucun filtre. */
 	ext?: string;
+	/** Critère de tri : `nom` (défaut) ou `taille`. */
+	tri?: "nom" | "taille";
+	/** Sens de tri : `asc` (défaut) ou `desc`. */
+	ordre?: "asc" | "desc";
+	/** Taille minimale en octets, incluse. */
+	tailleMin?: number;
+	/** Taille maximale en octets, incluse. */
+	tailleMax?: number;
 	signal?: AbortSignal;
 }
 

@@ -110,11 +110,24 @@ export function creerDesktopSource(racineJeu?: string): AssetSource {
 			// 255 308 entrées), pas sur un dossier.
 			const q = options.q?.trim().toLowerCase();
 			const ext = options.ext?.trim().replace(/^\./, "").toLowerCase();
+			const { tailleMin, tailleMax } = options;
 			const fichiers = tous.filter(
 				(f) =>
 					(!q || f.chemin.toLowerCase().includes(q)) &&
-					(!ext || f.nom.toLowerCase().endsWith(`.${ext}`)),
+					(!ext || f.nom.toLowerCase().endsWith(`.${ext}`)) &&
+					// `0` est une borne legitime : il existe des fichiers de zero octet.
+					// `Number.isFinite` plutot qu'une verite, sinon `tailleMax: 0` disparait.
+					(!Number.isFinite(tailleMin) || f.taille >= (tailleMin as number)) &&
+					(!Number.isFinite(tailleMax) || f.taille <= (tailleMax as number)),
 			);
+			// Le tri est applique APRES le filtre, sur la meme liste : l'ordre du serveur porte
+			// sur le chemin entier et sur la taille, celui-ci fait de meme.
+			if (options.tri === "taille") {
+				fichiers.sort((a, b) => a.taille - b.taille);
+			} else {
+				fichiers.sort((a, b) => a.chemin.localeCompare(b.chemin));
+			}
+			if (options.ordre === "desc") fichiers.reverse();
 			return {
 				prefixe,
 				dossiers: (ls?.dirs ?? []).map((d) => d.name),

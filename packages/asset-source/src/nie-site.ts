@@ -20,11 +20,27 @@ export const urlFichier = (cheminVfs: string) => `/f/${cheminVfs}`;
  * serveur, et a raison de l'etre — ni « pas de filtre » ni « egal a la chaine vide » ne sont
  * devinables.
  */
-export const urlDossier = (prefixe = "", filtres: { q?: string; ext?: string } = {}) => {
+export const urlDossier = (
+	prefixe = "",
+	filtres: {
+		q?: string;
+		ext?: string;
+		tri?: string;
+		ordre?: string;
+		tailleMin?: number;
+		tailleMax?: number;
+	} = {},
+) => {
 	const base = prefixe ? `/b/${prefixe}` : "/b";
 	const params = new URLSearchParams();
 	if (filtres.q?.trim()) params.set("q", filtres.q.trim());
 	if (filtres.ext?.trim()) params.set("ext", filtres.ext.trim().replace(/^\./, ""));
+	if (filtres.tri?.trim()) params.set("tri", filtres.tri.trim());
+	if (filtres.ordre?.trim()) params.set("ordre", filtres.ordre.trim());
+	// `0` est une borne LEGITIME (il existe des fichiers de zero octet, mesure du 2026-09-06) :
+	// tester la verite ferait disparaitre `taille_max=0` en silence.
+	if (Number.isFinite(filtres.tailleMin)) params.set("taille_min", String(filtres.tailleMin));
+	if (Number.isFinite(filtres.tailleMax)) params.set("taille_max", String(filtres.tailleMax));
 	const query = params.toString();
 	return query ? `${base}?${query}` : base;
 };
