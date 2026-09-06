@@ -7,7 +7,8 @@
 //! - [`client`] : client HTTP poli (rate-limit, retry, cache disque)
 //! - [`parser`] : parsers HTML → structs typées [`ZukanChara`], [`ZukanSkill`], [`ZukanItem`]
 //! - [`pull`] : orchestration du pull complet (`chara_list` → IDs → `chara_param` + skills + items)
-//! - [`cross`] : croisement avec le miroir `SQLite` inagle
+//! - [`cross`] : croisement avec le miroir `SQLite` inagle (égalité exacte)
+//! - [`appariement`] : appariement FLOU zukan ↔ inagle + audit (port d'inagle)
 
 #![forbid(unsafe_code)]
 #![warn(clippy::pedantic)]
@@ -25,6 +26,7 @@
     clippy::cast_sign_loss
 )]
 
+pub mod appariement;
 pub mod client;
 pub mod cross;
 pub mod forge;
