@@ -20,8 +20,10 @@
  *
  * ## Ce qui reste
  *
- * Le titre, les entrées, la mention légale. Une information n'apparaît qu'à un seul endroit, et
- * aucune ne décrit l'infrastructure : ni service, ni version, ni endpoint, ni compte d'index.
+ * Le personnage, les entrées, la mention légale. Une information n'apparaît qu'à un seul
+ * endroit, et aucune ne décrit l'infrastructure : ni service, ni version, ni endpoint, ni compte
+ * d'index. Le nom du site lui-même n'est plus écrit au centre de l'écran — il est dans l'onglet,
+ * dans la barre des écrans secondaires, et c'est le personnage qui le porte ici.
  *
  * ## La géométrie reste mesurée — une seule position est recalculée, et elle le dit
  *
@@ -47,6 +49,7 @@ import {
 } from "@niers/inacord-ui";
 import { useMemo } from "react";
 import { entreesMenu } from "../entrees";
+import { type Humeur, PetAphrody } from "./PetAphrody";
 
 /** Le canevas du menu, en pixels du jeu. Les enfants travaillent tous dans ce repère. */
 const CANEVAS = { w: 1280, h: 720 };
@@ -96,11 +99,40 @@ const Y_RANGEE = Math.round(
  */
 const CIEL = `radial-gradient(70% 55% at 88% -8%, var(--jeu-ciel-brume) 0%, ${FOND_MENU} 70%)`;
 
+/**
+ * L'échelle du personnage sur le canevas du menu.
+ *
+ * La cellule du package fait 192×208 ; la boîte du logo du jeu, mesurée, 412×287. 1,35 donne
+ * 259×281 — la hauteur de la boîte à deux pixels près, sans déborder sur les deux panneaux qui
+ * commencent à y = 148.
+ */
+const ECHELLE_PET = 1.35;
+
+/**
+ * Retirer un élément de la vue SANS le retirer du document.
+ *
+ * `display: none` et `visibility: hidden` le retireraient aussi de l'arbre d'accessibilité :
+ * la page perdrait son `h1`, ce qui est précisément ce qu'on veut éviter. Un rectangle de un
+ * pixel écrêté reste lu.
+ */
+const HORS_VUE = {
+	position: "absolute",
+	width: 1,
+	height: 1,
+	margin: -1,
+	padding: 0,
+	overflow: "hidden",
+	clip: "rect(0 0 0 0)",
+	whiteSpace: "nowrap",
+	border: 0,
+} as const;
+
 export function MenuPrincipal({
 	vue,
 	onChoisir,
 	etat,
 	pret,
+	panne,
 }: {
 	/** L'entrée courante, pour marquer la tuile correspondante. */
 	vue: string;
@@ -109,8 +141,13 @@ export function MenuPrincipal({
 	etat: SanteApi | null;
 	/** Le catalogue est-il consultable ? Une tuile ne promet pas ce qu'elle ne peut pas montrer. */
 	pret: boolean;
+	/** Le site joint-il ses ressources ? C'est ce que le personnage exprime en premier. */
+	panne: boolean;
 }) {
 	const entrees = useMemo(() => entreesMenu(etat), [etat]);
+	// Le personnage ne joue pas la comédie : son animation est décidée par l'état MESURÉ du
+	// service, dans cet ordre — une panne prime sur une attente, une attente sur le repos.
+	const humeur: Humeur = panne ? "panne" : pret ? "repos" : "attente";
 
 	return (
 		<GameCanvas canvas={CANEVAS} fond={CIEL}>
@@ -131,42 +168,25 @@ export function MenuPrincipal({
 				</div>
 			</CanvasItem>
 
-			{/* --- Le titre, dans la boîte du logo du jeu -------------------------------------
-			    Le sous-titre dit ce QU'EST le site. Il portait « Victory Road » — le sous-titre
-			    du jeu accolé au nom du site, qui laissait croire qu'Aphrody est le jeu. */}
+			{/* --- Le personnage, dans la boîte du logo du jeu --------------------------------
+			    Le nom du site n'y est plus écrit. Il portait « APHRODY » en 82 px et « LES
+			    FICHIERS DU JEU » dessous — le nom du site sur le site, à l'endroit où le jeu met
+			    son logo, et un sous-titre qui répétait la description déjà servie dans l'en-tête
+			    du document. Le personnage dont le site porte le nom dit la même chose sans
+			    l'écrire, et il réagit à l'état réel du service. */}
 			<CanvasItem
 				x={BOITES.titre.x + BOITES.titre.l / 2}
-				y={BOITES.titre.y + 15}
+				y={BOITES.titre.y}
 				ancreX={0.5}
 				z={10}
 			>
-				<div style={{ textAlign: "center", lineHeight: 1 }}>
-					<h1
-						style={{
-							margin: 0,
-							fontSize: 82,
-							fontWeight: 900,
-							letterSpacing: "0.04em",
-							color: "var(--jeu-nuit-profonde)",
-							textShadow: "0 3px 0 var(--jeu-texte-vif), 0 0 18px rgb(165 225 246 / 90%)",
-						}}
-					>
-						APHRODY
-					</h1>
-					<p
-						style={{
-							margin: "30px 0 0",
-							fontSize: 19,
-							fontWeight: 800,
-							letterSpacing: "0.14em",
-							textTransform: "uppercase",
-							color: "var(--jeu-tuile-bas)",
-						}}
-					>
-						Les fichiers du jeu
-					</p>
-				</div>
+				<PetAphrody humeur={humeur} echelle={ECHELLE_PET} />
 			</CanvasItem>
+
+			{/* Le titre reste dans le document, hors de la vue : la page a besoin d'un `h1` —
+			    le serveur en rend un, React remplace ce qu'il a rendu, et un écran qui n'en a
+			    plus se présente sans niveau de titre à qui l'écoute. */}
+			<h1 style={HORS_VUE}>Aphrody</h1>
 
 			{/* --- La rangée principale : les entrées du site, et la seule zone interactive ---
 			    Sans compte sous le libellé : le jeu n'en met pas, et le chiffre était déjà écrit

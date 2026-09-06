@@ -122,6 +122,25 @@ pub fn routeur(etat: EtatSite) -> Router {
         .route("/b/{*prefixe}", get(crate::routes::vfs::parcours))
         .route("/api/v1/episodes", get(crate::routes::episodes::episodes))
         .route("/assets/{*chemin}", get(crate::routes::assets::assets))
+        // Aphrody, le personnage du site. Sept routes explicites plutot qu'un
+        // `/pet/{*fichier}` : le package n'est pas un dossier de fichiers, et un joker
+        // inviterait a en deriver un espace qui n'existe pas. Cf. `routes::aphrody`.
+        .route("/pet/aphrody.json", get(crate::routes::aphrody::manifeste))
+        .route("/pet/atlas.webp", get(crate::routes::aphrody::atlas))
+        .route("/pet/aphrody.svg", get(crate::routes::aphrody::svg))
+        .route(
+            "/pet/frame/{animation}/{fichier}",
+            get(crate::routes::aphrody::frame),
+        )
+        .route("/api/v1/aphrody", get(crate::routes::aphrody::dossier))
+        .route(
+            "/api/v1/aphrody/diagnostic",
+            get(crate::routes::aphrody::diagnostic),
+        )
+        .route(
+            "/api/v1/aphrody/palette",
+            get(crate::routes::aphrody::palette),
+        )
         .route("/", get(crate::routes::pages::coquille))
         .fallback(crate::routes::static_files::statique)
         // Les couches s'empilent de la plus INTERNE à la plus externe, et l'ordre est ici un

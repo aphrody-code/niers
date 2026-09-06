@@ -99,7 +99,13 @@ function Site() {
 			// soit plus courte que la fenetre. Le canevas se met alors a l'echelle d'une hauteur
 			// qu'il n'a pas, et laisse une bande vide en bas — sans qu'aucune valeur soit fausse.
 			<div style={{ position: "fixed", inset: 0, background: "var(--jeu-ciel-clair)" }}>
-				<MenuPrincipal vue={vue} onChoisir={setVue} etat={etat} pret={pret} />
+				<MenuPrincipal
+					vue={vue}
+					onChoisir={setVue}
+					etat={etat}
+					pret={pret}
+					panne={Boolean(erreurSource)}
+				/>
 			</div>
 		);
 	}

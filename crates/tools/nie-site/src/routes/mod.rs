@@ -1,6 +1,7 @@
 //! Les routes du serveur, une par module, plus le DTO de pagination qu'elles partagent.
 
 pub mod api_v1;
+pub mod aphrody;
 pub mod assets;
 pub mod episodes;
 pub mod feed;

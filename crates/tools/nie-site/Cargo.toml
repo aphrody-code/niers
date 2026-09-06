@@ -29,6 +29,10 @@ workspace = true
 # rien lui-même, il sert des octets et délègue tout décodage à nie-model-serve.
 nie-formats = { path = "../../engine/nie-formats" }
 
+# Le pet Aphrody : atlas, animations et poses de regard, embarques au build par
+# `include_bytes!`. Le site ne fait que republier ce package — il n'en garde aucune copie.
+nie-aphrody = { path = "../../engine/nie-aphrody" }
+
 # Serveur HTTP. Seul ajout réel au workspace (cf. docs/stack/dependencies.md) : 0.8.9, jamais
 # 0.8.2 (yanked). Syntaxe de route 0.8 : `{param}` et `{*wildcard}` — l'ancienne PANIQUE.
 axum = { version = "0.8.9", default-features = false, features = [
