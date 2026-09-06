@@ -757,6 +757,13 @@ fn cfgbin_typed_json_impl(bytes: &[u8], filename: &str) -> Result<String, String
     serde_json::to_string(&out).map_err(|e| e.to_string())
 }
 
+/// Décode un `*_menu_setting.cfg.bin` vers sa structure sémantique sans enveloppe de famille.
+fn cfgbin_menu_setting_json_impl(bytes: &[u8]) -> Result<String, String> {
+    let root = nw_cfgbin_to_iecode(bytes).ok_or("cfg.bin non décodable (ni RDBN ni T2B)")?;
+    let setting = nie_data::menu_setting::parse(&root);
+    serde_json::to_string(&setting).map_err(|e| e.to_string())
+}
+
 /// Décode un `cfg.bin` (octets bruts) en structure de jeu typée selon le nom de fichier.
 #[cfg(target_arch = "wasm32")]
 #[wasm_bindgen]
@@ -768,6 +775,19 @@ pub fn cfgbin_typed_json(bytes: &[u8], filename: &str) -> Result<String, JsValue
 #[cfg(not(target_arch = "wasm32"))]
 pub fn cfgbin_typed_json(bytes: &[u8], filename: &str) -> Result<String, String> {
     cfgbin_typed_json_impl(bytes, filename)
+}
+
+/// Décode un `*_menu_setting.cfg.bin` en structure de menu directement consommable.
+#[cfg(target_arch = "wasm32")]
+#[wasm_bindgen]
+pub fn cfgbin_menu_setting_json(bytes: &[u8]) -> Result<String, JsValue> {
+    cfgbin_menu_setting_json_impl(bytes).map_err(|e| JsValue::from_str(&e))
+}
+
+/// Décode un `*_menu_setting.cfg.bin` en structure de menu directement consommable (natif).
+#[cfg(not(target_arch = "wasm32"))]
+pub fn cfgbin_menu_setting_json(bytes: &[u8]) -> Result<String, String> {
+    cfgbin_menu_setting_json_impl(bytes)
 }
 
 // ── Bytecode Lua 5.2 (scripts du jeu) ──────────────────────────────────────────
@@ -1405,6 +1425,36 @@ mod tests {
         assert_eq!(json["nom"], "TestTable");
         assert_eq!(json["colonnes"].as_array().unwrap().len(), 2);
         assert_eq!(json["lignes"].as_array().unwrap().len(), 2);
+    }
+
+    #[test]
+    fn cfgbin_menu_setting_json_t2b_fixture() {
+        use nie_formats::cfgbin::{CfgEntry, Value, encode_t2b};
+
+        let entries = vec![CfgEntry {
+            name: "MENU_LAYER_INFO_LIST_BEG".into(),
+            variables: vec![Value::Int(1)],
+            children: vec![CfgEntry {
+                name: "MENU_LAYER_INFO_0".into(),
+                variables: vec![
+                    Value::Int(367_379_312),
+                    Value::String("mainmenu90_00_background".into()),
+                    Value::String(
+                        "common/gamedata/menu/obj/mainmenu90_00_background.objbin".into(),
+                    ),
+                    Value::Int(1),
+                ],
+                children: Vec::new(),
+            }],
+        }];
+        let bytes = encode_t2b(&entries);
+        let json: serde_json::Value =
+            serde_json::from_str(&cfgbin_menu_setting_json(&bytes).expect("menu JSON"))
+                .expect("JSON valide");
+        assert_eq!(json["layers"].as_array().unwrap().len(), 1);
+        assert_eq!(json["layers"][0]["layer_id"], 367_379_312u32);
+        assert_eq!(json["layers"][0]["name"], "mainmenu90_00_background");
+        assert_eq!(json["layers"][0]["params"][0], 1);
     }
 
     // -----------------------------------------------------------------------
