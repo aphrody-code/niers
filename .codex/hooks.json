@@ -1,4 +1,5 @@
 {
+  "_comment": "Les hooks sont ceux de .claude/hooks/ — source unique. Le dossier .codex/hooks/ portait des copies, et celle de garde-bash.sh avait derive : elle refusait encore `git push`, que la doctrine du depot a repudie le 2026-09-05. Les chemins sont RELATIFS a la racine du projet : le versionne ne peut pas porter d absolu, il est partage entre le poste Windows et le VPS.",
   "hooks": {
     "PreToolUse": [
       {
@@ -6,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash 'C:\\Users\\aphro\\nie\\.codex\\hooks\\garde-bash.sh'",
+            "command": "bash .claude/hooks/garde-bash.sh",
             "timeout": 10
           }
         ]
@@ -17,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash 'C:\\Users\\aphro\\nie\\.codex\\hooks\\etat.sh'",
+            "command": "bash .claude/hooks/etat.sh",
             "timeout": 15
           }
         ]

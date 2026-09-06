@@ -118,6 +118,16 @@ different machine, and a good half of the traps below do not exist there.
   without redirection) and prints the correct form instead. Repository commands: `/etat`,
   `/verif`, `/forge`, `/porter`.
 
+- **On the Windows workstation there are TWO `bash`, and they are different machines.** From Git
+  Bash, `uname -s` gives `MINGW64_NT` and the repository is `C:\Users\aphro\niers`. From
+  **PowerShell** — therefore from Codex, whose default shell on Windows is PowerShell — `bash`
+  resolves to `C:\Windows\system32\bash.exe`, i.e. **WSL**: `uname -s` gives `Linux` and the
+  repository is `/mnt/c/Users/aphro/niers`. Measured on 2026-09-06. The state hook used to answer
+  **« CETTE machine est le VPS Linux »** on this workstation for exactly that reason — the same
+  hard-coded lie the paragraph above says was fixed, coming back through another door. It now tests
+  `/proc/version` for `microsoft` and names the three cases apart. Before quoting a `uname`, know
+  which `bash` produced it; `Get-Command bash -All` lists them.
+
 **Everything in § *Windows-only environment traps* applies to the Windows workstation only.**
 
 ## Tools — which one for which situation (measured here on 2026-09-02)

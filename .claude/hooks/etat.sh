@@ -5,7 +5,17 @@
 # Doit rester sous ~3 s et ne jamais echouer (exit 0 quoi qu'il arrive).
 
 set -u
-cd "${CLAUDE_PROJECT_DIR:-/home/ubuntu/niers}" 2>/dev/null || exit 0
+# La racine se DEDUIT, elle ne se suppose pas. Ce hook se repliait sur /home/ubuntu/niers
+# en dur : sous Codex, ou CLAUDE_PROJECT_DIR n'existe pas, le `cd` echouait et le `|| exit 0`
+# rendait 0 SANS UNE LIGNE de sortie — le hook d'etat se taisait a chaque session, et rien
+# ne le disait. Mesure le 2026-09-06 sur le poste Windows : 0 ligne, exit 0.
+RACINE="${CLAUDE_PROJECT_DIR:-${CODEX_PROJECT_DIR:-}}"
+[ -n "$RACINE" ] || RACINE="$(git rev-parse --show-toplevel 2>/dev/null)"
+[ -n "$RACINE" ] || RACINE="$PWD"
+if ! cd "$RACINE" 2>/dev/null; then
+  echo "=== etat du depot : INDISPONIBLE — racine introuvable ($RACINE) ==="
+  exit 0
+fi
 q() { timeout 5 sqlite3 -noheader -separator ' ' "$@" 2>/dev/null; }
 KB=var/niers.sqlite
 
@@ -19,7 +29,18 @@ MEM="$(free -g 2>/dev/null | awk '/^Mem:/{print $7" Gio libres"}')"
 echo "machine   $(uname -sm) — $(nproc) coeurs, $MEM, disque $(df -h --output=pcent . | tail -1 | tr -d ' ') plein"
 # La plateforme se MESURE : ce hook a longtemps affirme « VPS Linux » en dur, y compris sous
 # Git Bash (uname rend MINGW64_NT), ou il annoncait l'inverse de la verite a chaque session.
-if [ "$(uname -s)" = "Linux" ]; then
+# Troisieme cas, ajoute le 2026-09-06 : WSL. Depuis PowerShell — donc depuis Codex, dont
+# c'est le shell par defaut sous Windows — `bash` ne resout PAS Git Bash mais
+# C:\Windows\system32\bash.exe, c'est-a-dire WSL. `uname -s` y rend « Linux » et ce hook
+# annoncait « CETTE machine est le VPS Linux » sur le poste Windows : le mensonge exact que
+# CLAUDE.md § Deux machines reproche a la version en dur. Mesure : `bash -c pwd` rend
+# /mnt/c/Users/aphro/niers, et non C:\Users\aphro\niers.
+if [ "$(uname -s)" = "Linux" ] && grep -qi microsoft /proc/version 2>/dev/null; then
+  echo "          CETTE machine est le poste Windows, vu au travers de WSL (pas le VPS)."
+  echo "          Le depot est monte sur /mnt/c : les binaires .exe, MSVC et le jeu Steam sont"
+  echo "          ceux de Windows, mais ce shell ne les voit pas comme Windows les voit."
+  echo "          Pour mesurer le poste tel qu'il est, utiliser PowerShell ou Git Bash."
+elif [ "$(uname -s)" = "Linux" ]; then
   echo "          CETTE machine est le VPS Linux. Les sections Windows de CLAUDE.md (MSVC, Git Bash,"
   echo "          MSYS, UAC, .exe, sed -i, cargo fmt --all) ne s'appliquent PAS ici."
 else

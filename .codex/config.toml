@@ -1,8 +1,24 @@
+# Reglages Codex du depot. Ce fichier est VERSIONNE et partage entre le poste Windows
+# et le VPS : il ne doit porter aucun chemin machine. Il en portait un — BASH_ENV pointait
+# sur C:/Users/aphro/nie/.claude/shell-init.sh, mort depuis que le depot a ete renomme
+# `nie` -> `niers`. Un BASH_ENV introuvable ne leve rien : bash demarre simplement sans
+# `set -o pipefail`, et un `| tail` rend 0 sur une preuve rouge (cf. CLAUDE.md, § Le shell).
+#
+# `inherit = "all"` et non "core" : sur le POSTE WINDOWS, NIE_GAME_DIR et NIERS_REPO sont
+# des variables d'environnement UTILISATEUR (verifiees avec
+# [Environment]::GetEnvironmentVariable('NIE_GAME_DIR','User')). Le noyau "core" ne
+# transmet que HOME/PATH/USER et consorts : il les aurait coupees, et chaque `niers`
+# lance depuis Codex aurait monte un VFS vide en se portant bien. Les motifs d'exclusion
+# par defaut de Codex (*KEY*, *TOKEN*, *SECRET*) restent actifs.
+#
+# NIE_GAME_DIR et NIERS_REPO ne sont pas fixes ici, expres : ce sont des chemins machine.
+# Cote Windows ils viennent des variables utilisateur, cote VPS de ~/.bashrc.
+
 [shell_environment_policy]
-inherit = "core"
+inherit = "all"
 
 [shell_environment_policy.set]
-BASH_ENV = "C:/Users/aphro/nie/.claude/shell-init.sh"
+BASH_ENV = ".claude/shell-init.sh"
 
 [mcp_servers.niers-game]
 command = "bun"
@@ -14,3 +30,16 @@ args = [
 [mcp_servers.niers-game.env]
 NIERS_REDIS = "redis://127.0.0.1:6379"
 MODEL_SERVE_URL = "http://127.0.0.1:8790"
+NIE_APHRODY_API_URL = "http://127.0.0.1:8085"
+
+# Les plugins sont actives DEPUIS LE DEPOT QU ILS SERVENT, jamais globalement : preuve
+# mesuree le 2026-09-06 — `codex plugin list` rend `enabled` depuis C:\Users\aphro\niers
+# et `disabled` depuis C:\Users\aphro, avec le meme reglage global a false.
+[plugins."niers@niers-marketplace"]
+enabled = true
+
+[plugins."frontend-design@claude-plugins-official"]
+enabled = true
+
+[plugins."modern-web-guidance@claude-plugins-official"]
+enabled = true
