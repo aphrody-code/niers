@@ -172,6 +172,13 @@ impl Ordre {
 /// ignoré ou borné, et la réponse porte un [`FiltresAppliques`] qui dit ce qui a compté.
 #[derive(Debug, Default, Clone, Deserialize)]
 pub struct DemandeFiltre {
+    /// Sous-arbre auquel restreindre la recherche (`prefixe=data/dx11/menu`).
+    ///
+    /// Sans lui, `?q=` cherche dans les 255 308 entrées et `/b?q=` ne regarde qu'un dossier :
+    /// la question qu'on pose réellement — « ce motif, mais sous CE dossier » — n'avait aucune
+    /// forme. Le préfixe est résolu par dichotomie sur l'index déjà trié, donc il **restreint**
+    /// le travail au lieu de l'augmenter.
+    pub prefixe: Option<String>,
     /// Extension exacte, sans point, insensible à la casse (`ext=bin`).
     pub ext: Option<String>,
     /// Nom du CPK d'origine (`cpk=common.cpk`). Sans effet sur un montage dump.
@@ -207,6 +214,8 @@ pub struct FiltresAppliques {
     pub tri: &'static str,
     /// Sens appliqué (`asc` ou `desc`).
     pub ordre: &'static str,
+    /// Sous-arbre appliqué, normalisé avec sa barre finale.
+    pub prefixe: Option<String>,
     /// `true` quand `?ext=` a été demandé mais n'existe nulle part dans l'index.
     pub ext_inconnue: bool,
     /// `true` quand `?cpk=` a été demandé mais ne désigne aucun pack indexé.
@@ -219,6 +228,7 @@ impl Default for FiltresAppliques {
     fn default() -> Self {
         Self {
             q: None,
+            prefixe: None,
             ext: None,
             cpk: None,
             taille_min: None,
@@ -235,6 +245,8 @@ impl Default for FiltresAppliques {
 #[derive(Debug, Clone, Default)]
 pub struct Filtre {
     q: Option<String>,
+    /// Sous-arbre, normalisé (barre finale, jamais de barre initiale).
+    prefixe: Option<String>,
     ext: Option<String>,
     cpk: Option<u16>,
     /// `true` quand un `?cpk=`/`?ext=` a été demandé sans correspondance : rien ne peut passer.
@@ -249,6 +261,7 @@ impl Filtre {
     pub fn est_vide(&self) -> bool {
         !self.impossible
             && self.q.is_none()
+            && self.prefixe.is_none()
             && self.ext.is_none()
             && self.cpk.is_none()
             && self.taille_min.is_none()
@@ -584,6 +597,20 @@ impl IndexVfs {
             f.q = Some(m);
         }
 
+        if let Some(p) = dem
+            .prefixe
+            .as_deref()
+            .map(str::trim)
+            .filter(|p| !p.is_empty())
+        {
+            // Normalisé une fois ici, jamais à chaque comparaison : `data/dx11` et
+            // `data/dx11/` désignent le même sous-arbre, et sans la barre finale le préfixe
+            // `data/dx1` attraperait `data/dx11` — un sous-arbre voisin, pas un descendant.
+            let p = format!("{}/", p.trim_matches('/'));
+            a.prefixe = Some(p.clone());
+            f.prefixe = Some(p);
+        }
+
         if let Some(e) = dem.ext.as_deref().map(str::trim).filter(|e| !e.is_empty()) {
             let e = e.trim_start_matches('.').to_ascii_lowercase();
             if self.rang_ext(&e).is_some() {
@@ -664,6 +691,17 @@ impl IndexVfs {
         if let Some(r) = f.cpk {
             return &self.cpk_listes[usize::from(r)];
         }
+        // Le préfixe se résout par dichotomie sur l'index trié : `tous` est `0..n` dans l'ordre
+        // de `chemins`, donc une tranche contigüe suffit. Elle n'est prise que faute de liste
+        // pré-calculée plus étroite — celles d'extension et de pack ne sont pas triées par
+        // chemin, et c'est `retenu` qui finit alors le travail.
+        if vue.is_none()
+            && let Some(p) = f.prefixe.as_deref()
+        {
+            let debut = self.chemins.partition_point(|c| c.as_str() < p);
+            let fin = self.chemins[debut..].partition_point(|c| c.starts_with(p)) + debut;
+            return &self.tous[debut..fin];
+        }
         match vue {
             Some(v) => &self.vues[rang(v)],
             None => &self.tous,
@@ -684,6 +722,16 @@ impl IndexVfs {
         };
         if let Some(m) = &f.q
             && !chemin.to_lowercase().contains(m.as_str())
+        {
+            return false;
+        }
+        // La garde vit ICI aussi, et pas seulement dans `base` : avec un `?ext=` ou un `?cpk=`,
+        // le point de départ est une liste pré-calculée qui n'est pas triée par chemin, et la
+        // tranche dichotomique ne s'applique pas. C'est le même défaut que `/b?ext=inexistante`
+        // rendant le dossier entier — une garde écrite dans UN chemin de code n'en couvre pas
+        // deux.
+        if let Some(p) = &f.prefixe
+            && !chemin.starts_with(p.as_str())
         {
             return false;
         }

@@ -274,7 +274,7 @@ vignette), compté à part et jamais comme un manque.
 | 3 | Filtre par extension exacte | — | ✅ | ❌ | **SERVI** | 255 308 → 54 203 |
 | 4 | Filtre par famille d'asset | — | ✅ | ◐ 4 vues, 143 246/255 308 | **SERVI** | `/api/v1/textures` |
 | 5 | Navigation par préfixe / dossier | — | ✅ | ✅ | **SERVI** | `/b/data/common` |
-| 6 | Recherche **restreinte à un sous-arbre** | — | ❌ | ❌ | **ABSENT** | `/b` filtre le dossier **direct** : 0 sous `gamedata`, des milliers plus bas |
+| 6 | Recherche **restreinte à un sous-arbre** | — | ❌ | ❌ | **SERVI** | `?q=chara&prefixe=data/dx11/menu` → 674 → 242 |
 | 7 | Tri par nom | — | ✅ | ❌ | **SERVI** | `base_act…` / `system_text_platform…` |
 | 8 | Tri par taille | — | ✅ | ❌ | **SERVI** | 0 / 2 099 267 008 |
 | 9 | Filtre par taille min/max | — | ❌ | ❌ | **SERVI** | 255 308 → 14 558 |
@@ -332,10 +332,10 @@ tort — c'est le gisement qui est pauvre, pas la route.
 ### Compte — 2026-09-06 au soir
 
 ```
-servis 34 · absents 12 · côté client 2 · à relire 0  (sur 48)
+servis 35 · absents 11 · côté client 2 · à relire 0  (sur 48)
 ```
 
-- **API : 34 servis, 12 absents, 2 hors périmètre.** Le matin, la même colonne comptait 6 servis.
+- **API : 35 servis, 11 absents, 2 hors périmètre.** Le matin, la même colonne comptait 6 servis.
 - Les deux derniers (#29, #32) ont été gagnés **le soir même, par la mesure** : le script les a
   classés `ABSENT` en disant *pourquoi* — « l'égalité ne sait dire ni l'intervalle ni la
   présence » — et cette phrase était le cahier des charges. `entites` a gagné `colonne__min` /
@@ -362,7 +362,7 @@ servis 34 · absents 12 · côté client 2 · à relire 0  (sur 48)
 ---
 
 
-## 6. Les 12 manques restants : source de données et coût
+## 6. Les 11 manques restants : source de données et coût
 
 > Réécrit le 2026-09-06 au soir contre la mesure. Les 26 lignes que cette section chiffrait le
 > matin (#1–#3, #7–#10, #14–#17, #17–#28, #33–#35, #42, #43, #47) sont **servies** : elles ne
@@ -370,7 +370,6 @@ servis 34 · absents 12 · côté client 2 · à relire 0  (sur 48)
 
 | # | Manque | Source de données | Coût |
 |---|---|---|---|
-| 6 | Recherche restreinte à un sous-arbre | index trié (`vfs_index.rs:224`) | **calculable** : `partition_point` sur le préfixe puis balayage filtré. `/api/v1/recherche` a déjà `q`, il lui manque un `prefixe=` ; les deux mécanismes existent, il n'y a qu'à les composer |
 | 11 | Glob (`**`, `!excl`, listes) | `crates/engine/nie-viola/src/filtre.rs` | **moteur déjà écrit et testé**, à rendre atteignable depuis `nie-site`. Double `ext=` pour un public plus étroit |
 | 36 | Langue / variante d'un asset | segment de chemin du VFS | lisible sans passe ; Inacord le fait déjà (`lib/galerie.ts:24-59`). Coût quasi nul une fois #6 fait |
 | 37–39 | Saison, épisode, langue, sous-titres | `data/anime/episodes.db` — colonnes déjà lues (`episodes.rs:56-83`) | **décision avant code** : `/api/v1/episodes` est une API de **synchronisation** (`since`/`limit`), pas un catalogue. Soit on la dénature, soit on sert `episodes.db` par `entites` — la seconde donne les quatre filtres gratuitement, et c'est ce que la mesure suggère |
@@ -397,8 +396,9 @@ Trois restent une **forme** de filtre (glob, sous-arbre, fuzzy) plutôt qu'une d
    donc sur les 219 tables. Mesuré : 1 002 → 967 présents, 1 002 → 598 au-dessus de 400, 596 dans
    l'intervalle ; borne sur colonne texte, borne non numérique et colonne inconnue sont trois
    `400` distincts.
-3. **`prefixe=` sur `/api/v1/recherche` (#6)**, qui rend aussi #36 presque gratuit : chercher dans
-   un sous-arbre est la question qu'on pose vraiment sur 255 308 fichiers.
+3. ~~`prefixe=` sur `/api/v1/recherche` (#6).~~ **Fait le 2026-09-06** — dichotomie sur l'index
+   trié : `?q=chara` rend 674, `&prefixe=data/dx11/menu` en rend 242, et `data/dx1` rend 0 au
+   lieu d'attraper `data/dx11`. #36 en devient presque gratuit.
 4. **Servir `episodes.db` par `entites` (#37–#39)** plutôt que dénaturer `/api/v1/episodes` :
    quatre filtres pour une inscription de gisement, et la route de synchronisation reste ce
    qu'elle est.

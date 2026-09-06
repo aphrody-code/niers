@@ -40,6 +40,8 @@ pub struct Demande {
     pub q: Option<String>,
     /// Extension exacte, sans point (`ext=g4mg`).
     pub ext: Option<String>,
+    /// Sous-arbre auquel restreindre la recherche (`prefixe=data/dx11/menu`).
+    pub prefixe: Option<String>,
     /// Nom du CPK d'origine. Sans effet sur un montage dump.
     pub cpk: Option<String>,
     /// Critère de tri : `nom` (défaut) ou `taille`.
@@ -67,6 +69,7 @@ impl Demande {
     #[must_use]
     pub fn filtre(&self) -> DemandeFiltre {
         DemandeFiltre {
+            prefixe: self.prefixe.clone(),
             ext: self.ext.clone(),
             cpk: self.cpk.clone(),
             tri: self.tri.clone(),
@@ -136,6 +139,10 @@ mod tests {
             ),
             ("data/common/chara/chara_text.cfg.bin".to_owned(), 2048),
             ("data/dx11/menu/title/title.g4tx".to_owned(), 65_536),
+            // Un `.bin` HORS du sous-arbre `data/common/chara/` : sans lui, `ext=bin` rendait
+            // deja le bon compte et le test de la combinaison prefixe+extension ne pouvait pas
+            // echouer. Verifie par falsification — garde retiree, il rougit.
+            ("data/dx11/menu/title/title_layout.cfg.bin".to_owned(), 128),
             ("data/common/sound/en/ev01.p3lip".to_owned(), 512),
         ])
     }
@@ -153,12 +160,95 @@ mod tests {
     }
 
     #[test]
+    fn le_prefixe_restreint_le_motif_a_un_sous_arbre() {
+        // La question qu'on pose vraiment sur 255 308 fichiers : « ce motif, mais sous CE
+        // dossier ». Sans prefixe, `q=chara` traverse tout ; avec, il ne sort pas du sous-arbre.
+        let index = index_temoin();
+        let sans = index.resoudre(Some("cfg"), &DemandeFiltre::default());
+        let avec = index.resoudre(
+            Some("cfg"),
+            &DemandeFiltre {
+                prefixe: Some("data/common/chara".to_owned()),
+                ..DemandeFiltre::default()
+            },
+        );
+        assert_eq!(index.page_filtree(None, &sans).1, 3, "trois `.cfg.bin` en tout");
+        assert_eq!(index.page_filtree(None, &avec).1, 2, "deux sous ce sous-arbre");
+        // La moitie qui compte : le meme motif sous un AUTRE sous-arbre ne rend pas le meme
+        // compte. Un prefixe ignore rendrait 3 aux trois appels.
+        let ailleurs = index.resoudre(
+            Some("cfg"),
+            &DemandeFiltre {
+                prefixe: Some("data/dx11".to_owned()),
+                ..DemandeFiltre::default()
+            },
+        );
+        assert_eq!(index.page_filtree(None, &ailleurs).1, 1);
+    }
+
+    #[test]
+    fn un_prefixe_n_attrape_pas_le_sous_arbre_voisin() {
+        // `data/dx1` ne doit PAS attraper `data/dx11` : c'est un voisin, pas un descendant.
+        // La barre finale ajoutee a la normalisation est exactement ce qui l'empeche, et sans
+        // ce test elle se ferait retirer un jour comme une coquetterie.
+        let index = index_temoin();
+        let voisin = index.resoudre(
+            None,
+            &DemandeFiltre {
+                prefixe: Some("data/dx1".to_owned()),
+                ..DemandeFiltre::default()
+            },
+        );
+        assert_eq!(index.page_filtree(None, &voisin).1, 0);
+        let exact = index.resoudre(
+            None,
+            &DemandeFiltre {
+                prefixe: Some("data/dx11".to_owned()),
+                ..DemandeFiltre::default()
+            },
+        );
+        assert_eq!(index.page_filtree(None, &exact).1, 2);
+    }
+
+    #[test]
+    fn le_prefixe_est_republie_normalise() {
+        let index = index_temoin();
+        let r = index.resoudre(
+            None,
+            &DemandeFiltre {
+                prefixe: Some("/data/common/chara/".to_owned()),
+                ..DemandeFiltre::default()
+            },
+        );
+        assert_eq!(r.applique.prefixe.as_deref(), Some("data/common/chara/"));
+    }
+
+    #[test]
+    fn le_prefixe_survit_a_la_combinaison_avec_une_extension() {
+        // Avec `ext`, `base` part de la liste par extension — qui n'est pas triee par chemin —
+        // et c'est `retenu` qui doit finir le travail. Sans la garde dupliquee la, ce test
+        // rendrait le fichier de l'autre sous-arbre.
+        let index = index_temoin();
+        let r = index.resoudre(
+            None,
+            &DemandeFiltre {
+                prefixe: Some("data/common/chara".to_owned()),
+                ext: Some("bin".to_owned()),
+                ..DemandeFiltre::default()
+            },
+        );
+        let (fichiers, total) = index.page_filtree(None, &r.paginer(0, 10));
+        assert_eq!(total, 2);
+        assert!(fichiers.iter().all(|f| f.chemin.starts_with("data/common/chara/")));
+    }
+
+    #[test]
     fn le_total_filtre_et_le_total_brut_sont_deux_comptes_distincts() {
         let index = index_temoin();
         let r = index.resoudre(Some("chara"), &DemandeFiltre::default());
         let (_, total) = index.page_filtree(None, &r);
         assert_eq!(total, 2);
-        assert_eq!(index.len(), 4, "le denominateur ne bouge pas avec le filtre");
+        assert_eq!(index.len(), 5, "le denominateur ne bouge pas avec le filtre");
     }
 
     #[test]

@@ -121,9 +121,12 @@ reduit  3 "extension exacte" \
         "/api/v1/recherche?per_page=1" "/api/v1/recherche?per_page=1&ext=g4tx"
 existe  4 "famille d'asset (vues)" "/api/v1/textures?per_page=1" '.total > 0'
 existe  5 "navigation par prefixe" "/b/data/common?per_page=1" '(.dossiers|length) > 0'
-absent_prouve 6 "recherche restreinte a un sous-arbre" \
-        "/b/data/common/gamedata?per_page=1&q=chara" '.total_fichiers == 0' \
-        "/b filtre le dossier DIRECT, pas le sous-arbre : 0 ici, des milliers plus bas"
+# `/b` filtre le dossier DIRECT et c'est son role. La question « ce motif, mais sous CE
+# dossier » se pose a `/api/v1/recherche?prefixe=`, ajoute le 2026-09-06 apres que cette ligne
+# l'ait montre manquante.
+reduit  6 "recherche restreinte a un sous-arbre" \
+        "/api/v1/recherche?per_page=1&q=chara" \
+        "/api/v1/recherche?per_page=1&q=chara&prefixe=data/dx11/menu"
 ordonne 7 "tri par nom" '.fichiers[0].nom' \
         "/api/v1/recherche?per_page=1&tri=nom&ordre=asc" \
         "/api/v1/recherche?per_page=1&tri=nom&ordre=desc"
