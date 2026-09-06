@@ -48,6 +48,8 @@ pub fn run(
     let mut loaded_includes: BTreeMap<String, usize> = BTreeMap::new();
     let mut missing_hosts: BTreeMap<String, usize> = BTreeMap::new();
     let mut missing_host_paths: BTreeMap<String, usize> = BTreeMap::new();
+    let mut missing_host_scripts: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    let mut missing_host_path_scripts: BTreeMap<String, Vec<String>> = BTreeMap::new();
     let mut samples = Vec::new();
 
     for path in &paths {
@@ -101,10 +103,18 @@ pub fn run(
                     *loaded_includes.entry(include).or_default() += 1;
                 }
                 for host in output.missing_host_calls {
-                    *missing_hosts.entry(host).or_default() += 1;
+                    *missing_hosts.entry(host.clone()).or_default() += 1;
+                    let scripts = missing_host_scripts.entry(host).or_default();
+                    if !scripts.iter().any(|known| known == path) {
+                        scripts.push(path.clone());
+                    }
                 }
-                for path in output.missing_host_paths {
-                    *missing_host_paths.entry(path).or_default() += 1;
+                for missing_path in output.missing_host_paths {
+                    *missing_host_paths.entry(missing_path.clone()).or_default() += 1;
+                    let scripts = missing_host_path_scripts.entry(missing_path).or_default();
+                    if !scripts.iter().any(|known| known == path) {
+                        scripts.push(path.clone());
+                    }
                 }
                 if let Some(error) = output.error {
                     errors += 1;
@@ -142,6 +152,8 @@ pub fn run(
             "loadedIncludes": loaded_includes,
             "missingHostCalls": missing_hosts,
             "missingHostPaths": missing_host_paths,
+            "missingHostScripts": missing_host_scripts,
+            "missingHostPathScripts": missing_host_path_scripts,
             "samples": samples,
         }))?
     );

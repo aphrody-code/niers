@@ -86,5 +86,11 @@ fournit pas encore de sortie observable restent modélisés par un état neutre
 documenté ; cela ne constitue pas une preuve d’identité pixel-perfect du jeu
 complet.
 
+L’audit conserve maintenant la provenance de chaque manque. Les paramètres de
+pièce viennent de `ability_learning_board_menu_7.00.00.00.lua.bin`, les
+coordonnées `x/y` de quatre menus de recherche/summon, et `MENU_LINIT_NONE` de
+`soccer_top_menu_1.03.98.00.lua.bin` ; cette liste est donc actionnable pour le
+prochain RE.
+
 Un build workspace complet n’a pas été lancé, conformément à la règle du dépôt
 qui le déconseille lorsque l’espace disque est contraint.
