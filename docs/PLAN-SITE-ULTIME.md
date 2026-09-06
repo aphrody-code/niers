@@ -199,15 +199,32 @@
 > `400` de la table trouvée ressortait en `404 « aucune table ne se nomme episodes »` — un
 > message qui envoie corriger un nom parfaitement juste.
 >
-> **Le retard avait changé de côté ; il a été comblé le jour même.** Trois pages câblées sans
-> une ligne de Rust — `/explorateur`, les catalogues, et **`/donnees`** (nouvelle : les 224
-> tables des deux gisements, une commande par colonne mesurée, intervalles, présence, tri par
-> en-tête, export CSV). Chacune vérifiée **à l'écran**, `chromium --dump-dom` contre
-> `https://aphrody.com`, en comparant le premier élément rendu à celui que l'API trie.
+> **Le retard avait changé de côté ; il a été comblé le jour même**, puis les écrans câblés ont
+> été **fusionnés en un seul** sur décision de l'utilisateur — et cette décision a corrigé un
+> raisonnement écrit ici quelques heures plus tôt.
 >
-> Restent cinq filtres servis sans commande (#6, #10, #11, #36, #47) : ils appellent un écran
-> de **recherche globale**, et les greffer sur l'explorateur — qui *est* déjà un préfixe —
-> ferait deux façons de dire la même chose au même endroit.
+> Ce document affirmait que fondre l'explorateur et la recherche donnerait « deux façons de
+> dire la même chose au même endroit ». C'était vrai des *commandes*, faux du *geste* : on
+> cherche un fichier **pour** en lire les données, et séparer les deux obligeait à repasser par
+> l'accueil au milieu d'une seule question. La bonne unité n'était pas la source de données
+> (`/b`, `/api/v1/recherche`, `/api/v1/entites`) mais **ce qu'on regarde**.
+>
+> `/explorateur` porte donc les trois : une barre de recherche à deux portées, les filtres de
+> l'index repliés (glob, pack, borne haute), et un **panneau contextuel** — dossier courant, ou
+> asset sélectionné avec son format lu *par magic* et les tables pré-remplies par son code.
+> `/recherche` et `/donnees` y mènent toujours ; **aucune route API n'a changé**.
+>
+> **Ce qu'Inacord avait et que le web n'avait pas est porté** (`ExplorerView.tsx:75`, `:89`,
+> `:174`, `:178`, `:655`) : vue liste/grille, taille de vignette, palier de 300, navigation
+> clavier, vignettes avec pictogramme de repli. #12 et #13 — les deux dernières lignes « côté
+> client » de la matrice — sont servies.
+>
+> **Et deux défauts que seule la mesure a montrés.** `/b` rendait **50** fichiers par défaut :
+> un dossier de 373 se présentait comme un dossier de 50 **avec le bon total imprimé à côté**,
+> donc invisible à la lecture de l'écran. Et le proxy rend la texture **pleine** — 12,2 Mo
+> mesurés, `?w=`/`?size=`/`?cote=` tous ignorés — soit 600 Mo pour une grille de cinquante : la
+> grille ne charge que ce qui **est** déjà une miniature (512 ko), et affiche un pictogramme
+> au-delà plutôt qu'une image cassée.
 
 ---
 

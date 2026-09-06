@@ -63,17 +63,29 @@ maître du moteur et de la forge reste [`docs/PLAN.md`](docs/PLAN.md).
 > commune). Le plan annonçait `manquant = 42` — la mesure en a trouvé 5, et la moitié de l'écart
 > était **déjà servie** sans que le recensement, fait en lecture de code, le sache.
 >
-> **Le point ouvert a été comblé dans la foulée, et sans une ligne de Rust.** Trois pages
-> câblées : `/explorateur` (recherche, extension, tri, borne de taille, état dans l'URL),
-> les catalogues (extension, tri, taille de page), et **`/donnees`**, nouvelle — les 224 tables
-> des deux gisements, une commande par colonne **mesurée**, intervalles, présence, tri par
-> en-tête, export CSV. Vérifié à l'écran par `chromium --dump-dom` sur `https://aphrody.com` à
-> chaque fois, jamais sur le diff.
+> **Le point ouvert a été comblé dans la foulée, et sans une ligne de Rust** — puis les trois
+> écrans câblés ont été **fusionnés en un seul**, sur décision de l'utilisateur.
 >
-> **Reste cinq filtres servis sans commande** — #6 préfixe, #10 CPK, #11 glob, #36 langue,
-> #47 facettes chiffrées : ils appellent un écran de **recherche globale** qui n'existe pas
-> encore, et les greffer sur l'explorateur ferait deux façons de dire la même chose au même
-> endroit. Détail : amendement 8 de
+> `/explorateur` est désormais **la** page : une barre de recherche à deux portées (ce dossier
+> par `/b`, tout le sous-arbre par `/api/v1/recherche?prefixe=`), les filtres de l'index
+> repliés (glob, pack CPK, borne haute), et un **panneau de droite contextuel** — le dossier
+> courant, ou l'asset sélectionné avec son format lu **par magic**, et sous lui les 224 tables
+> pré-remplies par le code de l'asset. `/recherche` et `/donnees` y mènent toujours : aucun
+> lien publié n'a été cassé, aucune route API n'a bougé.
+>
+> **Ce qu'Inacord avait et que le web n'avait pas est porté** (`ExplorerView.tsx`) : vue
+> liste/grille, taille de vignette, palier de 300 entrées, navigation clavier, vignettes avec
+> pictogramme de repli. Les deux dernières lignes « côté client » de la matrice (#12, #13) sont
+> donc servies elles aussi.
+>
+> **Deux défauts que seule la mesure a montrés**, et que la relecture n'aurait pas vus :
+> `/b` rendait **50** fichiers par défaut — un dossier de 373 se présentait comme un dossier de
+> 50 *avec le bon total à côté* ; et le proxy rend la texture **pleine** (12,2 Mo mesurés, et
+> `?w=`/`?size=`/`?cote=` sont tous ignorés), soit 600 Mo pour une grille de cinquante. La
+> grille ne charge donc que ce qui **est** déjà une miniature, et le dit.
+>
+> **Reste hors interface** : #47 (facettes chiffrées, publiées mais pas dessinées) et les cinq
+> `ABSENT` de l'API, dont trois sont des refus argumentés. Détail : amendement 8 de
 > [`docs/PLAN-SITE-ULTIME.md`](docs/PLAN-SITE-ULTIME.md) et `docs/FILTRES.md` § 5.
 
 > **Amendement du 2026-09-06 (6) — la matrice de couverture existe, et la gate est rompue.**
