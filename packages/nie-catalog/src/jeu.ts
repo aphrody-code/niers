@@ -208,6 +208,11 @@ export function menuSettingPath(screen: string): string {
 	return cheminTypee(`data/common/gamedata/menu/cfg/${screen}_setting.cfg.bin`);
 }
 
+/** `/api/v1/menu/settings/<screen>` — définition typée publiée par `nie-site`. */
+export function menuSettingApiPath(screen: string): string {
+	return `/api/v1/menu/settings/${encodeURIComponent(screen)}`;
+}
+
 /**
  * `/model-full/<code>.glb` — un personnage assemblé (corps + visage + uniforme).
  *

@@ -166,4 +166,11 @@ describe("la forme des URL", () => {
 			`${B}/typed/data/common/gamedata/menu/cfg/main_menu_setting.cfg.bin.json`,
 		);
 	});
+
+	test("un écran menu utilise aussi la route publique de nie-site", () => {
+		expect(jeu.menuSettingApiPath("main_menu")).toBe("/api/v1/menu/settings/main_menu");
+		expect(jeu.menuSettingApiPath("screen with/slash")).toBe(
+			"/api/v1/menu/settings/screen%20with%2Fslash",
+		);
+	});
 });
