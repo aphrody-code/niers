@@ -17,6 +17,7 @@ import {
 	type ContenuDossier,
 	type EntreeVfs,
 	type OptionsPage,
+	type OptionsParcours,
 } from "./contract";
 import {
 	cheminAudio,
@@ -74,14 +75,31 @@ export function creerWebSource({ origine = "" }: OptionsWebSource = {}): AssetSo
 			return santeSite(signal);
 		},
 
-		async parcourir(prefixe: string, signal?: AbortSignal): Promise<ContenuDossier> {
-			const brut = await lire<{ dossiers?: string[]; fichiers?: EntreeVfs[] }>(
-				abs(urlDossier(prefixe)),
-				signal,
-			);
+		async parcourir(prefixe: string, options: OptionsParcours = {}): Promise<ContenuDossier> {
+			const brut = await lire<{
+				dossiers?: string[];
+				fichiers?: EntreeVfs[];
+				total_fichiers?: number;
+				total_fichiers_sans_filtre?: number;
+				filtres?: { q?: string | null; ext?: string | null; ext_inconnue?: boolean };
+			}>(abs(urlDossier(prefixe, options)), options.signal);
 			// Le serveur omet une clé vide plutôt que de rendre un tableau nul ; on normalise
 			// ici pour que l'appelant n'ait jamais à tester l'absence.
-			return { prefixe, dossiers: brut.dossiers ?? [], fichiers: brut.fichiers ?? [] };
+			return {
+				prefixe,
+				dossiers: brut.dossiers ?? [],
+				fichiers: brut.fichiers ?? [],
+				total: brut.total_fichiers,
+				totalSansFiltre: brut.total_fichiers_sans_filtre,
+				// On republie ce que LE SERVEUR dit avoir appliqué, jamais ce qu'on lui a
+				// demandé : les deux ne coïncident pas toujours — une extension inconnue
+				// ressort à `null`, avec son `ext_inconnue`.
+				filtres: {
+					q: brut.filtres?.q ?? undefined,
+					ext: brut.filtres?.ext ?? undefined,
+					extInconnue: brut.filtres?.ext_inconnue ?? undefined,
+				},
+			};
 		},
 
 		catalogue(vue: VueCatalogue, options: OptionsPage = {}): Promise<Page<EntreeVfs>> {

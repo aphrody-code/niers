@@ -21,6 +21,7 @@ import {
 	type CapacitesSource,
 	type ContenuDossier,
 	type EntreeVfs,
+	type OptionsParcours,
 	type SanteApi,
 	type VueCatalogue,
 } from "@niers/asset-source";
@@ -99,12 +100,36 @@ export function creerDesktopSource(racineJeu?: string): AssetSource {
 			};
 		},
 
-		async parcourir(prefixe: string): Promise<ContenuDossier> {
+		async parcourir(prefixe: string, options: OptionsParcours = {}): Promise<ContenuDossier> {
 			const ls = await api.ls(prefixe, racineJeu);
+			const tous = (ls?.files ?? []) as unknown as EntreeVfs[];
+			// Le filtre est appliqué ICI, pas par l'IPC : `ls` rend le dossier entier de toute
+			// façon, et un dossier du VFS tient en quelques milliers d'entrées. Filtrer en
+			// mémoire donne donc le même résultat que le filtre serveur d'Aphrody, pour le même
+			// coût de transport — l'asymétrie serait fausse sur une VUE (six extensions,
+			// 255 308 entrées), pas sur un dossier.
+			const q = options.q?.trim().toLowerCase();
+			const ext = options.ext?.trim().replace(/^\./, "").toLowerCase();
+			const fichiers = tous.filter(
+				(f) =>
+					(!q || f.chemin.toLowerCase().includes(q)) &&
+					(!ext || f.nom.toLowerCase().endsWith(`.${ext}`)),
+			);
 			return {
 				prefixe,
 				dossiers: (ls?.dirs ?? []).map((d) => d.name),
-				fichiers: (ls?.files ?? []) as unknown as EntreeVfs[],
+				fichiers,
+				total: fichiers.length,
+				totalSansFiltre: tous.length,
+				filtres: {
+					q: q || undefined,
+					ext: ext || undefined,
+					// Meme information que cote serveur, mesuree sur le meme jeu de fichiers :
+					// l'extension demandee n'apparait sur aucune entree de ce dossier.
+					extInconnue: ext
+						? !tous.some((f) => f.nom.toLowerCase().endsWith(`.${ext}`))
+						: undefined,
+				},
 			};
 		},
 

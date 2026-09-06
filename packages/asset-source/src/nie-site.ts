@@ -12,8 +12,22 @@
 /** Une ressource du jeu, par son chemin VFS exact. */
 export const urlFichier = (cheminVfs: string) => `/f/${cheminVfs}`;
 
-/** Le contenu d'un prefixe du VFS. */
-export const urlDossier = (prefixe = "") => (prefixe ? `/b/${prefixe}` : "/b");
+/**
+ * Le contenu d'un prefixe du VFS, filtres compris.
+ *
+ * Les filtres voyagent en QUERY parce que ce n'en sont pas des chemins ; le prefixe, lui, reste
+ * en segment (amendement A3). Une valeur vide n'est pas envoyee : `/b?q=` est un `400` cote
+ * serveur, et a raison de l'etre — ni « pas de filtre » ni « egal a la chaine vide » ne sont
+ * devinables.
+ */
+export const urlDossier = (prefixe = "", filtres: { q?: string; ext?: string } = {}) => {
+	const base = prefixe ? `/b/${prefixe}` : "/b";
+	const params = new URLSearchParams();
+	if (filtres.q?.trim()) params.set("q", filtres.q.trim());
+	if (filtres.ext?.trim()) params.set("ext", filtres.ext.trim().replace(/^\./, ""));
+	const query = params.toString();
+	return query ? `${base}?${query}` : base;
+};
 
 /** Les quatre filtres enregistres servis par `/api/v1/<vue>`. */
 export type VueCatalogue = "textures" | "modeles" | "sons" | "videos";

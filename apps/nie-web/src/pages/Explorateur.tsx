@@ -12,10 +12,28 @@
  * Les chemins du jeu sont le CONTENU de cette page, et à ce titre ils s'affichent. Ce qui n'y a
  * pas sa place, et en a disparu, c'est le vocabulaire d'implémentation — index, montage, hôte,
  * message d'erreur du transport : le lecteur explore des fichiers, il n'exploite pas un service.
+ *
+ * ## Les filtres, et pourquoi ils arrivent après
+ *
+ * `scripts/validation/mesurer-matrice-filtres.sh` a mesuré le 2026-09-06 que le serveur servait
+ * **34 filtres sur 48** et que cette page en utilisait **zéro** : l'écart n'était plus « il
+ * manque du serveur », il était « le client n'utilise pas ce qui est servi ». Deux filtres sont
+ * câblés ici — la sous-chaîne et l'extension — parce que ce sont ceux que `/b` applique, et
+ * qu'un troisième qui ne serait pas appliqué serait pire que pas de troisième du tout.
+ *
+ * Trois choix qui ne sont pas cosmétiques :
+ *
+ * - **le filtre passe par l'URL** (`?d=…&q=…&ext=…`). Sans cela il n'est ni partageable, ni
+ *   indexable, ni conservé au rechargement — et ajouter dix facettes en `useState` ne ferait
+ *   que dupliquer une dette déjà relevée sur Inacord ;
+ * - **la recherche se soumet**, elle ne se déclenche pas à la frappe : chaque caractère
+ *   coûterait une requête au serveur pour un résultat que personne ne lit ;
+ * - **le compte est celui du serveur**, pas la longueur du tableau reçu. Les deux diffèrent dès
+ *   qu'une page est tronquée, et afficher la seconde en la nommant « fichiers » serait faux.
  */
 import type { ContenuDossier } from "@niers/asset-source";
 import { useAssetSource, useCapacites } from "@niers/inacord-ui";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { accorde, Note, TitreVue } from "./Ecran";
 
 /** Formate une taille en octets. */
@@ -37,10 +55,47 @@ function fil(prefixe: string): { nom: string; chemin: string }[] {
 	return segments.map((nom, i) => ({ nom, chemin: segments.slice(0, i + 1).join("/") }));
 }
 
+/**
+ * L'état lisible dans l'URL courante.
+ *
+ * Lu une fois au montage : c'est l'URL qui amorce la page, ensuite c'est la page qui écrit
+ * l'URL. L'inverse — relire l'URL à chaque rendu — ferait de chaque frappe une navigation.
+ */
+function etatDeLUrl(): { prefixe: string; q: string; ext: string } {
+	const p = new URLSearchParams(window.location.search);
+	return { prefixe: p.get("d") ?? "", q: p.get("q") ?? "", ext: p.get("ext") ?? "" };
+}
+
+/**
+ * Écrit l'état dans l'URL sans empiler d'entrée d'historique.
+ *
+ * `replaceState` et non `pushState` : filtrer n'est pas naviguer, et vingt frappes ne doivent
+ * pas coûter vingt appuis sur « précédent ». Le `pathname` n'est pas touché — c'est lui qui
+ * porte la vue (`App.tsx:64-66`), et l'écraser ferait sortir de la page.
+ */
+function ecrireUrl(etat: { prefixe: string; q: string; ext: string }) {
+	const url = new URL(window.location.href);
+	for (const [cle, valeur] of [
+		["d", etat.prefixe],
+		["q", etat.q],
+		["ext", etat.ext],
+	] as const) {
+		if (valeur) url.searchParams.set(cle, valeur);
+		else url.searchParams.delete(cle);
+	}
+	window.history.replaceState(window.history.state, "", url);
+}
+
 export function Explorateur() {
 	const source = useAssetSource();
 	const capacites = useCapacites();
-	const [prefixe, setPrefixe] = useState("");
+	const initial = useMemo(etatDeLUrl, []);
+	const [prefixe, setPrefixe] = useState(initial.prefixe);
+	// `saisie` est ce qui est tapé, `q` ce qui est appliqué. Les confondre relancerait une
+	// requête par caractère.
+	const [saisie, setSaisie] = useState(initial.q);
+	const [q, setQ] = useState(initial.q);
+	const [ext, setExt] = useState(initial.ext);
 	const [contenu, setContenu] = useState<ContenuDossier | null>(null);
 	const [erreur, setErreur] = useState(false);
 
@@ -48,8 +103,9 @@ export function Explorateur() {
 		if (!capacites?.vfs) return;
 		const ac = new AbortController();
 		setErreur(false);
+		ecrireUrl({ prefixe, q, ext });
 		source
-			.parcourir(prefixe, ac.signal)
+			.parcourir(prefixe, { q: q || undefined, ext: ext || undefined, signal: ac.signal })
 			.then((c) => {
 				if (!ac.signal.aborted) setContenu(c);
 			})
@@ -57,7 +113,7 @@ export function Explorateur() {
 				if (!ac.signal.aborted) setErreur(true);
 			});
 		return () => ac.abort();
-	}, [source, capacites?.vfs, prefixe]);
+	}, [source, capacites?.vfs, prefixe, q, ext]);
 
 	if (!capacites) return <Note>Chargement…</Note>;
 	if (!capacites.vfs) {
@@ -69,12 +125,80 @@ export function Explorateur() {
 
 	const segments = fil(prefixe);
 	const elements = contenu ? contenu.dossiers.length + contenu.fichiers.length : 0;
+	// Le compte vient du SERVEUR (`total_fichiers`), pas de la longueur du tableau reçu : les
+	// deux diffèrent dès qu'une page est tronquée.
+	const retenus = contenu?.total ?? contenu?.fichiers.length ?? 0;
+	const avantFiltre = contenu?.totalSansFiltre ?? retenus;
+	const filtre = Boolean(q || ext);
+	// Le serveur distingue « 0 résultat » de « cette extension n'existe pas ici », et cette
+	// nuance est la seule qui aide : sans elle, une faute de frappe se présente comme un dossier
+	// vide. On lit donc son drapeau plutôt que d'en déduire un.
+	const extIntrouvable = Boolean(contenu?.filtres?.extInconnue);
 
 	return (
 		<section>
 			<TitreVue appoint={contenu ? accorde(elements, "entrée") : undefined}>
 				Explorer
 			</TitreVue>
+
+			{/*
+			  * La recherche se SOUMET. `form` plutôt qu'un `onChange` : la touche Entrée marche
+			  * sans code, et le navigateur annonce le champ comme une recherche.
+			  */}
+			<form
+				onSubmit={(e) => {
+					e.preventDefault();
+					setQ(saisie.trim());
+				}}
+				style={{
+					display: "flex",
+					flexWrap: "wrap",
+					gap: "var(--jeu-espace-s)",
+					margin: "var(--jeu-espace-m) 0",
+				}}
+			>
+				<input
+					type="search"
+					value={saisie}
+					onChange={(e) => setSaisie(e.target.value)}
+					placeholder="Chercher dans ce dossier"
+					aria-label="Chercher dans ce dossier"
+					style={{ ...champ, flex: "1 1 14rem" }}
+				/>
+				<input
+					type="text"
+					value={ext}
+					onChange={(e) => setExt(e.target.value.trim().replace(/^\./, ""))}
+					placeholder="Extension"
+					aria-label="Filtrer par extension"
+					style={{ ...champ, flex: "0 0 8rem" }}
+				/>
+				<button type="submit" style={bouton}>
+					Chercher
+				</button>
+				{filtre ? (
+					<button
+						type="button"
+						onClick={() => {
+							setSaisie("");
+							setQ("");
+							setExt("");
+						}}
+						style={{ ...bouton, fontWeight: 400 }}
+					>
+						Tout effacer
+					</button>
+				) : null}
+			</form>
+
+			{contenu ? (
+				<p style={{ margin: "0 0 var(--jeu-espace-m)", fontSize: "0.9rem", opacity: 0.8 }}>
+					{filtre
+						? `${accorde(retenus, "fichier")} sur ${avantFiltre}`
+						: accorde(retenus, "fichier")}
+					{extIntrouvable ? " — aucun fichier de ce type dans ce dossier" : ""}
+				</p>
+			) : null}
 
 			{/* Fil d'Ariane. `nav` + `aria-label` pour que la remontée soit annoncée comme telle. */}
 			<nav aria-label="Chemin" style={{ margin: "var(--jeu-espace-m) 0", fontSize: "0.9rem" }}>
@@ -127,7 +251,13 @@ export function Explorateur() {
 							</a>
 						</li>
 					))}
-					{elements === 0 ? <Note>Ce dossier est vide.</Note> : null}
+					{elements === 0 ? (
+						<Note>
+							{filtre
+								? "Rien ne correspond ici. Effacez le filtre pour revoir le dossier."
+								: "Ce dossier est vide."}
+						</Note>
+					) : null}
 				</ul>
 			)}
 		</section>
@@ -169,6 +299,25 @@ const lien: React.CSSProperties = {
 	fontWeight: 700,
 	padding: 0,
 	textDecoration: "underline",
+};
+
+const champ: React.CSSProperties = {
+	padding: "var(--jeu-espace-xs) var(--jeu-espace-s)",
+	border: "1px solid var(--jeu-tuile-bord)",
+	borderRadius: "var(--jeu-rayon-s, 4px)",
+	font: "inherit",
+	minWidth: 0,
+};
+
+const bouton: React.CSSProperties = {
+	padding: "var(--jeu-espace-xs) var(--jeu-espace-m)",
+	border: "1px solid var(--jeu-tuile-bord)",
+	borderRadius: "var(--jeu-rayon-s, 4px)",
+	background: "var(--jeu-tuile-haut, transparent)",
+	color: "inherit",
+	font: "inherit",
+	fontWeight: 700,
+	cursor: "pointer",
 };
 
 const ligne: React.CSSProperties = {

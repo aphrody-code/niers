@@ -54,6 +54,47 @@ export interface ContenuDossier {
 	prefixe: string;
 	dossiers: string[];
 	fichiers: EntreeVfs[];
+	/** Nombre de fichiers retenus par le filtre. Absent : l'hôte ne le compte pas. */
+	total?: number;
+	/** Nombre de fichiers du dossier AVANT filtre — ce qui donne son sens au précédent. */
+	totalSansFiltre?: number;
+	/**
+	 * Ce que l'hôte a réellement appliqué.
+	 *
+	 * Republié, et pas seulement accepté : c'est la leçon du lot 8 côté serveur, et elle vaut
+	 * ici pour la même raison. Un filtre appliqué sans être avoué ne se distingue pas, vu de
+	 * l'appelant, d'un filtre avalé.
+	 */
+	filtres?: {
+		q?: string;
+		ext?: string;
+		/**
+		 * L'extension demandée n'existe nulle part dans ce dossier.
+		 *
+		 * Distinct de « zéro résultat » : le serveur applique bien le filtre et retient 0, mais
+		 * il sait dire que la valeur elle-même est introuvable. Sans ce drapeau, une faute de
+		 * frappe se présente comme un dossier vide.
+		 */
+		extInconnue?: boolean;
+	};
+}
+
+/**
+ * Ce qu'on peut demander en parcourant un dossier.
+ *
+ * **L'asymétrie est réelle et assumée.** Aphrody filtre côté serveur (`/b?q=&ext=`, index trié
+ * de 255 308 chemins) ; Inacord reçoit le dossier entier par IPC et filtre en mémoire. Les deux
+ * rendent la même chose pour un dossier, et c'est ce qui compte ici : un dossier du VFS tient
+ * en quelques milliers d'entrées, jamais en 255 308. Là où l'asymétrie serait fausse — la
+ * pagination d'une VUE, qui recouvre six extensions — le contrat ne l'expose pas du tout (voir
+ * `catalogue`).
+ */
+export interface OptionsParcours {
+	/** Sous-chaîne comparée sans casse au chemin entier. Absente : aucun filtre. */
+	q?: string;
+	/** Extension exacte, sans le point. Absente : aucun filtre. */
+	ext?: string;
+	signal?: AbortSignal;
 }
 
 /** Options communes aux listes paginées. `parPage` est borné par le serveur. */
@@ -82,7 +123,7 @@ export interface AssetSource {
 	sante(signal?: AbortSignal): Promise<SanteApi>;
 
 	/** Le contenu d'un préfixe du VFS. Préfixe vide = la racine. */
-	parcourir(prefixe: string, signal?: AbortSignal): Promise<ContenuDossier>;
+	parcourir(prefixe: string, options?: OptionsParcours): Promise<ContenuDossier>;
 
 	/**
 	 * Une page d'un filtre enregistré (`textures`, `modeles`, `sons`, `videos`).
