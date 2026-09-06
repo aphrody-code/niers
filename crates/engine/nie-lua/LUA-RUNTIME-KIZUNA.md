@@ -64,6 +64,9 @@ sur les modules VFS inclus.
 `LuaSession::call_menu_callback` expose aussi les événements host→Lua de
 navigation (`OnSetupLayer`, `OnOpenLayer`, `OnCloseLayer`, `OnCloseEndLayer`,
 `OnChangeLayerGroup`) sur la même VM, avec injection de contexte par événement.
+`DriveReport` expose désormais `frames_requested`, `frames_executed` et le
+compteur par callback ; l’ordre et la couverture de la boucle de frames sont
+ainsi vérifiables sans déduire le résultat de l’état final seul.
 
 `execute_with_script_paths` centralise désormais le chemin brut VFS → index des
 scripts → résolution logique/versionnée → VM. `lua-run` et `lua-audit` l’utilisent

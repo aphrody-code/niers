@@ -2089,6 +2089,12 @@ pub struct DriveReport {
     pub on_init: Option<bool>,
     /// `OnOpenLayer(layerId)` a été appelé sans erreur sur ≥1 layerId candidat.
     pub on_open: bool,
+    /// Nombre de frames demandées au driver.
+    pub frames_requested: u32,
+    /// Nombre de cycles de frame réellement exécutés.
+    pub frames_executed: u32,
+    /// Nombre d'appels tentés par callback, erreurs comprises.
+    pub callback_invocations: BTreeMap<String, usize>,
     /// Callbacks de cycle de vie présents (fonctions globales définies par le script).
     pub callbacks: Vec<String>,
     /// Erreurs de callbacks capturées pendant le pilotage (nom + contexte), sans interrompre
@@ -2139,7 +2145,10 @@ pub fn drive_menu_for_frames(
 ) -> Result<DriveReport, LuaError> {
     let func = crate::load_bytecode(lua, script_bytes, name)?;
 
-    let mut report = DriveReport::default();
+    let mut report = DriveReport {
+        frames_requested: frames,
+        ..DriveReport::default()
+    };
 
     // Exécution top-level : définit les callbacks (OnInit, OnSetupLayer, …). Tolérante :
     // un script peut échouer en route mais avoir déjà défini ses callbacks (cf. main_menu
@@ -2159,6 +2168,7 @@ pub fn drive_menu_for_frames(
 
     // OnInit() — SANS argument (vérité terrain : la séquence du manager).
     if let Ok(Value::Function(f)) = g.raw_get::<Value>("OnInit") {
+        count_callback(&mut report, "OnInit");
         match f.call::<MultiValue>(()) {
             Ok(_) => report.on_init = Some(true),
             Err(e) => {
@@ -2177,6 +2187,7 @@ pub fn drive_menu_for_frames(
         for idx in 0..count {
             for cb in ["OnSetupLayer", "OnOpenLayer", "OnEnter"] {
                 if let Ok(Value::Function(f)) = g.raw_get::<Value>(cb) {
+                    count_callback(&mut report, cb);
                     let result = f.call::<MultiValue>((lid as f64, f64::from(idx)));
                     let ok = result.is_ok();
                     if let Err(e) = result {
@@ -2202,18 +2213,28 @@ pub fn drive_menu_for_frames(
         if let Some(Value::Function(f)) = &pre_step
             && let Err(e) = f.call::<MultiValue>(())
         {
+            count_callback(&mut report, "PreStep");
             report.callback_errors.push(format!("PreStep: {e}"));
+        } else if matches!(&pre_step, Some(Value::Function(_))) {
+            count_callback(&mut report, "PreStep");
         }
         if let Some(Value::Function(f)) = &step
             && let Err(e) = f.call::<MultiValue>(())
         {
+            count_callback(&mut report, "Step");
             report.callback_errors.push(format!("Step: {e}"));
+        } else if matches!(&step, Some(Value::Function(_))) {
+            count_callback(&mut report, "Step");
         }
         if let Some(Value::Function(f)) = &post_step
             && let Err(e) = f.call::<MultiValue>(())
         {
+            count_callback(&mut report, "PostStep");
             report.callback_errors.push(format!("PostStep: {e}"));
+        } else if matches!(&post_step, Some(Value::Function(_))) {
+            count_callback(&mut report, "PostStep");
         }
+        report.frames_executed += 1;
     }
 
     // Inventaire des callbacks de cycle de vie présents (diagnostic).
@@ -2242,6 +2263,13 @@ pub fn drive_menu_for_frames(
     report.missing_host_paths = collect_missing_paths(&g, "_HOST_MISSING_PATHS");
 
     Ok(report)
+}
+
+fn count_callback(report: &mut DriveReport, callback: &str) {
+    *report
+        .callback_invocations
+        .entry(callback.to_string())
+        .or_default() += 1;
 }
 
 fn collect_missing_paths(globals: &mlua::Table, table_name: &str) -> Vec<String> {
@@ -3386,6 +3414,11 @@ mod dispatch_tests {
             drive_menu_for_frames(&lua, &bytes, "step-order", &[], &BTreeMap::new(), 2).unwrap();
         assert!(report.callbacks.contains(&"PreStep".to_string()));
         assert!(report.callbacks.contains(&"PostStep".to_string()));
+        assert_eq!(report.frames_requested, 2);
+        assert_eq!(report.frames_executed, 2);
+        assert_eq!(report.callback_invocations.get("PreStep"), Some(&2));
+        assert_eq!(report.callback_invocations.get("Step"), Some(&2));
+        assert_eq!(report.callback_invocations.get("PostStep"), Some(&2));
         assert_eq!(lua.globals().get::<String>("trace").unwrap(), "PSTPST");
     }
 
