@@ -40,7 +40,7 @@ use crate::menu_host::{DriveReport, MenuState};
 use crate::runtime::{
     GlobalEntry, install_host_stubs, install_print_capture, list_globals, value_to_string,
 };
-use crate::{ChunkMode, LuaError, is_lua52_bytecode};
+use crate::{ChunkMode, LuaError, index_script_paths, is_lua52_bytecode, resolve_script_path};
 
 /// Points d'entrée standard d'un comportement, dans l'ordre du cycle de vie d'Overload.
 ///
@@ -176,6 +176,36 @@ impl LuaSession {
         F: Fn(&str) -> Option<Vec<u8>> + 'static,
     {
         Self::new_with_resolver(registry, logs, with_menu_host, Some(Rc::new(resolver)))
+    }
+
+    /// Crée une session dont `INCLUDE` lit directement un index de chemins VFS.
+    ///
+    /// `paths` doit contenir les chemins physiques des chunks (`.lua.bin`) et `reader` les lit
+    /// depuis le VFS brut. La résolution accepte les noms physiques, les basenames et les noms
+    /// logiques `LUA_*`, en sélectionnant la version numérique la plus récente.
+    ///
+    /// # Errors
+    /// [`LuaError`] si l'installation de l'hôte ou de `INCLUDE` échoue.
+    pub fn with_script_paths<I, F>(
+        registry: HostRegistry,
+        logs: LogSink,
+        with_menu_host: bool,
+        paths: I,
+        reader: F,
+    ) -> Result<Self, LuaError>
+    where
+        I: IntoIterator<Item = String>,
+        F: Fn(&str) -> Option<Vec<u8>> + 'static,
+    {
+        let paths = paths.into_iter().collect::<Vec<_>>();
+        let (by_name, by_logical) = index_script_paths(paths.iter().map(String::as_str));
+        let by_name = Rc::new(by_name);
+        let by_logical = Rc::new(by_logical);
+        let reader = Rc::new(reader);
+        Self::with_include(registry, logs, with_menu_host, move |name| {
+            let path = resolve_script_path(name, &by_name, &by_logical)?;
+            reader(path)
+        })
     }
 
     fn new_with_resolver(
@@ -542,6 +572,24 @@ mod tests {
             .expect("include absent toléré");
         assert_eq!(s.take_missing_includes(), vec!["LUA_MISSING"]);
         assert!(s.take_missing_includes().is_empty());
+    }
+
+    #[test]
+    fn la_session_indexe_un_include_vfs_versionne() {
+        let logs: LogSink = Rc::new(RefCell::new(Vec::new()));
+        let registry = HostRegistry::standard(Rc::clone(&logs));
+        let paths = vec![
+            "data/common/script/lua/menu/module_9.lua.bin".to_string(),
+            "data/common/script/lua/menu/module_10.lua.bin".to_string(),
+        ];
+        let session = LuaSession::with_script_paths(registry, logs, false, paths, |path| {
+            (path.ends_with("module_10.lua.bin")).then(|| b"vfs_value = 42".to_vec())
+        })
+        .expect("session VFS");
+        session
+            .exec("main", br#"INCLUDE("LUA_MODULE"); assert(vfs_value == 42)"#)
+            .expect("include VFS versionné");
+        assert_eq!(session.take_loaded_includes(), vec!["LUA_MODULE"]);
     }
 
     #[test]

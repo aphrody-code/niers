@@ -43,6 +43,11 @@ La même instrumentation est maintenant disponible sur `LuaSession` via
 ce qui permet à une console ou à un pilotage live de distinguer un module
 réellement chargé d’un simple état global déjà présent.
 
+`LuaSession::with_script_paths` fournit désormais le branchement VFS standard :
+il construit l’index physique/logique, sélectionne la version numérique correcte
+et délègue la lecture au reader brut de l’appelant. Un test vérifie la sélection
+de `module_10` devant `module_9`.
+
 `menu_host` couvre les commandes Kizuna de visibilité, couleur RGBA, paramètres,
 texture et application de flags. Les commandes générales identifiées par le RE
 sont décodées avec leur protocole de retour ; les requêtes d’état sans donnée
