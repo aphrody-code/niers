@@ -17,9 +17,7 @@ pub fn run(
     with_menu_host: bool,
     disassemble: bool,
 ) -> anyhow::Result<()> {
-    let root = game_dir
-        .map(PathBuf::from)
-        .unwrap_or_else(resolve_game_dir);
+    let root = game_dir.map(PathBuf::from).unwrap_or_else(resolve_game_dir);
     let mut vfs = Vfs::new();
     vfs.init(root.join("data"))
         .with_context(|| format!("montage VFS de {}", root.display()))?;
@@ -59,12 +57,10 @@ pub fn run(
     })
     .map_err(|error| anyhow::anyhow!("exécution Lua de {name} : {error}"))?;
     let disassembly = if disassemble {
-        Some(
-            nie_lua::bytecode::disassemble(
-                &nie_lua::bytecode::parse(&bytes)
-                    .map_err(|error| anyhow::anyhow!("décodage de {name} : {error}"))?,
-            ),
-        )
+        Some(nie_lua::bytecode::disassemble(
+            &nie_lua::bytecode::parse(&bytes)
+                .map_err(|error| anyhow::anyhow!("décodage de {name} : {error}"))?,
+        ))
     } else {
         None
     };
@@ -79,6 +75,7 @@ pub fn run(
             "missingHostCalls": output.missing_host_calls,
             "missingHostPaths": output.missing_host_paths,
             "missingIncludes": output.missing_includes,
+            "loadedIncludes": output.loaded_includes,
             "durationMs": output.duration_ms,
             "error": output.error,
             "disassembly": disassembly,

@@ -14,6 +14,8 @@ runtime est opérationnel pour le menu `kizuna_town_mainmenu`.
   manquant.
 - Runtime Kizuna : **102 commandes connues**, 0 commande menu inconnue,
   0 commande générale inconnue.
+- Trace `INCLUDE` Kizuna : **25 modules distincts résolus**, 0 include manquant
+  (les 25 scripts audités partagent bien les modules dans la résolution VFS).
 - Export runtime : 21 objets de layout, 8 objets Lua, 12 objets mutés,
   10 masqués, 9 sprites et 9 textes mis à jour.
 
@@ -22,6 +24,10 @@ runtime est opérationnel pour le menu `kizuna_town_mainmenu`.
 `LuaSession` conserve désormais le même état de menu lors de l’exécution et du
 rechargement de VM. `drive_menu_for_frames` permet d’exécuter plusieurs frames
 avec le même résolveur d’include et le même hôte.
+
+`ExecOutput` expose désormais `loaded_includes`, dans l’ordre réel de chargement.
+`lua-run` le rend dans `loadedIncludes` et `lua-audit` l’agrège par nom de module,
+ce qui rend la résolution VFS observable et vérifiable.
 
 `menu_host` couvre les commandes Kizuna de visibilité, couleur RGBA, paramètres,
 texture et application de flags. Les commandes générales identifiées par le RE

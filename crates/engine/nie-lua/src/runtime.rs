@@ -66,6 +66,12 @@ pub struct ExecOutput {
     pub missing_host_paths: Vec<String>,
     /// Modules demandés par `INCLUDE` mais absents du résolveur VFS.
     pub missing_includes: Vec<String>,
+    /// Modules effectivement résolus et exécutés par `INCLUDE`, dans l'ordre de chargement.
+    ///
+    /// Cette trace est volontairement conservée séparément des includes manquants : elle permet
+    /// de vérifier le chemin VFS brut → chunk → VM sans déduire un succès de la seule absence
+    /// d'erreur.
+    pub loaded_includes: Vec<String>,
     /// Durée d'exécution en millisecondes.
     pub duration_ms: u64,
 }
@@ -209,10 +215,15 @@ fn execute_inner(
     lua.globals().set("CRC32", crc32)?;
 
     let missing_includes = Rc::new(RefCell::new(Vec::<String>::new()));
+    let loaded_includes = Rc::new(RefCell::new(Vec::<String>::new()));
     if let Some(resolver) = resolver {
         let missing = Rc::clone(&missing_includes);
+        let loaded = Rc::clone(&loaded_includes);
         crate::install_include(&lua, move |name| match resolver(name) {
-            Some(bytes) => Some(bytes),
+            Some(bytes) => {
+                loaded.borrow_mut().push(name.to_string());
+                Some(bytes)
+            }
             None => {
                 missing.borrow_mut().push(name.to_string());
                 None
@@ -289,6 +300,7 @@ fn execute_inner(
     out.missing_includes = missing_includes.borrow().clone();
     out.missing_includes.sort_unstable();
     out.missing_includes.dedup();
+    out.loaded_includes = loaded_includes.borrow().clone();
 
     Ok(out)
 }
@@ -464,6 +476,7 @@ mod tests {
         assert_eq!(out.returned, vec!["41", "292844459"]);
         assert!(!out.missing_host_calls.iter().any(|name| name == "INCLUDE"));
         assert!(out.missing_includes.is_empty());
+        assert_eq!(out.loaded_includes, vec!["COMMON"]);
     }
 
     #[test]

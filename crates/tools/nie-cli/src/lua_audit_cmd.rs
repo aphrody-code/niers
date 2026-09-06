@@ -17,9 +17,7 @@ pub fn run(
     instruction_limit: u32,
     menu_host: bool,
 ) -> anyhow::Result<()> {
-    let root = game_dir
-        .map(PathBuf::from)
-        .unwrap_or_else(resolve_game_dir);
+    let root = game_dir.map(PathBuf::from).unwrap_or_else(resolve_game_dir);
     let mut vfs = Vfs::new();
     vfs.init(root.join("data"))
         .with_context(|| format!("montage VFS de {}", root.display()))?;
@@ -44,6 +42,7 @@ pub fn run(
     let mut ok = 0usize;
     let mut errors = 0usize;
     let mut missing_includes: BTreeMap<String, usize> = BTreeMap::new();
+    let mut loaded_includes: BTreeMap<String, usize> = BTreeMap::new();
     let mut missing_hosts: BTreeMap<String, usize> = BTreeMap::new();
     let mut missing_host_paths: BTreeMap<String, usize> = BTreeMap::new();
     let mut samples = Vec::new();
@@ -54,7 +53,9 @@ pub fn run(
             Err(error) => {
                 errors += 1;
                 if samples.len() < 20 {
-                    samples.push(json!({ "script": path, "kind": "read", "error": error.to_string() }));
+                    samples.push(
+                        json!({ "script": path, "kind": "read", "error": error.to_string() }),
+                    );
                 }
                 continue;
             }
@@ -77,6 +78,9 @@ pub fn run(
                 for include in output.missing_includes {
                     *missing_includes.entry(include).or_default() += 1;
                 }
+                for include in output.loaded_includes {
+                    *loaded_includes.entry(include).or_default() += 1;
+                }
                 for host in output.missing_host_calls {
                     *missing_hosts.entry(host).or_default() += 1;
                 }
@@ -95,7 +99,9 @@ pub fn run(
             Err(error) => {
                 errors += 1;
                 if samples.len() < 20 {
-                    samples.push(json!({ "script": path, "kind": "load", "error": error.to_string() }));
+                    samples.push(
+                        json!({ "script": path, "kind": "load", "error": error.to_string() }),
+                    );
                 }
             }
         }
@@ -111,6 +117,7 @@ pub fn run(
             "ok": ok,
             "errors": errors,
             "missingIncludes": missing_includes,
+            "loadedIncludes": loaded_includes,
             "missingHostCalls": missing_hosts,
             "missingHostPaths": missing_host_paths,
             "samples": samples,
