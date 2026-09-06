@@ -31,10 +31,102 @@
  * confusion qui avait fait classer `bloqué` 3 600 fichiers que le dépôt savait lire.
  */
 import type { ContenuDossier, EntreeVfs } from "@niers/asset-source";
-import { useAssetSource, useCapacites } from "@niers/inacord-ui";
+import {
+	describeFilters,
+	GameCountBadge,
+	type GameFilterFamily,
+	GameFilterPanel,
+	type GameFilterValue,
+	type GameHint,
+	GameHintBar,
+	GameSearchBar,
+	GLYPHES,
+	useAssetSource,
+	useCapacites,
+} from "@niers/inacord-ui";
 import { useEffect, useMemo, useState } from "react";
 import { PanneauDonnees } from "./Donnees";
 import { accorde, Note, tailleLisible as taille, TitreVue } from "./Ecran";
+
+/**
+ * Le dialogue FILTRES du jeu, sur les réglages de l'explorateur.
+ *
+ * Cinq familles, dans l'ordre des onglets : l'extension et le pack (les deux dimensions que
+ * l'index porte vraiment, avec leurs comptes), le tri, l'affichage, la vignette. Les bornes de
+ * taille, le motif et le pack tapé à la main restent des champs libres sous la barre : une
+ * grille de cases ne sait pas dire « 3,5 Mo ».
+ *
+ * Vide veut dire « Tout » — donc le défaut : pas d'extension, pas de pack, tri par nom
+ * croissant, liste, vignettes de 96 px. C'est exactement ce que l'URL n'écrit pas.
+ */
+const TOUCHE_FILTRES = "f";
+const TOUCHE_RECHERCHE = "x";
+
+function familles(facettes: Facette[]): GameFilterFamily[] {
+	const valeurs = (colonne: string) =>
+		(facettes.find((f) => f.column === colonne)?.values ?? [])
+			.filter((v): v is { value: string; count: number } => Boolean(v.value))
+			.map((v) => ({ value: v.value, label: v.value, count: v.count }));
+	return [
+		{ id: "ext", label: "Extension", icon: GLYPHES.livre, options: valeurs("ext") },
+		{
+			id: "cpk",
+			label: "Pack",
+			icon: GLYPHES.cube,
+			options: valeurs("cpk").map((o) => ({ ...o, label: o.value.replace(/\.cpk$/, "").slice(0, 12) })),
+		},
+		{
+			id: "tri",
+			label: "Tri",
+			icon: GLYPHES.engrenage,
+			options: [
+				{ value: "nom-desc", label: "Nom (Z→A)" },
+				{ value: "taille-asc", label: "Taille (petits d'abord)" },
+				{ value: "taille-desc", label: "Taille (gros d'abord)" },
+			],
+		},
+		{
+			id: "vue",
+			label: "Affichage",
+			icon: GLYPHES.image,
+			options: [{ value: "grille", label: "Grille" }],
+		},
+		{
+			id: "cote",
+			label: "Vignette",
+			icon: GLYPHES.info,
+			options: COTES.filter((c) => c !== 96).map((c) => ({ value: String(c), label: `${c} px` })),
+		},
+	];
+}
+
+/** L'état de la page → les valeurs du panneau. Un défaut est « Tout », donc vide. */
+function valeurPanneau(e: Etat): GameFilterValue {
+	return {
+		ext: e.ext ? [e.ext] : [],
+		cpk: e.cpk ? [e.cpk] : [],
+		tri: e.tri === "nom" && e.ordre === "asc" ? [] : [`${e.tri}-${e.ordre}`],
+		vue: e.vue === "liste" ? [] : ["grille"],
+		cote: e.cote === 96 ? [] : [String(e.cote)],
+	};
+}
+
+/** Les valeurs confirmées → ce qui change dans l'état. Le pack n'existe que sur l'index. */
+function etatDuPanneau(v: GameFilterValue): Partial<Etat> {
+	const [t, o] = (v.tri?.[0] ?? "nom-asc").split("-");
+	const cpk = v.cpk?.[0] ?? "";
+	const cote = Number(v.cote?.[0] ?? 96);
+	return {
+		ext: v.ext?.[0] ?? "",
+		cpk,
+		tri: t === "taille" ? "taille" : "nom",
+		ordre: o === "desc" ? "desc" : "asc",
+		vue: v.vue?.[0] === "grille" ? "grille" : "liste",
+		cote: COTES.includes(cote as (typeof COTES)[number]) ? cote : 96,
+		choisi: "",
+		...(cpk ? { partout: true } : {}),
+	};
+}
 
 /**
  * Le code d'un asset : sa feuille, sans extension **ni numéro de version**.
@@ -246,6 +338,35 @@ export function Explorateur() {
 	// Le curseur du clavier prime sur la sélection : les flèches le déplacent, et il peut être
 	// posé sur un DOSSIER, que la sélection n'accepte pas (`ExplorerView.tsx:658`).
 	const [curseur, setCurseur] = useState<string | null>(null);
+	// Le dialogue FILTRES, et les facettes qui le remplissent : les extensions et les packs
+	// comptés SOUS le dossier courant, sans autre filtre. Elles ne dépendent que du préfixe —
+	// les recharger à chaque frappe recompterait 255 308 chemins pour la même liste.
+	const [panneau, setPanneau] = useState(false);
+	const [facettesIndex, setFacettesIndex] = useState<Facette[]>([]);
+
+	useEffect(() => {
+		if (!capacites?.vfs) return;
+		const ac = new AbortController();
+		const p = new URLSearchParams({ per_page: "1", facets: "ext,cpk" });
+		if (prefixe) p.set("prefixe", prefixe);
+		fetch(`/api/v1/recherche?${p}`, { signal: ac.signal, headers: { accept: "application/json" } })
+			.then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+			.then((r: { facets?: Facette[] }) => {
+				if (!ac.signal.aborted) setFacettesIndex(r.facets ?? []);
+			})
+			.catch(() => {
+				// Sans facettes, le panneau propose ses familles fixes (tri, affichage) et des
+				// listes vides pour l'extension et le pack : les champs libres restent là.
+			});
+		return () => ac.abort();
+	}, [capacites?.vfs, prefixe]);
+
+	const famillesPanneau = useMemo(() => familles(facettesIndex), [facettesIndex]);
+	const valeurFiltres = useMemo(() => valeurPanneau(etat), [etat]);
+	const touches = useMemo<GameHint[]>(
+		() => [{ key: TOUCHE_FILTRES, label: "Filtres", onActivate: () => setPanneau(true) }],
+		[],
+	);
 
 	useEffect(() => {
 		if (!capacites?.vfs) return;
@@ -378,31 +499,31 @@ export function Explorateur() {
 				Explorer
 			</TitreVue>
 
-			{/* ── La barre : une recherche, deux portées, trois filtres ───────────────────── */}
-			<form
-				onSubmit={(e) => {
-					e.preventDefault();
-					modifier({ q: saisie.trim(), choisi: "" });
-				}}
+			{/* ── La barre : la recherche du jeu, sa portée, et le bouton FILTRES ─────────────
+			    Reprise de `data/menu/bank_character_detail.png` : la barre porte sa touche (« X »),
+			    et le dialogue FILTRES du jeu regroupe l'extension, le pack, le tri et l'affichage.
+			    Les champs libres (motif, bornes de taille) restent sous la barre : une grille de
+			    cases ne sait pas dire « 3,5 Mo ». */}
+			<div
+				className="game-description-bar"
 				style={{
 					display: "flex",
 					flexWrap: "wrap",
 					alignItems: "center",
-					gap: "var(--jeu-espace-s)",
+					gap: "var(--jeu-espace-m)",
 					margin: "var(--jeu-espace-m) 0",
 				}}
 			>
-				<input
-					type="search"
-					value={saisie}
-					onChange={(e) => setSaisie(e.target.value)}
-					placeholder={partout ? "Chercher dans tout le VFS" : "Chercher dans ce dossier"}
-					aria-label="Chercher"
-					style={{ ...CHAMP, flex: "1 1 16rem" }}
-				/>
-				<button type="submit" style={{ ...CHAMP, cursor: "pointer", fontWeight: 700 }}>
-					Chercher
-				</button>
+				<div style={{ flex: "1 1 18rem" }}>
+					<GameSearchBar
+						value={saisie}
+						onChange={setSaisie}
+						onSubmit={(q) => modifier({ q, choisi: "" })}
+						placeholder={partout ? "Chercher dans tout le VFS" : "Chercher dans ce dossier"}
+						label="Chercher"
+						hotkey={TOUCHE_RECHERCHE}
+					/>
+				</div>
 				<label style={{ ...ETIQUETTE, flexDirection: "row" }}>
 					<input
 						type="checkbox"
@@ -411,41 +532,7 @@ export function Explorateur() {
 					/>
 					Partout, sous ce dossier
 				</label>
-				<input
-					type="text"
-					value={ext}
-					onChange={(e) => modifier({ ext: e.target.value.trim().replace(/^\./, ""), choisi: "" })}
-					placeholder="Extension"
-					aria-label="Filtrer par extension"
-					style={{ ...CHAMP, width: "8rem" }}
-				/>
-				<select
-					value={`${tri}-${ordre}`}
-					onChange={(e) => {
-						const [t, o] = e.target.value.split("-");
-						modifier({ tri: t === "taille" ? "taille" : "nom", ordre: o === "desc" ? "desc" : "asc" });
-					}}
-					aria-label="Trier"
-					style={CHAMP}
-				>
-					<option value="nom-asc">Nom (A→Z)</option>
-					<option value="nom-desc">Nom (Z→A)</option>
-					<option value="taille-asc">Taille (petits d'abord)</option>
-					<option value="taille-desc">Taille (gros d'abord)</option>
-				</select>
-				<label style={{ ...ETIQUETTE, flexDirection: "row" }}>
-					Au moins
-					<input
-						type="text"
-						inputMode="decimal"
-						value={minMo}
-						onChange={(e) => modifier({ minMo: e.target.value })}
-						placeholder="0"
-						aria-label="Taille minimale en mégaoctets"
-						style={{ ...CHAMP, width: "4.5rem" }}
-					/>
-					Mo
-				</label>
+				<GameHintBar hints={touches} enabled={!panneau} />
 				{filtreActif ? (
 					<button
 						type="button"
@@ -463,19 +550,61 @@ export function Explorateur() {
 								partout: false,
 							});
 						}}
+						className="game-button-secondary"
 						style={{ ...CHAMP, cursor: "pointer" }}
 					>
 						Tout effacer
 					</button>
 				) : null}
-			</form>
+			</div>
+
+			{/* Ce que le dialogue a retenu, en clair — le pied du panneau n'est plus visible une
+			    fois qu'il est fermé, et un filtre qui ne se voit pas est un filtre qu'on oublie. */}
+			{describeFilters(famillesPanneau, valeurFiltres).length > 0 ? (
+				<p style={{ margin: "0 0 var(--jeu-espace-s)", fontSize: "0.9rem", fontWeight: 700 }}>
+					{describeFilters(famillesPanneau, valeurFiltres).join(" · ")}
+				</p>
+			) : null}
+
+			{panneau ? (
+				<div
+					style={{
+						position: "fixed",
+						inset: 0,
+						zIndex: 100,
+						display: "flex",
+						alignItems: "center",
+						justifyContent: "center",
+						padding: "var(--jeu-espace-l)",
+						backdropFilter: "blur(3px)",
+					}}
+					onClick={(e) => {
+						if (e.target === e.currentTarget) setPanneau(false);
+					}}
+				>
+					<GameFilterPanel
+						families={famillesPanneau}
+						value={valeurFiltres}
+						onConfirm={(v) => {
+							modifier(etatDuPanneau(v));
+							setPanneau(false);
+						}}
+						onClose={() => setPanneau(false)}
+						count={retenus}
+						total={avantFiltre > retenus ? avantFiltre : undefined}
+						countUnit="fichier"
+						countIcon={GLYPHES.arbre}
+						style={{ width: "min(960px, 100%)", maxHeight: "90vh" }}
+					/>
+				</div>
+			) : null}
 
 			{/*
-			  * Les trois filtres qui n'ont de sens QUE sur l'index : un motif de chemin, un pack
-			  * d'origine, une borne haute. Repliés, parce qu'ils répondent à une question plus
-			  * rare — et parce qu'une barre de neuf champs ne se lit plus.
+			  * Les champs libres qui n'ont de sens QUE sur l'index : un motif de chemin, un pack
+			  * tapé à la main, les deux bornes de taille. Repliés, parce qu'ils répondent à une
+			  * question plus rare que celles du dialogue.
 			  */}
-			<details open={Boolean(glob || cpk || maxMo)} style={{ margin: "0 0 var(--jeu-espace-m)" }}>
+			<details open={Boolean(glob || minMo || maxMo)} style={{ margin: "0 0 var(--jeu-espace-m)" }}>
 				<summary style={{ cursor: "pointer", fontWeight: 700, fontSize: "0.9rem" }}>
 					Filtres de l'index
 				</summary>
@@ -510,6 +639,18 @@ export function Explorateur() {
 						/>
 					</label>
 					<label style={ETIQUETTE}>
+						<span style={{ fontSize: "0.8rem", opacity: 0.75 }}>Au moins (Mo)</span>
+						<input
+							type="text"
+							inputMode="decimal"
+							value={minMo}
+							onChange={(e) => modifier({ minMo: e.target.value })}
+							placeholder="0"
+							aria-label="Taille minimale en mégaoctets"
+							style={{ ...CHAMP, width: "6rem" }}
+						/>
+					</label>
+					<label style={ETIQUETTE}>
 						<span style={{ fontSize: "0.8rem", opacity: 0.75 }}>Au plus (Mo)</span>
 						<input
 							type="text"
@@ -522,115 +663,18 @@ export function Explorateur() {
 						/>
 					</label>
 				</div>
-
-				{/*
-				  * Ce que l'index porte VRAIMENT, compté : 40 extensions et 936 packs sur
-				  * 255 308 fichiers. Sans ces comptes il faut connaître `g4pkm` pour le taper —
-				  * un filtre qu'on devine n'en est pas un.
-				  */}
-				{facettes.map((f) => {
-					const actif = f.column === "ext" ? ext.trim().replace(/^\./, "") : cpk.trim();
-					return (
-						<div key={f.column} style={{ margin: "var(--jeu-espace-m) 0 0" }}>
-							<div style={{ display: "flex", alignItems: "baseline", gap: "var(--jeu-espace-xs)", flexWrap: "wrap" }}>
-								<strong style={{ fontSize: "0.85rem" }}>
-									{f.column === "ext" ? "Extension" : "Pack"}
-								</strong>
-								<span style={{ fontSize: "0.78rem", opacity: 0.7 }}>
-									{f.truncated
-										? `${f.values.length} des ${f.distinct.toLocaleString("fr")}, les plus fournis`
-										: accorde(f.distinct, f.column === "ext" ? "extension" : "pack")}
-								</span>
-							</div>
-							<div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
-								{f.values.map((v) => {
-									const valeur = v.value ?? "";
-									const coche = actif === valeur;
-									return (
-										<button
-											key={valeur}
-											type="button"
-											aria-pressed={coche}
-											// Un second clic retire le filtre : sans ça, une pastille cochée
-											// n'a aucune sortie, et il faut vider un champ qu'on n'a jamais
-											// rempli à la main.
-											onClick={() =>
-												modifier(
-													f.column === "ext"
-														? { ext: coche ? "" : valeur, partout: true, choisi: "" }
-														: { cpk: coche ? "" : valeur, partout: true, choisi: "" },
-												)
-											}
-											style={{
-												...CHAMP,
-												cursor: "pointer",
-												fontSize: "0.8rem",
-												padding: "2px var(--jeu-espace-xs)",
-												background: coche ? "var(--jeu-surface-glace)" : "#fff",
-												borderColor: coche ? "var(--jeu-nuit-profonde)" : "var(--jeu-tuile-bord)",
-												fontWeight: coche ? 800 : 400,
-											}}
-										>
-											{f.column === "cpk" ? valeur.replace(/\.cpk$/, "").slice(0, 10) : valeur}{" "}
-											<span style={{ opacity: 0.65 }}>{v.count.toLocaleString("fr")}</span>
-										</button>
-									);
-								})}
-							</div>
-						</div>
-					);
-				})}
+				{/* Les facettes de la recherche en cours — comptées SOUS les filtres, chacune sans
+				    le sien — restent dites ici en chiffres : c'est l'information que le dialogue
+				    n'a pas, lui qui compte sous le seul dossier. */}
+				{facettes.map((f) => (
+					<p key={f.column} style={{ fontSize: "0.8rem", opacity: 0.75, margin: "var(--jeu-espace-s) 0 0" }}>
+						{f.column === "ext" ? "Extensions" : "Packs"} sous cette recherche :{" "}
+						{f.truncated
+							? `${f.values.length} des ${f.distinct.toLocaleString("fr")}, les plus fournis`
+							: accorde(f.distinct, f.column === "ext" ? "extension" : "pack")}
+					</p>
+				))}
 			</details>
-
-			{/*
-			  * Vue et taille de vignette — les deux dernières lignes que la matrice des filtres
-			  * classait « côté client », et qu'Inacord avait depuis toujours
-			  * (`ExplorerView.tsx:174` et `:178`).
-			  */}
-			<div
-				style={{
-					display: "flex",
-					alignItems: "center",
-					gap: "var(--jeu-espace-m)",
-					margin: "0 0 var(--jeu-espace-s)",
-					fontSize: "0.9rem",
-				}}
-			>
-				<div role="group" aria-label="Affichage" style={{ display: "flex", gap: 2 }}>
-					{(["liste", "grille"] as const).map((v) => (
-						<button
-							key={v}
-							type="button"
-							aria-pressed={vue === v}
-							onClick={() => modifier({ vue: v })}
-							style={{
-								...CHAMP,
-								cursor: "pointer",
-								fontWeight: vue === v ? 800 : 600,
-								background: vue === v ? "var(--jeu-tuile-bord)" : "#fff",
-							}}
-						>
-							{v === "liste" ? "Liste" : "Grille"}
-						</button>
-					))}
-				</div>
-				{vue === "grille" ? (
-					<label style={{ ...ETIQUETTE, flexDirection: "row" }}>
-						Vignettes
-						<select
-							value={String(cote)}
-							onChange={(e) => modifier({ cote: Number(e.target.value) })}
-							style={CHAMP}
-						>
-							{COTES.map((c) => (
-								<option key={c} value={c}>
-									{c} px
-								</option>
-							))}
-						</select>
-					</label>
-				) : null}
-			</div>
 
 			<nav aria-label="Chemin" style={{ margin: "0 0 var(--jeu-espace-s)", fontSize: "0.9rem" }}>
 				<button type="button" onClick={() => modifier({ prefixe: "", choisi: "" })} style={LIEN}>

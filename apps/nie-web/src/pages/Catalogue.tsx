@@ -32,8 +32,19 @@
  * bandeaux et ses propres pastilles — un second thème pour le même site.
  */
 import type { EntreeVfs, VueCatalogue } from "@niers/asset-source";
-import { useAssetSource, useCapacites } from "@niers/inacord-ui";
-import { SearchBar } from "@niers/inacord-ui/components/ui/search-bar";
+import {
+	describeFilters,
+	GameCountBadge,
+	type GameFilterFamily,
+	GameFilterPanel,
+	type GameFilterValue,
+	type GameHint,
+	GameHintBar,
+	GameSearchBar,
+	GLYPHES,
+	useAssetSource,
+	useCapacites,
+} from "@niers/inacord-ui";
 import { Tabs, TabsList, TabsTrigger } from "@niers/inacord-ui/components/ui/tabs";
 import { useEffect, useMemo, useState } from "react";
 import { libelleEntree } from "../entrees";
@@ -107,6 +118,70 @@ function ecrireUrl(e: EtatFiltre) {
 		else url.searchParams.delete(cle);
 	}
 	window.history.replaceState(window.history.state, "", url);
+}
+
+/**
+ * Les extensions que chaque vue retient — MESURÉES sur le service le 2026-09-07, en lisant les
+ * 200 premiers éléments de chaque vue triés dans les deux sens (`textures` → `g4tx`, `sons` →
+ * `acb`, `awb`, `videos` → `usm`). Le catalogue ne publie pas de facettes ; sans cette liste le
+ * panneau proposerait les 40 extensions du VFS, dont 37 que la vue refuse (`ext_inconnue`).
+ */
+const EXTENSIONS_PAR_VUE: Record<string, readonly string[]> = {
+	textures: ["g4tx"],
+	sons: ["acb", "awb"],
+	videos: ["usm"],
+};
+
+/** Les touches de la page : « F » ouvre les filtres, « X » donne le focus à la recherche. */
+const TOUCHE_FILTRES = "f";
+const TOUCHE_RECHERCHE = "x";
+
+/** Le dialogue FILTRES du jeu, sur les trois réglages que le catalogue sert. */
+function famillesCatalogue(vue: VueCatalogue): GameFilterFamily[] {
+	return [
+		{
+			id: "ext",
+			label: "Extension",
+			icon: GLYPHES.livre,
+			options: (EXTENSIONS_PAR_VUE[vue] ?? []).map((e) => ({ value: e, label: e })),
+		},
+		{
+			id: "tri",
+			label: "Tri",
+			icon: GLYPHES.engrenage,
+			options: [
+				{ value: "nom-desc", label: "Nom (Z→A)" },
+				{ value: "taille-asc", label: "Taille (petits d'abord)" },
+				{ value: "taille-desc", label: "Taille (gros d'abord)" },
+			],
+		},
+		{
+			id: "par_page",
+			label: "Par page",
+			icon: GLYPHES.image,
+			options: TAILLES_PAGE.filter((n) => n !== PAR_PAGE).map((n) => ({ value: String(n), label: `${n} par page` })),
+		},
+	];
+}
+
+function valeurPanneau(e: EtatFiltre): GameFilterValue {
+	return {
+		ext: e.ext ? [e.ext] : [],
+		tri: e.tri === "nom" && e.ordre === "asc" ? [] : [`${e.tri}-${e.ordre}`],
+		par_page: e.parPage === PAR_PAGE ? [] : [String(e.parPage)],
+	};
+}
+
+function etatDuPanneau(v: GameFilterValue): Partial<EtatFiltre> {
+	const [t, o] = (v.tri?.[0] ?? "nom-asc").split("-");
+	const parPage = Number(v.par_page?.[0] ?? PAR_PAGE);
+	return {
+		ext: v.ext?.[0] ?? "",
+		tri: t === "taille" ? "taille" : "nom",
+		ordre: o === "desc" ? "desc" : "asc",
+		parPage: TAILLES_PAGE.includes(parPage as (typeof TAILLES_PAGE)[number]) ? parPage : PAR_PAGE,
+		page: 1,
+	};
 }
 
 /** Les quatre vues, dans l'ordre où elles s'affichent, avec leur libellé. */
@@ -244,6 +319,13 @@ function CatalogueVfs({ vue }: { vue: VueCatalogue }) {
 	// `saisie` suit le champ, `etat.q` ce qui a ete envoye : sans ce decalage, chaque frappe
 	// declencherait une requete sur 143 246 chemins.
 	const [saisie, setSaisie] = useState(initial.q);
+	const [panneau, setPanneau] = useState(false);
+	const famillesPanneau = useMemo(() => famillesCatalogue(vue), [vue]);
+	const valeurFiltres = useMemo(() => valeurPanneau(etat), [etat]);
+	const touches = useMemo<GameHint[]>(
+		() => [{ key: TOUCHE_FILTRES, label: "Filtres", onActivate: () => setPanneau(true) }],
+		[],
+	);
 
 	useEffect(() => {
 		// `catalogue` est OPTIONNEL dans le contrat : un hôte qui ne sait pas paginer sur un jeu
@@ -291,30 +373,32 @@ function CatalogueVfs({ vue }: { vue: VueCatalogue }) {
 			  */}
 			<TitreVue appoint={total ? accorde(total, "élément") : undefined}>Médias</TitreVue>
 
-			<form
-				onSubmit={(e) => {
-					e.preventDefault();
-					setEtat((v) => ({ ...v, q: saisie.trim(), page: 1 }));
+			{/* ── La barre du jeu : recherche avec sa touche, bouton FILTRES, effacement ───────
+			    Reprise de `data/menu/bank_character_detail.png` (« X Chercher par nom de joueur »).
+			    L'extension, le tri et la taille de page — les trois réglages que le serveur sert,
+			    plafonnés à 200 — vivent dans le dialogue FILTRES, comme dans la Banque du jeu. */}
+			<div
+				className="game-description-bar"
+				style={{
+					display: "flex",
+					flexWrap: "wrap",
+					alignItems: "center",
+					gap: "var(--jeu-espace-m)",
+					margin: "var(--jeu-espace-m) 0",
 				}}
-				style={{ display: "flex", gap: "var(--jeu-espace-s)", margin: "var(--jeu-espace-m) 0" }}
 			>
-				{/*
-				  * `SearchBar`, portée du wiki vers le paquet partagé le 2026-09-06. Ce qu'elle
-				  * apporte et que l'`<input>` + bouton n'avait pas : une frappe temporisée de
-				  * 400 ms, la touche Entrée qui court-circuite l'attente, et un pictogramme de
-				  * loupe. Le bouton disparaît donc — il n'avait de raison d'être que parce que
-				  * rien ne partait tout seul.
-				  */}
-				<SearchBar
-					className="flex-1"
-					defaultValue={saisie}
-					placeholder={`Chercher dans les ${titre.toLowerCase()}…`}
-					onSearch={(v) => {
-						setSaisie(v);
-						setEtat((e) => ({ ...e, q: v.trim(), page: 1 }));
-					}}
-				/>
-				{filtre || ext || tri !== "nom" || ordre !== "asc" ? (
+				<div style={{ flex: "1 1 18rem" }}>
+					<GameSearchBar
+						value={saisie}
+						onChange={setSaisie}
+						onSubmit={(q) => setEtat((e) => ({ ...e, q, page: 1 }))}
+						placeholder={`Chercher dans les ${titre.toLowerCase()}…`}
+						label={`Chercher dans les ${titre.toLowerCase()}`}
+						hotkey={TOUCHE_RECHERCHE}
+					/>
+				</div>
+				<GameHintBar hints={touches} enabled={!panneau} />
+				{filtre || ext || tri !== "nom" || ordre !== "asc" || parPage !== PAR_PAGE ? (
 					<button
 						type="button"
 						onClick={() => {
@@ -325,86 +409,55 @@ function CatalogueVfs({ vue }: { vue: VueCatalogue }) {
 								ext: "",
 								tri: "nom",
 								ordre: "asc",
+								parPage: PAR_PAGE,
 								page: 1,
 							}));
 						}}
+						className="game-button-secondary"
 						style={BOUTON}
 					>
 						Effacer
 					</button>
 				) : null}
-			</form>
-
-			{/*
-			  * Les trois réglages que le serveur sert déjà et que cette page n'utilisait pas :
-			  * l'extension (le catalogue en couvre jusqu'à six par vue), le tri, et la taille de
-			  * page — plafonnée à 200 côté serveur, d'où une liste close plutôt qu'un champ
-			  * libre qui promettrait ce que le serveur raboterait.
-			  */}
-			<div
-				style={{
-					display: "flex",
-					flexWrap: "wrap",
-					alignItems: "center",
-					gap: "var(--jeu-espace-m)",
-					margin: "0 0 var(--jeu-espace-m)",
-					fontSize: "0.9rem",
-				}}
-			>
-				<label style={ETIQUETTE}>
-					Extension
-					<input
-						type="text"
-						value={ext}
-						onChange={(e) =>
-							setEtat((v) => ({
-								...v,
-								ext: e.target.value.trim().replace(/^\./, ""),
-								page: 1,
-							}))
-						}
-						placeholder="toutes"
-						style={{ ...CHAMP, width: "7rem" }}
-					/>
-				</label>
-				<label style={ETIQUETTE}>
-					Trier par
-					<select
-						value={`${tri}-${ordre}`}
-						onChange={(e) => {
-							const [t, o] = e.target.value.split("-");
-							setEtat((v) => ({
-								...v,
-								tri: t === "taille" ? "taille" : "nom",
-								ordre: o === "desc" ? "desc" : "asc",
-								page: 1,
-							}));
-						}}
-						style={CHAMP}
-					>
-						<option value="nom-asc">Nom (A→Z)</option>
-						<option value="nom-desc">Nom (Z→A)</option>
-						<option value="taille-asc">Taille (petits d'abord)</option>
-						<option value="taille-desc">Taille (gros d'abord)</option>
-					</select>
-				</label>
-				<label style={ETIQUETTE}>
-					Par page
-					<select
-						value={String(parPage)}
-						onChange={(e) =>
-							setEtat((v) => ({ ...v, parPage: Number(e.target.value), page: 1 }))
-						}
-						style={CHAMP}
-					>
-						{TAILLES_PAGE.map((n) => (
-							<option key={n} value={n}>
-								{n}
-							</option>
-						))}
-					</select>
-				</label>
 			</div>
+
+			{describeFilters(famillesPanneau, valeurFiltres).length > 0 ? (
+				<p style={{ margin: "0 0 var(--jeu-espace-s)", fontSize: "0.9rem", fontWeight: 700 }}>
+					{describeFilters(famillesPanneau, valeurFiltres).join(" · ")}
+				</p>
+			) : null}
+
+			{panneau ? (
+				<div
+					style={{
+						position: "fixed",
+						inset: 0,
+						zIndex: 100,
+						display: "flex",
+						alignItems: "center",
+						justifyContent: "center",
+						padding: "var(--jeu-espace-l)",
+						backdropFilter: "blur(3px)",
+					}}
+					onClick={(e) => {
+						if (e.target === e.currentTarget) setPanneau(false);
+					}}
+				>
+					<GameFilterPanel
+						families={famillesPanneau}
+						value={valeurFiltres}
+						onConfirm={(v) => {
+							setEtat((e) => ({ ...e, ...etatDuPanneau(v) }));
+							setPanneau(false);
+						}}
+						onClose={() => setPanneau(false)}
+						count={total}
+						countUnit="élément"
+						countIcon={GLYPHES.image}
+						style={{ width: "min(960px, 100%)", maxHeight: "90vh" }}
+					/>
+				</div>
+			) : null}
 
 			{!charge ? (
 				<Note>Chargement…</Note>

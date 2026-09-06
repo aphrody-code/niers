@@ -40,15 +40,31 @@ import {
 	CanvasItem,
 	ECART_TUILE,
 	GameCanvas,
+	type GameHint,
+	GameHintBar,
+	GameInfoWindow,
+	GameSearchBar,
 	GLYPHES,
 	HeroPanel,
 	IconTile,
 	PENTE_PANNEAU,
 	TileStrip,
 } from "@niers/inacord-ui";
-import { useMemo } from "react";
-import { entreesMenu } from "../entrees";
+import { useMemo, useState } from "react";
+import { EXPLORATEUR, entreesMenu } from "../entrees";
 import { type Humeur, PetAphrody } from "./PetAphrody";
+
+/**
+ * Les touches de l'accueil — reprises de `data/menu/main_menu.png`.
+ *
+ * « X » ouvre l'encart d'informations, comme le bandeau « X Informations » du jeu. « F » donne
+ * le focus à la recherche : le jeu n'a pas de recherche sur son menu (« Alt » y ouvre l'Inazuma
+ * Post), et emprunter « X » à la Banque aurait fait deux gestes pour une touche. Chaque touche
+ * dessinée en bas d'écran est branchée ici — c'est la règle que le dépôt s'est donnée après
+ * avoir affiché des « F » et des « V » que rien n'écoutait.
+ */
+const TOUCHE_INFORMATIONS = "x";
+const TOUCHE_RECHERCHE = "f";
 
 /** Le canevas du menu, en pixels du jeu. Les enfants travaillent tous dans ce repère. */
 const CANEVAS = { w: 1280, h: 720 };
@@ -168,6 +184,42 @@ export function MenuPrincipal({
 	// Le personnage ne joue pas la comédie : son animation est décidée par l'état MESURÉ du
 	// service, dans cet ordre — une panne prime sur une attente, une attente sur le repos.
 	const humeur: Humeur = panne ? "panne" : pret ? "repos" : "attente";
+	// L'encart d'informations est replié par défaut : le jeu ne montre que son bandeau tant
+	// qu'on n'appuie pas sur X, et une carte permanente qui répète le menu occupe l'œil pour rien.
+	const [informations, setInformations] = useState(false);
+	const [recherche, setRecherche] = useState("");
+
+	/**
+	 * Chercher depuis l'accueil mène à l'explorateur, en portée « partout ».
+	 *
+	 * L'état de l'explorateur vit dans l'URL (`?q=&partout=1`) : l'écrire AVANT de changer de
+	 * vue suffit, `setVue` ne touche que le chemin et l'explorateur lit sa requête au montage.
+	 */
+	const chercher = (q: string) => {
+		if (!q) return;
+		const url = new URL(window.location.href);
+		url.search = `q=${encodeURIComponent(q)}&partout=1`;
+		window.history.replaceState(window.history.state, "", url);
+		onChoisir(EXPLORATEUR);
+	};
+
+	const touches = useMemo<GameHint[]>(
+		() => [
+			{
+				key: TOUCHE_INFORMATIONS,
+				label: "Informations",
+				onActivate: () => setInformations((v) => !v),
+			},
+			{
+				key: TOUCHE_RECHERCHE,
+				label: "Chercher",
+				onActivate: () => {
+					document.querySelector<HTMLInputElement>("#accueil-recherche input")?.focus();
+				},
+			},
+		],
+		[],
+	);
 
 	return (
 		<GameCanvas canvas={CANEVAS} fond={CIEL}>
@@ -254,29 +306,60 @@ export function MenuPrincipal({
 				</nav>
 			</CanvasItem>
 
-			{/* --- L'état, seulement quand il y a quelque chose à dire ------------------------
-			    Le jeu place ici un encart d'information. Aphrody n'en met un que si l'écran ne
-			    peut pas encore servir : un bandeau permanent qui répète « tout va bien » occupe
-			    l'œil sans rien apprendre. Le message ne nomme ni le service ni l'index — il dit
-			    ce que l'utilisateur peut faire, et quand. */}
-			{!pret ? (
-				<CanvasItem x={BOITES.notice.x} y={BOITES.notice.y} largeur={BOITES.notice.l} z={10}>
-					<p
-						style={{
-							margin: 0,
-							padding: "8px 14px",
-							background: "rgb(255 255 255 / 88%)",
-							borderLeft: "4px solid var(--jeu-accent-azur)",
-							color: "var(--jeu-nuit-profonde)",
-							fontSize: 13,
-							fontWeight: 700,
-							lineHeight: 1.4,
-						}}
-					>
-						Préparation du catalogue…
-					</p>
-				</CanvasItem>
-			) : null}
+			{/* --- L'encart d'informations, à la place de celui du jeu ------------------------
+			    Le jeu pose ici une carte d'actualité et son bandeau « X Informations ». Le
+			    bandeau est permanent, la carte s'ouvre à la touche. Ce qu'elle dit ne décrit ni
+			    service, ni version, ni index — seulement ce que l'écran permet, et quand : tant
+			    que le catalogue se prépare, c'est la première ligne. */}
+			<CanvasItem x={BOITES.notice.x + 8} y={BOITES.notice.y} largeur={BOITES.notice.l} z={10}>
+				<GameInfoWindow
+					title={pret ? "Bienvenue" : "Préparation du catalogue…"}
+					action={{
+						keyLabel: "X",
+						label: informations ? "Fermer" : "Informations",
+						onActivate: () => setInformations((v) => !v),
+					}}
+				>
+					{informations ? (
+						<>
+							<div>Médias : textures, modèles, sons et vidéos du jeu.</div>
+							<div>Explorer : l'arborescence complète, dossier par dossier.</div>
+						</>
+					) : null}
+				</GameInfoWindow>
+			</CanvasItem>
+
+			{/* --- La recherche, dans l'encart haut-droit ---------------------------------------
+			    Le jeu y met « Alt Inazuma Post » ; Aphrody y met la seule question qu'on pose à
+			    un site de ressources : où est ce fichier. La barre porte sa touche, et la touche
+			    est branchée par la barre de guides du bas. */}
+			<CanvasItem
+				x={BOITES.encartHautDroit.x}
+				y={BOITES.encartHautDroit.y}
+				largeur={BOITES.encartHautDroit.l}
+				z={10}
+			>
+				<div id="accueil-recherche">
+					<GameSearchBar
+						value={recherche}
+						onChange={setRecherche}
+						onSubmit={chercher}
+						placeholder="Chercher un fichier"
+						label="Chercher un fichier du jeu"
+						hotkey={TOUCHE_RECHERCHE}
+					/>
+				</div>
+			</CanvasItem>
+
+			{/* --- Le guide de touches du bas-centre, à la place de celui du jeu --------------- */}
+			<CanvasItem
+				x={BOITES.aide.x + BOITES.aide.l / 2}
+				y={BOITES.aide.y}
+				ancreX={0.5}
+				z={20}
+			>
+				<GameHintBar hints={touches} />
+			</CanvasItem>
 
 			{/* --- La mention légale, à la place où le jeu met la sienne --- */}
 			<CanvasItem
