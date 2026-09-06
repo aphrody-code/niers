@@ -36,7 +36,11 @@
     <PackageReference Include="K4os.Compression.LZ4" Version="1.3.8" />
 
     <!-- Database -->
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.0" />
+    <!-- 10.0.11 et non 10.0.0 : la 10.0.0 tirait SQLitePCLRaw 2.1.11, porteur de
+         GHSA-2m69-gcr7-jv3q (gravité élevée), signalé à chaque build par NU1903. Montée de
+         patch dans la même majeure/mineure ; l'absence de NU1903 est vérifiée par un restore,
+         pas supposée. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.11" />
 
     <!-- Steam content delivery (download natif des depots, remplace steamcmd) -->
     <PackageReference Include="SteamKit2" Version="3.4.0" />

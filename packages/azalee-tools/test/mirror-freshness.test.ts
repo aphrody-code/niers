@@ -16,6 +16,39 @@ import { createSqliteClient } from "../src/db/sqlite-client";
 
 const BAC = `${import.meta.dir}/.bac-miroir`;
 
+/**
+ * Cette machine sait-elle créer un VRAI lien symbolique ?
+ *
+ * La capacité est MESURÉE, pas déduite de `process.platform` : une garde codée
+ * en dur sauterait aussi sur un Windows dûment privilégié et mentirait sur un
+ * conteneur Linux sans les droits. Sous MSYS sans
+ * `SeCreateSymbolicLinkPrivilege`, `ln -sfn` ne signale rien et **copie** le
+ * fichier — le scénario de swap atomique testé plus bas n'existe alors tout
+ * simplement pas, et l'assertion mesurerait `ln`, pas la lib.
+ */
+async function liensSymboliquesDisponibles(): Promise<boolean> {
+	const bac = `${import.meta.dir}/.bac-lien`;
+	try {
+		await Bun.spawn(["rm", "-rf", bac]).exited;
+		await Bun.spawn(["mkdir", "-p", bac]).exited;
+		await Bun.write(`${bac}/cible`, "x");
+		await Bun.spawn(["ln", "-sfn", "cible", `${bac}/lien`]).exited;
+		return (await Bun.spawn(["test", "-L", `${bac}/lien`]).exited) === 0;
+	} catch {
+		return false;
+	} finally {
+		await Bun.spawn(["rm", "-rf", bac]).exited;
+	}
+}
+
+const liensDisponibles = await liensSymboliquesDisponibles();
+if (!liensDisponibles) {
+	console.warn(
+		"[mirror-freshness] liens symboliques indisponibles sur cette machine (`ln -sfn` copie au lieu de lier) : " +
+			"le test de swap par lien est IGNORÉ, pas réussi. L'invariant reste gardé sur Linux.",
+	);
+}
+
 /** Crée une base minimale avec une seule ligne identifiable. */
 function ecrireBase(chemin: string, marqueur: string): void {
 	const db = new Database(chemin, { create: true });
@@ -45,7 +78,7 @@ describe("réouverture du miroir après un swap", () => {
 		await Bun.spawn(["rm", "-rf", BAC]).exited;
 	});
 
-	test("le remplacement du fichier est pris en compte sans redémarrage", async () => {
+	test.skipIf(!liensDisponibles)("le remplacement du fichier est pris en compte sans redémarrage", async () => {
 		const ancien = `${BAC}/snapshot-1.sqlite`;
 		const nouveau = `${BAC}/snapshot-2.sqlite`;
 		const lien = `${BAC}/mirror.sqlite`;

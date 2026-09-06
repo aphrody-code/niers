@@ -33,16 +33,6 @@ type RawMediaItem = {
 	height?: number;
 };
 
-type RawTweetItem = {
-	id: string;
-	text: string;
-	fullText: string;
-	created_at?: string;
-	in_reply_to_status_id?: string;
-	media: RawMediaItem[];
-	[key: string]: Json | undefined;
-};
-
 // Normalise un media de la lib X (preview_url/video_url/width/height) vers le
 // format DB, en propageant l'URL téléchargeable principale + la miniature.
 function mapMedia(m: {

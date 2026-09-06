@@ -96,7 +96,11 @@ fn mem_of(i: &iced_x86::Instruction) -> Option<Mem> {
         disp,
         // Un deplacement nul occupant un octet dans l'original : la forme
         // courte `mod=00` rendrait un corps plus court, donc rejete.
-        disp_explicite: disp == 0 && i.memory_displ_size() >= 1,
+        disp_explicite: disp == 0 && i.memory_displ_size() == 1,
+        // `disp32` explicite : `nie.exe` choisit parfois mod=10 (7 octets)
+        // la ou mod=01/disp8 (4 octets) suffirait — mesure sur `lift`,
+        // cause `encodage:mov` (1 658 corps sur 1 675).
+        disp32: i.memory_displ_size() == 4 && (disp == 0 || i8::try_from(disp).is_ok()),
         rip: None,
     })
 }
@@ -1310,4 +1314,41 @@ pub fn blockers(cover: &nie_pe::Cover, bytes: &[u8], max_len: usize) -> Vec<Bloc
         .collect();
     out.sort_by_key(|b| std::cmp::Reverse(b.bytes));
     out
+}
+
+#[cfg(test)]
+mod disp32_diag {
+    use super::*;
+
+    #[test]
+    fn diag_disp32() {
+        // mov rcx, [rdx+0x30] : 48 8b 8a 30 00 00 00 (mod=10, disp32)
+        let bytes = [0x48u8, 0x8b, 0x8a, 0x30, 0x00, 0x00, 0x00];
+        let r = blocking_reason(&bytes, 0x140000000);
+        eprintln!("blocking_reason = {r:?}");
+        let l = lift_body(&bytes, 0x140000000);
+        eprintln!("lift_body = {l:?}");
+        assert!(l.is_some(), "devrait relever mov rcx,[rdx+0x30] en disp32");
+    }
+}
+
+#[cfg(test)]
+mod disp32_diag2 {
+    use super::*;
+    use iced_x86::{Decoder, DecoderOptions};
+
+    #[test]
+    fn diag_disp32_insn() {
+        let bytes = [0x48u8, 0x8b, 0x8a, 0x30, 0x00, 0x00, 0x00];
+        let mut d = Decoder::with_ip(64, &bytes, 0x140000000, DecoderOptions::NONE);
+        let i = d.decode();
+        eprintln!("mnemonic={:?} op0={:?} op1={:?}", i.mnemonic(), i.op_kind(0), i.op_kind(1));
+        eprintln!("memory_displ_size={} disp={}", i.memory_displ_size(), i.memory_displacement64());
+        let ins = insn_of(&i, &bytes);
+        eprintln!("insn_of = {ins:?}");
+        if let Some(ins) = ins {
+            let enc = nie_asm::encode_at(&[ins], 0x140000000);
+            eprintln!("encoded = {enc:02x?}");
+        }
+    }
 }

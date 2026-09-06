@@ -31,7 +31,6 @@ import {
 	ICONE_INTENTION,
 	LIMITES,
 	MARQUE,
-	SEPARATEUR,
 	type Intention,
 	type NomIcone,
 } from "./theme";

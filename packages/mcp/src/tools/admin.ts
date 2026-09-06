@@ -54,20 +54,48 @@ interface Execution {
 	ms: number;
 }
 
+/** Code de sortie d'une commande interrompue — convention de `timeout(1)`. */
+const EXIT_CODE_DELAI = 124;
+
 async function executer(command: string[], cwd: string, timeoutMs: number): Promise<Execution> {
 	const started = performance.now();
 	const proc = Bun.spawn(command, { cwd, stdout: "pipe", stderr: "pipe", stdin: "ignore" });
-	const minuteur = setTimeout(() => proc.kill(9), timeoutMs);
-	try {
+
+	// Le délai doit être TENU, pas seulement signalé. Tuer le shell ne suffit
+	// pas : un petit-fils (`bash -lc "sleep 30"`) lui survit et garde les tubes
+	// ouverts, si bien que la lecture de `stdout` ne se termine jamais et que
+	// l'appel dépasse indéfiniment son propre délai. On court donc la lecture
+	// CONTRE l'échéance, et c'est l'échéance qui tranche.
+	let minuteur: ReturnType<typeof setTimeout> | undefined;
+	const echeance = new Promise<"delai">((resolve) => {
+		minuteur = setTimeout(() => {
+			proc.kill(9);
+			resolve("delai");
+		}, timeoutMs);
+	});
+
+	const lecture = (async (): Promise<Execution> => {
 		const [stdout, stderr] = await Promise.all([
 			new Response(proc.stdout).text(),
 			new Response(proc.stderr).text(),
 		]);
 		const exitCode = await proc.exited;
 		return { exitCode, stdout: tronquer(stdout), stderr: tronquer(stderr), ms: Math.round(performance.now() - started) };
-	} finally {
-		clearTimeout(minuteur);
+	})();
+	// Sans ce filet, la lecture abandonnée par la course rejette dans le vide.
+	lecture.catch(() => {});
+
+	const issue = await Promise.race([lecture, echeance]);
+	clearTimeout(minuteur);
+	if (issue === "delai") {
+		return {
+			exitCode: EXIT_CODE_DELAI,
+			stdout: "",
+			stderr: `Commande interrompue après ${timeoutMs} ms.`,
+			ms: Math.round(performance.now() - started),
+		};
 	}
+	return issue;
 }
 
 export function adminTools(options: AdminToolsOptions): RegisteredTool[] {

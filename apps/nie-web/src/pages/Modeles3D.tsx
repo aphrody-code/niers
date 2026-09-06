@@ -55,7 +55,7 @@
  * les positions du GLB sont déjà en espace monde (`nie_formats::assemble::to_glb_embedded`).
  * Un modèle s'affiche donc dans sa pose de liaison, jamais animé.
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { accorde, Note, TitreVue } from "./Ecran";
 
 /** Taille de page. 24 cartes : une grille pleine sans imposer 60 rendus à froid au serveur. */

@@ -28,15 +28,27 @@ d'environnement connus**.
 ```bash
 # Bun — depuis la racine
 bun install
-bun run typecheck            # 5 workspaces
+bun run typecheck            # 29 workspaces (mesuré 2026-09-06)
 bun run test
 bun run lint
 
-# Cargo
+# Cargo — 38 membres
 cargo clippy -p <crate> --lib --tests    # 0 warning exigé
+cargo clippy -p <crate> --bins --tests   # pour les 7 crates SANS cible [lib]
 cargo test -p nie-data --test <fam>_golden
 cargo build -p nie-ffi                    # requis avant tout bun run
 ```
+
+**`error: no library targets found` n'est pas un échec du crate.** Sept membres sur 38 n'ont pas
+de `src/lib.rs` : `nie-bench`, `nie-cli`, `nie-editor`, `nie-game`, `nie-headless`,
+`nie-model-serve`, `nie-play`. Utilise `--bins --tests` pour ceux-là. **N'ajoute jamais un
+`src/lib.rs` vide** pour faire passer la commande documentée : ça fabrique une cible pour faire
+taire la porte, même famille de défaut qu'un test incapable d'échouer.
+
+**`apps/inacord/src-tauri` est un workspace séparé : aucune porte du dépôt ne le compile.** Un
+changement de signature dans un crate du workspace peut le casser sans qu'un seul `clippy` ne
+rougisse (vécu le 2026-09-06 : `E0063`). Après avoir touché à `nie-lua`, `nie-formats` ou
+`nie-explore`, lance `bun run tauri build` — c'est la seule chose qui le voit.
 
 Lancer les commandes longues en tâche de fond quand plusieurs sont indépendantes.
 

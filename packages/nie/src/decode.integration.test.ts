@@ -34,6 +34,11 @@ describe("décodage intégration (VFS + FFI)", () => {
     expect(detectFormat(g4tx!).name).toBe("G4TX");
   });
 
+  // Budget explicite : décoder 2 904 000 pixels en BC7 à travers le FFI prend
+  // ~2 s à vide, mais dépasse les 5 000 ms par défaut quand la suite complète
+  // fait tourner quinze workspaces en parallèle. Sans ce budget, le verdict du
+  // test dépend de la CHARGE de la machine et non du code : vert lancé seul,
+  // rouge dans `bun run test`, et rien dans le message n'indique pourquoi.
   test.skipIf(!HAS_GAME)("g4tx BC7 → PNG 2640×1100", () => {
     using vfs = vfsOpen(DATA_DIR)!;
     const g4tx = vfs.read(BG)!;
@@ -45,7 +50,7 @@ describe("décodage intégration (VFS + FFI)", () => {
     const dv = new DataView(png!.buffer, png!.byteOffset, png!.byteLength);
     expect(dv.getUint32(16, false)).toBe(2640);
     expect(dv.getUint32(20, false)).toBe(1100);
-  });
+  }, 30_000);
 
   test.skipIf(!HAS_GAME)("cfg.bin réel → JSON menu_setting (T2b)", () => {
     using vfs = vfsOpen(DATA_DIR)!;

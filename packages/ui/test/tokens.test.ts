@@ -11,8 +11,14 @@ import {
 } from "../scripts/generer-tokens";
 import { FORMES, MARQUE, MARQUES_TIERCES, THEMES } from "../src/tokens";
 
-const CHEMIN_CSS = new URL("../src/styles.css", import.meta.url).pathname;
-const CHEMIN_TOKENS = new URL("../src/tokens.ts", import.meta.url).pathname;
+// `URL.pathname` n'est PAS un chemin de fichier : il rend `/C:/Users/…` sous
+// Windows, que `Bun.file` n'ouvre pas, et il laisse les `%20` d'un dossier
+// contenant un espace — donc il casse aussi sous Linux. `fileURLToPath` fait
+// la conversion officielle. L'échec était total et muet : la lecture a lieu au
+// CHARGEMENT du module, si bien que la suite entière rendait « 0 pass, 1 fail »
+// au lieu de désigner l'assertion fautive.
+const CHEMIN_CSS = Bun.fileURLToPath(new URL("../src/styles.css", import.meta.url));
+const CHEMIN_TOKENS = Bun.fileURLToPath(new URL("../src/tokens.ts", import.meta.url));
 const css = await Bun.file(CHEMIN_CSS).text();
 
 describe("conversion oklch → sRGB", () => {
@@ -149,8 +155,15 @@ describe("tokens exposés", () => {
 
 describe("non-dérive", () => {
 	test("src/tokens.ts est bien la projection de styles.css", async () => {
+		// Les fins de ligne sont normalisées des DEUX côtés avant comparaison.
+		// Le générateur émet du LF ; `core.autocrlf=true` restitue le fichier
+		// committé en CRLF sur un poste Windows. Comparer les octets bruts y
+		// mesure la configuration de checkout, pas la projection — et le
+		// diagnostic est odieux, `toBe` affichant un écart « -0 / +0 »
+		// parfaitement invisible. Ce qui est testé, c'est le CONTENU.
+		const enLf = (texte: string) => texte.replaceAll("\r\n", "\n");
 		const committe = await Bun.file(CHEMIN_TOKENS).text();
-		expect(rendreModule(extraireTokens(css))).toBe(committe);
+		expect(enLf(rendreModule(extraireTokens(css)))).toBe(enLf(committe));
 	});
 
 	test("le module généré reste pur (aucun import)", async () => {

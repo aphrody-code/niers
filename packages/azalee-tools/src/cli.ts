@@ -15,4 +15,11 @@
 
 import { createAzaleeProgram } from "./cli/program";
 
-createAzaleeProgram().parse();
+// `parseAsync`, jamais `parse` : les actions des commandes sont `async`.
+// `parse()` rend la main dès le premier `await` de l'action, le process sort,
+// et TOUT ce qui vient après cet `await` est perdu — silencieusement, avec un
+// code de sortie 0. Mesuré : `search "" --json` doit écrire
+// `{"error":"Requête de recherche vide"}` (le chemin passe par un
+// `await Bun.stdin.text()`) et n'écrivait rien du tout. Une erreur avalée qui
+// se présente comme un succès.
+await createAzaleeProgram().parseAsync();

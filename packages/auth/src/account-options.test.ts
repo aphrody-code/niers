@@ -8,7 +8,13 @@
  * signale. Un test qui compte les requêtes est le seul endroit où ce silence
  * devient bruyant.
  */
-import { describe, expect, test } from "bun:test";
+// `vitest`, pas `bun:test` : ce paquet est lancé par `bun --bun vitest run`
+// (cf. son `package.json` et son `vitest.config.ts`), comme son voisin
+// `index.test.ts`. Importé de `bun:test`, ce fichier ne se CHARGEAIT même pas
+// — « Cannot use describe outside of the test runner » — et l'invariant
+// ci-dessous, l'effacement effectif des données personnelles, n'a jamais été
+// vérifié une seule fois. Le paquet annonçait pourtant « 12 passed ».
+import { describe, expect, test } from "vitest";
 
 import { createAccountOptions } from "./account-options";
 

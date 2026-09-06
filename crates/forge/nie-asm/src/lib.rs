@@ -251,6 +251,14 @@ pub struct Mem {
     /// Sans effet quand `mod=01` est de toute façon imposé (base `rbp`/`r13`)
     /// ou impossible (adresse absolue, `rip`-relatif).
     pub disp_explicite: bool,
+    /// Forme **disp32** forcee meme quand le deplacement tiendrait en disp8.
+    ///
+    /// `mov rcx, [rdx+30h]` tiendrait en `mod=01/disp8` (4 octets) ; 1 658 corps
+    /// de `nie.exe` ecrivent la forme longue `mod=10/disp32` (7 octets) pour le
+    /// meme acces (mesure sur `nie-forge lift`, cause `encodage:mov`). Meme
+    /// principe que `disp_explicite` : le choix appartient au binaire
+    /// d'origine, pas a la longueur minimale.
+    pub disp32: bool,
     /// Cible **absolue** d'un adressage relatif au pointeur d'instruction.
     ///
     /// Quand ce champ est renseigné, `base`/`index`/`disp` sont ignorés et
@@ -1208,7 +1216,13 @@ fn modrm_mem(out: &mut Vec<u8>, reg: u8, m: Mem, at: u64, base: usize, imm_len: 
     // porte et non parce que l'encodage l'exige.
     let force_disp8 =
         base.is_some() && m.disp == 0 && (base.is_some_and(|b| b.lo() == 5) || m.disp_explicite);
-    let mode = if base.is_none() || (m.disp == 0 && !force_disp8) {
+    // `disp32` force le mod=10 meme quand le deplacement tiendrait en
+    // disp8 : 1 658 corps de `nie.exe` ecrivent `mov rcx, [rdx+30h]` en
+    // 7 octets (mod=10/disp32) plutot que 4 (mod=01/disp8).
+    let force_disp32 = base.is_some() && m.disp32;
+    let mode = if force_disp32 {
+        0b10
+    } else if base.is_none() || (m.disp == 0 && !force_disp8) {
         0b00
     } else if i8::try_from(m.disp).is_ok() {
         0b01

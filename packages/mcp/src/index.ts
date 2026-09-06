@@ -11,6 +11,7 @@
  * ```
  */
 
+import { fileURLToPath } from "node:url";
 import { McpRegistry } from "./registry.ts";
 import { buildPrompts } from "./prompts.ts";
 import { buildResources } from "./resources.ts";
@@ -22,6 +23,7 @@ import { deployTools } from "./tools/deploy.ts";
 import { opsTools } from "./tools/ops.ts";
 import { supabasePlatformTools } from "./tools/supabase-platform.ts";
 import { supabaseTools } from "./tools/supabase.ts";
+import { toPosixPath } from "./tools/paths.ts";
 import { repoTools } from "./tools/repo.ts";
 
 export interface RgMcpServerOptions {
@@ -52,9 +54,21 @@ export interface RgMcpServerOptions {
 	version?: string;
 }
 
-/** Racine du dépôt telle que déduite de l'emplacement du paquet. */
-export const DEFAULT_REPO_ROOT = new URL("../../..", import.meta.url).pathname.replace(/\/$/, "");
-export const DEFAULT_CONTEXT_DIR = new URL("../context", import.meta.url).pathname.replace(/\/$/, "");
+/**
+ * Racine du dépôt telle que déduite de l'emplacement du paquet.
+ *
+ * `URL.pathname` n'est PAS un chemin de fichier : sous Windows il rend
+ * `/C:/Users/…`, que ni `Bun.file` ni `readdir` n'ouvrent — les outils dépôt
+ * répondaient alors « fichier introuvable » et `repo_list` une liste vide,
+ * sans que rien ne signale la cause. `fileURLToPath` rend le vrai chemin, que
+ * l'on POSIXifie pour rester homogène avec la prison de `tools/paths.ts`.
+ */
+function racineDepuisUrl(relatif: string): string {
+	return toPosixPath(fileURLToPath(new URL(relatif, import.meta.url))).replace(/\/$/, "");
+}
+
+export const DEFAULT_REPO_ROOT = racineDepuisUrl("../../..");
+export const DEFAULT_CONTEXT_DIR = racineDepuisUrl("../context");
 
 /**
  * Instructions destinées au modèle client.

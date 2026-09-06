@@ -18,6 +18,7 @@ const serverEntry = resolve(here, "../src/index.ts");
 
 let passed = 0;
 let failed = 0;
+let skipped = 0;
 
 function check(label: string, ok: boolean, detail: string): void {
   if (ok) {
@@ -27,6 +28,17 @@ function check(label: string, ok: boolean, detail: string): void {
     failed++;
     console.log(`  FAIL  ${label} — ${detail}`);
   }
+}
+
+/**
+ * Ressource absente : on ANNONCE le saut. Ni un échec (la machine n'a pas la
+ * base, ce n'est pas une régression du serveur), ni un succès silencieux — un
+ * saut muet est un faux vert, et c'est exactement ce qui laisse passer une KB
+ * vide pour une KB saine.
+ */
+function skip(label: string, raison: string): void {
+  skipped++;
+  console.log(`  SKIP  ${label} — ${raison}`);
 }
 
 type TextContent = { type: string; text?: string };
@@ -72,14 +84,35 @@ async function main(): Promise<void> {
   // Liste des outils exposés.
   const tools = await client.listTools();
   const names = tools.tools.map((t) => t.name).sort();
-  // 8 outils de données + 5 de pilotage de l'explorateur + le lancement du jeu.
-  check("listTools", names.length === 14, `${names.length} outils : ${names.join(", ")}`);
+  // 9 outils de données + 5 de pilotage de l'explorateur + le lancement du jeu.
+  // Le compte reste écrit EN DUR : dérivé du serveur, il ne pourrait plus rien
+  // détecter. Il était resté à 14 alors que `aphrody_api_health` avait porté le
+  // registre à 15 — le message de démarrage du serveur annonçait lui aussi 14,
+  // et personne ne voyait la contradiction.
+  check("listTools", names.length === 15, `${names.length} outils : ${names.join(", ")}`);
 
   // (1) re_coverage : pct plausible, et total COHÉRENT avec les lignes de `function`.
   // Pas de constante en dur : le nombre de racines `.pdata` dépend du build ciblé et d'un
   // `niers rebuild` (52 783 au 2026-08-10, 55 351 depuis le 2026-08-15). Le figer faisait
   // échouer la smoke sur une KB pourtant saine. Ce qui doit tenir, c'est la cohérence.
-  {
+  //
+  // La disponibilité de la KB est MESURÉE une fois, en l'interrogeant. Sans
+  // elle, `re_coverage` rendait `pct=0 total=0` — un ÉCHEC indiscernable d'une
+  // régression — et `re_query` faisait carrément planter la smoke sur un
+  // `seed.rows` indéfini, avant même d'atteindre les contrôles suivants.
+  const kbDisponible = await (async () => {
+    const { data, isError } = await callJson<{ rows?: unknown[] }>(client, "re_query", {
+      sql: "SELECT 1 AS ok",
+    });
+    return !isError && Array.isArray(data?.rows);
+  })();
+  if (!kbDisponible) {
+    console.log("  ---   var/niers.sqlite indisponible : les contrôles de reverse sont IGNORÉS, pas réussis.");
+  }
+
+  if (!kbDisponible) {
+    skip("re_coverage", "var/niers.sqlite absente");
+  } else {
     const { data } = await callJson<{
       latest: { pct: number; total_funcs: number; named: number; classified: number };
       function_rows_total: number;
@@ -93,8 +126,28 @@ async function main(): Promise<void> {
     );
   }
 
+  // Même traitement que la KB : la disponibilité du VFS est MESURÉE, et son
+  // absence s'annonce. Sans cela, `data.matches` était indéfini et faisait
+  // PLANTER la smoke à la première recherche — le rapport s'arrêtait là, et les
+  // dix contrôles suivants n'étaient jamais exécutés ni comptés.
+  const vfsDisponible = await (async () => {
+    const { data, isError } = await callJson<{ total_files?: number; matches?: unknown[] }>(client, "vfs_search", {
+      query: "c01000010",
+      limit: 1,
+    });
+    return !isError && Array.isArray(data?.matches);
+  })();
+  if (!vfsDisponible) {
+    console.log(
+      "  ---   index VFS indisponible : les contrôles VFS et assets sont IGNORÉS, pas réussis. " +
+        "Vérifier NIE_GAME_DIR (il doit désigner la racine du jeu, celle qui contient data/cpk_list.cfg.bin).",
+    );
+  }
+
   // (2) vfs_search "c01000010" : chemins renvoyés.
-  {
+  if (!vfsDisponible) {
+    skip("vfs_search c01000010", "index VFS indisponible");
+  } else {
     const { data } = await callJson<{ total_matches: number; matches: { path: string }[] }>(
       client,
       "vfs_search",
@@ -108,7 +161,9 @@ async function main(): Promise<void> {
   }
 
   // (3) vfs_list "data/dx11/chr" : sous-dossiers listés.
-  {
+  if (!vfsDisponible) {
+    skip("vfs_list data/dx11/chr", "index VFS indisponible");
+  } else {
     const { data } = await callJson<{ directories: string[]; total_directories: number; total_files: number }>(
       client,
       "vfs_list",
@@ -122,7 +177,9 @@ async function main(): Promise<void> {
   }
 
   // (3b) vfs_stat sur un fichier connu.
-  {
+  if (!vfsDisponible) {
+    skip("vfs_stat cfg.bin", "index VFS indisponible");
+  } else {
     const { data } = await callJson<{ kind: string; cpk?: string; decode?: string }>(client, "vfs_stat", {
       path: "data/common/text/en/event/ev20_03200.cfg.bin",
     });
@@ -134,7 +191,9 @@ async function main(): Promise<void> {
   }
 
   // (4) asset_get cfg.bin -> JSON via model-serve.
-  {
+  if (!vfsDisponible) {
+    skip("asset_get cfg (model-serve)", "index VFS indisponible");
+  } else {
     const { data } = await callJson<{ http_status: number; text?: string; url: string }>(client, "asset_get", {
       path: "data/common/text/en/event/ev20_03200.cfg.bin",
       decode: "cfg",
@@ -156,7 +215,9 @@ async function main(): Promise<void> {
   //  - `ffi`         : décodage en process par `nie` (CPK montés), l'URL est un `nie://…g4tx` ;
   //  - `model-serve` : service HTTP, et là la convention /tex impose '…/x.png' — jamais
   //                    '…/x.g4tx.png'. C'est ce piège-là que le test doit continuer de garder.
-  {
+  if (!vfsDisponible) {
+    skip("asset_get tex (PNG)", "index VFS indisponible");
+  } else {
     const texPath = "data/dx11/menu/200_icon/10_icon_chr/uniform/u040607_20_04_l.g4tx";
     const { data } = await callJson<{
       http_status: number;
@@ -177,7 +238,9 @@ async function main(): Promise<void> {
   }
 
   // (4c) glob inter-dossiers (sémantique '**') doit matcher.
-  {
+  if (!vfsDisponible) {
+    skip("vfs_search glob **", "index VFS indisponible");
+  } else {
     const { data } = await callJson<{ total_matches: number; mode: string }>(client, "vfs_search", {
       query: "data/dx11/chr/**/*.g4tx",
       limit: 3,
@@ -192,11 +255,13 @@ async function main(): Promise<void> {
   // fonction — la table `function` en compte 55 351 dont seule une fraction est nommée, et les
   // `CScene*` ne vivent plus que dans `rtti_class`. Le test échouait donc sur l'état de la base,
   // pas sur l'outil qu'il prétend vérifier.
-  {
+  if (!kbDisponible) {
+    skip("re_function", "var/niers.sqlite absente");
+  } else {
     const { data: seed } = await callJson<{ rows: { name: string }[] }>(client, "re_query", {
       sql: "SELECT name FROM function WHERE name IS NOT NULL AND length(name) > 4 LIMIT 1",
     });
-    const nom = seed.rows[0]?.name;
+    const nom = seed.rows?.[0]?.name;
     if (!nom) {
       check("re_function", false, "aucune fonction nommée dans var/niers.sqlite");
     } else {
@@ -213,7 +278,9 @@ async function main(): Promise<void> {
       );
     }
   }
-  {
+  if (!kbDisponible) {
+    skip("re_query SELECT", "var/niers.sqlite absente");
+  } else {
     const { data } = await callJson<{ rows: Record<string, unknown>[] }>(client, "re_query", {
       sql: "SELECT name, subsystem FROM function WHERE name IS NOT NULL LIMIT 5",
     });
@@ -226,24 +293,42 @@ async function main(): Promise<void> {
   }
 
   // (6) repo_read + garde anti-traversal.
-  {
-    const { data } = await callJson<{ content?: string; size: number }>(client, "repo_read", {
-      path: "docs/PLAN.md",
-    });
-    check("repo_read docs/PLAN.md", typeof data.content === "string" && data.size > 0, `size=${data.size}`);
+  //
+  // La lecture nominale conditionne les deux gardes qui suivent, et ce n'est
+  // pas du confort. Si `NIERS_REPO` ne désigne pas le dépôt, les deux refus
+  // passent au vert sur un ENOENT au lieu d'un refus : la garde ne prouve plus
+  // rien tout en affichant PASS. On refuse ce faux vert — pas de racine
+  // lisible, pas de garde.
+  const { data: lecture } = await callJson<{ content?: string; size: number }>(client, "repo_read", {
+    path: "docs/PLAN.md",
+  });
+  const repoLisible = typeof lecture.content === "string" && lecture.size > 0;
+  check("repo_read docs/PLAN.md", repoLisible, `size=${lecture.size}`);
+  if (!repoLisible) {
+    console.log(
+      "  ---   racine de dépôt illisible : les gardes anti-traversée passeraient au vert sur un " +
+        "ENOENT au lieu d'un refus. Corriger NIERS_REPO (il doit désigner le dépôt niers).",
+    );
   }
-  {
+  if (!repoLisible) {
+    skip("repo_read bloque var/", "racine de dépôt illisible — le refus ne serait pas discernable d'un ENOENT");
+  } else {
     const { isError, raw } = await callJson(client, "repo_read", { path: "var/niers.sqlite" });
-    check("repo_read bloque var/", isError, raw.slice(0, 70));
+    // Le refus doit venir de la garde, pas d'un fichier manquant.
+    check("repo_read bloque var/", isError && raw.includes("répertoire interdit"), raw.slice(0, 70));
   }
-  {
+  if (!repoLisible) {
+    skip("repo_read bloque traversal", "racine de dépôt illisible — le refus ne serait pas discernable d'un ENOENT");
+  } else {
     const { isError, raw } = await callJson(client, "repo_read", { path: "../../etc/passwd" });
-    check("repo_read bloque traversal", isError, raw.slice(0, 70));
+    check("repo_read bloque traversal", isError && raw.includes("hors du repo"), raw.slice(0, 70));
   }
 
   await client.close();
 
-  console.log(`\n=== ${passed} PASS / ${failed} FAIL ===`);
+  // Les sauts sont COMPTÉS dans le rapport : un `0 FAIL` obtenu en ignorant la
+  // moitié des contrôles doit se lire comme tel.
+  console.log(`\n=== ${passed} PASS / ${failed} FAIL / ${skipped} SKIP ===`);
   if (failed > 0) process.exit(1);
 }
 

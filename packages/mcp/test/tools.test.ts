@@ -14,6 +14,18 @@ import type { McpServer } from "../src/server.ts";
 
 const hasMirror = Boolean(resolveMirrorPath());
 
+/**
+ * `systemctl` est-il là ? La garde MESURE l'outil, elle ne déduit pas de la
+ * plateforme : `process.platform !== "linux"` serait une garde codée en dur,
+ * qui sauterait aussi sur un Linux parfaitement équipé et mentirait sur un
+ * conteneur sans systemd. Ici on interroge le PATH, et on annonce le saut —
+ * une suite qui s'ignore en silence est un faux vert.
+ */
+const hasSystemd = Bun.which("systemctl") !== null;
+if (!hasSystemd) {
+	console.warn("[tools.test] systemctl absent de cette machine : les tests `ops_status` sont IGNORÉS, pas réussis.");
+}
+
 const context = {
 	meta: parseModernMeta({
 		_meta: {
@@ -219,12 +231,19 @@ describe("dépôt", () => {
 
 	test("la racine déduite du paquet est bien le dépôt", async () => {
 		expect(await Bun.file(`${DEFAULT_REPO_ROOT}/CLAUDE.md`).exists()).toBe(true);
-		expect(await Bun.file(`${DEFAULT_REPO_ROOT}/turbo.json`).exists()).toBe(true);
+		expect(await Bun.file(`${DEFAULT_REPO_ROOT}/bunfig.toml`).exists()).toBe(true);
+		// Le repère le plus sûr : le nom du paquet racine. `CLAUDE.md` et
+		// `bunfig.toml` existent dans plus d'un dossier de ce dépôt ; ce nom-là
+		// n'existe qu'une fois. (Le témoin précédent était `turbo.json`, qui
+		// n'est plus à la racine — turbo n'est resté qu'une devDependency. Le
+		// test rougissait sur une racine pourtant parfaitement résolue.)
+		const racine = (await Bun.file(`${DEFAULT_REPO_ROOT}/package.json`).json()) as { name: string };
+		expect(racine.name).toBe("nie-monorepo");
 	});
 });
 
 describe("exploitation", () => {
-	test("ops_status renvoie l'état des services connus", async () => {
+	test.skipIf(!hasSystemd)("ops_status renvoie l'état des services connus", async () => {
 		const result = await callTool("ops_status", { services: true, endpoints: false });
 		const payload = result.structuredContent as { services: { unit: string; active: string }[] };
 		const azalee = payload.services.find((service) => service.unit === "azalee-web.service");
@@ -252,8 +271,13 @@ describe("ressources et prompts assemblés", () => {
 
 	test("rg://docs/{slug} sert un document du dépôt", async () => {
 		const instance = await server();
+		// `ARCHITECTURE` plutôt que `azalee-lib` : ce dernier document n'existe
+		// plus sous `docs/`, et le gabarit rendait donc `undefined` sur une
+		// résolution par ailleurs correcte. `docs/ARCHITECTURE.md` est le
+		// document que CLAUDE.md désigne comme la carte du dépôt : s'il
+		// disparaît, ce test DOIT rougir.
 		const response = await instance.handle(
-			{ jsonrpc: "2.0", id: 2, method: "resources/read", params: { uri: "rg://docs/azalee-lib" } },
+			{ jsonrpc: "2.0", id: 2, method: "resources/read", params: { uri: "rg://docs/ARCHITECTURE" } },
 			context,
 		);
 		expect((response as unknown as { result: { contents: { text: string }[] } }).result.contents[0]!.text.length).toBeGreaterThan(
@@ -283,30 +307,82 @@ describe("ressources et prompts assemblés", () => {
 	});
 });
 
-// La skill canonique vit dans le plugin Claude du dépôt
-// (`plugins/rose-griffon/skills/donnees-jeu`) : ces tests garantissent qu'elle
-// ne dérive pas du registre réel du serveur.
-describe("skill Claude", () => {
-	test("le frontmatter déclare chaque outil du serveur et rien d'inconnu", async () => {
-		const instance = await server();
-		const skill = await Bun.file(`${import.meta.dir}/../../../plugins/rose-griffon/skills/donnees-jeu/SKILL.md`).text();
-		const names = instance.registry.tools.map((tool) => tool.definition.name);
-		// La skill autorise le serveur en bloc (les deux enregistrements possibles)
-		// plutôt que d'énumérer 26 outils : c'est la seule forme qui fonctionne à
-		// la fois via le plugin et via le `.mcp.json` de projet.
-		expect(skill).toContain("mcp__plugin_rose-griffon_rose-griffon");
-		expect(skill).toContain("mcp__rose-griffon");
-		// Aucun outil fantôme : tout nom d'outil explicitement cité existe.
-		for (const [, declared] of skill.matchAll(/mcp__(?:plugin_rose-griffon_)?rose-griffon__([a-z_]+)/g)) {
-			expect(names).toContain(declared!);
+// L'inventaire canonique des outils vit dans `context/mcp.md`, la fiche que le
+// serveur publie lui-même en `rg://context/mcp` : c'est elle que le modèle
+// client lit pour savoir ce qu'il peut appeler. Ces deux tests la tiennent
+// collée au registre réel, DANS LES DEUX SENS.
+//
+// Ils visaient auparavant `plugins/rose-griffon/skills/donnees-jeu/`. Cette
+// skill a disparu avec le renommage du plugin en `niers`, et le plugin actuel
+// ne documente plus ce serveur — les deux tests n'avaient donc plus de sujet.
+// La fiche de contexte remplit exactement le même rôle et, elle, est livrée.
+describe("inventaire de la fiche de contexte", () => {
+	/**
+	 * Noms d'outils cités dans le tableau d'inventaire de `context/mcp.md`.
+	 *
+	 * Seule la DERNIÈRE colonne est lue. La colonne « Famille » porte aussi du
+	 * code entre accents graves — `(`admin`)` y désigne une portée, pas un
+	 * outil — et une extraction sur la ligne entière réclamait au registre un
+	 * outil nommé « admin » qui n'a jamais existé.
+	 */
+	async function inventaire(): Promise<string[]> {
+		const fiche = await Bun.file(`${import.meta.dir}/../context/mcp.md`).text();
+		const tableau = fiche.split("## Inventaire")[1]?.split("## Deux portées")[0] ?? "";
+		const noms: string[] = [];
+		for (const ligne of tableau.split(/\r?\n/)) {
+			const cellules = ligne.split("|").filter((cellule) => cellule.trim() !== "");
+			if (cellules.length < 2 || ligne.includes("---")) continue;
+			for (const [, nom] of cellules.at(-1)!.matchAll(/`([a-z][a-z0-9_]*)`/g)) noms.push(nom!);
 		}
+		return noms;
+	}
+
+	test("la fiche ne cite aucun outil fantôme", async () => {
+		const instance = await server();
+		const noms = instance.registry.tools.map((tool) => tool.definition.name);
+		const cites = await inventaire();
+		expect(cites.length).toBeGreaterThan(0);
+		// Un outil documenté mais absent du registre est pire qu'un outil non
+		// documenté : le modèle l'appelle, et se prend une erreur de protocole.
+		for (const cite of cites) expect(noms).toContain(cite);
 	});
 
-	test("la référence documente chaque outil", async () => {
+	test("la fiche documente chaque outil du serveur", async () => {
+		// Le sens inverse : un outil ajouté au registre sans une ligne dans la
+		// fiche est invisible pour le client, donc jamais appelé.
+		//
+		// DÉRIVE MESURÉE, pas tolérée. La fiche annonce « 26 outils » et en
+		// liste 26 ; le registre par défaut en expose 44. Les 18 manquants
+		// forment deux familles entières ajoutées après la rédaction de la
+		// fiche : la plateforme Supabase et le déploiement. Ils sont nommés ici
+		// un par un, de sorte que le cliquet joue dans les deux sens — documenter
+		// l'un d'eux fait rougir ce test et demande qu'on le retire de la liste,
+		// et un 19e outil non documenté le fait rougir aussi.
+		const NON_DOCUMENTES = [
+			"apply_migration",
+			"deploy_run",
+			"deploy_status",
+			"execute_sql",
+			"generate_typescript_types",
+			"get_advisors",
+			"get_project_url",
+			"get_publishable_keys",
+			"get_storage_config",
+			"list_extensions",
+			"list_migrations",
+			"list_storage_buckets",
+			"list_tables",
+			"live_graphql",
+			"live_select",
+			"live_storage",
+			"live_tables",
+			"search_docs",
+		];
 		const instance = await server();
-		const reference = await Bun.file(`${import.meta.dir}/../../../plugins/rose-griffon/skills/donnees-jeu/reference.md`).text();
-		for (const tool of instance.registry.tools) {
-			expect(reference).toContain(tool.definition.name);
-		}
+		const cites = new Set(await inventaire());
+		const manquants = instance.registry.tools
+			.map((tool) => tool.definition.name)
+			.filter((nom) => !cites.has(nom));
+		expect(manquants.toSorted()).toEqual([...NON_DOCUMENTES].toSorted());
 	});
 });

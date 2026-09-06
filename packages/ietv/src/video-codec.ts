@@ -368,8 +368,34 @@ export class VideoTranscoder {
 			conversion.onProgress = (progress, processedTime) => report(progress, processedTime);
 		}
 
+		// `new Output({ target: new FilePathTarget(...) })` OUVRE un descripteur
+		// de fichier. Seule une finalisation le referme : tout chemin qui sort
+		// d'ici sans finaliser — conversion invalide, abandon, erreur d'encodage
+		// — laissait le descripteur ouvert jusqu'au ramassage. D'où le
+		// `libererSortie()` appelé sur CHAQUE sortie, y compris celle du `throw`
+		// ci-dessous, qui échappait auparavant au `try`.
+		const libererSortie = async () => {
+			if (output.state === "finalized" || output.state === "canceled") return;
+			try {
+				// `cancel()` ne ferme que les cibles enregistrées par `start()`.
+				// Une sortie restée à l'état `pending` — conversion invalide,
+				// abandon avant exécution — garde donc son descripteur ouvert
+				// alors même qu'on l'annule. On la démarre pour que la cible
+				// soit enregistrée, PUIS on annule : c'est le seul chemin qui
+				// referme réellement le fichier.
+				if (output.state === "pending") await output.start();
+				await output.cancel();
+			} catch {
+				// Le nettoyage ne doit jamais masquer l'erreur d'origine : si la
+				// sortie refuse de démarrer (format sans piste, par exemple), on
+				// laisse remonter la vraie cause, pas celle du ménage.
+			}
+		};
+
 		if (!conversion.isValid) {
 			const reasons = describeDiscarded(conversion.discardedTracks);
+			input.dispose();
+			await libererSortie();
 			throw new Error(
 				`Transcodage impossible pour ${inputPath} → ${outputPath}` +
 					(reasons.length > 0 ? ` : ${reasons.join(", ")}` : "")
@@ -384,6 +410,7 @@ export class VideoTranscoder {
 		} finally {
 			options.signal?.removeEventListener("abort", onAbort);
 			input.dispose();
+			await libererSortie();
 		}
 
 		return {

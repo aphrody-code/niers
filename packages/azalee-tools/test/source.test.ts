@@ -13,7 +13,7 @@
  * `handleAzaleeRequest` → 500).
  */
 
-import { afterAll, afterEach, describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
 
 import { configureAzalee, resetAzaleeConfig, resolveMirrorPath } from "../src/config";
 import { createAzaleeData, inspectLocalData } from "../src/server/source";

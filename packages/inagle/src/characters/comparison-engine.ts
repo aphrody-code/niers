@@ -1,5 +1,4 @@
 import type { CharacterVariant, BaseCharacter } from "../core/types.js";
-import { ELEMENT_NAMES } from "../skills/types.js";
 
 export interface StatComparison {
 	stat: string;
@@ -102,8 +101,6 @@ export function compareVariants(
 	// Determine classification
 	let classification: VariantComparisonResult["classification"] = "Tactical Variation";
 	const details: string[] = [];
-
-	const seriesChanged = false; // We can check this if we have base series vs variant series
 
 	if (elementChanged && positionChanged) {
 		classification = "Hybrid Evolution";

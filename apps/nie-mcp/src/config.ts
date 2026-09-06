@@ -7,6 +7,7 @@
  * chemin codé en dur.
  */
 
+import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { DEFAULT_BRIDGE_PORT } from "@niers/bridge";
 
@@ -19,6 +20,24 @@ function env(name: string, fallback: string): string {
 const defaultRepoRoot = resolve(import.meta.dir, "..", "..", "..");
 
 const repoRoot = resolve(env("NIERS_REPO", defaultRepoRoot));
+
+// Un `NIERS_REPO` qui ne désigne pas le dépôt est la panne la plus coûteuse de
+// ce serveur, parce qu'elle est MUETTE : `repo_read` répond « fichier
+// introuvable » sur un fichier bien présent, et — beaucoup plus grave — les
+// gardes anti-traversée passent au vert pour la mauvaise raison, un ENOENT au
+// lieu d'un refus. Elles ne prouvent alors plus rien.
+//
+// Cas vécu : la valeur du VPS (`/home/ubuntu/niers`) héritée sur le poste
+// Windows, que `resolve()` transforme en `C:\Program Files\Git\home\ubuntu\niers`
+// sous Git Bash. Un chemin POSIX absolu n'est PAS portable ; on le dit tout haut
+// au démarrage plutôt que de laisser une suite verte le cacher.
+if (!existsSync(join(repoRoot, "CLAUDE.md"))) {
+  console.error(
+    `[niers-game] AVERTISSEMENT racine de dépôt invalide : ${repoRoot} (aucun CLAUDE.md). ` +
+      `repo_read répondra « introuvable » sur tout chemin, et ses gardes ne prouveront rien. ` +
+      `Corriger NIERS_REPO (valeur actuelle : ${process.env["NIERS_REPO"] ?? "non définie"}).`,
+  );
+}
 
 export const config = {
   /** API publique/interne `nie-site` (Aphrody), utilisée par les intégrations clientes. */

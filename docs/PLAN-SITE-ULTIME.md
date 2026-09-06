@@ -6,6 +6,30 @@
 
 ---
 
+> **Amendment 2026-09-06 (9) — the real VFS is mounted, Lua is fully audited, and the menu tree
+> is now addressed through Aphrody.**
+>
+> This session replaced the inventory-only proof with a proof against the real Steam CPK
+> payloads, using an explicit `NIE_GAME_DIR`: local and `ovh-vps-ubuntu-direct` both mount
+> **255,308 entries and 936 CPKs** (11 loose local files versus 5 on the VPS; logical paths and
+> format histograms match). `niers vfs extract data --ext lua.bin --out var/lua-vfs-all` produced
+> **1,197/1,197** files, **10,694,973 bytes**, and 0 failures; Lua 5.2 magic and the complete
+> path set match the inventory.
+>
+> The exhaustive audit decoded and executed **1,197/1,197** scripts with 0 decode/runtime
+> errors, 1,053,252 decoded instructions, 21,661,713 live instructions, 76 include families,
+> 0 missing includes, and 0 missing host invocations. The real-VFS menu gate is **13 passed,
+> 0 failed, 2 ignored**; the corpus is **475/475 settings, 4,858 layers, 4,915 commands, and
+> 0 CRC mismatches**.
+>
+> The navigation wiring is now delivered: `nie-site` exposes `/api/v1/menu/screens` and
+> `/api/v1/menu/screens/{stem}` as bounded relays of `nie-model-serve` (`/menu-tree.json` and
+> `/menu-tree/{stem}.json`). `{stem}` is the stem of `*_setting.cfg.bin`, never a layer or Lua
+> script name. HTTP static-layout and PNG-composition routes remain explicitly open: their
+> decoder exists in `nie-game`, but that crate is still binary-only.
+
+---
+
 > **Amendement du 2026-09-06 (3) — la façade est passée au crible, et `nie-aphrody` est branchée.**
 > Cette session n'a pas ajouté de capacité : elle a **retiré** ce que la façade montrait à tort et
 > **servi** ce que le dépôt portait déjà. Trois mesures la résument :
@@ -538,7 +562,9 @@ réelle ; `rg -l '@tauri-apps' packages/inacord-ui` → **0**.
 ### Lot 3 — `nie-lua` sert les menus et les scripts
 
 Aujourd'hui : le codec bytecode est byte-exact, `menu_host` est porté, 66 commandes runtime
-sont reconnues sur `kizuna_town_mainmenu`. Ce qui manque, c'est la **route**.
+sont reconnues sur `kizuna_town_mainmenu`, et l'audit réel a franchi 1 197/1 197 scripts. La
+navigation menu est maintenant adressée par les deux routes de relais de `nie-site` ; le layout
+HTTP reste le travail distinct qui manque.
 
 Deux corrections d'assiette, mesurées le 2026-09-06 :
 
@@ -564,7 +590,11 @@ interpréteur n'est lié dans le binaire, et un `const { assert!(!VM_LIEE) }` l'
 compilation. Une politique qui tient par la discipline du prochain appelant n'est pas une
 politique.
 
-- `/api/v1/menu/<ecran>` : la disposition **exportée par le runtime**, pas un gabarit.
+- `/api/v1/menu/screens` et `/api/v1/menu/screens/{stem}` : l'arbre de navigation construit par
+  `nie-model-serve`, relayé par `nie-site` avec ses bornes d'amont. `{stem}` est le stem du
+  `*_setting.cfg.bin`, pas un calque ni un script.
+- `/api/v1/menu/<ecran>` : la disposition **exportée par le runtime**, pas un gabarit — reste à
+  extraire la logique de `nie-game` dans une bibliothèque ou à assumer un worker borné.
 - `/api/v1/script/<chemin>` : le Lua décodé, ses `Setup*`, ses commandes reconnues.
 - Le front consomme ces routes : un écran nouveau apparaît **sans une ligne de TSX**.
 

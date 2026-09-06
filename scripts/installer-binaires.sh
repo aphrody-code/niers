@@ -12,6 +12,18 @@
 #
 # Usage : bash scripts/installer-binaires.sh [--dry-run]
 set -u
+
+# MSYS/Git Bash n'émet PAS de lien symbolique par défaut : `ln -s` y COPIE le fichier, avec
+# exit 0 et sans un mot. Mesuré le 2026-09-06 sur le poste Windows : ~/.local/bin/niers.exe
+# était un vrai fichier de 27 690 496 octets, `readlink` vide — exactement la copie périmable
+# que l'en-tête ci-dessus dit refuser. `winsymlinks:nativestrict` demande le lien natif ET fait
+# échouer `ln` si le système ne l'accorde pas, au lieu de retomber en silence sur la copie.
+# Vérifié ici : lien natif obtenu, exit 0. Sur une machine sans mode développeur ni privilège
+# SeCreateSymbolicLink, `ln` échouera bruyamment — c'est le comportement voulu, et `verifier_lien`
+# ci-dessous le rattrape dans tous les cas.
+export MSYS=winsymlinks:nativestrict
+export CYGWIN=winsymlinks:nativestrict
+
 cd "$(dirname "$0")/.." || exit 1
 racine=$PWD
 dest=${NIERS_BIN_DIR:-$HOME/.local/bin}
@@ -21,6 +33,7 @@ mkdir -p "$dest"
 poses=0
 sautes=0
 refuses=0
+copies=0
 
 lien() { # $1 = nom publié, $2 = cible absolue
     local nom=$1 cible=$2 actuel
@@ -35,7 +48,21 @@ lien() { # $1 = nom publié, $2 = cible absolue
         sautes=$((sautes + 1))
         return
     fi
-    [ "$sec" = "--dry-run" ] || ln -sfn "$cible" "$dest/$nom"
+    if [ "$sec" != "--dry-run" ]; then
+        if ! ln -sfn "$cible" "$dest/$nom"; then
+            printf '  !!  %-20s ÉCHEC du lien symbolique\n' "$nom"
+            refuses=$((refuses + 1))
+            return
+        fi
+        # On ne CROIT pas `ln` sur parole : la contrainte de l'en-tête est « un lien, jamais une
+        # copie », et c'est cette propriété-là qu'on mesure. Un exit 0 ayant produit un fichier
+        # réel est le faux vert que ce script existe pour éviter.
+        if [ ! -L "$dest/$nom" ]; then
+            printf '  !!  %-20s COPIE et non lien — elle se périmera en silence\n' "$nom"
+            copies=$((copies + 1))
+            return
+        fi
+    fi
     printf '  ->  %-20s %s\n' "$nom" "${cible#$racine/}"
     poses=$((poses + 1))
 }
@@ -80,7 +107,14 @@ for spec in \
 done
 
 echo
-printf '%d posés, %d déjà à jour, %d refusés (collision) → %s\n' "$poses" "$sautes" "$refuses" "$dest"
+printf '%d posés, %d déjà à jour, %d refusés (collision), %d copies → %s\n' \
+    "$poses" "$sautes" "$refuses" "$copies" "$dest"
+if [ "$copies" -gt 0 ]; then
+    echo
+    echo "ATTENTION : $copies commande(s) publiée(s) en COPIE. Elles ne suivront pas un"
+    echo "\`cargo build --release\` et se périmeront sans le dire. Sous Windows, activez le mode"
+    echo "développeur (ou accordez SeCreateSymbolicLinkPrivilege) et relancez."
+fi
 echo
 echo "Rappel de doctrine : \`niers\` est la seule CLI utilisateur. \`nie-mem\` et \`nie-steam\`"
 echo "recouvrent \`niers mem\` et \`niers steam\` — publiés pour l'outillage, mais une commande"

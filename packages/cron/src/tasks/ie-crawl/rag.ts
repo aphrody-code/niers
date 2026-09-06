@@ -7,7 +7,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import * as cheerio from "cheerio";
-import { vectorStore, getEmbedding, crawlerTracker, cache } from "@rosegriffon/db/redis";
+import { vectorStore, getEmbedding, crawlerTracker } from "@rosegriffon/db/redis";
 import { indexZukanCharacters } from "./rag-zukan";
 import { chunkText, computeStringHash } from "./rag-utils";
 import { ingestSources, type RagSource } from "./rag-store-local";

@@ -189,12 +189,21 @@ fn mem_text(m: Mem) -> String {
         // Adresse absolue (`gs:[58h]`) : pas de terme précédent, donc pas de
         // signe de liaison — `[+0x58]` ne se relirait pas.
         s.push_str(&format!("{:#x}", m.disp));
-    } else if m.disp == 0 && m.disp_explicite {
+    } else if m.disp == 0 && m.disp_explicite && !m.disp32 {
         // Le déplacement nul est écrit pour que la relecture le retrouve :
         // `[rbx]` s'encode `mod=00`, `[rbx+0x0]` garde le `disp8` de l'original.
         s.push_str("+0x0");
+    } else if m.disp == 0 && m.disp32 {
+        // Meme motif, pour la forme longue : `[rbx+0x0l]` garde le `disp32`
+        // nul de l'original, distingue de `[rbx+0x0]` (`disp8`).
+        s.push_str("+0x0l");
     } else {
         s.push_str(&fmt_disp(m.disp));
+        if m.disp32 {
+            // `l` marque la forme longue : `disp32` au lieu de `disp8`
+            // alors que la valeur tiendrait sur un octet.
+            s.push('l');
+        }
     }
     s.push(']');
     s
@@ -279,9 +288,12 @@ fn parse_mem(s: &str) -> Option<Mem> {
                 m.index = Some((reg, 1));
             }
         } else {
+            let (term, longue) = term.strip_suffix('l').map_or((term, false), |t| (t, true));
             m.disp = i32::try_from(parse_int(term)? * i64::from(sign)).ok()?;
-            // Un déplacement nul écrit noir sur blanc demande le `disp8`.
-            m.disp_explicite = m.disp == 0;
+            // Un déplacement nul écrit noir sur blanc demande le `disp8` — ou,
+            // avec le suffixe `l`, le `disp32` (`+0x0l`).
+            m.disp_explicite = m.disp == 0 && !longue;
+            m.disp32 = longue;
         }
     }
     Some(m)

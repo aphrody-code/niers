@@ -125,6 +125,15 @@ pub fn execute(data: &[u8], chunk_name: &str, with_menu_host: bool, instruction_
         chunk_name: chunk_name.to_string(),
         instruction_limit,
         with_menu_host,
+        // Aucun contexte moteur ici : cette entrée exécute un chunk arbitraire venu du frontend,
+        // sans sauvegarde ni scène d'où tirer des globals. `default()` = trois tables vides, donc
+        // rien d'injecté — c'est exactement ce que faisait ce site avant l'ajout du champ.
+        //
+        // Champ nommé explicitement plutôt que `..Default::default()` : `src-tauri` est HORS du
+        // workspace Cargo, donc la porte `cargo clippy` du dépôt ne le voit pas. Un `..Default`
+        // absorberait en silence le prochain champ ajouté à `ExecOptions` — sur un crate qui
+        // ouvre un interpréteur Lua, on préfère que ça casse bruyamment.
+        context: nie_lua::runtime::RuntimeContext::default(),
     };
     let out = nie_lua::runtime::execute(data, &options).map_err(|e| e.to_string())?;
     Ok(LuaExecResultDto {

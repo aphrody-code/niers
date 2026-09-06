@@ -20,7 +20,7 @@
  * quand `SQLITE_DB_PATH` est introuvable, exactement comme sur Vercel).
  */
 
-import { afterAll, afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { createClient as createSupabaseClient, type SupabaseClient } from "@supabase/supabase-js";
 
 import { resolveMirrorPath } from "../src/config";

@@ -205,29 +205,31 @@ curl -s -o /dev/null -w "%{http_code} %{size_download}\n" \
 source (calque vs script vs `*_setting`) — toute route qui accepte un nom d'écran doit
 documenter LEQUEL des trois espaces de noms elle attend.
 
-`GET /menu-tree.json` sous `127.0.0.1:8085` (nie-site) répond 200 mais rend la **page HTML**
-d'exploration du VFS (`<title>menu-tree.json — Aphrody</title>`), pas le JSON — cette route
-n'existe que côté `nie-model-serve` (8790), Aphrody ne l'a pas encore relayée.
+`GET /menu-tree.json` sous `127.0.0.1:8085` (nie-site) répond désormais via le relais API
+`GET /api/v1/menu/screens`. Le relais utilise le même proxy borné que `/assets` (timeout,
+plafond de réponse, cache et ETag) et rend le JSON construit par `nie-model-serve`; il ne
+reconstruit pas la table. Une requête directe vers `/menu-tree.json` reste une page de fallback
+HTML et n'est pas l'API menu.
 
 ## 6. Tableau de couverture (matrice `docs/PLAN-SITE-ULTIME.md` §4)
 
 | Famille | État | Détail |
 |---|---|---|
 | Textures `.g4tx` isolées (icônes, images plates) | **servi** | `/assets/tex/<chemin>.png` — `200`, mesuré ci-dessus |
-| Layout statique d'un écran à calque (ex. `mainmenu01`) | **interne** | `nie-game --export-layout` produit le JSON complet (34/34 objets positionnés), mais aucune route HTTP ne l'expose encore côté Aphrody — seul `/menu-tree.json` (nav) est servi |
+| Layout statique d'un écran à calque (ex. `mainmenu01`) | **interne** | `nie-game --export-layout` produit le JSON complet (34/34 objets positionnés), mais aucune route HTTP ne l'expose encore côté Aphrody |
 | Comportement piloté-script d'un écran (ex. `kizuna_town_mainmenu`) | **manquant** | le driver Lua tourne et compte les commandes, mais produit 0 objet visible (`GetItemButtonNum` sans état scène/save C++) — rien à servir tant que la couche donnée n'existe pas |
-| Table de navigation (crc32, layers, commandes) | **servi** (model-serve seulement) | `/menu-tree.json` → 200, 475 écrans ; **manquant** côté `nie-site`/Aphrody |
+| Table de navigation (crc32, layers, commandes) | **servi** | `nie-model-serve` construit `/menu-tree.json`; `nie-site` la relaie par `/api/v1/menu/screens` et `/api/v1/menu/screens/{stem}`, 475 écrans |
 | Composition PNG d'un écran depuis son layout | **interne** | `--compose-layout` existe en CLI, jamais exposé en route |
 | `.g4mg`/`.g4pkm` (`common/menu`, HUD de match) | **manquant** | aucun décodeur/route identifiés dans ce passage — à vérifier dans `nie-formats` avant d'écrire une route (pas confirmé ici, ne pas affirmer l'absence de code) |
 | `.g4pk`/`.g4tg` (10 fichiers au total) | **manquant** | volume négligeable, à router seulement si un besoin concret apparaît |
 | Localisation (8 locales, profondeur 8) | **interne** | le JSON exporté porte déjà `"locale":"fr"` (piloté par le runtime), mais aucune route ne permet de choisir la locale servie |
 
-## 7. Routes à créer (une par capacité réelle, aucune sans décodeur)
+## 7. Routes livrées et restantes (une par capacité réelle, aucune sans décodeur)
 
 | Route | Contenu | Décodeur/parseur existant |
 |---|---|---|
-| `GET /api/v1/menu/screens` | relais du `/menu-tree.json` de model-serve (475 écrans, nav+layers+commandes) | `nie-model-serve` port 8790, déjà fonctionnel — relayer, pas réécrire |
-| `GET /api/v1/menu/screens/{stem}` | un écran de nav (`/menu-tree/{stem}.json`) — **documenter que `{stem}` est le nom du `*_setting.cfg.bin.json`, pas celui du calque** | idem, sélecteur déjà câblé (`crates/tools/nie-model-serve/src/main.rs:5064` et suite) |
+| `GET /api/v1/menu/screens` | **livrée** : relais du `/menu-tree.json` de model-serve (475 écrans, nav+layers+commandes) | `nie-model-serve` port 8790, relayé par le proxy borné de `nie-site` |
+| `GET /api/v1/menu/screens/{stem}` | **livrée** : une entrée de nav (`/menu-tree/{stem}.json`) ; `{stem}` est le nom du `*_setting.cfg.bin`, pas celui du calque | même sélecteur, `crates/tools/nie-model-serve/src/main.rs:5064` et suite |
 | `GET /api/v1/menu/layout/{ecran}` | layout statique d'un écran à calque (objets, transform, sprite, texte) — `{ecran}` est ici le nom du calque (`mainmenu01`), **troisième espace de noms**, à ne jamais confondre avec `{stem}` ci-dessus | `nie-game --runtime --menu {ecran} --export-layout` (`crates/engine/nie-game/src/main.rs:3078`) — à faire tourner en bibliothèque plutôt qu'en sous-process pour une route HTTP |
 | `GET /api/v1/menu/layout/{ecran}.png` | composition PNG de l'écran | `--compose-layout` (même binaire) |
 | `GET /assets/tex/{chemin}.png` | **déjà servi**, vérifié 200 sur `mainmenu01_06` — rien à créer, juste à documenter dans le cahier des charges comme référence de convention | `nie-site`, `crates/engine/nie-formats/src/g4tx_decode.rs:197` |
@@ -236,8 +238,8 @@ n'existe que côté `nie-model-serve` (8790), Aphrody ne l'a pas encore relayée
 
 ## 8. Combien d'écrans le site pourrait servir
 
-- Table de **navigation** : 475/475 accessibles dès qu'`/api/v1/menu/screens` relaie
-  `nie-model-serve` — c'est un relais pur, 0 décodage à écrire.
+- Table de **navigation** : **475/475 accessibles** par `/api/v1/menu/screens`; le relais est
+  borné et n'ajoute aucun décodeur concurrent.
 - Table de **rendu** (layout réellement dessinable) : seuls les écrans à calque statique
   (type `mainmenu01`) produisent un JSON complet aujourd'hui. Le compte exact d'écrans « à
   calque, 0 script » contre « à script, 0 calque statique » **n'a pas été mesuré ici** — il
@@ -245,8 +247,9 @@ n'existe que côté `nie-model-serve` (8790), Aphrody ne l'a pas encore relayée
   `objets==0`, ce qui dépasse le périmètre d'écriture de ce document (aucun script). À faire
   avant d'écrire les routes du §7 pour chiffrer précisément `servis / 475` (mission demandait
   `/440`, la mesure live des écrans donne 475 — préférer 475, plus récent).
-- Chiffre honnête à ce stade : **1/475 vérifié en profondeur** (`mainmenu01`, 34/34 objets
+- Chiffre honnête pour le rendu : **1/475 vérifié en profondeur** (`mainmenu01`, 34/34 objets
   positionnés, 26/34 avec texte) + **1/475 vérifié en échec documenté**
   (`kizuna_town_mainmenu`, 0/5 objets rendus, cause connue et non un bug de mesure). Le reste
   est à passer au même protocole (`--export-layout` + comptage `sprite==null`/`text==0`) avant
-  toute annonce de couverture globale.
+  toute annonce de couverture globale. La navigation et le rendu restent deux couvertures
+  différentes.

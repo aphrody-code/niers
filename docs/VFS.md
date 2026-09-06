@@ -205,7 +205,7 @@ le code qui la servait.
 
 | Ce qu'on croyait | Ce que la mesure dit |
 |---|---|
-| L'arbre des menus compte **440** écrans | `/menu-tree.json`, interrogé en direct : **475**. Le 440 venait d'un commentaire du code source, jamais rejoué. |
+| L'arbre des menus compte **440** écrans | **`nie-model-serve` rend 475**, et `nie-site` les relaie désormais par `/api/v1/menu/screens`. Le 440 venait d'un commentaire du code source, jamais rejoué. |
 | `mainmenu01` a « 24 objets jamais positionnés » | **0/34 sans position**. En revanche 8/34 sont sans sprite et 26/34 sans texte. Le défaut existait, il n'était pas celui-là. |
 | Deux nomenclatures d'écran (calque ≠ script) | **Trois.** `/menu-tree/{stem}.json` attend le nom du `*_setting.cfg.bin.json` — `mainmenu01` y rend **404**. Confondre les trois donne un 404 qu'on attribuera au fichier. |
 | Le T2B, c'est `common/property/**` | Vérifié **à l'octet** (`xxd`) : `menu_text`, `property/camera` et `font.cfg.bin` sont T2B aussi. La règle est plus large que ce qu'on avait écrit. |
@@ -225,4 +225,17 @@ le code qui la servait.
   `MemoryHigh` de 16 G, tous les rendus en 504) pendant que six agents interrogeaient le VFS en
   parallèle. Revérifié après : 5,7 Gio, `/model/perso/c01000010.png` en **200 / 1,1 s**. Le
   rapport n'était pas faux, il était daté.
+
+### 2026-09-06 — local/VPS parity and Lua extraction
+
+The explicit Steam-root mount is now the reference for menu work: local and
+`ovh-vps-ubuntu-direct` both report 255 308 VFS entries and 936 CPKs. The local loose-file count
+is 11 versus 5 on the VPS; the logical path and format histograms match. `niers vfs extract data
+--ext lua.bin --out var/lua-vfs-all` produced 1 197 files and 10 694 973 bytes with 0 failures;
+the extracted path set is identical to the inventory and every chunk has Lua 5.2 magic.
+
+The exhaustive audit then decoded and executed 1 197/1 197 scripts with 0 decode/runtime errors,
+1 053 252 decoded instructions, 21 661 713 live instructions, 76 include families, 0 missing
+includes, and 0 missing host invocations. These are local/VPS-backed measurements, not claims
+that the ignored game payload belongs in Git.
 

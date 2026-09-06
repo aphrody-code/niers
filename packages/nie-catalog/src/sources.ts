@@ -17,6 +17,7 @@
  * prendrait pour une vérité.
  */
 import { existsSync, readlinkSync, statSync } from "node:fs";
+import { homedir } from "node:os";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { BASE_JEU_DEFAUT, baseJeu } from "./jeu.ts";
 
@@ -113,6 +114,20 @@ function sourceExtrait(racine: string): Source {
 }
 
 /**
+ * Le cache du crawler IETV, dans le répertoire personnel — `undefined` s'il n'y en a pas.
+ *
+ * `process.env.HOME` n'existe PAS sous Windows (c'est `USERPROFILE`) : `HOME ?? ""` y produisait
+ * `join("", ".cache", …)`, donc un chemin RELATIF, que `premierLisible` résolvait ensuite contre
+ * le cwd. Le repli visait alors `<répertoire courant>/.cache/ietv/episodes.db` au lieu du
+ * répertoire personnel — sans rien dire, exactement le piège de la variable posée mais vide que
+ * `racineDepot` évite plus haut. `homedir()` répond sur les deux plateformes.
+ */
+function cacheIetvPersonnel(): string | undefined {
+	const maison = homedir();
+	return maison ? join(maison, ".cache", "ietv", "episodes.db") : undefined;
+}
+
+/**
  * Résout les quatre gisements. Le résultat est mémorisé : ces chemins ne bougent pas sous nos
  * pieds pendant la vie d'un processus, et une résolution refaite à chaque requête coûterait
  * quatre `stat` par appel.
@@ -128,7 +143,7 @@ export function sources(depart?: string): Sources {
 		anime: premierLisible([
 			process.env.NIE_ANIME_SQLITE?.trim(),
 			join(racine, "data", "anime", "episodes.db"),
-			join(process.env.HOME ?? "", ".cache", "ietv", "episodes.db"),
+			cacheIetvPersonnel(),
 		]),
 		extrait: sourceExtrait(racine),
 		// La base du CDN n'est PAS recalculée ici : elle vient de `./jeu.ts`, qui porte les

@@ -171,6 +171,11 @@ declarer_routes! {
     "/api/v1/lua/scripts" => crate::routes::lua::scripts,
     "/api/v1/lua/scripts/{*chemin}" => crate::routes::lua::script,
     "/api/v1/lua/desassemblage/{*chemin}" => crate::routes::lua::desassemblage,
+    // L'arbre de navigation est construit par `nie-model-serve` depuis les vrais
+    // `_setting.cfg.bin`. Le site le relaie sous son API, par le même proxy borné que les
+    // assets, sans recopier ni réimplémenter le catalogue.
+    "/api/v1/menu/screens" => crate::routes::menu::screens,
+    "/api/v1/menu/screens/{stem}" => crate::routes::menu::screen,
     "/api/v1/formats" => crate::routes::formats::capacites,
     "/api/v1/formats/decode/{*chemin}" => crate::routes::formats::decode,
     // Les modules de `nie-formats` que le decodage generique n'atteint pas : ils prennent une
@@ -461,7 +466,7 @@ mod tests {
     #[test]
     fn contrat_de_routes() {
         let routes = chemins();
-        assert_eq!(routes.len(), 80, "80 routes montees");
+        assert_eq!(routes.len(), 82, "82 routes montees");
         for r in &routes {
             assert!(r.starts_with('/'), "{r}");
             // Syntaxe axum 0.7 (`:id`, `*path`) : elle PANIQUE au `route()`, elle ne degrade

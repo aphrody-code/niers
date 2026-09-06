@@ -11,7 +11,7 @@ import { Separator } from "./separator";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "./sheet";
 import { Skeleton } from "./skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./tooltip";
-import { useIsMobile, BREAKPOINTS } from "../hooks/use-mobile";
+import { useIsMobile } from "../hooks/use-mobile";
 import { useSwipe } from "../hooks/use-swipe";
 import { Menu } from "lucide-react";
 import { cn } from "../lib/utils";

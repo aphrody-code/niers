@@ -534,6 +534,18 @@ csharp/             IECODE.Core / IECODE.CLI / IECODE.Core.Tests (.NET 10, `IECO
   (`niers info`, the `niers-game` MCP, the goldens). Set as a **user** variable pointing at
   `…/steamapps/common/INAZUMA ELEVEN Victory Road` → 255 308 entries, 936 packs. On the Steam
   Windows install the full VFS **is** the cwd, so `NIE_GAME_DIR` is otherwise useless.
+- **Measured baseline, 2026-09-06:** with that Steam root explicit, local and
+  `ovh-vps-ubuntu-direct` both expose 255 308 logical VFS entries and 936 CPKs; the only observed
+  difference is 11 loose entries locally versus 5 on the VPS. All 1 197 `.lua.bin` chunks were
+  extracted to `var/lua-vfs-all`, validated with Lua 5.2 magic, and matched the inventory path set
+  exactly (10 694 973 bytes, 0 extraction failures). The exhaustive Lua audit decoded and ran
+  1 197/1 197 chunks with 0 decode/runtime errors, 1 053 252 decoded instructions, 21 661 713
+  live instructions, 76 include families, 0 missing includes, and 0 missing host invocations.
+- The real-VFS menu gate is 13 passed, 0 failed, 2 ignored; the menu corpus is 475/475 settings,
+  4 858 layers, 4 915 commands, and 0 CRC mismatches. `nie-site` publishes static screen facts
+  and relays the upstream navigation tree at `/api/v1/menu/screens` and
+  `/api/v1/menu/screens/{stem}`. The latter expects the stem of `*_setting.cfg.bin`; it does not
+  accept a layer name or a Lua script name.
 - `NIE_GAME_DIR` / `NIE_DUMP_DIR` **set but empty are ignored** (an empty string is not a root — it
   used to return an empty path where nothing is ever found).
 - `Vfs::init()` takes **`<root>/data`**, not the root (otherwise "cannot open cpk_list.cfg.bin").

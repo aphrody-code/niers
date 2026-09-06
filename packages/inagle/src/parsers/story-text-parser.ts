@@ -4,7 +4,6 @@ import { parseAllCharaBase } from "./chara-base.js";
 import { buildAllNameMaps, getLocalizedNames } from "./chara-text.js";
 import { type Locale, sanitizeText, toHex } from "../core/data-loader.js";
 import { DATA_ROOT, resolveGameDataFile } from "../core/paths.js";
-import type { ConfigNode } from "../core/config-parser.js";
 
 export interface ResolvedSpeaker {
 	charaId: string;

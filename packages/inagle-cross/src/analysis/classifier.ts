@@ -2,7 +2,6 @@ import { existsSync, mkdirSync, readFileSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { gunzipSync } from "node:zlib";
-import { z } from "zod";
 import audioManifest from "../../data/audio-manifest.json";
 import {
 	type CharacterAssetLinks,
@@ -111,7 +110,7 @@ function buildSqlite(db: any, srcPath: string): void {
 						JSON.stringify(entry.deps || [])
 					);
 				}
-			} catch (e) {
+			} catch {
 				// Ignorer les lignes corrompues
 			}
 		}
@@ -164,7 +163,7 @@ export function searchCatalog(
 		let deps: string[] = [];
 		try {
 			deps = JSON.parse(r.deps);
-		} catch (e) {}
+		} catch {}
 		return CrossAssetSchema.parse({
 			guid: r.guid,
 			key: r.key,
@@ -192,7 +191,7 @@ export function getAssetByGuid(guid: string): CrossAsset | null {
 	let deps: string[] = [];
 	try {
 		deps = JSON.parse(row.deps);
-	} catch (e) {}
+	} catch {}
 
 	return CrossAssetSchema.parse({
 		guid: row.guid,
@@ -218,7 +217,7 @@ export function getAssetByKey(key: string): CrossAsset | null {
 	let deps: string[] = [];
 	try {
 		deps = JSON.parse(row.deps);
-	} catch (e) {}
+	} catch {}
 
 	return CrossAssetSchema.parse({
 		guid: row.guid,
@@ -355,7 +354,7 @@ export function classifyCharacterAssets(input: CharacterAssetInput): CharacterAs
 		let deps: string[] = [];
 		try {
 			deps = JSON.parse(r.deps);
-		} catch (e) {}
+		} catch {}
 		return {
 			key: r.key,
 			asset: CrossAssetSchema.parse({

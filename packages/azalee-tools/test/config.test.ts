@@ -137,7 +137,12 @@ describe("resolveMirrorPath — miroir SQLite des tables inagle_*", () => {
 	test("mirrorPath explicite l'emporte sur tout le reste", () => {
 		process.env.SQLITE_DB_PATH = "/tmp/depuis-env.sqlite";
 		configureAzalee({ mirrorPath: "/tmp/explicite.sqlite" });
-		expect(resolveMirrorPath()).toBe("/tmp/explicite.sqlite");
+		// `path.resolve` comme au test voisin : ce qui est vérifié est la
+		// PRIORITÉ de `mirrorPath` sur la variable d'environnement, pas
+		// l'orthographe des séparateurs. Figer le littéral POSIX faisait
+		// rougir ce test sous Windows (`C:\tmp\explicite.sqlite`) alors que le
+		// code de production, lui, est correct.
+		expect(resolveMirrorPath()).toBe(path.resolve("/tmp/explicite.sqlite"));
 	});
 
 	test("SQLITE_DB_PATH l'emporte sur la découverte conventionnelle", () => {
@@ -155,9 +160,14 @@ describe("getCacheDir — dossier de matérialisation", () => {
 	});
 
 	test("AZALEE_CACHE_DIR puis cacheDir explicite prennent la main", () => {
+		// Même raison qu'au-dessus : c'est la priorité qui est testée, pas
+		// l'orthographe des séparateurs. Les deux branches n'ont pas le même
+		// contrat, et c'est délibéré : `AZALEE_CACHE_DIR` est repris TEL QUEL,
+		// tandis que `configureAzalee({ cacheDir })` absolutise sa valeur.
+		// D'où `join` d'un côté et `resolve` de l'autre.
 		process.env.AZALEE_CACHE_DIR = "/tmp/depuis-env-cache";
-		expect(getCacheDir("x")).toBe("/tmp/depuis-env-cache/x");
+		expect(getCacheDir("x")).toBe(path.join("/tmp/depuis-env-cache", "x"));
 		configureAzalee({ cacheDir: "/tmp/explicite-cache" });
-		expect(getCacheDir("x")).toBe("/tmp/explicite-cache/x");
+		expect(getCacheDir("x")).toBe(path.join(path.resolve("/tmp/explicite-cache"), "x"));
 	});
 });

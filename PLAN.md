@@ -11,6 +11,53 @@ La stack est **gelée** : [`docs/stack/`](docs/stack/README.md) (décisions, ver
 alternatives rejetées, gates). Ce fichier est le plan d'exécution de cette semaine ; le plan
 maître du moteur et de la forge reste [`docs/PLAN.md`](docs/PLAN.md).
 
+> **Amendement du 2026-09-06 (9) — preuve VFS/Lua et relais menu livrés.** Avec `NIE_GAME_DIR`
+> explicite, le poste Windows et `ovh-vps-ubuntu-direct` montent chacun **255 308 entrées / 936
+> CPK** ; seuls les fichiers loose diffèrent (11 localement, 5 au VPS). Les **1 197 Lua** ont
+> été extraits et validés (10 694 973 octets, 0 échec, magic Lua 5.2, chemins identiques à
+> l'inventaire), puis l'audit exhaustif a décodé/exécuté **1 197/1 197** scripts avec 0 erreur,
+> 76 familles d'include sans manque et 0 invocation d'hôte manquante. Le gate menu réel est
+> **13 passé / 0 échoué / 2 ignoré**, avec 475/475 settings, 4 858 calques, 4 915 commandes,
+> 0 CRC incohérent. `nie-site` relaie maintenant l'arbre de navigation par
+> `/api/v1/menu/screens` et `/api/v1/menu/screens/{stem}` ; les layouts HTTP/PNG restent le
+> prochain lot, car `nie-game` est encore binaire-only.
+
+> **Amendement du 2026-09-06 (8) — le poste Windows est monté, et les portes ont été jouées.**
+> Session de bootstrap complet depuis un clone frais. Comptes avant/après, chacun mesuré :
+>
+> | Porte | Avant | Après |
+> |---|---|---|
+> | `bun run typecheck` | 81 `TS2307` | **0 err, 29/29 workspaces** |
+> | `dotnet build` (`csharp/`) | 6 `NU1903` (GHSA-2m69-gcr7-jv3q, gravité élevée) | **0 warn, 0 err, 274/274 tests** |
+> | `cargo clippy` (38 crates) | 1 warning (`nie-ffi`) | **0** |
+> | Build Inacord | ne compilait pas (`E0063`, `src-tauri`) | **compile et se lance** |
+> | Icônes rendues `null` | 9 | **0** |
+> | `bun run test` | 74 échecs | en cours de diagnostic |
+>
+> **Ce que ce bootstrap a révélé et qu'aucune relecture n'aurait trouvé** — les trois défauts
+> partagent une cause : *personne ne les compile*.
+> 1. `apps/inacord/src-tauri` est un workspace Cargo **séparé** : la porte clippy des 38 crates
+>    ne l'a jamais vu, et l'application était cassée depuis un changement de `nie-lua`.
+> 2. La porte documentée `clippy -p <crate> --lib --tests` renvoie `no library targets found` sur
+>    **7 crates bin-only** — une erreur qu'on prend pour un échec, ou qu'on ignore.
+> 3. `~/.local/bin` contenait des **copies** et non des liens : sous MSYS, `ln -s` copie avec
+>    exit 0 et sans un mot. Corrigé, avec assertion `-L` après coup.
+>
+> **Correction d'un diagnostic à moi**, pour que personne ne le refasse : les 81 `TS2307` ne sont
+> **pas** un bug de `.gitignore`. `packages/*/src/data/**/*.json` est exclu délibérément et
+> commenté (`.gitignore:26`) — ce sont des manifestes générés et du contenu © LEVEL-5. Un clone
+> frais ne typecheck pas *par construction* ; il manque une **étape d'amorçage**, pas une
+> ré-inclusion.
+>
+> **Reste ouvert.** Les 74 tests Bun (au moins une grappe est un vrai bug : `packages/mcp` teste
+> encore un plugin `rose-griffon` que le débranding a renommé `niers`) ; ~4 500 avertissements de
+> style oxlint (la porte est déjà à exit 0) ; l'audit UI d'Inacord a rendu **2 défauts bloquants**
+> (palette de commandes morte, donc Cinéma et Tableau de bord inatteignables ; « 200 fonction(s) »
+> qui affiche un `LIMIT` comme un compte) et 10 autres, non encore corrigés ; et la question des
+> **17 Go de `var/niers.sqlite`** — cette base décrit un binaire (`4c2b91fbae6f…`, 31 468 032 o)
+> qui n'est **pas** le `nie.exe` local (`b1fa04ea3658…`, 33 918 464 o) : un `niers rebuild` local
+> contre la vraie cible vaut mieux qu'un transfert, mais la décision appartient à l'utilisateur.
+
 > **Amendement du 2026-09-06 (7) — la gate maîtresse est TENUE.** `manquant = 0`,
 > `partiel = 0`, `tenue: true`, mesuré par la commande du § 4 :
 > `nie-site --regenerer-couverture var/couverture-site.json`. En une journée, **26 → 0**, en

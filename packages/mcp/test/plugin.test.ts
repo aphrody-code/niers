@@ -1,23 +1,85 @@
 /**
- * Plugin Claude `rose-griffon` : cohérence de la configuration livrée.
+ * Plugin Claude `niers` : cohérence de la configuration livrée.
  *
  * Ces tests remplacent une inspection à l'œil sur la machine cliente. Ils
  * reproduisent ce que fait Claude Code au chargement — lecture du manifeste,
- * expansion des variables d'environnement, appel du point d'entrée — et
+ * expansion des variables d'environnement, découverte des composants — et
  * échouent sur les modes de panne réellement rencontrés : entrée MCP sans
- * `type` (silencieusement ignorée), variable non définie envoyée telle quelle
- * dans un en-tête, `hooks.json` de plugin à plat, outil déclaré dans une skill
- * mais absent du serveur.
+ * `type` (silencieusement ignorée), variable non définie envoyée telle quelle,
+ * composant rangé sous `.claude-plugin/` (jamais découvert), outil MCP cité
+ * sous un préfixe que le serveur déclaré ne porte pas.
+ *
+ * ATTENTION aux constantes de ce fichier. Elles sont écrites EN DUR, et c'est
+ * délibéré : des attentes relues sur le disque feraient un test incapable
+ * d'échouer, qui rassurerait pendant qu'une skill disparaît. La suppression
+ * d'une skill, d'un agent ou le renommage du plugin DOIT rougir ici.
+ *
+ * Le plugin s'appelait `rose-griffon` et vivait en `plugins/rose-griffon`.
+ * Il a été renommé `niers` (débranding : niers est un projet `aphrody-dev`),
+ * et ce fichier était resté derrière — il testait un plugin absent du disque.
  */
 
 import { describe, expect, test } from "bun:test";
-import { createRgMcpServer } from "../src/index.ts";
 
 const RACINE = `${import.meta.dir}/../../..`;
-const PLUGIN = `${RACINE}/plugins/rose-griffon`;
+const PLUGIN = `${RACINE}/plugins/niers-plugin`;
+
+/** Nom du plugin, du serveur MCP qu'il fournit, et de sa source marketplace. */
+const NOM_PLUGIN = "niers";
+const NOM_SERVEUR = "niers-game";
+const SOURCE_MARKETPLACE = "./niers-plugin";
+
+/** Les 16 skills livrées. Une disparition — comme un ajout — doit rougir. */
+const SKILLS = [
+	"aphrody-pet",
+	"assembler-modeles-textures",
+	"bun-ffi",
+	"creer-assets-3d",
+	"formats-level5",
+	"ievr-terminologie",
+	"jouer-ievr",
+	"napi-rs",
+	"niers-architecture",
+	"niers-autonome",
+	"niers-monorepo",
+	"peaufiner-rendu-3d",
+	"pixel-perfect",
+	"rs-to-ts",
+	"rust-bun",
+	"wasm-bun",
+];
+
+/** Les 6 agents livrés. */
+const AGENTS = ["build-doctor", "bun-rs", "forge-analyst", "port-scout", "re-lookup", "vfs-scout"];
 
 async function lireJson<T>(chemin: string): Promise<T> {
 	return (await Bun.file(chemin).json()) as T;
+}
+
+/** Frontmatter YAML brut d'un fichier Markdown (entre les deux `---`). */
+function frontmatter(contenu: string): string {
+	return contenu.split("---")[1] ?? "";
+}
+
+/**
+ * Valeur du champ `description` d'un frontmatter, les deux formes YAML
+ * confondues : `description: texte` sur une ligne, et le scalaire replié
+ * `description: >-` suivi de lignes indentées. Un test qui ne connaît que la
+ * première mesure une description repliée à ZÉRO caractère et rougit sur cinq
+ * skills parfaitement décrites — l'inverse exact de ce qu'il cherche.
+ */
+function description(entete: string): string {
+	const lignes = entete.split(/\r?\n/);
+	const depart = lignes.findIndex((ligne) => /^description:/.test(ligne));
+	if (depart < 0) return "";
+	const premiere = lignes[depart]!.replace(/^description: */, "");
+	if (!/^[>|][-+]?$/.test(premiere.trim())) return premiere.trim();
+	const repliees: string[] = [];
+	for (const ligne of lignes.slice(depart + 1)) {
+		if (!/^\s/.test(ligne) || ligne.trim() === "") break;
+		repliees.push(ligne.trim());
+	}
+	return repliees.join(" ");
 }
 
 /** Expansion `${VAR}` / `${VAR:-défaut}`, comme le fait Claude Code. */
@@ -32,212 +94,180 @@ describe("manifeste et marketplace", () => {
 		const manifeste = await lireJson<{ name: string; version: string; description: string }>(
 			`${PLUGIN}/.claude-plugin/plugin.json`,
 		);
-		expect(manifeste.name).toBe("rose-griffon");
+		expect(manifeste.name).toBe(NOM_PLUGIN);
 		expect(manifeste.name).toMatch(/^[a-z][a-z0-9-]*$/);
 		expect(manifeste.version).toMatch(/^\d+\.\d+\.\d+$/);
 		expect(manifeste.description.length).toBeGreaterThan(30);
 	});
 
-	test("la marketplace pointe le plugin et annonce la même version", async () => {
+	test("la marketplace pointe le plugin, et la source existe vraiment", async () => {
+		// La marketplace vit dans `plugins/`, pas à la racine : ses `source` sont
+		// donc relatives à `plugins/`. Une source résolue depuis la racine du
+		// dépôt viserait `<dépôt>/niers-plugin`, qui n'existe pas — panne muette,
+		// le plugin est simplement absent du catalogue côté client.
 		const marketplace = await lireJson<{
-			plugins: { name: string; source: string; version: string }[];
-		}>(`${RACINE}/.claude-plugin/marketplace.json`);
-		const entree = marketplace.plugins.find((p) => p.name === "rose-griffon");
+			plugins: { name: string; source: string; description: string }[];
+		}>(`${RACINE}/plugins/.claude-plugin/marketplace.json`);
+		const entree = marketplace.plugins.find((p) => p.name === NOM_PLUGIN);
 		expect(entree).toBeDefined();
-		expect(entree!.source).toBe("./plugins/rose-griffon");
-		const manifeste = await lireJson<{ version: string }>(`${PLUGIN}/.claude-plugin/plugin.json`);
-		expect(entree!.version).toBe(manifeste.version);
-		expect(await Bun.file(`${RACINE}/${entree!.source.slice(2)}/.claude-plugin/plugin.json`).exists()).toBe(true);
+		expect(entree!.source).toBe(SOURCE_MARKETPLACE);
+		expect(entree!.description.length).toBeGreaterThan(30);
+		expect(await Bun.file(`${RACINE}/plugins/${entree!.source.slice(2)}/.claude-plugin/plugin.json`).exists()).toBe(
+			true,
+		);
 	});
 
 	test("les composants sont à la racine du plugin, pas dans .claude-plugin", async () => {
 		// `Bun.file(...).exists()` répond `false` sur un répertoire : on passe
 		// donc par `stat()` pour les dossiers, `exists()` pour les fichiers.
-		for (const dossier of ["skills", "agents", "hooks"]) {
+		for (const dossier of ["skills", "agents"]) {
 			expect((await Bun.file(`${PLUGIN}/${dossier}`).stat()).isDirectory()).toBe(true);
 		}
-		for (const fichier of ["hooks/hooks.json", ".mcp.json", "README.md", ".claude-plugin/plugin.json"]) {
+		for (const fichier of ["README.md", ".claude-plugin/plugin.json"]) {
 			expect(await Bun.file(`${PLUGIN}/${fichier}`).exists()).toBe(true);
 		}
 		// Les composants dans `.claude-plugin/` ne seraient pas découverts.
-		expect(await Bun.file(`${PLUGIN}/.claude-plugin/skills/donnees-jeu/SKILL.md`).exists()).toBe(false);
+		expect(await Bun.file(`${PLUGIN}/.claude-plugin/skills/${SKILLS[0]}/SKILL.md`).exists()).toBe(false);
 		expect(await Bun.file(`${PLUGIN}/.claude-plugin/.mcp.json`).exists()).toBe(false);
 	});
 });
 
-describe("configuration MCP du plugin", () => {
-	test("l'entrée déclare `type` — sans lui elle est lue comme stdio et ignorée", async () => {
+// Le serveur `niers-game` est déclaré à la RACINE du dépôt, pas dans le
+// plugin : c'est ce que dit son manifeste, et `plugins/niers-plugin/.mcp.json`
+// a été retiré en conséquence. Ces tests suivent le fichier réellement lu.
+describe("configuration MCP du dépôt", () => {
+	test("l'entrée déclare `type` — sans lui elle est lue comme stdio par défaut", async () => {
 		const config = await lireJson<{
-			mcpServers: Record<string, { type?: string; url?: string; headers?: Record<string, string> }>;
-		}>(`${PLUGIN}/.mcp.json`);
-		const serveur = config.mcpServers["rose-griffon"];
+			mcpServers: Record<string, { type?: string; command?: string; args?: string[] }>;
+		}>(`${RACINE}/.mcp.json`);
+		const serveur = config.mcpServers[NOM_SERVEUR];
 		expect(serveur).toBeDefined();
-		expect(serveur!.type).toBe("http");
-		expect(serveur!.url).toBeString();
+		expect(serveur!.type).toBe("stdio");
+		expect(serveur!.command).toBeString();
+		expect(serveur!.args).toBeArray();
 	});
 
-	test("l'URL a un défaut, le jeton n'en a pas — et ça doit se voir", async () => {
-		const config = await lireJson<{
-			mcpServers: Record<string, { url: string; headers: Record<string, string> }>;
-		}>(`${PLUGIN}/.mcp.json`);
-		const serveur = config.mcpServers["rose-griffon"]!;
-
-		// Sans aucune variable : l'URL retombe sur le défaut, l'en-tête reste
-		// littéral. C'est exactement le symptôme d'un 401 côté client.
-		const sansEnv = { RG_MCP_URL: undefined, RG_MCP_TOKEN: undefined };
-		expect(etendre(serveur.url, sansEnv)).toBe("https://mcp.rosegriffon.fr/");
-		expect(etendre(serveur.headers.Authorization!, sansEnv)).toContain("${RG_MCP_TOKEN}");
-
-		// Avec le jeton : en-tête porteur exploitable.
-		const avecEnv = { RG_MCP_URL: undefined, RG_MCP_TOKEN: "jeton-test" };
-		expect(etendre(serveur.headers.Authorization!, avecEnv)).toBe("Bearer jeton-test");
-	});
-});
-
-describe("hook", () => {
-	test("le hooks.json d'un plugin porte un objet racine `hooks`", async () => {
-		const config = await lireJson<{ hooks?: Record<string, unknown> }>(`${PLUGIN}/hooks/hooks.json`);
-		// À plat (sans la clé `hooks`), Claude Code refuse de charger le plugin :
-		// « expected record, received undefined ».
-		expect(config.hooks).toBeDefined();
-		expect(config.hooks!.PostToolUse).toBeArray();
-	});
-
-	test("les commandes de hook utilisent ${CLAUDE_PLUGIN_ROOT}", async () => {
-		const brut = await Bun.file(`${PLUGIN}/hooks/hooks.json`).text();
-		expect(brut).toContain("${CLAUDE_PLUGIN_ROOT}");
+	test("aucun chemin de machine n'est figé dans la déclaration", async () => {
+		// La déclaration est lue sur une machine cliente quelconque : aucun
+		// chemin absolu de CETTE machine-ci n'a le droit d'y être figé. Le cas a
+		// été payé : `NIERS_REPO=/home/ubuntu/niers`, la valeur du VPS, hérité
+		// sur le poste Windows où il se résout en
+		// `C:\Program Files\Git\home\ubuntu\niers` — un dossier inexistant, et
+		// `repo_read` répond alors « introuvable » sur tout le dépôt.
+		const brut = await Bun.file(`${RACINE}/.mcp.json`).text();
 		expect(brut).not.toContain("/home/ubuntu");
+		expect(brut).not.toContain("C:\\");
+
+		// Les arguments sont relatifs au dépôt, donc portables tels quels.
+		const config = await lireJson<{
+			mcpServers: Record<string, { args: string[]; env?: Record<string, string> }>;
+		}>(`${RACINE}/.mcp.json`);
+		const serveur = config.mcpServers[NOM_SERVEUR]!;
+		const entree = serveur.args.find((argument) => argument.includes("apps/nie-mcp"));
+		expect(entree).toBeDefined();
+		expect(entree!.startsWith("/")).toBe(false);
+		expect(await Bun.file(`${RACINE}/${entree!}`).exists()).toBe(true);
+
+		// Et si un jour une variable revient, elle doit rester VISIBLE non
+		// définie plutôt que de partir en chemin vide.
+		expect(etendre("${NIERS_REPO}/x", { NIERS_REPO: undefined })).toContain("${NIERS_REPO}");
 	});
 
-	test("le script de hook existe et est exécutable par bash", async () => {
-		const script = `${PLUGIN}/hooks/scripts/restore-lockfile.sh`;
-		expect(await Bun.file(script).exists()).toBe(true);
-		const verif = Bun.spawn(["bash", "-n", script], { stdout: "pipe", stderr: "pipe" });
-		expect(await verif.exited).toBe(0);
-	});
-
-	test("le hook remet un lockfile v2 en v1, et ne touche à rien sinon", async () => {
-		const bac = `${import.meta.dir}/.bac-hook`;
-		const script = `${PLUGIN}/hooks/scripts/restore-lockfile.sh`;
-		await Bun.write(`${bac}/bun.lock`, '{\n  "lockfileVersion": 2,\n  "configVersion": 1\n}\n');
-		// Le hook n'agit que sur le monorepo rg : il faut donc que le bac à sable
-		// se présente comme tel.
-		await Bun.write(`${bac}/package.json`, '{ "name": "rg-monorepo" }\n');
-
-		const lancer = async (commande: string) => {
-			const proc = Bun.spawn(["bash", script], {
-				env: { ...process.env, CLAUDE_PROJECT_DIR: bac },
-				stdin: new TextEncoder().encode(JSON.stringify({ tool_input: { command: commande } })),
-				stdout: "pipe",
-				stderr: "pipe",
-			});
-			const sortie = await new Response(proc.stdout).text();
-			await proc.exited;
-			return sortie.trim();
-		};
-
-		// Commande hors périmètre : le lockfile reste tel quel.
-		expect(await lancer("git status")).toBe("");
-		expect(await Bun.file(`${bac}/bun.lock`).text()).toContain('"lockfileVersion": 2');
-
-		// Commande de dépendances : correction et message.
-		expect(await lancer("bun install")).toContain("lockfileVersion 1");
-		expect(await Bun.file(`${bac}/bun.lock`).text()).toContain('"lockfileVersion": 1');
-
-		// Idempotent : un second passage ne dit plus rien.
-		expect(await lancer("bun install")).toBe("");
-
-		await Bun.spawn(["rm", "-rf", bac]).exited;
-	});
-
-	test("le hook ignore un dépôt qui n'est pas le monorepo", async () => {
-		const bac = `${import.meta.dir}/.bac-etranger`;
-		await Bun.write(`${bac}/bun.lock`, '{\n  "lockfileVersion": 2\n}\n');
-		await Bun.write(`${bac}/package.json`, '{ "name": "un-autre-projet" }\n');
-
-		const proc = Bun.spawn(["bash", `${PLUGIN}/hooks/scripts/restore-lockfile.sh`], {
-			env: { ...process.env, CLAUDE_PROJECT_DIR: bac },
-			stdin: new TextEncoder().encode(JSON.stringify({ tool_input: { command: "bun install" } })),
-			stdout: "pipe",
-			stderr: "pipe",
-		});
-		expect((await new Response(proc.stdout).text()).trim()).toBe("");
-		await proc.exited;
-		// Le lockfile d'un projet tiers reste intact, y compris en v2 assumée.
-		expect(await Bun.file(`${bac}/bun.lock`).text()).toContain('"lockfileVersion": 2');
-		await Bun.spawn(["rm", "-rf", bac]).exited;
+	test("le plugin ne livre pas de hook", async () => {
+		// Le hook `restore-lockfile.sh` a disparu avec le débranding, et sa
+		// couverture avec lui. Cette assertion tient la place : si un `hooks/`
+		// revient, ce test rougit et réclame les tests qui vont avec (objet
+		// racine `hooks`, commandes en `${CLAUDE_PLUGIN_ROOT}`, script valide
+		// pour bash) plutôt que de le laisser arriver sans filet.
+		expect(await Bun.file(`${PLUGIN}/hooks`).exists()).toBe(false);
 	});
 });
 
 describe("skills et agents du plugin", () => {
-	const attendus = ["donnees-jeu", "conventions", "deployer", "diagnostic", "verifier-connexion"];
-
 	test("chaque skill a un SKILL.md avec nom et description", async () => {
-		for (const nom of attendus) {
+		for (const nom of SKILLS) {
 			const chemin = `${PLUGIN}/skills/${nom}/SKILL.md`;
 			expect(await Bun.file(chemin).exists()).toBe(true);
 			const contenu = await Bun.file(chemin).text();
-			expect(contenu.startsWith("---\n")).toBe(true);
-			expect(contenu).toContain(`name: ${nom}`);
-			expect(/^description: .{40,}$/m.test(contenu)).toBe(true);
+			// `\r?\n` : le dépôt est travaillé depuis un poste Windows, où ces
+			// fichiers sont en CRLF. Ce qui est testé est la présence du bloc de
+			// frontmatter, pas la fin de ligne — figer `\n` faisait rougir la
+			// suite sur une seule machine, pour une raison sans rapport.
+			expect(/^---\r?\n/.test(contenu)).toBe(true);
+			expect(frontmatter(contenu)).toContain(`name: ${nom}`);
+			// Une description courte ne déclenche pas : c'est le seul texte que
+			// Claude Code lit pour décider de charger la skill.
+			expect(description(frontmatter(contenu)).length).toBeGreaterThanOrEqual(40);
 		}
 	});
 
-	test("les deux agents déclarent des exemples de déclenchement, sans figer leurs outils", async () => {
-		for (const nom of ["rg-donnees", "rg-ops"]) {
+	test("aucune skill livrée n'est absente de la liste attendue", async () => {
+		// Le pendant du test précédent : sans lui, une skill AJOUTÉE puis oubliée
+		// passerait inaperçue, et la liste en dur cesserait de décrire le plugin.
+		const glob = new Bun.Glob("*/SKILL.md");
+		const trouvees: string[] = [];
+		for await (const relatif of glob.scan({ cwd: `${PLUGIN}/skills`, onlyFiles: true })) {
+			trouvees.push(relatif.replaceAll("\\", "/").split("/")[0]!);
+		}
+		expect(trouvees.toSorted()).toEqual([...SKILLS].toSorted());
+	});
+
+	test("chaque agent déclare des exemples de déclenchement", async () => {
+		// Sans `<example>`, le modèle n'a que la description pour décider de
+		// déléguer, et ne délègue pas.
+		//
+		// `bun-rs` en est dépourvu — un manque RÉEL du plugin, mesuré, pas une
+		// tolérance de confort. Il est donc nommé, et l'assertion est un
+		// cliquet à double sens : si quelqu'un lui écrit ses exemples, ce test
+		// rougit et demande qu'on le retire d'ici ; si un autre agent perd les
+		// siens, il rougit aussi. Une simple exclusion, elle, se serait tue
+		// dans les deux cas.
+		const SANS_EXEMPLE = ["bun-rs"];
+		const manquants: string[] = [];
+		for (const nom of AGENTS) {
 			const contenu = await Bun.file(`${PLUGIN}/agents/${nom}.md`).text();
-			const frontmatter = contenu.split("---")[1] ?? "";
-			expect(contenu).toContain(`name: ${nom}`);
-			expect(contenu).toContain("<example>");
-			// Pas de champ `tools:` : un agent qui en déclare un n'hérite d'AUCUN
-			// autre outil. Comme le préfixe MCP dépend de l'enregistrement
-			// (plugin ou projet), figer la liste le priverait de tout outil sur la
-			// machine cliente. L'héritage est la seule forme portable.
-			expect(/^tools:/m.test(frontmatter)).toBe(false);
-			// Couleurs documentées par plugin-dev.
-			expect(/^color: (blue|cyan|green|yellow|magenta|red)$/m.test(frontmatter)).toBe(true);
+			expect(frontmatter(contenu)).toContain(`name: ${nom}`);
+			if (!contenu.includes("<example>")) manquants.push(nom);
+		}
+		expect(manquants.toSorted()).toEqual([...SANS_EXEMPLE].toSorted());
+	});
+
+	test("un agent qui fige ses outils n'y met aucun outil MCP", async () => {
+		// `tools:` REMPLACE l'héritage : l'agent n'a plus que ce qu'il liste.
+		// Y lister un outil MCP le priverait de tout sur la machine cliente, car
+		// le préfixe dépend de l'enregistrement (`mcp__niers-game__` en projet,
+		// `mcp__plugin_niers_niers-game__` en plugin). Les outils intégrés
+		// (Bash, Read, Grep…) portent le même nom partout : eux sont portables.
+		for (const nom of AGENTS) {
+			const declares = /^tools: *(.*)$/m.exec(frontmatter(await Bun.file(`${PLUGIN}/agents/${nom}.md`).text()));
+			if (!declares) continue;
+			expect(declares[1]).not.toContain("mcp__");
 		}
 	});
 
-	test("tout outil MCP cité par une skill ou un agent existe vraiment", async () => {
-		const serveur = await createRgMcpServer();
-		const connus = new Set(serveur.registry.tools.map((outil) => outil.definition.name));
+	test("tout outil MCP cité par une skill ou un agent porte le préfixe du serveur déclaré", async () => {
+		// Un outil cité sous un autre préfixe que celui du serveur livré ne
+		// sera jamais résolu : la citation reste lisible, et n'appelle rien.
+		const prefixes = [`mcp__${NOM_SERVEUR}__`, `mcp__plugin_${NOM_PLUGIN}_${NOM_SERVEUR}__`];
 		const glob = new Bun.Glob("**/*.md");
-
 		for await (const relatif of glob.scan({ cwd: PLUGIN, onlyFiles: true })) {
 			const contenu = await Bun.file(`${PLUGIN}/${relatif}`).text();
-			for (const [, outil] of contenu.matchAll(/mcp__(?:plugin_rose-griffon_)?rose-griffon__([a-z_]+)/g)) {
-				expect(connus.has(outil!)).toBe(true);
+			for (const [cite] of contenu.matchAll(/mcp__[A-Za-z0-9_-]+__/g)) {
+				expect(prefixes).toContain(cite);
 			}
 		}
 	});
 
-	test("les skills autorisent le serveur du PLUGIN, pas seulement celui du projet", async () => {
-		// Un serveur MCP fourni par un plugin est enregistré sous
-		// `plugin:<plugin>:<serveur>` : ses outils s'appellent
-		// `mcp__plugin_rose-griffon_rose-griffon__…`. Une règle écrite avec le seul
-		// préfixe `mcp__rose-griffon__` ne s'applique QUE dans une copie du
-		// monorepo — c'est-à-dire nulle part sur la machine cliente visée.
-		for (const nom of attendus) {
-			const contenu = await Bun.file(`${PLUGIN}/skills/${nom}/SKILL.md`).text();
-			const frontmatter = contenu.split("---")[1] ?? "";
-			// `conventions` est une skill de pure connaissance : elle ne déclare
-			// aucun outil, et n'a donc rien à autoriser.
-			if (!frontmatter.includes("allowed-tools")) continue;
-			expect(frontmatter).toContain("mcp__plugin_rose-griffon_rose-griffon");
-		}
-	});
-
-	test("la skill auto-déclenchée ne pré-autorise aucun outil d'écriture", async () => {
-		// `allowed-tools` ACCORDE la permission sans invite. `donnees-jeu` se
-		// déclenche sur n'importe quelle question de wiki : y pré-autoriser
-		// `shell_run` ou `repo_delete` ouvrirait un accès équivalent SSH sans
-		// confirmation.
-		const contenu = await Bun.file(`${PLUGIN}/skills/donnees-jeu/SKILL.md`).text();
-		const frontmatter = contenu.split("---")[1] ?? "";
-		const serveur = await createRgMcpServer();
-		for (const outil of serveur.registry.tools.filter((o) => o.scope === "admin")) {
-			expect(frontmatter).not.toContain(`__${outil.definition.name}`);
+	test("aucune skill ne pré-autorise un outil d'écriture ou de shell", async () => {
+		// `allowed-tools` ACCORDE la permission sans invite. Une skill se
+		// déclenche sur une simple question : y pré-autoriser `Bash`, `Write` ou
+		// un `repo_delete` ouvrirait un accès équivalent SSH sans confirmation.
+		const interdits = ["Bash", "Write", "Edit", "shell_run", "repo_write", "repo_edit", "repo_delete", "repo_move"];
+		for (const nom of SKILLS) {
+			const entete = frontmatter(await Bun.file(`${PLUGIN}/skills/${nom}/SKILL.md`).text());
+			const declares = /^allowed-tools: *(.*)$/m.exec(entete);
+			if (!declares) continue;
+			for (const outil of interdits) expect(declares[1]).not.toContain(outil);
 		}
 	});
 });

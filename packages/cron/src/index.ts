@@ -43,15 +43,8 @@ import { resolveProfile, isAdmin } from "@rosegriffon/auth";
 import { getOpenApiDocument, getSwaggerHtml } from "./lib/openapi";
 import { demarrerPontBot } from "./lib/bot-signal";
 import { registreExecutions, type OrigineExecution } from "./lib/executions";
-import {
-	echecsPersistanceHistorique,
-	enregistrerExecutionEnBase,
-	historiqueRecent,
-	motifVeillePersistance,
-	persistanceEnVeille,
-} from "./lib/executions-postgres";
+import { enregistrerExecutionEnBase } from "./lib/executions-postgres";
 import { signalerDecisionAlerte } from "./lib/alertes-cron";
-import { rendreMetriquesPrometheus } from "./lib/prometheus";
 
 // ─── LOGGER GLOBALE INTERCEPTION ET STREAMING WEBSOCKET ──────────────────────
 const wsConnections = new Set<ServerWebSocket<any>>();
@@ -678,7 +671,7 @@ console.log("✅ Toutes les tâches cron ont été planifiées avec succès.");
 // ─── SERVEUR HTTP + WEBSOCKETS (BUN.SERVE) ───────────────────────────────────
 const PORT = Number(process.env.CRON_PORT) || 3005;
 
-const server = Bun.serve({
+Bun.serve({
 	// Boucle locale : sans `hostname`, Bun écoute sur toutes les interfaces et le tableau
 	// de bord du cron se retrouvait joignable en HTTP clair depuis l'Internet public.
 	// L'accès depuis le VPN reste assuré par `wg-forward@3005.service`, qui relaie

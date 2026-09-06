@@ -9,7 +9,7 @@ import {
 import "@niers/inacord-ui/shell/game-tokens.css";
 import * as React from "react";
 import { useEffect, useMemo, useState } from "react";
-import { ALIAS, EXPLORATEUR, MEDIAS, entreesMenu, routesReconnues } from "./entrees";
+import { ALIAS, EXPLORATEUR, MEDIAS, routesReconnues } from "./entrees";
 import { Catalogue } from "./pages/Catalogue";
 import { Chargement } from "./pages/Chargement";
 import { EcranSecondaire, Note } from "./pages/Ecran";

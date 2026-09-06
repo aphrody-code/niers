@@ -14,7 +14,6 @@ const STORAGE = process.env.CDN_STORAGE ?? pathJoin(TMP_BASE, "images");
 const FALLBACK_PUBLIC_BASE = process.env.CDN_PUBLIC_BASE ?? "https://cdn.rosegriffon.fr";
 const ASSETS_MANIFEST =
   process.env.CDN_ASSETS_MANIFEST ?? pathJoin(TMP_BASE, "assets-manifest.json");
-const REPO_ROOT = process.env.CDN_REPO_ROOT ?? pathResolve(import.meta.dir, "../..");
 const VARIANTS_ROOT = process.env.CDN_VARIANTS_ROOT ?? pathJoin(TMP_BASE, "variants");
 const API_KEY = process.env.CDN_API_KEY;
 

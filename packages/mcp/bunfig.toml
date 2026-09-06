@@ -1,0 +1,18 @@
+# Bun lit le `bunfig.toml` du répertoire COURANT, sans hériter de celui de la racine : sans ce
+# fichier, `cd packages/mcp && bun test` perd les préchargements du dépôt et les outils
+# `azalee_*` — comme le prompt `fiche-personnage` — échouent sur « aucun client de données
+# injecté », alors que la même suite passe depuis la racine. Or `bun run test` à la racine
+# lance justement `bun run --filter '*' test`, donc DEPUIS chaque paquet : c'est le cas normal,
+# pas le cas particulier. Une suite doit rendre le même verdict d'où qu'on la lance.
+#
+# Le piège est d'autant plus coûteux ici que la garde du fichier de test, `hasMirror`, mesure la
+# PRÉSENCE du miroir SQLite et non l'INJECTION du client : miroir présent et client absent, elle
+# laissait tourner des tests qui ne pouvaient que rougir, au lieu de les ignorer ou de les servir.
+# Le miroir est là — on l'injecte, et les tests s'exécutent pour de bon.
+[test]
+preload = [
+	"../nie-plugin/src/register.ts",
+	"../nie-plugin/src/happydom.ts",
+	"../azalee-tools/test/preload.ts",
+]
+coverage = false

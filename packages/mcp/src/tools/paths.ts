@@ -55,11 +55,12 @@ export async function resolveInside(
 	relative: string,
 	options: ResolveOptions = {},
 ): Promise<ResolvedPath | undefined> {
-	const cleaned = relative.trim();
+	const cleaned = toPosixPath(relative.trim());
 	// Un chemin absolu est traité comme tel : le rendre relatif en retirant le
 	// `/` initial ferait passer `/etc/passwd` pour `<dépôt>/etc/passwd`, une
 	// réinterprétation silencieuse qui masque une erreur d'appel.
-	const candidat = cleaned.startsWith("/") ? cleaned : `${root}/${cleaned}`;
+	// « Absolu » couvre les deux formes : `/etc/passwd` et `C:/Windows`.
+	const candidat = isAbsolutePath(cleaned) ? cleaned : `${toPosixPath(root)}/${cleaned}`;
 	const absolute = await realpathOrSelf(candidat);
 	const rootReal = await realpathOrSelf(root);
 	if (absolute !== rootReal && !absolute.startsWith(`${rootReal}/`)) return undefined;
@@ -76,7 +77,10 @@ export async function resolveInside(
 export async function realpathOrSelf(path: string): Promise<string> {
 	try {
 		const { realpath } = await import("node:fs/promises");
-		return await realpath(path);
+		// `realpath` rend des séparateurs `\` sous Windows : sans cette
+		// conversion, la comparaison de la prison confronte un `C:\dépôt\x`
+		// à un `C:/dépôt` et refuse tout — ou pire, laisse passer tout.
+		return toPosixPath(await realpath(path));
 	} catch {
 		// Le chemin n'existe pas encore (cas d'une création) : on normalise
 		// lexicalement, ce qui neutralise déjà les `..`.
@@ -84,13 +88,41 @@ export async function realpathOrSelf(path: string): Promise<string> {
 	}
 }
 
-/** Normalisation `.`/`..` sans toucher au disque. */
+/**
+ * Sépateurs `\` ramenés à `/` : tout ce module raisonne en chemins POSIX, y
+ * compris sous Windows où les deux formes désignent le même fichier.
+ */
+export function toPosixPath(path: string): string {
+	return path.replace(/\\/g, "/");
+}
+
+/** Préfixe de lecteur Windows (`C:`) d'un chemin POSIXifié, sinon `""`. */
+function driveOf(path: string): string {
+	return /^[A-Za-z]:/.test(path) ? path.slice(0, 2) : "";
+}
+
+/** Un chemin est absolu s'il commence par `/` ou par un lecteur Windows. */
+export function isAbsolutePath(path: string): boolean {
+	const posix = toPosixPath(path);
+	return posix.startsWith("/") || driveOf(posix) !== "";
+}
+
+/**
+ * Normalisation `.`/`..` sans toucher au disque.
+ *
+ * Le préfixe de lecteur est mis de côté AVANT le découpage : sans cela
+ * `C:\dépôt\paquet/..` se découpe en un seul segment `C:\dépôt\paquet` que le
+ * `..` suivant efface — la racine de la prison devenait `/`, c'est-à-dire la
+ * racine du système, et plus aucun chemin n'en sortait.
+ */
 export function normalizePath(path: string): string {
+	const posix = toPosixPath(path);
+	const drive = driveOf(posix);
 	const parts: string[] = [];
-	for (const segment of path.split("/")) {
+	for (const segment of posix.slice(drive.length).split("/")) {
 		if (segment === "" || segment === ".") continue;
 		if (segment === "..") parts.pop();
 		else parts.push(segment);
 	}
-	return `/${parts.join("/")}`;
+	return `${drive}/${parts.join("/")}`;
 }

@@ -15,7 +15,7 @@
  */
 
 import type { Database } from "bun:sqlite";
-import { existsSync, mkdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { getCacheDir, resolveDataFile } from "../config";
 import { gunzipSync } from "node:zlib";
@@ -87,12 +87,46 @@ function getDb(): Database {
 	const dbPath = path.join(cacheDir, "game-text.sqlite");
 
 	const db = new Database(dbPath);
-	const all: TextEntry[] = [];
-	for (const src of sources) all.push(...readEntries(src));
-	buildSqliteFromEntries(db, all);
+	// Ce fichier de cache est PARTAGÉ entre tous les process (CLI, site, chaque
+	// worker de test). Le reconstruire inconditionnellement — `DROP TABLE` puis
+	// ~250 000 insertions, 2,4 s mesurées — mettait deux process en concurrence
+	// d'écriture sur la même base et faisait remonter `SQLiteError: database is
+	// locked` à des appelants qui ne font que LIRE.
+	//
+	// On ne reconstruit donc que si le cache est absent ou périmé, et on laisse
+	// au passage un délai d'attente : sans lui, un lecteur qui tombe pile
+	// pendant une reconstruction légitime échoue à la première tentative au lieu
+	// d'attendre son tour.
+	db.exec("PRAGMA busy_timeout = 15000");
+	if (cacheObsolete(db, dbPath, sources)) {
+		const all: TextEntry[] = [];
+		for (const src of sources) all.push(...readEntries(src));
+		buildSqliteFromEntries(db, all);
+	}
 
 	_db = db;
 	return db;
+}
+
+/**
+ * Le cache doit-il être reconstruit ? Vrai si la table `text` manque, si elle
+ * est vide, ou si l'une des sources est plus récente que le fichier de cache.
+ *
+ * Toute erreur de lecture répond « oui » : reconstruire à tort coûte deux
+ * secondes, servir un index tronqué se voit beaucoup plus tard.
+ */
+function cacheObsolete(db: Database, dbPath: string, sources: string[]): boolean {
+	try {
+		const table = db
+			.query<{ name: string }, []>("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'text'")
+			.get();
+		if (!table) return true;
+		if ((db.query<{ n: number }, []>("SELECT COUNT(*) AS n FROM text").get()?.n ?? 0) === 0) return true;
+		const cacheDate = statSync(dbPath).mtimeMs;
+		return sources.some((src) => statSync(src).mtimeMs > cacheDate);
+	} catch {
+		return true;
+	}
 }
 
 // --- API de lecture --------------------------------------------------------

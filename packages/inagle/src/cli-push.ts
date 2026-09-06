@@ -16,30 +16,14 @@ import { loadTextFile } from "./parsers/text-parser.js";
 // Pushers de catégories câblées (source unique sous src/, réutilisée par les
 // scripts standalone scripts/push-<cat>.ts).
 import {
-	importAbilityLearning,
-	importActivityPhotos,
 	importBoostGroups,
-	importCharaMenuResource,
-	importChatEmotes,
 	importConstellations,
-	importDropRates,
 	importEmblems,
-	importEnjoyModeTeams,
-	importEventSubtitles,
-	importExpRarityRates,
 	importFormations,
 	importMissions,
-	importNameplates,
-	importNfcLottery,
-	importOverrideSkills,
-	importPassiveSkillEffects,
-	importPerformances,
-	importPhaseTitles,
-	importSceneArchives,
 	importShops,
 	importSkillTechnic,
 	importSpecialTactics,
-	importStadiums,
 	importStarSigns,
 	importSuperTactics,
 	importTeamBuild,
@@ -282,7 +266,7 @@ async function importCharacters(service: any, db: DataAdapter) {
 
 	// Align images/codes and assign is_primary and slugs
 	const processedChars: any[] = [];
-	for (const [key, variants] of charsByName.entries()) {
+	for (const [, variants] of charsByName.entries()) {
 		// Sort variants: normal first, prefer zukanHash, then sorted by charaParamId ASC
 		variants.sort((a: any, b: any) => {
 			const aHero = a.rarity === "Héros" || a.rarityCode === 10 ? 1 : 0;

@@ -11,7 +11,7 @@ Everything else lives in one place and is linked, never repeated.
 | The A2A wire protocol (channels, message kinds, autonomous loop) | [`docs/A2A-CODEX.md`](docs/A2A-CODEX.md) |
 | The machine-readable agent card | [`ai.json`](ai.json) (A2A v1.0) |
 | The single direction, and which plan commands which | [`docs/README.md`](docs/README.md) § *La direction* |
-| The mission in progress, its gates, and the six moves that need a go | [`docs/CODEX-JOUR-UNIQUE.md`](docs/CODEX-JOUR-UNIQUE.md) — since 2026-09-06 Codex owns all of `/PLAN.md` and commits its own batches **inside `niers`**, which replaces the 2026-09-05 repository split |
+| The mission in progress and its gates (the "six moves that need a go" are **repealed** — see § 0) | [`docs/CODEX-JOUR-UNIQUE.md`](docs/CODEX-JOUR-UNIQUE.md) — since 2026-09-06 Codex owns all of `/PLAN.md` and commits its own batches **inside `niers`**, which replaces the 2026-09-05 repository split |
 | What ships and how it is built, for humans | [`README.md`](README.md) |
 
 If this file and a habit disagree, this file wins. If this file and `CLAUDE.md` seem to
@@ -91,6 +91,25 @@ A batch is `done` only when the check has **actually run**, and the `done:` carr
 The gate, what saturates the disk, and every way a green suite can be lying to you are in
 [`CLAUDE.md`](CLAUDE.md) § *Build and test* — read it once, it is the section that costs the
 most when skipped.
+
+### 3 bis. Verified menu/VFS baseline — 2026-09-06
+
+- With `NIE_GAME_DIR` set to the installed Steam game, the local VFS mounts **255,308** entries
+  from **936** CPKs; `ovh-vps-ubuntu-direct` reports the same logical paths and format counts.
+  The local installation has 11 loose entries, the VPS 5; this is the only measured difference.
+- `niers vfs extract data --ext lua.bin --out var/lua-vfs-all` extracted **1,197/1,197** Lua
+  chunks, **10,694,973 bytes**, 0 failures; every chunk has Lua 5.2 magic and the path set is
+  identical to the VFS inventory. The exhaustive audit decoded and executed **1,197/1,197**,
+  with 0 decode/runtime errors, 1,053,252 decoded instructions, 21,661,713 live instructions,
+  76 include families, 0 missing includes, and 0 missing host invocations.
+- The menu gates pass on the real VFS: **13 passed, 0 failed, 2 ignored**; the menu corpus is
+  **475/475** settings, 4,858 layers, 4,915 commands, 0 CRC mismatches. `nie-site` exposes the
+  static screen matrix and now relays the upstream navigation tree at
+  `/api/v1/menu/screens` and `/api/v1/menu/screens/{stem}`; `{stem}` is the
+  `*_setting.cfg.bin` stem, not a layer or Lua script name.
+- Workspace verification: `cargo check --workspace --quiet` passed; the workspace library run
+  had 36 passing targets and two unrelated failures (`nie-aphrody` generated CSS mismatch and
+  `nie-forge` `lift::disp32_diag`). Never relabel those failures as menu failures.
 
 ## 4. Product constraint
 

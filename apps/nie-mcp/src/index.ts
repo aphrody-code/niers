@@ -304,7 +304,11 @@ async function main(): Promise<void> {
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("[niers-game] serveur MCP prêt (stdio) — 14 outils exposés");
+  // Le compte est LU sur le registre, pas récité : écrit en dur, il annonçait
+  // encore 14 outils pour 15 enregistrés. Un journal doit décrire ce qui est,
+  // pas ce qui était (la garde du compte, elle, vit dans `test/smoke.ts`).
+  const exposes = Object.keys((server as unknown as { _registeredTools: Record<string, unknown> })._registeredTools);
+  console.error(`[niers-game] serveur MCP prêt (stdio) — ${exposes.length} outils exposés`);
 }
 
 main().catch((e) => {

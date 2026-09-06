@@ -1183,6 +1183,15 @@ pub fn encode_t2b(entries: &[CfgEntry]) -> Vec<u8> {
     }
     out.extend_from_slice(&key_blob);
 
+    // Footer présent sur tous les T2B observés dans le corpus du jeu. Les quinze autres
+    // octets sont constants ; l'octet à l'offset 6 reste à corréler avec la sémantique du
+    // fichier (les deux valeurs observées sont 0x00 et 0x01). 0x00 est le choix conservateur
+    // pour un fichier nouvellement encodé, et surtout évite de produire un T2B tronqué.
+    out.extend_from_slice(&[
+        0x01, 0x74, 0x32, 0x62, 0xFE, 0x01, 0x00, 0x00, 0x01, 0x00, 0xFF, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF,
+    ]);
+
     out
 }
 
@@ -2194,6 +2203,18 @@ mod tests {
             r.is_err(),
             "données chiffrées doivent échouer proprement, got {r:?}"
         );
+    }
+
+    #[test]
+    fn encode_t2b_ecrit_le_footer_du_format() {
+        let encoded = encode_t2b(&[]);
+        assert!(encoded.len() >= 16);
+        assert_eq!(
+            &encoded[encoded.len() - 16..],
+            &[0x01, 0x74, 0x32, 0x62, 0xFE, 0x01, 0x00, 0x00, 0x01, 0x00, 0xFF, 0xFF, 0xFF,
+                0xFF, 0xFF, 0xFF]
+        );
+        parse_t2b(&encoded).expect("footer T2B doit rester lisible");
     }
 
     // -------------------------------------------------------------------

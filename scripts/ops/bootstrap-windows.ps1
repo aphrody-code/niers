@@ -69,7 +69,7 @@ function Echouer { param([string]$M) Write-Host "  [ko]   $M" -ForegroundColor R
 
 Write-Host '=== niers — clone Windows ===' -ForegroundColor Cyan
 Write-Host "    dépôt : $Root"
-Write-Host "    VPS   : $VpsHost:$Distant"
+Write-Host "    VPS   : ${VpsHost}:$Distant"
 
 # ── 1. Le jeu : trouver l'installation Steam ──────────────────────────────────
 #
@@ -101,8 +101,16 @@ function Trouver-Jeu {
         foreach ($ligne in Get-Content $vdf) {
             if ($ligne -match '"path"\s+"(.+?)"') {
                 $chemin = $Matches[1] -replace '\\\\', '\'
-                $sa = Join-Path $chemin 'steamapps'
-                if ((Test-Path $sa) -and -not $bibliotheques.Contains($sa)) { $bibliotheques.Add($sa) }
+                # Une bibliothèque déclarée dans le VDF peut viser un disque externe débranché :
+                # `Join-Path`/`Test-Path` lèvent alors une erreur TERMINANTE ("Cannot find drive")
+                # sous `$ErrorAction = 'Stop'`, qui ferait échouer toute la détection au lieu de
+                # sauter cette seule bibliothèque. Un disque absent n'est pas une erreur ici.
+                try {
+                    $sa = Join-Path $chemin 'steamapps'
+                    if ((Test-Path $sa) -and -not $bibliotheques.Contains($sa)) { $bibliotheques.Add($sa) }
+                } catch {
+                    Note "bibliothèque ignorée (disque absent) : $chemin"
+                }
             }
         }
     }
@@ -178,13 +186,19 @@ if ($SkipVps) {
     #   - on passe par `sqlite3 .backup`, jamais `cp` : copier le seul fichier principal d'une
     #     base WAL perd les écritures récentes (42 épisodes manquants, mesuré le 2026-09-03).
     $tmp = '/tmp/niers-export'
-    & ssh $VpsHost @"
+    # Ce fichier .ps1 est en CRLF (Windows) : un here-string brut porte donc des `\r\n`, que
+    # `ssh` transmet tels quels au bash distant. Un `\r` en fin de ligne s'accroche à l'argument
+    # suivant ("set -e\r" -> bash lit l'option "-e\r") et fait échouer le script à la première
+    # ligne : le message ne parle jamais de fin de ligne. On normalise en LF avant l'envoi, ce
+    # qui protège aussi contre un futur ré-enregistrement du fichier en CRLF.
+    $script = (@"
 set -e
 mkdir -p $tmp
 cible=`$(readlink -f $Distant/var/mirror.sqlite)
 sqlite3 "`$cible" ".backup '$tmp/mirror.sqlite'"
 sqlite3 $Distant/data/anime/episodes.db ".backup '$tmp/episodes.db'"
-"@
+"@ -replace "`r`n", "`n")
+    & ssh $VpsHost $script
     if ($LASTEXITCODE -ne 0) { Echouer 'export SQLite côté VPS échoué' }
     Ok 'bases figées côté VPS (.backup, pas cp)'
 

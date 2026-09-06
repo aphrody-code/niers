@@ -1438,6 +1438,80 @@ pub unsafe extern "C" fn nie_world_free(w: *mut NieWorld) {
     unsafe { drop(Box::from_raw(w.cast::<nie_runtime::World>())) };
 }
 
+// ============================================================================
+// Simulation de match — à graine et à statistiques
+// ============================================================================
+
+/// Simule une rencontre complète et rend le résultat en JSON UTF-8.
+///
+/// C'est le complément du bloc `nie_world_*`, et il répond à un autre besoin.
+/// `nie_world_*` fait TOURNER un match jouable : on lui pousse des entrées et on
+/// l'avance pas à pas. Il n'accepte aucune graine et son onze est le sien — deux
+/// matchs laissés à eux-mêmes rendent le même score, et rien ne distingue les
+/// joueurs d'un camp de ceux de l'autre.
+///
+/// [`nie_core::match_sim::simulate_match`] fait l'inverse : il tranche une
+/// rencontre d'un bloc, à partir des STATISTIQUES des deux équipes et d'une
+/// GRAINE. C'est ce qu'un récit demande — un match que le joueur ne dispute pas,
+/// dont le résultat dépend de la force des effectifs et se rejoue à l'identique.
+///
+/// `home_json` et `away_json` sont des `TeamSetup` sérialisés :
+///
+/// ```json
+/// {"name": "Raimon", "aggregate_stats": {"kc":207,"cr":216,"tc":218,
+///  "pr":235,"ps":242,"ag":210,"it":261}, "placements": null}
+/// ```
+///
+/// La sortie est un `MatchResult` : `home_score`, `away_score`, `final_clock`
+/// (`minutes * 10_000 + secondes`) et la séquence complète d'`events`.
+///
+/// `NieBytes::empty` en sortie signale une entrée illisible — JSON invalide,
+/// champ manquant, ou pointeur nul.
+///
+/// # Safety
+///
+/// - `home_json` et `away_json` doivent être des chaînes C null-terminées valides.
+/// - `out` doit pointer sur un `NieBytes` inscriptible et aligné.
+/// - null (n'importe lequel) → `NieBytes::empty`, aucun effet.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn nie_match_simulate_json_out(
+    home_json: *const c_char,
+    away_json: *const c_char,
+    seed: u64,
+    out: *mut NieBytes,
+) {
+    if out.is_null() {
+        return;
+    }
+    if home_json.is_null() || away_json.is_null() {
+        // SAFETY: out est non-null et aligné.
+        unsafe { out.write(NieBytes::empty()) };
+        return;
+    }
+
+    // SAFETY: les deux pointeurs sont non-null et null-terminés.
+    let (home_str, away_str) = unsafe {
+        (
+            std::ffi::CStr::from_ptr(home_json).to_str(),
+            std::ffi::CStr::from_ptr(away_json).to_str(),
+        )
+    };
+
+    let resultat = (|| -> Option<Vec<u8>> {
+        let home: nie_core::match_sim::TeamSetup = serde_json::from_str(home_str.ok()?).ok()?;
+        let away: nie_core::match_sim::TeamSetup = serde_json::from_str(away_str.ok()?).ok()?;
+        let issue = nie_core::match_sim::simulate_match(home, away, seed);
+        serde_json::to_vec(&issue).ok()
+    })();
+
+    let sortie = match resultat {
+        Some(v) => NieBytes::from_vec(v),
+        None => NieBytes::empty(),
+    };
+    // SAFETY: out est non-null et aligné.
+    unsafe { out.write(sortie) };
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Tests
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1608,78 +1682,4 @@ mod tests {
         unsafe { nie_font_free(fctx) };
         unsafe { nie_vfs_free(vfs) };
     }
-}
-
-// ============================================================================
-// Simulation de match — à graine et à statistiques
-// ============================================================================
-
-/// Simule une rencontre complète et rend le résultat en JSON UTF-8.
-///
-/// C'est le complément du bloc `nie_world_*`, et il répond à un autre besoin.
-/// `nie_world_*` fait TOURNER un match jouable : on lui pousse des entrées et on
-/// l'avance pas à pas. Il n'accepte aucune graine et son onze est le sien — deux
-/// matchs laissés à eux-mêmes rendent le même score, et rien ne distingue les
-/// joueurs d'un camp de ceux de l'autre.
-///
-/// [`nie_core::match_sim::simulate_match`] fait l'inverse : il tranche une
-/// rencontre d'un bloc, à partir des STATISTIQUES des deux équipes et d'une
-/// GRAINE. C'est ce qu'un récit demande — un match que le joueur ne dispute pas,
-/// dont le résultat dépend de la force des effectifs et se rejoue à l'identique.
-///
-/// `home_json` et `away_json` sont des `TeamSetup` sérialisés :
-///
-/// ```json
-/// {"name": "Raimon", "aggregate_stats": {"kc":207,"cr":216,"tc":218,
-///  "pr":235,"ps":242,"ag":210,"it":261}, "placements": null}
-/// ```
-///
-/// La sortie est un `MatchResult` : `home_score`, `away_score`, `final_clock`
-/// (`minutes * 10_000 + secondes`) et la séquence complète d'`events`.
-///
-/// `NieBytes::empty` en sortie signale une entrée illisible — JSON invalide,
-/// champ manquant, ou pointeur nul.
-///
-/// # Safety
-///
-/// - `home_json` et `away_json` doivent être des chaînes C null-terminées valides.
-/// - `out` doit pointer sur un `NieBytes` inscriptible et aligné.
-/// - null (n'importe lequel) → `NieBytes::empty`, aucun effet.
-#[unsafe(no_mangle)]
-pub unsafe extern "C" fn nie_match_simulate_json_out(
-    home_json: *const c_char,
-    away_json: *const c_char,
-    seed: u64,
-    out: *mut NieBytes,
-) {
-    if out.is_null() {
-        return;
-    }
-    if home_json.is_null() || away_json.is_null() {
-        // SAFETY: out est non-null et aligné.
-        unsafe { out.write(NieBytes::empty()) };
-        return;
-    }
-
-    // SAFETY: les deux pointeurs sont non-null et null-terminés.
-    let (home_str, away_str) = unsafe {
-        (
-            std::ffi::CStr::from_ptr(home_json).to_str(),
-            std::ffi::CStr::from_ptr(away_json).to_str(),
-        )
-    };
-
-    let resultat = (|| -> Option<Vec<u8>> {
-        let home: nie_core::match_sim::TeamSetup = serde_json::from_str(home_str.ok()?).ok()?;
-        let away: nie_core::match_sim::TeamSetup = serde_json::from_str(away_str.ok()?).ok()?;
-        let issue = nie_core::match_sim::simulate_match(home, away, seed);
-        serde_json::to_vec(&issue).ok()
-    })();
-
-    let sortie = match resultat {
-        Some(v) => NieBytes::from_vec(v),
-        None => NieBytes::empty(),
-    };
-    // SAFETY: out est non-null et aligné.
-    unsafe { out.write(sortie) };
 }

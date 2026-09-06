@@ -13,6 +13,7 @@ import { MODERN_PROTOCOL_VERSION } from "../src/protocol/versions.ts";
 import { McpRegistry, type McpScope } from "../src/registry.ts";
 import { McpServer } from "../src/server.ts";
 import { adminTools } from "../src/tools/admin.ts";
+import { normalizePath } from "../src/tools/paths.ts";
 import { createFetchHandler } from "../src/transport/http.ts";
 
 const RACINE = `${import.meta.dir}/..`;
@@ -204,14 +205,19 @@ describe("outils d'écriture", () => {
 	});
 
 	test("la prison de chemin tient même en administration", async () => {
-		for (const chemin of ["../../etc/passwd", "/etc/passwd", "../../../root/.ssh/id_rsa"]) {
+		// `temoin.conf` est là pour que ce test prouve une ABSENCE sur toute
+		// plateforme : `/etc/passwd` n'existe pas sous Windows, et le témoin
+		// historique — relire ce fichier système — n'y mesurait donc rien.
+		// Le témoin vise le parent du paquet, qui existe partout.
+		const temoin = normalizePath(`${RACINE}/../temoin-hors-prison.conf`);
+		for (const chemin of ["../../etc/passwd", "/etc/passwd", "../../../root/.ssh/id_rsa", "../temoin-hors-prison.conf"]) {
 			const ecriture = await appeler(instance, "repo_write", { path: chemin, content: "compromis" });
 			expect(ecriture.isError).toBe(true);
 			const suppression = await appeler(instance, "repo_delete", { path: chemin });
 			expect(suppression.isError).toBe(true);
 		}
-		// Le fichier système n'a pas été touché.
-		expect(await Bun.file("/etc/passwd").text()).toContain("root:");
+		// Rien n'a été écrit hors de la prison.
+		expect(await Bun.file(temoin).exists()).toBe(false);
 	});
 
 	test("la racine du dépôt ne peut pas être supprimée", async () => {
