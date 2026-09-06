@@ -1569,6 +1569,18 @@ struct ScreenIndex {
     entries: Vec<ScreenEntry>,
     /// Combien de conteneurs n'ont pas pu être lus.
     unreadable: usize,
+    /// Nombre total de calques déclarés, toutes déclarations confondues.
+    layers_declared: usize,
+    /// Combien de ces déclarations résolvent vers un `.objbin`.
+    layers_resolved: usize,
+    /// Les noms de calque déclarés qu'aucun `.objbin` ne porte, avec leur nombre d'écrans.
+    ///
+    /// C'est ce qui transforme « 36 % » d'un reste-à-faire en un **fait sur le jeu** :
+    /// vérifié le 2026-09-06 sur `cmn01_10_new_icon_tab`, `team13_03_grid_item_root` et
+    /// `act01_04_achieve_icon_bronze`, `niers vfs find <nom>` rend **0 résultat** — ces
+    /// calques n'existent sous AUCUNE forme dans les 255 308 entrées. Le plafond n'est pas
+    /// dans le câblage du site.
+    missing_layers: BTreeMap<String, usize>,
     /// Durée de la construction, en millisecondes.
     elapsed_ms: u128,
 }
@@ -1659,6 +1671,11 @@ fn build_screens(vfs: &Vfs, paths: &MenuPaths) -> ScreenIndex {
             continue;
         };
         let (resolved, missing, served) = layer_status(&layers, &paths.objects);
+        out.layers_declared += layers.len();
+        out.layers_resolved += resolved;
+        for m in &missing {
+            *out.missing_layers.entry(m.clone()).or_insert(0) += 1;
+        }
         out.entries.push(ScreenEntry {
             screen: name,
             cfg: path.clone(),
@@ -1675,6 +1692,9 @@ fn build_screens(vfs: &Vfs, paths: &MenuPaths) -> ScreenIndex {
     tracing::info!(
         ecrans = out.entries.len(),
         servis = out.entries.iter().filter(|e| e.served).count(),
+        calques = out.layers_declared,
+        calques_resolus = out.layers_resolved,
+        calques_absents = out.missing_layers.len(),
         ms = out.elapsed_ms,
         "catalogue des ecrans construit"
     );
@@ -1708,6 +1728,19 @@ pub struct ScreenCoverage {
     pub coverage_pct: f64,
     /// Combien de conteneurs n'ont pas pu être lus sur ce montage.
     pub unreadable: usize,
+    /// Nombre total de calques déclarés par les écrans.
+    pub layers_declared: usize,
+    /// Combien de ces déclarations résolvent vers un `.objbin` du VFS.
+    pub layers_resolved: usize,
+    /// Le taux de résolution des **calques**, qui n'est pas celui des écrans : un seul calque
+    /// absent suffit à retirer `served` à un écran de soixante.
+    pub layers_pct: f64,
+    /// Combien de **noms de calque distincts** sont déclarés sans qu'aucun `.objbin` les porte.
+    pub missing_layers: usize,
+    /// La route qui les énumère.
+    pub missing_route: &'static str,
+    /// Où est réellement le plafond, dit plutôt que laissé à déduire.
+    pub ceiling: &'static str,
     /// Les trois nombres que porte chaque écran **servi**, quand on le demande.
     pub per_screen: &'static [&'static str],
     /// La route qui rend ces trois nombres.
@@ -1760,11 +1793,76 @@ pub async fn screens(
         partial: total - served,
         coverage_pct: coverage_pct(served, total),
         unreadable: idx.unreadable,
+        layers_declared: idx.layers_declared,
+        layers_resolved: idx.layers_resolved,
+        layers_pct: coverage_pct(idx.layers_resolved, idx.layers_declared),
+        missing_layers: idx.missing_layers.len(),
+        missing_route: "/api/v1/screens/missing",
+        ceiling: "un ecran n'est `served` que si TOUS ses calques resolvent. Les calques qui \
+                  manquent ne sont PAS un defaut de cablage : verifie le 2026-09-06, \
+                  `niers vfs find <nom>` rend 0 resultat sur les 255 308 entrees pour \
+                  `cmn01_10_new_icon_tab`, `team13_03_grid_item_root` et \
+                  `act01_04_achieve_icon_bronze`. Le jeu declare des calques dont l'asset \
+                  n'est pas livre dans ce build — contenu coupe, ou construit au runtime par \
+                  script. Le plafond est dans la donnee, pas dans le site",
         per_screen: &["objects", "positioned", "mute"],
         screen_route: "/api/v1/screens/{screen}",
         build_ms: idx.elapsed_ms,
         results: Page::nouvelle(elements, bornes, total),
     }))
+}
+
+/// Un calque déclaré qu'aucun `.objbin` du VFS ne porte.
+#[derive(Debug, Clone, Serialize)]
+pub struct MissingLayer {
+    /// Le nom du calque, tel que le `_setting.cfg.bin` le déclare.
+    pub layer: String,
+    /// Combien d'écrans le déclarent.
+    pub screens: usize,
+}
+
+/// `GET /api/v1/screens/missing` — les calques que le jeu déclare et ne livre pas.
+///
+/// C'est la moitié de la mesure qui empêche « 36 % » de passer pour un reste-à-faire. Ces noms
+/// n'existent sous **aucune** forme dans les 255 308 entrées du VFS — ni `.objbin`, ni archive,
+/// ni autre extension. Les énumérer, c'est dire où est le plafond au lieu de le laisser
+/// deviner.
+///
+/// `?q=` filtre sur le nom, et il est appliqué.
+///
+/// # Errors
+///
+/// `503` tant que le VFS n'est pas monté.
+pub async fn missing_layers(
+    State(state): State<EtatSite>,
+    Query(demande): Query<DemandePage>,
+) -> Result<Json<Page<MissingLayer>>, ErreurSite> {
+    let idx = screen_index(&state).await?;
+    let motif = clean(demande.q.as_deref()).map(|q| q.to_lowercase());
+    let mut retenus: Vec<MissingLayer> = idx
+        .missing_layers
+        .iter()
+        .filter(|(l, _)| {
+            motif
+                .as_ref()
+                .is_none_or(|m| l.to_lowercase().contains(m))
+        })
+        .map(|(layer, screens)| MissingLayer {
+            layer: layer.clone(),
+            screens: *screens,
+        })
+        .collect();
+    // Les plus réclamés d'abord : un calque déclaré par vingt écrans coûte vingt fois plus
+    // qu'un déclaré par un seul.
+    retenus.sort_by(|a, b| b.screens.cmp(&a.screens).then_with(|| a.layer.cmp(&b.layer)));
+    let total = retenus.len();
+    let bornes = demande.bornee();
+    let elements = retenus
+        .into_iter()
+        .skip(bornes.offset())
+        .take(bornes.per_page as usize)
+        .collect();
+    Ok(Json(Page::nouvelle(elements, bornes, total)))
 }
 
 /// Un objet de menu d'un écran, réduit à ce qui décide des trois nombres.

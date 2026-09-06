@@ -953,6 +953,17 @@ arithmétique ne la trouve.
    **pas** mesurée là : la route le dit dans son champ `caveat` au lieu de le laisser croire.
    Un écran n'est `servi` que si **tous** ses calques résolvent vers un `.objbin` présent —
    définition choisie pour pouvoir échouer, et qui échoue sur 304 des 475.
+
+   **Et le plafond n'est pas dans le câblage du site.** Deux taux, pas un :
+   **4 858 calques déclarés, 3 549 résolus — 73,05 %**, pour **36,00 %** d'écrans. L'écart tient
+   à la définition : un seul calque absent retire `servi` à un écran qui en compte soixante.
+   Les **975 noms de calque distincts** introuvables sont énumérés par
+   `GET /api/v1/screens/missing`, les plus réclamés d'abord (`team00_01_chara_card_for_leader`
+   par **17** écrans). Vérifié un par un sur trois d'entre eux : `niers vfs find <nom>` rend
+   **0 résultat sur les 255 308 entrées** — ni `.objbin`, ni archive, ni autre extension. Le jeu
+   **déclare des calques dont l'asset n'est pas livré dans ce build**. C'est un fait sur la
+   donnée, pas un reste-à-faire, et la route le dit dans son champ `ceiling` plutôt que de
+   laisser lire « 36 % » comme un retard.
 5. Le sas `legacy/` est vide.
 6. **Le site tourne** — vérifié en le lançant, pas en relisant le diff.
 

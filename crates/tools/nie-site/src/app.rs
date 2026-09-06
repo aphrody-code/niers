@@ -227,6 +227,10 @@ declarer_routes! {
     // `served` que si TOUS ses calques resolvent vers un `.objbin` present, definition choisie
     // pour pouvoir echouer. Cf. `routes::screens`.
     "/api/v1/screens" => crate::routes::screens::screens,
+    // Declaree AVANT `{screen}` pour la lisibilite ; matchit fait gagner le segment statique
+    // de toute facon. Elle enumere les calques que le jeu DECLARE et ne LIVRE PAS — c'est ce
+    // qui empeche « 36 % » de passer pour un reste-a-faire.
+    "/api/v1/screens/missing" => crate::routes::screens::missing_layers,
     "/api/v1/screens/{screen}" => crate::routes::screens::screen,
     // Le texte localise du jeu, adresse par LANGUE et par FAMILLE. `/api/v1/donnees/{chemin}`
     // le sert deja, mais seulement a qui connait le chemin VFS exact AVEC son numero de version
@@ -457,7 +461,7 @@ mod tests {
     #[test]
     fn contrat_de_routes() {
         let routes = chemins();
-        assert_eq!(routes.len(), 79, "79 routes montees");
+        assert_eq!(routes.len(), 80, "80 routes montees");
         for r in &routes {
             assert!(r.starts_with('/'), "{r}");
             // Syntaxe axum 0.7 (`:id`, `*path`) : elle PANIQUE au `route()`, elle ne degrade

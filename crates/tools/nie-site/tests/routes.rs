@@ -91,7 +91,7 @@ fn json(corps: &[u8]) -> serde_json::Value {
 async fn toutes_les_routes_declarees_repondent() {
     let etat = etat();
     // Une instance concrète par route déclarée, dans le même ordre que `app::chemins()`.
-    let instances: [(&str, &[u16]); 80] = [
+    let instances: [(&str, &[u16]); 81] = [
         ("/healthz", &[200]),
         ("/robots.txt", &[200]),
         ("/.well-known/security.txt", &[200]),
@@ -209,6 +209,7 @@ async fn toutes_les_routes_declarees_repondent() {
         // montage. Un ecran inconnu est un 404 — jamais un objet vide qu'on prendrait pour un
         // ecran sans contenu.
         ("/api/v1/screens", &[503]),
+        ("/api/v1/screens/missing", &[503]),
         ("/api/v1/screens/mainmenu01", &[404, 503]),
         // La traduction s'appuie sur le catalogue de texte : sans `q`, 400 ; sans VFS, 503.
         ("/api/v1/text/translate", &[400, 503]),
@@ -225,7 +226,7 @@ async fn toutes_les_routes_declarees_repondent() {
     ];
 
     let declarees = nie_site::app::chemins();
-    assert_eq!(declarees.len(), 79, "le routeur monte 79 routes");
+    assert_eq!(declarees.len(), 80, "le routeur monte 80 routes");
     assert!(
         instances.len() >= declarees.len(),
         "au moins une instance par route declaree"
@@ -257,7 +258,7 @@ async fn toutes_les_routes_declarees_repondent() {
         );
         vus += 1;
     }
-    assert_eq!(vus, 80, "80 instances interrogees pour 79 routes");
+    assert_eq!(vus, 81, "81 instances interrogees pour 80 routes");
 }
 
 /// Vrai quand `uri` est une instance du motif de route `motif` (syntaxe axum 0.8).
