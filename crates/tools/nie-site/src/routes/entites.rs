@@ -138,9 +138,22 @@ pub struct Colonne {
     pub texte: bool,
 }
 
+/// Nom public du gisement du miroir `inagle_*`.
+pub const GISEMENT_EXTRAIT: &str = "extrait";
+
+/// Nom public du gisement des épisodes de la série.
+pub const GISEMENT_ANIME: &str = "anime";
+
 /// Une table servable, avec son schéma mesuré.
 #[derive(Debug, Clone, Serialize)]
 pub struct TableServie {
+    /// Gisement d'où elle vient — `extrait` (le miroir) ou `anime` (la série).
+    ///
+    /// Publié, parce que sans lui la route ferait passer deux corpus pour un seul. Ils n'ont
+    /// **aucune clé commune** (CLAUDE.md § *Les quatre gisements*) : les servir par la même
+    /// route générique n'est pas les joindre, et un client qui les croirait joignables se
+    /// tromperait sans que rien ne l'en avertisse.
+    pub gisement: &'static str,
     /// Nom de la table.
     pub nom: String,
     /// Colonne qui identifie une ligne, telle que [`cle_primaire`] la choisit.
@@ -337,6 +350,8 @@ pub struct PageLignes {
     /// La page elle-même.
     #[serde(flatten)]
     pub page: Page<MapJson<String, ValeurJson>>,
+    /// Gisement d'où la table vient.
+    pub gisement: &'static str,
     /// Nom de la table lue.
     pub table: String,
     /// Colonne qui identifie une ligne — celle que `/api/v1/entites/{table}/{id}` attend.
@@ -348,6 +363,8 @@ pub struct PageLignes {
 /// Une ligne unique.
 #[derive(Debug, Serialize)]
 pub struct LigneUnique {
+    /// Gisement d'où la table vient.
+    pub gisement: &'static str,
     /// Nom de la table.
     pub table: String,
     /// Colonne de clé.
@@ -420,6 +437,15 @@ pub fn cle_primaire(colonnes: &[(String, String, i32)]) -> (String, bool) {
 ///
 /// Toute erreur SQLite, traduite en `500` sans laisser fuiter le SQL.
 pub fn schema(c: &Connection) -> Result<Vec<TableServie>, ErreurSite> {
+    schema_de(c, GISEMENT_EXTRAIT)
+}
+
+/// Le schéma d'une connexion, étiqueté par le gisement d'où elle vient.
+///
+/// # Errors
+///
+/// Toute erreur SQLite.
+pub fn schema_de(c: &Connection, gisement: &'static str) -> Result<Vec<TableServie>, ErreurSite> {
     let mut stmt = c.prepare(
         "SELECT name FROM sqlite_master WHERE type = 'table' \
          AND name NOT LIKE 'sqlite_%' ORDER BY name",
@@ -450,6 +476,7 @@ pub fn schema(c: &Connection) -> Result<Vec<TableServie>, ErreurSite> {
         }
         let (cle, cle_implicite) = cle_primaire(&brutes);
         tables.push(TableServie {
+            gisement,
             nom,
             cle,
             cle_implicite,
@@ -748,8 +775,20 @@ pub fn ligne_en_json(
 ///
 /// Toute erreur SQLite.
 pub fn catalogue_compte(c: &Connection) -> Result<Vec<TableComptee>, ErreurSite> {
+    catalogue_compte_de(c, GISEMENT_EXTRAIT)
+}
+
+/// Le catalogue d'une connexion, étiqueté par son gisement.
+///
+/// # Errors
+///
+/// Toute erreur SQLite.
+pub fn catalogue_compte_de(
+    c: &Connection,
+    gisement: &'static str,
+) -> Result<Vec<TableComptee>, ErreurSite> {
     let mut sortie = Vec::new();
-    for table in schema(c)? {
+    for table in schema_de(c, gisement)? {
         let n: i64 = c.query_row(&format!("SELECT count(*) FROM \"{}\"", table.nom), [], |r| {
             r.get(0)
         })?;
@@ -876,6 +915,7 @@ pub async fn catalogue(
     Query(brut): Query<BTreeMap<String, String>>,
 ) -> Result<Json<CatalogueEntites>, ErreurSite> {
     let gisement = std::sync::Arc::clone(&etat.gisement);
+    let anime = std::sync::Arc::clone(&etat.anime);
     let (tables, pagination, motif) = tokio::task::spawn_blocking(move || {
         let page = brut
             .get("page")
@@ -888,9 +928,15 @@ pub async fn catalogue(
             .get("q")
             .map(|v| v.trim().to_lowercase())
             .filter(|v| !v.is_empty());
-        gisement
-            .lire(catalogue_compte)
-            .map(|t| (t, Pagination::borner(page, par_page), motif))
+        // Les deux gisements sont concaténés, jamais fusionnés : chaque table dit d'où elle
+        // vient. Un gisement absent n'est pas une erreur — il manque de son catalogue, et le
+        // reste répond. C'est la même règle qu'au démarrage : un corpus absent dégrade, il
+        // n'éteint pas.
+        let mut t = gisement.lire(catalogue_compte)?;
+        if anime.present() {
+            t.extend(anime.lire(|c| catalogue_compte_de(c, GISEMENT_ANIME))?);
+        }
+        Ok::<_, ErreurSite>((t, Pagination::borner(page, par_page), motif))
     })
     .await??;
 
@@ -931,14 +977,14 @@ pub async fn lignes(
     Query(brut): Query<BTreeMap<String, String>>,
 ) -> Result<Json<PageLignes>, ErreurSite> {
     let gisement = std::sync::Arc::clone(&etat.gisement);
+    let anime = std::sync::Arc::clone(&etat.anime);
     tokio::task::spawn_blocking(move || {
-        gisement.lire(|c| {
-            let catalogue = schema(c)?;
-            let table = trouver(&catalogue, &nom)?;
+        dans_le_gisement(&gisement, &anime, &nom, |c, table| {
             let demande = analyser(table, &brut)?;
             let page = page_lignes(c, table, &demande)?;
             Ok(Json(PageLignes {
                 page,
+                gisement: table.gisement,
                 table: table.nom.clone(),
                 cle: table.cle.clone(),
                 filtres: demande.appliques(),
@@ -946,6 +992,83 @@ pub async fn lignes(
         })
     })
     .await?
+}
+
+/// Exécute une lecture sur le gisement qui porte cette table, le miroir d'abord.
+///
+/// L'ordre n'est pas arbitraire : le miroir est le corpus de loin le plus consulté (219 tables
+/// contre 5), et ses noms sont préfixés `inagle_`, donc aucune collision n'est possible avec
+/// ceux de la série. Le second gisement n'est ouvert que si le premier ne connaît pas le nom.
+///
+/// # Errors
+///
+/// `404` si aucun des deux ne sert cette table — avec le compte des deux catalogues, pour que
+/// le message ne laisse pas croire qu'un seul a été consulté.
+pub fn dans_le_gisement<T>(
+    miroir: &crate::dataset::Gisement,
+    anime: &crate::dataset::Gisement,
+    nom: &str,
+    f: impl FnOnce(&Connection, &TableServie) -> Result<T, ErreurSite>,
+) -> Result<T, ErreurSite> {
+    // `Option` puis `take` : `f` est un `FnOnce` et ne peut pas entrer dans deux fermetures,
+    // alors qu'il n'est appelé qu'une fois — sur le gisement qui porte la table.
+    let mut f = Some(f);
+    let mut connues = 0usize;
+    let mut premiere_erreur = None;
+    let mut consulte = 0usize;
+
+    for (gisement, etiquette) in [(miroir, GISEMENT_EXTRAIT), (anime, GISEMENT_ANIME)] {
+        // Un gisement absent n'éteint pas la route : il manque de son catalogue, l'autre
+        // répond. C'est la même règle qu'au démarrage — un corpus absent dégrade.
+        if !gisement.present() {
+            continue;
+        }
+        consulte += 1;
+        let sortie = gisement.lire(|c| {
+            let catalogue = schema_de(c, etiquette)?;
+            let n = catalogue.len();
+            match catalogue.iter().find(|t| t.nom.eq_ignore_ascii_case(nom)) {
+                Some(table) if nom_sql_valide(nom) => {
+                    // `take` ne peut rendre `None` ici : la boucle sort dès qu'il a servi.
+                    let r = f.take().expect("f n'est consommee qu'une fois")(c, table)?;
+                    Ok((Some(r), n))
+                }
+                _ => Ok((None, n)),
+            }
+        });
+        match sortie {
+            Ok((Some(v), _)) => return Ok(v),
+            Ok((None, n)) => connues += n,
+            // Une erreur APRES que `f` ait ete consommee vient de `f`, pas de la recherche :
+            // c'est le `400` d'un `tri=` sur une colonne inconnue, ou une panne SQLite sur la
+            // bonne table. La retenir pour continuer la boucle la transformerait en `404`
+            // « aucune table ne se nomme ainsi » — un message qui envoie corriger un nom de
+            // table parfaitement juste. Mesure du 2026-09-06 : c'est exactement ce que la
+            // premiere version faisait sur `entites/episodes?tri=pertinence`.
+            Err(e) if f.is_none() => return Err(e),
+            Err(e) => {
+                premiere_erreur.get_or_insert(e);
+            }
+        }
+    }
+
+    // Aucun gisement lisible : c'est une indisponibilité, pas un 404. Les confondre ferait
+    // passer une panne — ou un miroir qui n'a pas encore tourné — pour une table inexistante,
+    // et un client corrigerait alors son URL au lieu d'attendre. Deux causes, même conclusion :
+    // aucun fichier sur le disque, ou tous illisibles.
+    if consulte == 0 {
+        return Err(ErreurSite::Indisponible(format!(
+            "aucun gisement n'est monte : ni le miroir ({}) ni le catalogue de la serie ({})",
+            miroir.chemin().display(),
+            anime.chemin().display()
+        )));
+    }
+    if connues == 0 && let Some(e) = premiere_erreur {
+        return Err(e);
+    }
+    Err(ErreurSite::Introuvable(format!(
+        "aucune des {connues} tables servies ne se nomme `{nom}` ; elles sont sur /api/v1/entites"
+    )))
 }
 
 /// `GET /api/v1/entites/{table}/{id}` — une ligne par sa clé.
@@ -958,12 +1081,12 @@ pub async fn ligne(
     Path((nom, id)): Path<(String, String)>,
 ) -> Result<Json<LigneUnique>, ErreurSite> {
     let gisement = std::sync::Arc::clone(&etat.gisement);
+    let anime = std::sync::Arc::clone(&etat.anime);
     tokio::task::spawn_blocking(move || {
-        gisement.lire(|c| {
-            let catalogue = schema(c)?;
-            let table = trouver(&catalogue, &nom)?;
+        dans_le_gisement(&gisement, &anime, &nom, |c, table| {
             let ligne = lire_ligne(c, table, &id)?;
             Ok(Json(LigneUnique {
+                gisement: table.gisement,
                 table: table.nom.clone(),
                 cle: table.cle.clone(),
                 id,
@@ -1124,6 +1247,102 @@ mod tests {
         assert_eq!(f.egalites.get("element").map(String::as_str), Some("Feu"));
         assert_eq!(f.bornes.get("zukan__min"), Some(&2.0));
         assert_eq!(f.presences.get("name_fr"), Some(&"present"));
+    }
+
+    /// Un second gisement, avec les tables de la série — noms disjoints de `inagle_*`.
+    fn base_anime() -> (tempfile::TempDir, crate::dataset::Gisement) {
+        let dir = tempfile::tempdir().unwrap();
+        let chemin = dir.path().join("episodes.db");
+        let c = Connection::open(&chemin).unwrap();
+        c.execute_batch(
+            "CREATE TABLE episodes(id INTEGER PRIMARY KEY, season INTEGER, title TEXT);
+             INSERT INTO episodes VALUES (1, 1, 'Le premier match');
+             INSERT INTO episodes VALUES (2, 3, 'La revanche');
+             CREATE TABLE seasons(id INTEGER PRIMARY KEY, nom TEXT);
+             INSERT INTO seasons VALUES (1, 'Saison 1');",
+        )
+        .unwrap();
+        drop(c);
+        let g = crate::dataset::Gisement::nouveau(&chemin);
+        (dir, g)
+    }
+
+    /// Un gisement qui ne pointe sur rien — l'état d'un miroir qui n'a pas encore tourné.
+    fn base_absente() -> crate::dataset::Gisement {
+        crate::dataset::Gisement::nouveau("/inexistant/aucun-gisement.sqlite")
+    }
+
+    #[test]
+    fn une_table_se_lit_dans_le_gisement_qui_la_porte() {
+        let (_d, miroir) = base();
+        let (_d2, anime) = base_anime();
+        // La moitie positive de chaque cote : chacun trouve SA table.
+        let a = dans_le_gisement(&miroir, &anime, "inagle_characters", |_, t| {
+            Ok(t.gisement)
+        })
+        .unwrap();
+        let b = dans_le_gisement(&miroir, &anime, "episodes", |_, t| Ok(t.gisement)).unwrap();
+        assert_eq!(a, GISEMENT_EXTRAIT);
+        assert_eq!(b, GISEMENT_ANIME);
+        // Et la negative : un nom qu'aucun des deux ne porte est un 404, pas un 503.
+        let e = dans_le_gisement(&miroir, &anime, "inagle_absente", |_, _| Ok(())).unwrap_err();
+        assert!(matches!(e, ErreurSite::Introuvable(_)));
+    }
+
+    #[test]
+    fn un_gisement_absent_degrade_au_lieu_d_eteindre() {
+        // La regle du demarrage, tenue ici : le miroir manque, la serie repond quand meme.
+        let (_d2, anime) = base_anime();
+        let v = dans_le_gisement(&base_absente(), &anime, "episodes", |_, t| Ok(t.nom.clone()));
+        assert_eq!(v.unwrap(), "episodes");
+    }
+
+    #[test]
+    fn aucun_gisement_monte_est_un_503_pas_un_404() {
+        // Le distinguo compte : un 404 ferait corriger son URL a un client qui devrait
+        // simplement attendre que le miroir tourne.
+        let e = dans_le_gisement(&base_absente(), &base_absente(), "episodes", |_, _| Ok(()))
+            .unwrap_err();
+        assert!(
+            matches!(e, ErreurSite::Indisponible(_)),
+            "sans gisement monte, la route est indisponible, pas introuvable"
+        );
+    }
+
+    #[test]
+    fn une_erreur_de_la_table_trouvee_n_est_pas_un_404() {
+        // Le defaut mesure le 2026-09-06 : `tri=` sur une colonne inconnue d'une table du
+        // SECOND gisement ressortait en 404 « aucune table ne se nomme `episodes` », parce que
+        // la boucle continuait apres l'echec de `f`. Un message qui envoie corriger un nom de
+        // table juste est pire qu'une erreur brute.
+        let (_d, miroir) = base();
+        let (_d2, anime) = base_anime();
+        let e = dans_le_gisement(&miroir, &anime, "episodes", |_, t| {
+            analyser(t, &q(&[("tri", "pertinence")])).map(|_| ())
+        })
+        .unwrap_err();
+        assert!(
+            matches!(e, ErreurSite::Demande(_)),
+            "un tri sur une colonne inconnue est un 400, pas un 404 : {e:?}"
+        );
+    }
+
+    #[test]
+    fn les_filtres_generiques_marchent_aussi_sur_la_serie() {
+        // Le gain reel de ce lot : les quatre filtres des episodes (#37-40 de docs/FILTRES.md)
+        // ne sont pas quatre lignes de code, ce sont ZERO — ils viennent avec la route.
+        let (_d, anime) = base_anime();
+        let n = dans_le_gisement(&base_absente(), &anime, "episodes", |c, t| {
+            let d = analyser(t, &q(&[("season", "3")]))?;
+            let cl = clause(t, &d);
+            let sql = format!("SELECT COUNT(*) FROM \"{}\"{}", t.nom, cl.sql);
+            let n: i64 = c.query_row(&sql, rusqlite::params_from_iter(cl.params.iter()), |r| {
+                r.get(0)
+            })?;
+            Ok(n)
+        })
+        .unwrap();
+        assert_eq!(n, 1, "une seule saison 3 sur les deux episodes");
     }
 
     #[test]

@@ -98,8 +98,14 @@ pub struct EtatSite {
     pub config: Arc<Config>,
     /// Statut du montage VFS.
     pub vfs: Arc<RwLock<StatutVfs>>,
-    /// Miroir SQLite en lecture seule.
+    /// Miroir SQLite en lecture seule — le gisement `extrait`, 219 tables `inagle_*`.
     pub gisement: Arc<Gisement>,
+    /// Catalogue des épisodes de la série — le gisement `anime`, en lecture seule lui aussi.
+    ///
+    /// Déclaré à côté du miroir plutôt que fondu dedans : ce sont deux corpus, avec deux
+    /// rythmes de mise à jour et **aucune clé commune** (cf. CLAUDE.md § *Les quatre
+    /// gisements*). Les servir par la même route générique n'est pas les joindre.
+    pub anime: Arc<Gisement>,
     /// Cache des réponses d'amont, borné en poids et en durée.
     pub cache: Cache<String, ReponseCachee>,
     /// Client HTTP vers `nie-model-serve`.
@@ -148,11 +154,13 @@ impl EtatSite {
             .build();
         let jetons_amont = Arc::new(tokio::sync::Semaphore::new(config.concurrence_amont));
         let gisement = Arc::new(Gisement::nouveau(config.db.clone()));
+        let anime = Arc::new(Gisement::nouveau(config.episodes.clone()));
         let limiteur = crate::debit::Limiteur::nouveau(config.debit);
         Self {
             config: Arc::new(config),
             vfs: Arc::new(RwLock::new(StatutVfs::EnCours)),
             gisement,
+            anime,
             cache,
             client,
             jetons_amont,

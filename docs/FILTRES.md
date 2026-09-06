@@ -308,10 +308,10 @@ vignette), compté à part et jamais comme un manque.
 | 35 | Catégorie d'illustration | ✅ | ✅ | ❌ | **SERVI** | 360 → 1 |
 | 36 | Langue / variante d'un asset | ❌ | ✅ | ❌ | **ABSENT** | paramètre avalé |
 | **Épisodes / médias** |
-| 37 | Saison / numéro d'épisode | ❌ | ✅ | ❌ | **ABSENT** | 1 141 inchangé |
-| 38 | Langue de piste | ❌ | ✅ | ❌ | **ABSENT** | 1 141 inchangé |
-| 39 | Sous-titres présents / vu | ❌ | ✅ | ❌ | **ABSENT** | 1 141 inchangé |
-| 40 | Classement par pertinence pondérée | ❌ | ✅ | ❌ | **ABSENT** | 1 141 inchangé |
+| 37 | Saison / numéro d'épisode | ❌ | ✅ | ❌ | **SERVI** | `entites/episodes?season=3` → 1 141 → 274 |
+| 38 | Langue de piste | ❌ | ✅ | ❌ | **SERVI** | `?language=vf` → 1 141 → 390 |
+| 39 | Sous-titres présents / vu | ❌ | ✅ | ❌ | **SERVI** | `?titleJp=__present__` → 1 141 → 1 006 |
+| 40 | Classement par pertinence pondérée | ❌ | ✅ | ❌ | **ABSENT** | `tri=pertinence` refusé en **400** : le tri porte sur une colonne, pas sur un score |
 | 41 | Repli approché (fuzzy) | ❌ | ✅ | ❌ | **ABSENT** | 0 inchangé |
 | **3D** |
 | 42 | Famille de modèle (6) | — | ❌ | ✅ | **SERVI** | 5 490 → 273 |
@@ -332,10 +332,10 @@ tort — c'est le gisement qui est pauvre, pas la route.
 ### Compte — 2026-09-06 au soir
 
 ```
-servis 35 · absents 11 · côté client 2 · à relire 0  (sur 48)
+servis 38 · absents 8 · côté client 2 · à relire 0  (sur 48)
 ```
 
-- **API : 35 servis, 11 absents, 2 hors périmètre.** Le matin, la même colonne comptait 6 servis.
+- **API : 38 servis, 8 absents, 2 hors périmètre.** Le matin, la même colonne comptait 6 servis.
 - Les deux derniers (#29, #32) ont été gagnés **le soir même, par la mesure** : le script les a
   classés `ABSENT` en disant *pourquoi* — « l'égalité ne sait dire ni l'intervalle ni la
   présence » — et cette phrase était le cahier des charges. `entites` a gagné `colonne__min` /
@@ -362,7 +362,7 @@ servis 35 · absents 11 · côté client 2 · à relire 0  (sur 48)
 ---
 
 
-## 6. Les 11 manques restants : source de données et coût
+## 6. Les 8 manques restants : source de données et coût
 
 > Réécrit le 2026-09-06 au soir contre la mesure. Les 26 lignes que cette section chiffrait le
 > matin (#1–#3, #7–#10, #14–#17, #17–#28, #33–#35, #42, #43, #47) sont **servies** : elles ne
@@ -372,7 +372,6 @@ servis 35 · absents 11 · côté client 2 · à relire 0  (sur 48)
 |---|---|---|---|
 | 11 | Glob (`**`, `!excl`, listes) | `crates/engine/nie-viola/src/filtre.rs` | **moteur déjà écrit et testé**, à rendre atteignable depuis `nie-site`. Double `ext=` pour un public plus étroit |
 | 36 | Langue / variante d'un asset | segment de chemin du VFS | lisible sans passe ; Inacord le fait déjà (`lib/galerie.ts:24-59`). Coût quasi nul une fois #6 fait |
-| 37–39 | Saison, épisode, langue, sous-titres | `data/anime/episodes.db` — colonnes déjà lues (`episodes.rs:56-83`) | **décision avant code** : `/api/v1/episodes` est une API de **synchronisation** (`since`/`limit`), pas un catalogue. Soit on la dénature, soit on sert `episodes.db` par `entites` — la seconde donne les quatre filtres gratuitement, et c'est ce que la mesure suggère |
 | 40/41 | Pertinence pondérée, fuzzy | — | **à écrire** ; `apps/inacord/src/lib/recherche.ts:186-295` est un portage direct |
 | 44/45 | RE, forge | `var/niers.sqlite` (`function`, `forge_unit`, `v_forge_function`) | **bloqué en amont, pas en code** : la KB du VPS est ancrée sur le build transitoire `4c2b91fbae6f…`, pas sur la cible. Une route servirait des chiffres faux. `niers rebuild` d'abord |
 | 46 | Recherche globale multi-gisements | les 4 gisements, via `@niers/catalog` | **coûteux et incertain** : le jeu et la série n'ont aucune clé commune ; un rapprochement par le nom ne peut pas se présenter comme un fait |
@@ -399,9 +398,10 @@ Trois restent une **forme** de filtre (glob, sous-arbre, fuzzy) plutôt qu'une d
 3. ~~`prefixe=` sur `/api/v1/recherche` (#6).~~ **Fait le 2026-09-06** — dichotomie sur l'index
    trié : `?q=chara` rend 674, `&prefixe=data/dx11/menu` en rend 242, et `data/dx1` rend 0 au
    lieu d'attraper `data/dx11`. #36 en devient presque gratuit.
-4. **Servir `episodes.db` par `entites` (#37–#39)** plutôt que dénaturer `/api/v1/episodes` :
-   quatre filtres pour une inscription de gisement, et la route de synchronisation reste ce
-   qu'elle est.
+4. ~~Servir `episodes.db` par `entites` (#37–#39).~~ **Fait le 2026-09-06** — le catalogue passe
+   de 219 à **224 tables**, chacune étiquetée par son gisement (`extrait` / `anime`), et les
+   trois filtres n'ont coûté aucune ligne qui leur soit propre. `/api/v1/episodes` reste ce
+   qu'elle est : l'API de synchronisation des Inacord installés.
 5. **Glob (#11)** — moteur déjà écrit, à rendre atteignable.
 6. **Export (#48)** — client seul, une balise.
 7. **Fuzzy et pertinence (#40, #41)** — utiles quand il y aura assez de champs cherchables pour

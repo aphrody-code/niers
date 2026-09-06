@@ -211,15 +211,22 @@ reduit 35 "categorie d'illustration" \
 absent 36 "langue / variante d'un asset" \
         "/api/v1/recherche?per_page=1" "/api/v1/recherche?per_page=1&langue=fr"
 
+# `/api/v1/episodes` reste ce qu'elle est — une API de SYNCHRONISATION (`since`/`limit`) que
+# les Inacord installes interrogent. Les filtres viennent de l'autre cote : `episodes.db` est
+# servi comme second gisement par `/api/v1/entites`, et les quatre lignes qui suivent n'ont
+# coute aucune ligne de code specifique aux episodes.
 echo "-- Episodes / medias"
-absent 37 "saison / numero d'episode" \
-        "/api/v1/episodes?limit=5000" "/api/v1/episodes?limit=5000&season=3"
-absent 38 "langue de piste" \
-        "/api/v1/episodes?limit=5000" "/api/v1/episodes?limit=5000&language=fr"
-absent 39 "sous-titres presents / vu" \
-        "/api/v1/episodes?limit=5000" "/api/v1/episodes?limit=5000&subtitles=1"
-absent 40 "classement par pertinence ponderee" \
-        "/api/v1/episodes?limit=5000" "/api/v1/episodes?limit=5000&q=match"
+reduit 37 "saison / numero d'episode" \
+        "/api/v1/entites/episodes?per_page=1" \
+        "/api/v1/entites/episodes?per_page=1&season=3"
+reduit 38 "langue de piste" \
+        "/api/v1/entites/episodes?per_page=1" \
+        "/api/v1/entites/episodes?per_page=1&language=vf"
+reduit 39 "sous-titres presents / vu" \
+        "/api/v1/entites/episodes?per_page=1" \
+        "/api/v1/entites/episodes?per_page=1&titleJp=__present__"
+absent_400 40 "classement par pertinence ponderee" \
+        "/api/v1/entites/episodes?per_page=1&tri=pertinence"
 absent 41 "repli approche (fuzzy)" \
         "/api/v1/recherche?per_page=1&q=charabase" "/api/v1/recherche?per_page=1&q=charabase&fuzzy=1"
 
