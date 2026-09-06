@@ -401,6 +401,8 @@ pub struct IndexVfs {
     ext_noms: Vec<String>,
     /// Indices de `chemins` par rang d'extension, croissants.
     ext_listes: Vec<Vec<u32>>,
+    /// Rang d'extension de chaque entrée, ou [`EXT_INCONNUE`] pour un chemin sans extension.
+    ext_de: Vec<u16>,
     /// Indices dans `chemins`, une liste par vue, dans l'ordre de [`VUES`].
     vues: [Vec<u32>; 4],
     /// Tous les indices, croissants — la base des sélections non restreintes.
@@ -411,6 +413,46 @@ pub struct IndexVfs {
 
 /// Rang réservé aux entrées sans pack d'origine (montage dump).
 const CPK_INCONNU: u16 = u16::MAX;
+
+/// Rang réservé aux chemins sans extension.
+const EXT_INCONNUE: u16 = u16::MAX;
+
+/// Ce qu'on sait compter sur l'index — les deux dimensions que le VFS porte réellement.
+///
+/// Elles sont **closes** : un champ venu du client ne devient jamais un nom de colonne ou une
+/// clé de comptage. Le sous-arbre, lui, n'en est pas une — `/b` le donne déjà, dossier par
+/// dossier, et le compter ici doublerait une route qui existe.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Champ {
+    /// Extension du jeu, sans point, en minuscules.
+    Ext,
+    /// Pack CPK d'origine. Vide sur un montage dump.
+    Cpk,
+}
+
+impl Champ {
+    /// Le nom public du champ, celui que `?facets=` accepte et que la réponse republie.
+    #[must_use]
+    pub const fn nom(self) -> &'static str {
+        match self {
+            Self::Ext => "ext",
+            Self::Cpk => "cpk",
+        }
+    }
+
+    /// Le champ que désigne ce nom, ou `None` — un nom inconnu est **refusé**, jamais ignoré.
+    #[must_use]
+    pub fn depuis(s: &str) -> Option<Self> {
+        match s.trim() {
+            "ext" => Some(Self::Ext),
+            "cpk" => Some(Self::Cpk),
+            _ => None,
+        }
+    }
+
+    /// Les deux noms servis, pour les messages d'erreur et les tests.
+    pub const NOMS: [&'static str; 2] = ["ext", "cpk"];
+}
 
 impl IndexVfs {
     /// Construit l'index depuis des couples `(chemin, taille)`, sans pack d'origine.
@@ -511,6 +553,18 @@ impl IndexVfs {
             ext_listes.push(liste);
         }
 
+        // Le rang d'extension PAR entrée, l'inverse de `ext_listes`. Une seconde passe sur les
+        // listes déjà construites — donc O(n) au total, et non une recherche par entrée au
+        // moment de compter : une facette qui referait `extension()` puis une dichotomie sur
+        // 255 308 chemins allouerait autant de `String` minuscules pour rien.
+        let mut ext_de = vec![EXT_INCONNUE; n];
+        for (rang, liste) in ext_listes.iter().enumerate() {
+            let rang = u16::try_from(rang).unwrap_or(EXT_INCONNUE);
+            for &i in liste {
+                ext_de[i as usize] = rang;
+            }
+        }
+
         let tous: Vec<u32> = (0..u32::try_from(n).unwrap_or(u32::MAX)).collect();
         let mut par_taille = tous.clone();
         par_taille.sort_unstable_by_key(|i| (tailles[*i as usize], *i));
@@ -523,6 +577,7 @@ impl IndexVfs {
             cpk_listes,
             ext_noms,
             ext_listes,
+            ext_de,
             vues,
             tous,
             par_taille,
@@ -874,6 +929,85 @@ impl IndexVfs {
     pub fn page_filtree(&self, vue: Option<Vue>, r: &Requete) -> (Vec<Fichier>, usize) {
         let base = self.base(vue, &r.filtre);
         self.trancher(base, r)
+    }
+
+    /// Compte les valeurs d'un champ **sous les filtres en cours, sauf le sien**.
+    ///
+    /// ## Pourquoi « sauf le sien »
+    ///
+    /// C'est la seule définition qui laisse choisir une seconde valeur. Comptée sous tous les
+    /// filtres, la facette `ext` répondrait `g4tx: 54 203` et rien d'autre dès qu'on a cliqué
+    /// `g4tx` — la liste des choix se refermerait sur le premier clic. Les autres filtres
+    /// (`q`, préfixe, glob, taille, et l'autre champ) s'appliquent bien : c'est ce qui fait que
+    /// les comptes correspondent à ce que la page montrera.
+    ///
+    /// Rend les valeurs les plus fournies d'abord, coupées à `limite`, **et** le nombre de
+    /// valeurs distinctes avant la coupe — une liste de 60 packs sur 936 le dit au lieu de
+    /// laisser croire qu'il n'y en a que 60.
+    #[must_use]
+    pub fn comptes(
+        &self,
+        vue: Option<Vue>,
+        r: &Requete,
+        champ: Champ,
+        limite: usize,
+    ) -> (Vec<Compte>, usize) {
+        // Le filtre du champ compté est retiré AVANT de choisir la base : sans quoi `base`
+        // partirait de la liste pré-calculée de cette extension-là, et la facette ne verrait
+        // jamais les autres.
+        let mut f = r.filtre.clone();
+        match champ {
+            Champ::Ext => f.ext = None,
+            Champ::Cpk => f.cpk = None,
+        }
+        // `impossible` vient d'un `?ext=`/`?cpk=` sans correspondance. Si c'est le champ qu'on
+        // compte, la cause disparaît avec lui — sinon rien ne passe, et c'est correct.
+        if f.ext.is_none() && f.cpk.is_none() {
+            f.impossible = false;
+        }
+
+        let base = self.base(vue, &f);
+        let mut comptes: Vec<usize> = match champ {
+            Champ::Ext => vec![0; self.ext_noms.len()],
+            Champ::Cpk => vec![0; self.cpk_noms.len()],
+        };
+        for &i in base {
+            if !self.retenu(i, &f) {
+                continue;
+            }
+            let rang = match champ {
+                Champ::Ext => self.ext_de.get(i as usize).copied(),
+                Champ::Cpk => self.cpk_de.get(i as usize).copied(),
+            };
+            // `u16::MAX` dit « sans extension » ou « sans pack » : ce n'est pas une valeur, et
+            // la publier comme telle inventerait une catégorie que le VFS ne porte pas.
+            if let Some(r) = rang
+                && r != EXT_INCONNUE
+                && let Some(c) = comptes.get_mut(usize::from(r))
+            {
+                *c += 1;
+            }
+        }
+
+        let noms = match champ {
+            Champ::Ext => &self.ext_noms,
+            Champ::Cpk => &self.cpk_noms,
+        };
+        let mut valeurs: Vec<Compte> = comptes
+            .into_iter()
+            .enumerate()
+            .filter(|(_, total)| *total > 0)
+            .map(|(rang, total)| Compte {
+                valeur: noms[rang].clone(),
+                total,
+            })
+            .collect();
+        let distinct = valeurs.len();
+        // Les plus fournies d'abord, à égalité par ordre alphabétique : deux appels rendent la
+        // même liste, ce qu'un tri instable sur le seul total ne garantit pas.
+        valeurs.sort_unstable_by(|a, b| b.total.cmp(&a.total).then_with(|| a.valeur.cmp(&b.valeur)));
+        valeurs.truncate(limite);
+        (valeurs, distinct)
     }
 
     /// Une page d'une vue restreinte à un motif, dans l'ordre du VFS.

@@ -68,6 +68,26 @@ function fil(prefixe: string): { nom: string; chemin: string }[] {
 	return segments.map((nom, i) => ({ nom, chemin: segments.slice(0, i + 1).join("/") }));
 }
 
+/** Une valeur d'une facette de l'index, et son compte. */
+interface FacetteValeur {
+	value: string | null;
+	count: number;
+}
+
+/**
+ * Les valeurs d'un champ de l'index, comptées **sous les filtres en cours sauf le sien**.
+ *
+ * C'est cette dernière clause qui rend la pastille utile deux fois : après avoir cliqué
+ * `g4tx`, la liste continue de proposer `bin` et `g4pk` avec leurs comptes, au lieu de se
+ * réduire à ce qu'on vient de choisir.
+ */
+interface Facette {
+	column: string;
+	distinct: number;
+	truncated: boolean;
+	values: FacetteValeur[];
+}
+
 type Etat = {
 	prefixe: string;
 	q: string;
@@ -214,6 +234,7 @@ export function Explorateur() {
 	const [saisie, setSaisie] = useState(initial.q);
 	const [contenu, setContenu] = useState<ContenuDossier | null>(null);
 	const [globaux, setGlobaux] = useState<{ fichiers: EntreeVfs[]; total: number } | null>(null);
+	const [facettes, setFacettes] = useState<Facette[]>([]);
 	const [erreur, setErreur] = useState(false);
 	const { prefixe, q, ext, tri, ordre, minMo, maxMo, glob, cpk, partout, choisi, vue, cote } =
 		etat;
@@ -247,11 +268,16 @@ export function Explorateur() {
 			if (min !== undefined) p.set("taille_min", String(min));
 			const max = octetsDe(maxMo);
 			if (max !== undefined) p.set("taille_max", String(max));
+			// Les deux dimensions que le VFS porte réellement, comptées SOUS les filtres en
+			// cours mais chacune sans le sien : c'est ce qui laisse en changer sans repartir de
+			// zéro. Sans elles, il faut connaître `g4pkm` d'avance pour le taper.
+			p.set("facets", "ext,cpk");
 			fetch(`/api/v1/recherche?${p}`, { signal: ac.signal, headers: { accept: "application/json" } })
 				.then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-				.then((r: { fichiers: EntreeVfs[]; total: number }) => {
+				.then((r: { fichiers: EntreeVfs[]; total: number; facets?: Facette[] }) => {
 					if (!ac.signal.aborted) {
 						setGlobaux({ fichiers: r.fichiers, total: r.total });
+						setFacettes(r.facets ?? []);
 						setContenu(null);
 					}
 				})
@@ -262,6 +288,10 @@ export function Explorateur() {
 		}
 
 		setGlobaux(null);
+		// Le parcours d'un dossier ne connaît ni extension ni pack au-delà de son niveau : les
+		// facettes de l'index n'ont pas de sens ici, et les laisser affichées les ferait lire
+		// comme celles du dossier courant.
+		setFacettes([]);
 		source
 			.parcourir(prefixe, {
 				q: q.trim() || undefined,
@@ -492,6 +522,64 @@ export function Explorateur() {
 						/>
 					</label>
 				</div>
+
+				{/*
+				  * Ce que l'index porte VRAIMENT, compté : 40 extensions et 936 packs sur
+				  * 255 308 fichiers. Sans ces comptes il faut connaître `g4pkm` pour le taper —
+				  * un filtre qu'on devine n'en est pas un.
+				  */}
+				{facettes.map((f) => {
+					const actif = f.column === "ext" ? ext.trim().replace(/^\./, "") : cpk.trim();
+					return (
+						<div key={f.column} style={{ margin: "var(--jeu-espace-m) 0 0" }}>
+							<div style={{ display: "flex", alignItems: "baseline", gap: "var(--jeu-espace-xs)", flexWrap: "wrap" }}>
+								<strong style={{ fontSize: "0.85rem" }}>
+									{f.column === "ext" ? "Extension" : "Pack"}
+								</strong>
+								<span style={{ fontSize: "0.78rem", opacity: 0.7 }}>
+									{f.truncated
+										? `${f.values.length} des ${f.distinct.toLocaleString("fr")}, les plus fournis`
+										: accorde(f.distinct, f.column === "ext" ? "extension" : "pack")}
+								</span>
+							</div>
+							<div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
+								{f.values.map((v) => {
+									const valeur = v.value ?? "";
+									const coche = actif === valeur;
+									return (
+										<button
+											key={valeur}
+											type="button"
+											aria-pressed={coche}
+											// Un second clic retire le filtre : sans ça, une pastille cochée
+											// n'a aucune sortie, et il faut vider un champ qu'on n'a jamais
+											// rempli à la main.
+											onClick={() =>
+												modifier(
+													f.column === "ext"
+														? { ext: coche ? "" : valeur, partout: true, choisi: "" }
+														: { cpk: coche ? "" : valeur, partout: true, choisi: "" },
+												)
+											}
+											style={{
+												...CHAMP,
+												cursor: "pointer",
+												fontSize: "0.8rem",
+												padding: "2px var(--jeu-espace-xs)",
+												background: coche ? "var(--jeu-surface-glace)" : "#fff",
+												borderColor: coche ? "var(--jeu-nuit-profonde)" : "var(--jeu-tuile-bord)",
+												fontWeight: coche ? 800 : 400,
+											}}
+										>
+											{f.column === "cpk" ? valeur.replace(/\.cpk$/, "").slice(0, 10) : valeur}{" "}
+											<span style={{ opacity: 0.65 }}>{v.count.toLocaleString("fr")}</span>
+										</button>
+									);
+								})}
+							</div>
+						</div>
+					);
+				})}
 			</details>
 
 			{/*

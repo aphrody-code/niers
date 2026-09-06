@@ -61,6 +61,8 @@ pub struct Demande {
     pub taille_min: Option<u32>,
     /// Taille maximale en octets, incluse.
     pub taille_max: Option<u32>,
+    /// Champs à compter — `facets=ext,cpk`. Un nom hors de [`Champ::NOMS`] est **refusé**.
+    pub facets: Option<String>,
 }
 
 impl Demande {
@@ -105,6 +107,43 @@ pub struct Resultat {
     pub per_page: u32,
     /// Ce que le serveur a **réellement** appliqué.
     pub filtres: FiltresAppliques,
+    /// Les champs demandés, comptés **sous les filtres en cours sauf le leur**. Absent quand
+    /// `?facets` l'est — une clé toujours présente et toujours vide ferait croire à une
+    /// capacité absente.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub facets: Vec<crate::routes::entites::Facet>,
+}
+
+/// Combien de valeurs une facette du VFS republie.
+///
+/// 60 comme celles des tables : au-delà, la liste est coupée **et le dit**. Le VFS porte 936
+/// packs — une liste qui mentirait sur sa longueur ferait croire qu'il en porte 60.
+pub const FACET_VALEURS_MAX: usize = 60;
+
+/// Lit `?facets=ext,cpk`, en refusant ce qui n'est pas servi.
+///
+/// Un nom inconnu est un `400` qui **nomme les deux champs servis** : le laisser passer
+/// rendrait une réponse sans le champ demandé, et le client croirait que le VFS ne porte
+/// aucune valeur pour lui.
+fn champs_demandes(brut: Option<&str>) -> Result<Vec<crate::vfs_index::Champ>, ErreurSite> {
+    let mut champs = Vec::new();
+    for nom in brut
+        .unwrap_or_default()
+        .split(',')
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+    {
+        let champ = crate::vfs_index::Champ::depuis(nom).ok_or_else(|| {
+            ErreurSite::Demande(format!(
+                "`facets={nom}` : seuls {} se comptent sur le VFS",
+                crate::vfs_index::Champ::NOMS.join(" et ")
+            ))
+        })?;
+        if !champs.contains(&champ) {
+            champs.push(champ);
+        }
+    }
+    Ok(champs)
 }
 
 /// `GET /api/v1/recherche` — cherche dans tout le VFS.
@@ -119,6 +158,9 @@ pub async fn recherche(
     Query(demande): Query<Demande>,
 ) -> Result<Json<Resultat>, ErreurSite> {
     let index = etat.index()?;
+    // Les champs sont validés AVANT toute lecture : une demande fausse ne doit pas coûter un
+    // parcours de 255 308 entrées avant d'être refusée.
+    let champs = champs_demandes(demande.facets.as_deref())?;
     let bornes = demande.page().bornee();
     let requete = index
         .resoudre(demande.q.as_deref(), &demande.filtre())
@@ -126,6 +168,24 @@ pub async fn recherche(
     // `vue = None` : la recherche porte sur l'index ENTIER, pas sur l'une des quatre vues
     // enregistrées — celles-ci ne couvrent que 143 246 des 255 308 entrées.
     let (fichiers, total) = index.page_filtree(None, &requete);
+    let facets = champs
+        .into_iter()
+        .map(|champ| {
+            let (valeurs, distinct) = index.comptes(None, &requete, champ, FACET_VALEURS_MAX);
+            crate::routes::entites::Facet {
+                column: champ.nom().to_owned(),
+                distinct,
+                truncated: valeurs.len() < distinct,
+                values: valeurs
+                    .into_iter()
+                    .map(|c| crate::routes::entites::FacetValeur {
+                        value: Some(c.valeur),
+                        count: i64::try_from(c.total).unwrap_or(i64::MAX),
+                    })
+                    .collect(),
+            }
+        })
+        .collect();
     Ok(Json(Resultat {
         fichiers,
         total,
@@ -133,13 +193,14 @@ pub async fn recherche(
         page: bornes.page,
         per_page: bornes.per_page,
         filtres: requete.applique,
+        facets,
     }))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::vfs_index::IndexVfs;
+    use crate::vfs_index::{Champ, IndexVfs};
 
     fn index_temoin() -> IndexVfs {
         IndexVfs::depuis(vec![
@@ -155,6 +216,109 @@ mod tests {
             ("data/dx11/menu/title/title_layout.cfg.bin".to_owned(), 128),
             ("data/common/sound/en/ev01.p3lip".to_owned(), 512),
         ])
+    }
+
+    /// Les comptes d'un champ, sous une demande donnée — sous la forme qu'un test lit.
+    fn comptes(index: &IndexVfs, dem: DemandeFiltre, q: Option<&str>, champ: Champ) -> Vec<(String, usize)> {
+        let r = index.resoudre(q, &dem);
+        index
+            .comptes(None, &r, champ, FACET_VALEURS_MAX)
+            .0
+            .into_iter()
+            .map(|c| (c.valeur, c.total))
+            .collect()
+    }
+
+    #[test]
+    fn une_facette_du_vfs_compte_sous_les_filtres_en_cours() {
+        // Sans les comptes, l'explorateur ne peut proposer qu'un champ de texte : il faut
+        // connaitre l'extension d'avance. Les deux moities comptent — sans la seconde, une
+        // facette qui ignorerait la demande rendrait les memes chiffres et passerait.
+        let index = index_temoin();
+        assert_eq!(
+            comptes(&index, DemandeFiltre::default(), None, Champ::Ext),
+            [("bin".to_owned(), 3), ("g4tx".to_owned(), 1), ("p3lip".to_owned(), 1)]
+        );
+        assert_eq!(
+            comptes(
+                &index,
+                DemandeFiltre { prefixe: Some("data/common".to_owned()), ..DemandeFiltre::default() },
+                None,
+                Champ::Ext
+            ),
+            [("bin".to_owned(), 2), ("p3lip".to_owned(), 1)],
+            "le `.g4tx` vit sous data/dx11 : il sort du compte"
+        );
+        // Un motif qui ne designe rien laisse une facette VIDE, pas une facette pleine — c'est
+        // la meme garde que le total, et elle vit dans un second chemin de code.
+        assert!(comptes(&index, DemandeFiltre::default(), Some("zzz"), Champ::Ext).is_empty());
+    }
+
+    #[test]
+    fn une_facette_du_vfs_ignore_son_propre_filtre() {
+        // La propriete qui rend la facette cliquable plusieurs fois. Comptee sous tous les
+        // filtres, `ext` rendrait `g4tx: 1` des qu'on a clique `g4tx`, et les deux autres
+        // extensions seraient inatteignables.
+        let index = index_temoin();
+        let dem = DemandeFiltre { ext: Some("g4tx".to_owned()), ..DemandeFiltre::default() };
+
+        // La page, elle, EST filtree : les deux comptes disent bien deux choses differentes.
+        let r = index.resoudre(None, &dem);
+        assert_eq!(index.page_filtree(None, &r).1, 1);
+
+        assert_eq!(
+            comptes(&index, dem, None, Champ::Ext),
+            [("bin".to_owned(), 3), ("g4tx".to_owned(), 1), ("p3lip".to_owned(), 1)],
+            "les autres extensions restent cliquables"
+        );
+
+        // Cas limite qui n'a rien d'academique : une extension INCONNUE pose `impossible`, qui
+        // fait tout rejeter. Comme elle disparait avec son propre filtre, la facette doit
+        // redevenir complete — sinon un `?ext=typo` viderait l'ecran ET la liste des choix,
+        // sans aucun moyen de revenir en arriere.
+        let typo = DemandeFiltre { ext: Some("inexistante".to_owned()), ..DemandeFiltre::default() };
+        let r = index.resoudre(None, &typo);
+        assert_eq!(index.page_filtree(None, &r).1, 0, "la page est bien vide");
+        assert_eq!(comptes(&index, typo, None, Champ::Ext).len(), 3, "la sortie de secours reste");
+    }
+
+    #[test]
+    fn une_facette_de_pack_compte_les_cpk() {
+        // `IndexVfs::depuis` n'a pas de provenance : la facette `cpk` s'y mesure vide, ce qui
+        // est correct sur un montage dump. Avec des entrees completes, elle compte.
+        use crate::vfs_index::Entree;
+        let index = IndexVfs::depuis_entrees(vec![
+            Entree { chemin: "data/a.g4tx".to_owned(), taille: 1, cpk: "common.cpk".to_owned() },
+            Entree { chemin: "data/b.g4tx".to_owned(), taille: 2, cpk: "common.cpk".to_owned() },
+            Entree { chemin: "data/c.bin".to_owned(), taille: 3, cpk: "menu.cpk".to_owned() },
+        ]);
+        assert_eq!(
+            comptes(&index, DemandeFiltre::default(), None, Champ::Cpk),
+            [("common.cpk".to_owned(), 2), ("menu.cpk".to_owned(), 1)]
+        );
+        // Croise : l'autre champ s'applique bien a la facette de pack.
+        assert_eq!(
+            comptes(
+                &index,
+                DemandeFiltre { ext: Some("bin".to_owned()), ..DemandeFiltre::default() },
+                None,
+                Champ::Cpk
+            ),
+            [("menu.cpk".to_owned(), 1)]
+        );
+        assert!(comptes(&index_temoin(), DemandeFiltre::default(), None, Champ::Cpk).is_empty());
+    }
+
+    #[test]
+    fn un_champ_de_facette_inconnu_est_refuse() {
+        // Meme regle que partout : ce qui n'est pas servi est refuse, jamais avale. Un
+        // `facets=taille` qui rendrait une reponse sans le champ ferait croire que le VFS ne
+        // porte aucune taille.
+        assert!(champs_demandes(Some("taille")).is_err());
+        assert!(champs_demandes(Some("ext,inconnu")).is_err());
+        assert_eq!(champs_demandes(Some("ext,cpk,ext")).unwrap().len(), 2, "dedoublonne");
+        assert!(champs_demandes(None).unwrap().is_empty());
+        assert!(champs_demandes(Some(" , ")).unwrap().is_empty());
     }
 
     #[test]
