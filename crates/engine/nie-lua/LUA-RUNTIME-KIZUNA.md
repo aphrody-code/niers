@@ -10,6 +10,8 @@ runtime est opérationnel pour le menu `kizuna_town_mainmenu`.
 - Scripts réels décodés : **1 143/1 143**, soit **985 971 instructions**.
 - Audit ciblé Kizuna : **25/25 scripts exécutés**, 0 erreur, 0 include manquant,
   0 appel hôte manquant.
+- Décodage ciblé Kizuna : **25/25 chunks décodés**, 0 erreur, **31 957
+  instructions** parcourues par le décodeur Rust.
 - Audit VFS complet : **1 197/1 197 scripts exécutés**, 0 erreur, 0 include
   manquant.
 - Runtime Kizuna : **102 commandes connues**, 0 commande menu inconnue,
@@ -32,6 +34,9 @@ numériquement, afin qu’un fichier `..._10...` ne soit pas devancé par
 `ExecOutput` expose désormais `loaded_includes`, dans l’ordre réel de chargement.
 `lua-run` le rend dans `loadedIncludes` et `lua-audit` l’agrège par nom de module,
 ce qui rend la résolution VFS observable et vérifiable.
+
+`lua-audit` compte aussi séparément les chunks décodés et le nombre total
+d’instructions, afin qu’un succès VM ne masque pas une divergence du décodeur.
 
 La même instrumentation est maintenant disponible sur `LuaSession` via
 `take_loaded_includes()`. Elle survit à `reload()` et se prélève séparément,

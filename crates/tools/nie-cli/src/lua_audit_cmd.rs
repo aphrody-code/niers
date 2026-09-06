@@ -39,6 +39,9 @@ pub fn run(
     let by_logical = Rc::new(by_logical);
     let vfs = Rc::new(vfs);
     let mut executed = 0usize;
+    let mut decoded = 0usize;
+    let mut decode_errors = 0usize;
+    let mut decoded_instructions = 0usize;
     let mut ok = 0usize;
     let mut errors = 0usize;
     let mut missing_includes: BTreeMap<String, usize> = BTreeMap::new();
@@ -61,6 +64,22 @@ pub fn run(
             }
         };
         executed += 1;
+        match nie_lua::bytecode::parse(&bytes) {
+            Ok(chunk) => {
+                decoded += 1;
+                decoded_instructions += chunk.main.total_instructions();
+            }
+            Err(error) => {
+                decode_errors += 1;
+                if samples.len() < 20 {
+                    samples.push(json!({
+                        "script": path,
+                        "kind": "decode",
+                        "error": error.to_string()
+                    }));
+                }
+            }
+        }
         let options = ExecOptions {
             chunk_name: path.clone(),
             instruction_limit: (instruction_limit != 0).then_some(instruction_limit),
@@ -114,6 +133,9 @@ pub fn run(
             "prefix": prefix,
             "scripts": paths.len(),
             "executed": executed,
+            "decoded": decoded,
+            "decodeErrors": decode_errors,
+            "decodedInstructions": decoded_instructions,
             "ok": ok,
             "errors": errors,
             "missingIncludes": missing_includes,
