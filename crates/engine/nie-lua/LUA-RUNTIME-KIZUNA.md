@@ -61,6 +61,9 @@ de `module_10` devant `module_9`.
 Ce chemin applique par défaut une limite de 20 millions d’instructions (`exec_vfs_with_limit` permet
 de la régler) ; le hook est retiré après chaque appel, y compris lorsqu’une boucle est interrompue,
 afin de ne pas contaminer les événements live suivants.
+La même protection couvre désormais `LuaSession::drive_menu_for_frames` via
+`drive_menu_for_frames_with_limit` : le budget englobe le top-level, les callbacks de layers et les
+frames, puis la VM reste disponible pour l’événement suivant.
 
 `RuntimeContext` fournit l’injection typée des globals primitifs que le manager
 natif pose avant un callback (nombres, booléens, chaînes). Le contexte est

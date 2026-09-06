@@ -350,6 +350,29 @@ impl LuaSession {
         item_counts: &std::collections::BTreeMap<u32, i32>,
         frames: u32,
     ) -> Result<DriveReport, LuaError> {
+        self.drive_menu_for_frames_with_limit(
+            script_bytes,
+            name,
+            layer_ids,
+            item_counts,
+            frames,
+            Some(DEFAULT_VFS_INSTRUCTION_LIMIT),
+        )
+    }
+
+    /// Variante du driver live avec une limite d'instructions configurable.
+    ///
+    /// Le hook couvre toute la séquence du manager (`top-level`, callbacks de construction et
+    /// frames), puis est retiré avant le retour afin que la session reste réutilisable.
+    pub fn drive_menu_for_frames_with_limit(
+        &self,
+        script_bytes: &[u8],
+        name: &str,
+        layer_ids: &[u32],
+        item_counts: &std::collections::BTreeMap<u32, i32>,
+        frames: u32,
+        instruction_limit: Option<u32>,
+    ) -> Result<DriveReport, LuaError> {
         if self.menu_state.is_none() {
             return Err(LuaError::Vm(mlua::Error::RuntimeError(
                 "LuaSession: with_menu_host=false, impossible de piloter un menu".to_string(),
@@ -365,14 +388,33 @@ impl LuaSession {
                 state.object_attr.entry(object_id).or_insert(count);
             }
         }
-        crate::menu_host::drive_menu_for_frames(
+        if let Some(limit) = instruction_limit {
+            let executed = std::cell::Cell::new(0_u32);
+            self.lua.set_hook(
+                mlua::HookTriggers::new().every_nth_instruction(10_000),
+                move |_lua, _debug| {
+                    executed.set(executed.get().saturating_add(10_000));
+                    if executed.get() >= limit {
+                        return Err(mlua::Error::RuntimeError(format!(
+                            "limite d'exécution atteinte ({limit} instructions) — menu probablement en attente du moteur"
+                        )));
+                    }
+                    Ok(mlua::VmState::Continue)
+                },
+            )?;
+        }
+        let result = crate::menu_host::drive_menu_for_frames(
             &self.lua,
             script_bytes,
             name,
             layer_ids,
             item_counts,
             frames,
-        )
+        );
+        if instruction_limit.is_some() {
+            self.lua.remove_hook();
+        }
+        result
     }
 
     /// Appelle un callback host→Lua sur la VM persistante, comme le manager de menu natif.
@@ -944,6 +986,41 @@ mod tests {
         s.drive_menu_for_frames(&bytes, "scene-count", &[], &counts, 0)
             .expect("driver");
         assert_eq!(s.eval("observed_count").unwrap(), "7");
+    }
+
+    #[test]
+    fn le_driver_menu_borne_un_callback_et_retire_le_hook() {
+        let s = LuaSession::standard(true).expect("session menu");
+        let bytes = s
+            .lua()
+            .load(
+                r#"function OnInit()
+                    while true do end
+                end"#,
+            )
+            .into_function()
+            .expect("compilation menu")
+            .dump(false);
+        let report = s
+            .drive_menu_for_frames_with_limit(
+                &bytes,
+                "loop-menu",
+                &[],
+                &std::collections::BTreeMap::new(),
+                0,
+                Some(10_000),
+            )
+            .expect("le driver capture l'erreur de limite");
+        assert_eq!(report.on_init, Some(false));
+        assert!(
+            report
+                .callback_errors
+                .iter()
+                .any(|error| error.contains("limite d'exécution"))
+        );
+        s.exec("after-menu-limit", b"menu_survived = true")
+            .expect("la VM reste utilisable après le driver");
+        assert_eq!(s.eval("menu_survived").unwrap(), "true");
     }
 
     #[test]
