@@ -245,8 +245,10 @@ reduit 39 "sous-titres presents / vu" \
         "/api/v1/entites/episodes?per_page=1&titleJp=__present__"
 absent_400 40 "classement par pertinence ponderee" \
         "/api/v1/entites/episodes?per_page=1&tri=pertinence"
-absent 41 "repli approche (fuzzy)" \
-        "/api/v1/recherche?per_page=1&q=charabase" "/api/v1/recherche?per_page=1&q=charabase&fuzzy=1"
+# Etait « parametre avale (0 inchange) » jusqu'au 2026-09-06 : la route acceptait `fuzzy` et
+# l'ignorait. `deny_unknown_fields` en fait un 400 — l'absence se voit au lieu de se croire.
+absent_400 41 "repli approche (fuzzy)" \
+        "/api/v1/recherche?per_page=1&q=charabase&fuzzy=1"
 
 echo "-- 3D"
 # Sans `famille`, le catalogue 3D ne rend pas TOUT : il rend `perso` (5 490 = le total nu,
@@ -262,8 +264,10 @@ sans_route 44 "recherche fonction par nom ou adresse" "/api/v1/re/functions"
 sans_route 45 "filtre par statut de forge" "/api/v1/forge/units"
 
 echo "-- Transverse"
-absent 46 "recherche globale multi-gisements" \
-        "/api/v1/recherche?per_page=1&q=mark" "/api/v1/recherche?per_page=1&q=mark&gisements=tous"
+# Meme correction que la 41 : `gisements` etait avale. La capacite reste absente — le VFS et le
+# miroir ne se cherchent pas d'un seul geste — mais elle le DIT desormais.
+absent_400 46 "recherche globale multi-gisements" \
+        "/api/v1/recherche?per_page=1&q=mark&gisements=tous"
 existe 47 "facettes avec comptes" "/api/v1/playstyles" '[.playstyles[].characters]|add > 0'
 # L'export rend la MEME page, filtree et triee, dans un autre format : le verdict porte donc
 # sur l'en-tete, pas sur un total. Un CSV servi en `application/json`, ou sans

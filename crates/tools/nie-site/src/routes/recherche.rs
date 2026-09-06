@@ -30,7 +30,14 @@ use crate::vfs_index::{DemandeFiltre, Fichier, FiltresAppliques};
 /// valeur d'une query string est une **chaîne**, et `?per_page=2` échoue alors en
 /// « invalid type: string "2", expected u32 ». La réponse est un `400` sur une requête
 /// parfaitement valide, et rien dans le code des deux structures ne le laisse voir.
+/// Mesuré le 2026-09-06 : `?fuzzy=1` et `?gisements=tous` étaient **acceptés et jamais
+/// appliqués**. Le client croyait chercher approximativement, ou dans les quatre gisements, et
+/// recevait le même nombre — la pire des réponses, parce qu'elle a l'air juste. C'est le
+/// premier piège de `CLAUDE.md` § *Pièges d'édition* : « un paramètre accepté doit être
+/// honoré ». `deny_unknown_fields` le rend structurel : ce qui n'est pas implémenté est
+/// **refusé**, en `400`, et une capacité absente se voit au lieu de se croire.
 #[derive(Debug, Clone, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Demande {
     /// Numéro de page, à partir de 1.
     pub page: Option<u32>,
@@ -310,8 +317,39 @@ mod tests {
         assert_eq!(d.filtre().taille_min, Some(100));
     }
 
+    #[test]
+    fn un_parametre_inconnu_est_refuse_au_lieu_d_etre_avale() {
+        // `?fuzzy=1` et `?gisements=tous` etaient acceptes et sans effet : le client croyait
+        // chercher approximativement, ou dans les quatre gisements, et recevait le meme nombre.
+        // Une reponse qui a l'air juste est pire qu'une erreur. Les deux moities comptent : la
+        // seconde prouve que le refus ne mord pas sur les parametres reellement servis.
+        for inconnu in ["fuzzy=1", "gisements=tous", "sort=name", "limit=10"] {
+            assert!(
+                essayer(&format!("q=chara&{inconnu}")).is_err(),
+                "`{inconnu}` doit etre refuse, pas avale"
+            );
+        }
+        for connu in [
+            "q=chara", "ext=g4mg", "prefixe=data", "glob=data/**", "cpk=x.cpk", "tri=taille",
+            "ordre=desc", "taille_min=1", "taille_max=2", "page=2", "per_page=25",
+        ] {
+            assert!(essayer(connu).is_ok(), "`{connu}` est servi et doit passer");
+        }
+    }
+
+    /// Deserialise sans paniquer — pour les cas ou l'echec EST ce qu'on teste.
+    fn essayer(qs: &str) -> Result<Demande, serde_json::Error> {
+        let carte = carte_de(qs);
+        serde_json::from_value(serde_json::Value::Object(carte))
+    }
+
     /// Deserialise comme axum le fait pour `Query<T>` : depuis une query string.
     fn serde_urlencoded_temoin(qs: &str) -> Demande {
+        serde_json::from_value(serde_json::Value::Object(carte_de(qs))).expect("demande valide")
+    }
+
+    /// La query string, traduite comme axum la traduit : les nombres en nombres.
+    fn carte_de(qs: &str) -> serde_json::Map<String, serde_json::Value> {
         let uri: axum::http::Uri = format!("http://x/?{qs}").parse().expect("uri valide");
         let paires: Vec<(String, String)> = uri
             .query()
@@ -330,7 +368,7 @@ mod tests {
                 (k, val)
             })
             .collect();
-        serde_json::from_value(serde_json::Value::Object(carte)).expect("demande valide")
+        carte
     }
 
     #[test]
