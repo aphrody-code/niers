@@ -62,3 +62,9 @@ refs/**         linguist-vendored=true
 data/**         linguist-vendored=true
 docs/**         linguist-documentation=true
 plugins/**      linguist-documentation=true
+
+# --- Goldens CSS comparés au byte près : LF imposé -----------------------------------
+# `game-tokens.css` et `game-screens.css` sont produits par nie-aphrody/nie-ui et vérifiés
+# par une comparaison d'octets bruts. Sans cette déclaration, `core.autocrlf=true` les
+# réécrit en CRLF au checkout et le golden rougit sur une fin de ligne, pas sur une couleur.
+packages/inacord-ui/src/shell/*.css     text eol=lf
