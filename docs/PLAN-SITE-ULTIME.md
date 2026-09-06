@@ -284,18 +284,36 @@ Trois gardes le rendent **falsifiable**, ce qui manquait à toute matrice tenue 
 **Premier résultat, 2026-09-06 — 583 capacités, 255 848 unités de poids, 39 routes montées**,
 puis l'état après le premier lot qu'il a déclenché (`routes::level5`, le soir même) :
 
-| État | Capacités (avant → après) | Poids (avant → après) |
+| État | Capacités (départ → 2026-09-06 au soir) | Poids |
 |---|---:|---:|
-| `servi` | 114 → **125** | 225 033 → **246 289** |
+| `servi` | 114 → **254** | 225 033 → **246 418** |
 | `partiel` | 0 → 0 | 0 → 0 |
-| `manquant` | **205 → 194** | **21 450 → 194** |
+| `manquant` | **205 → 27** | **21 450 → 27** |
 | `bloqué` | 10 → 10 | 3 600 → 3 600 |
-| `interne` | 254 → 254 | 5 765 → 5 765 |
+| `interne` | 254 → 292 | 5 765 → 5 801 |
 | **total** | **583** | **255 848** |
 
-**Le poids de `manquant` est tombé de 21 450 à 194 en une soirée** : plus aucun *fichier du jeu*
-n'est manquant, il ne reste que des capacités unitaires. C'est ce que sert un instrument — il a
-désigné un corpus de 21 250 fichiers que personne ne voyait, et le câblage a suivi le jour même.
+**`manquant` est passé de 205 à 27, et son poids de 21 450 à 27, dans la journée qui a suivi la
+construction de l'instrument.** Plus aucun *fichier du jeu* n'est manquant : il ne reste que des
+capacités unitaires. C'est ce que sert une matrice — elle a désigné, chiffré, et le câblage a
+suivi. Aucun de ces lots n'était difficile ; ils étaient **invisibles**.
+
+Ce que la journée a produit, dans l'ordre où la matrice l'a désigné :
+
+| Lot | Ce qu'il a fermé | Mesure |
+|---|---|---|
+| `routes::level5` | 21 250 fichiers (5 familles, parseurs déjà écrits) | 124/124 décodés |
+| `/api/v1/donnees/{chemin}` | 110 modules `nie-data` → 22 | 1 056 fichiers typés, 121 familles |
+| `/api/v1/recherche` | il n'existait **aucune** recherche dans le VFS | `ext=p3lip` → 21 047 |
+| `/api/v1/donnees/famille/{cle}` | 23 `game_data_*` + les catalogues d'Azalée | `skill_config` → 1 004 skills |
+| 16 familles dans `typed::decode_by_key` | `nie-data` 22 → 6, et l'ajout profite aussi à `nie-model-serve` et `nie-wasm` | stadium 82, win_treasure 113 |
+
+**Les 27 restants, nommés** : 8 modules `nie-formats` (fontes, images, feuilles de sprites — ils
+produisent des *images*, et les features `images`/`textures` restent éteintes dans ce service),
+6 pages `/tools/*` d'Azalée, 6 modules `nie-data` dont deux qui ne peuvent pas passer par la
+façade (`passives` exige deux tables de texte, `team` fait doublon avec `enjoy_mode_team`),
+4 sous-commandes `niers` (`avatar`, `convert`, `icons`, `mode`), 2 commandes d'avatar d'Inacord,
+et `/api/save/resolve-roster`.
 
 | Source | Total | `manquant` (avant → après) |
 |---|---:|---:|
