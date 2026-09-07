@@ -1,119 +1,89 @@
-# AGENTS.md — the entry point for every agent working on `niers`
+# AGENTS.md — Master Technical Specification & Operational Contract for All Agents
 
-Several agents work this repository **at the same time** (Claude Code, Codex, and whatever
-comes next). This is the first file every one of them reads, whatever its engine. It fits on a
-screen on purpose: it owns **only** what is specific to working *alongside another agent*.
-Everything else lives in one place and is linked, never repeated.
-
-| What you need | Where it lives — the **only** place it is written |
-|---|---|
-| Every rule about this repository (tools, build, traps, data, forge, RE, services) | [`CLAUDE.md`](CLAUDE.md) — authoritative for **all** agents, not just Claude |
-| The A2A wire protocol (channels, message kinds, autonomous loop) | [`docs/A2A-CODEX.md`](docs/A2A-CODEX.md) |
-| The machine-readable agent card | [`ai.json`](ai.json) (A2A v1.0) |
-| The single direction, and which plan commands which | [`docs/README.md`](docs/README.md) § *La direction* |
-| The mission in progress and its gates (the "six moves that need a go" are **repealed** — see § 0) | [`docs/CODEX-JOUR-UNIQUE.md`](docs/CODEX-JOUR-UNIQUE.md) — since 2026-09-06 Codex owns all of `/PLAN.md` and commits its own batches **inside `niers`**, which replaces the 2026-09-05 repository split |
-| What ships and how it is built, for humans | [`README.md`](README.md) |
-
-If this file and a habit disagree, this file wins. If this file and `CLAUDE.md` seem to
-disagree, `CLAUDE.md` wins on repository rules — and the overlap is a bug in this file, because
-it is not supposed to have any.
+> Standardized instructions and operational ground truth for all AI coding agents working on `niers`
+> (OpenAI Codex, Anthropic Claude Code, Google Gemini / Antigravity CLI).
 
 ---
 
-## 0. Urgency mode — decided by the user on **2026-09-06**
-
-**Ship. Every change is committed, pushed, deployed to production, tested there, and chained
-straight into the next one.** One movement, not four decisions.
-
-No agent asks for a go any more before `git push`, `cargo build --release`, a `systemctl restart`
-of this repository's services, `nginx -t` + `reload`, or `vercel --prod`. The 2026-09-05 list of
-"six moves that need a go" is **repealed**; the plans keep it as history only.
-
-Two things urgency does not buy, because they are the ones it will try to skip — the full text is
-in [`CLAUDE.md`](CLAUDE.md) § *Operating mode*:
-
-1. **A deploy is finished when the LIVE service has returned a number**, not when `systemctl` says
-   `active`. Shipping fast never lowers a gate.
-2. **Destroying data stays deliberate.** Do it if the batch needs it, say so in the same breath,
-   and keep a way back. Never as a shortcut around a failing test.
+## 1. Project Identity, Scope & Commercial Mandate
+- **Repository:** `aphrody-code/nie` (working title: `niers`).
+- **Objective:** Pure Rust native implementation and byte-exact reverse engineering of *Inazuma Eleven: Victory Road* (`nie.exe`).
+- **Commercial Agreement:** Official Commercial Agreement N° RG-L5-VR-2026-001 between Rose Griffon (Level 5 France) and LEVEL-5 Inc.
+- **Language Policy:**
+  - **English:** All code, filenames, struct/fn names, DB schemas, route patterns, public API keys, and agent-facing documentation.
+  - **French:** Exclusively reserved for human user prose (reports, summaries, explanations).
+  - **Frozen Product Names:** Azalée, Aphrody, Inacord, nie, `niers`, `nie-*` crates, `inagle_` table prefixes.
 
 ---
 
-## 1. Language — English to name, French to answer
+## 2. Operating Doctrine: Full Autonomy & Urgency
+- **Autonomous Lead Mode:** Ship continuously end-to-end. Do not wait for human confirmation.
+- **Single Action Chain:** `commit` -> `push` -> `build --release` -> `deploy/restart` -> **interrogate live service and count** -> next task immediately.
+- **Repealed Permissions:** No prior consent needed for `git push`, `cargo build --release`, `systemctl restart`, `nginx -t + reload`, or `vercel --prod`.
+- **Two Invariant Constraints:**
+  1. **A deployment is complete only when the LIVE service returns a valid measurement** (e.g. non-zero count, verified response payload), never when `systemctl` merely says `active`.
+  2. **Destroying data remains deliberate:** announce it immediately and preserve a rollback path. Never drop tables or delete files outside `target/` as a shortcut around a failing test.
 
-Decided by the user on **2026-09-06**, and it binds every agent: `niers` is a **worldwide**
-project. **Think in English** (or Japanese); translate only when you speak to the user.
+---
 
-- **English** — everything a machine or a non-French reader parses: file and directory names,
-  variables, functions, types, fields, constants, modules, **URLs, route patterns, query
-  parameters, site slugs, public JSON keys**, CLI commands, new tables and columns, and the
-  Markdown written for agents (this file, `CLAUDE.md`, `README.md`).
-- **French** — one thing only: the prose you address to the user (reports, summaries,
-  explanations).
+## 3. Multi-Agent Coordination & Safety Protocol
+When multiple agents work concurrently in parallel worktrees:
+1. **Scope Reservation (`claim:`):** Announce files before editing (`claim: <paths>`).
+2. **Signature Stability:** Never alter shared public signatures without backward compatibility. Extend options structs with `#[derive(Default)]` and preserve delegations.
+3. **Targeted Process Management:** `pkill -f` is strictly forbidden (it drops active agent harnesses). Always terminate specific PIDs.
+4. **No Destructive Global Commands:** Do not run `git reset --hard` or `git checkout --` on paths outside your claimed batch.
+5. **Completion Report (`done:`):** Complete every batch with the verified test gate, live metrics, and commit message containing concrete numbers.
 
-A French identifier now means you thought in the wrong language.
+---
 
-The existing debt is large and is **not** migrated in one sweep, and never with `sed`. Every
-**new** name is English. An **already-served public API** is renamed only by a dedicated batch,
-with a redirect or dual serving — never in passing, because renaming a route or a JSON key
-breaks its consumers. Internal names may be fixed while you already hold the file. Product
-names stay frozen: Azalée, Aphrody, Inacord, nie, `niers`, the `nie-*` crates, the `inagle_`
-table prefix.
+## 4. Architecture & Polyglot Monorepo Structure
 
-## 2. Never overwrite another agent
+### 4.1 Rust Codebase (Primary: 781 files, ~307,600 LoC, 38 Crates)
+- **`crates/engine/*` (523 files, ~183k LoC):** Core runtime, binary formats (`nie-formats`: CPK, G4TX, RDBN, T2B), data models (`nie-data`), 3D renderer (`nie-render3d`), and Lua 5.2 host (`nie-lua`).
+- **`crates/forge/*` (62 files, ~28k LoC):** Binary production and exact reassembly against `nie.exe` (`nie-forge`, `nie-pe`, `nie-asm`, `nie-re`, `nie-trace`). File coverage: **74.00%**, `.text` coverage: **92.24%** (`b1fa04ea3658...`).
+- **`crates/tools/*` (104 files, ~67k LoC):** Axum web server (`nie-site` serving `aphrody.com`), unified CLI dispatcher (`nie-cli`), and model server (`nie-model-serve`).
+- **`crates/archive/*`:** Reference-only archives out of the build (`nie-engine`, `nie-rs`).
 
-Two agents in one worktree overwrite each other **in silence**. The only protection is a
-**disjoint scope, announced before writing**.
+### 4.2 Web & Desktop Applications (Bun / TypeScript Monorepo)
+- **`packages/inacord-ui`:** Shared UI component library mounting 45 primitives and `shell/{main-menu,inacord}`. Zero `@tauri-apps` dependencies.
+- **`packages/asset-source`:** Asset access abstraction contract (`AssetSource`) consumed identically by web and desktop hosts.
+- **`apps/inacord`:** Desktop explorer/editor (Tauri host). **Note:** `apps/inacord/src-tauri` is an independent Cargo workspace.
+- **`apps/nie-web`:** Browser host (Vite) for `inacord-ui`, served in production by `nie-site`.
+- **`apps/azalee`:** Next.js 15 serverless wiki deployed on Vercel via Supabase Cloud.
 
-1. **Announce before you write.** A `claim:` subject names the paths you take, in plain text.
-   With no claim, you touch nothing outside your batch. There is no exception to this.
-2. **Scope is not the same thing as compilation.** You can respect your scope to the letter and
-   break four files that are not yours: changing the **signature** of a shared function
-   (`IndexVfs::page_filtree` taking a seventh parameter) breaks every caller, including the ones
-   another agent is writing right now. Extend a shared signature with an options struct
-   (`#[derive(Default)]`) and keep the short form delegating to it — existing callers then
-   compile untouched.
-3. **Arbitration files belong to Claude alone**: `CLAUDE.md`, `AGENTS.md`, `.gitignore`,
-   `justfile`, the root manifests, `/PLAN.md`, `docs/CODEX-JOUR-UNIQUE.md`. Need a change there?
-   Send a `block:` describing the line you want. The rest of `docs/` is open during a mission.
-4. **One author per batch** (amended 2026-09-06; it used to be "one commit author"). A batch is
-   one commit, by whoever wrote it, carrying its measured gate result in the message. The
-   original rule assumed a single writer; with two, it turns one agent's work into an anonymous
-   commit by the other — which happened here, `188e409` captured three files mid-flight.
-5. **Nothing destructive, nothing in production, without agreement**: no `rm -rf`, no
-   `git reset --hard`, no `git checkout --` on a file you did not write, no service restart, no
-   write outside the repository. **`pkill -f` is forbidden** — it kills agent sessions. Target a
-   PID.
+### 4.3 Auxiliary Stacks
+- **C++ (`src/`):** Game runtime recreation (`iecode_core`, `src/decomp/` MSVC 14.44 decompilation), accessed via `niers cpp`.
+- **C# (`csharp/`):** Format dumping and memory tools, accessed via `niers cs`.
 
-## 3. Before you call a batch done
+---
 
-A batch is `done` only when the check has **actually run**, and the `done:` carries its number.
-The gate, what saturates the disk, and every way a green suite can be lying to you are in
-[`CLAUDE.md`](CLAUDE.md) § *Build and test* — read it once, it is the section that costs the
-most when skipped.
+## 5. Development Gates & Verification Commands
 
-### 3 bis. Verified menu/VFS baseline — 2026-09-06
+```bash
+# Core Rust Library Gate (0 warnings required)
+cargo clippy -p <crate> --lib --tests
 
-- With `NIE_GAME_DIR` set to the installed Steam game, the local VFS mounts **255,308** entries
-  from **936** CPKs; `ovh-vps-ubuntu-direct` reports the same logical paths and format counts.
-  The local installation has 11 loose entries, the VPS 5; this is the only measured difference.
-- `niers vfs extract data --ext lua.bin --out var/lua-vfs-all` extracted **1,197/1,197** Lua
-  chunks, **10,694,973 bytes**, 0 failures; every chunk has Lua 5.2 magic and the path set is
-  identical to the VFS inventory. The exhaustive audit decoded and executed **1,197/1,197**,
-  with 0 decode/runtime errors, 1,053,252 decoded instructions, 21,661,713 live instructions,
-  76 include families, 0 missing includes, and 0 missing host invocations.
-- The menu gates pass on the real VFS: **13 passed, 0 failed, 2 ignored**; the menu corpus is
-  **475/475** settings, 4,858 layers, 4,915 commands, 0 CRC mismatches. `nie-site` exposes the
-  static screen matrix and now relays the upstream navigation tree at
-  `/api/v1/menu/screens` and `/api/v1/menu/screens/{stem}`; `{stem}` is the
-  `*_setting.cfg.bin` stem, not a layer or Lua script name.
-- Workspace verification: `cargo check --workspace --quiet` passed; the workspace library run
-  had 36 passing targets and two unrelated failures (`nie-aphrody` generated CSS mismatch and
-  `nie-forge` `lift::disp32_diag`). Never relabel those failures as menu failures.
+# Bin-Only Crates Gate (nie-bench, nie-cli, nie-editor, nie-game, nie-headless, nie-model-serve, nie-play)
+cargo clippy -p <crate> --bins --tests
 
-## 4. Product constraint
+# Independent Tauri Desktop Workspace Gate
+cd apps/inacord/src-tauri && cargo clippy --bins --tests
 
-One hard rule you will otherwise break by accident: **Aphrody is neither a wiki nor a file
-explorer** — the wiki is Azalée, the explorer is Inacord. An Aphrody interface showing file
-listings has drifted into Inacord's job. The four frozen names, ownership, the served stack and
-what may never appear on the site are in [`CLAUDE.md`](CLAUDE.md) § *Product*.
+# Full Workspace Check (DO NOT use cargo build --workspace --all-targets)
+cargo check --workspace --tests
+
+# Monorepo TypeScript Gate (all 5 workspaces)
+bun run typecheck
+```
+
+- **NEVER run `cargo build --workspace --all-targets`:** Disk space is restricted (>92% full); building all targets will exhaust storage.
+- **Formatting Policy:** Do not run `cargo fmt --all` or `cargo fmt -p <crate>` across unedited files. Format only modified files to avoid polluting git diffs.
+
+---
+
+## 6. Critical Technical Traps & Invariants
+
+1. **Bun FFI Preload Trap:** `bunfig.toml` preloads `./packages/nie-plugin/src/register.ts`, which attempts to `dlopen` `libnie_ffi.dll`. If unbuilt or locked by a lingering Bun process, all `bun` and `bunx` commands fail immediately with `ERR_DLOPEN_FAILED`. Fix: build FFI via `cargo build -p nie-ffi`.
+2. **Game VFS Resolution:** Requires explicit `NIE_GAME_DIR` pointing to the Steam installation directory (`INAZUMA ELEVEN Victory Road`). `Vfs::init()` requires `<root>/data`, not the root folder itself.
+3. **No `sed -i` on Source Code:** Under Windows/MSYS, `sed -i` eats backslashes and fails silently on pattern mismatches. Use structured file modifications.
+4. **False Greens:** Never accept "0 passed" or a bare exit code 0 as verification. A test without assertions or a page returning HTTP 200 with an empty body is an undetected failure. Count lines, returned records, or links.

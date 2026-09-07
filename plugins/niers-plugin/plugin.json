@@ -1,0 +1,4 @@
+{
+  "name": "niers-plugin",
+  "description": "Native NIERS development plugin for Antigravity CLI: game formats, 3D tooling, Lua host, reverse-engineering, and Rust-Bun bridge."
+}

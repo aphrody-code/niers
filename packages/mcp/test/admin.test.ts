@@ -51,7 +51,8 @@ async function appeler(
 }
 
 afterAll(async () => {
-	await Bun.spawn(["rm", "-rf", BAC]).exited;
+	const { rm } = await import("node:fs/promises");
+	await rm(BAC, { recursive: true, force: true }).catch(() => {});
 });
 
 describe("cloisonnement des portées", () => {

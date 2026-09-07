@@ -1,11 +1,11 @@
 {
+  "name": "niers",
   "version": "1.0.0",
   "spec": "a2a/v1.0",
   "id": "niers@aphrody-code/niers",
   "schema_version": "1.0.0",
   "kind": "agent",
-  "name": "niers",
-  "description": "Réécriture pixel-perfect / byte-perfect d'Inazuma Eleven: Victory Road en Rust pur. Carte A2A du dépôt : deux agents y codent en parallèle et se coordonnent par la boîte JSONL `.coord/` et le listener JSON-RPC local.",
+  "description": "Pure Rust native implementation and byte-exact reverse engineering of Inazuma Eleven: Victory Road. Multi-agent coordination via JSONL mailboxes and local JSON-RPC listener.",
   "a2a_protocol_version": "1.0",
   "documentation_url": "https://github.com/aphrody-code/aphrody/blob/main/docs/a2a/README.md",
   "provider": {
@@ -22,14 +22,32 @@
   "capabilities": {
     "streaming": true,
     "pushNotifications": false,
-    "extendedAgentCard": false
+    "extendedAgentCard": true
   },
   "default_input_modes": [
-    "text/plain"
+    "text/plain",
+    "application/json"
   ],
   "default_output_modes": [
     "text/plain",
     "application/json"
+  ],
+  "skills": [
+    {
+      "id": "vfs-browse",
+      "name": "VFS Browser",
+      "description": "Enumerate and extract assets from the 255,308 files across 936 CPKs"
+    },
+    {
+      "id": "forge-build",
+      "name": "Forge Rebuilder",
+      "description": "Reassemble byte-identical nie.exe binary (74.00% coverage, 92.24% .text)"
+    },
+    {
+      "id": "lua-audit",
+      "name": "Lua Runtime Validator",
+      "description": "Validate and audit 1,197 Lua 5.2 bytecode chunks"
+    }
   ],
   "peers": [
     {
@@ -38,7 +56,7 @@
       "transport": "claude-code",
       "binary": "claude",
       "invocation": "claude -p <prompt> --output-format text",
-      "description": "Claude Code. Découpe le travail, tient le périmètre partagé et arbitre les collisions."
+      "description": "Claude Code orchestrator."
     },
     {
       "id": "codex@aphrody-code/niers",
@@ -46,28 +64,29 @@
       "transport": "cli",
       "binary": "codex",
       "invocation": "codex exec --cd /home/ubuntu/niers --skip-git-repo-check <prompt>",
-      "description": "Codex CLI, non interactif. Lit AGENTS.md et CLAUDE.md ; MCP `aphrody` et `niers-game` déjà déclarés dans ~/.codex/config.toml."
+      "description": "Codex CLI non-interactive executor."
     },
     {
       "id": "astra@aphrody-code/niers",
       "role": "verifier",
       "transport": "cli",
-      "binary": "gemini",
-      "invocation": "gemini -p <prompt>",
-      "description": "Astra (Gemini). Verificateur independant : rejoue chaque gate depuis un autre shell, publie ses propres comptes, ne corrige rien et n'ecrit dans aucun depot. Ses mesures vont dans var/mesures/ (hors depot)."
+      "binary": "agy",
+      "invocation": "agy -p <prompt>",
+      "description": "Astra (Antigravity CLI / Gemini). Autonomous verifier and lead agent."
     }
   ],
   "coordination": {
     "channel_dir": ".coord",
     "mailboxes": {
       "claude@aphrody-code/niers": ".coord/inbox-from-claude.jsonl",
-      "codex@aphrody-code/niers": ".coord/inbox-from-codex.jsonl"
+      "codex@aphrody-code/niers": ".coord/inbox-from-codex.jsonl",
+      "astra@aphrody-code/niers": ".coord/inbox-from-astra.jsonl"
     },
     "heartbeats": {
       "claude@aphrody-code/niers": ".coord/heartbeat-claude.txt",
-      "codex@aphrody-code/niers": ".coord/heartbeat-codex.txt"
+      "codex@aphrody-code/niers": ".coord/heartbeat-codex.txt",
+      "astra@aphrody-code/niers": ".coord/heartbeat-astra.txt"
     },
-    "protocol": "docs/A2A-CODEX.md",
-    "note": "La boîte est volatile et non versionnée. Le protocole, lui, est dans le dépôt."
+    "protocol": "docs/A2A-CODEX.md"
   }
 }

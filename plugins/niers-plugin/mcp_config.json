@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "niers-game": {
+      "command": "bun",
+      "args": [
+        "run",
+        "apps/nie-mcp/src/index.ts"
+      ],
+      "env": {
+        "NIE_GAME_DIR": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\INAZUMA ELEVEN Victory Road"
+      }
+    }
+  }
+}

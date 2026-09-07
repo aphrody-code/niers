@@ -12,12 +12,12 @@
 //! du VFS, T2B **et** RDBN, et ventile par famille. Sert quand la question n'est plus « ce
 //! fichier est-il fidèle ? » mais « qu'est-ce qui, dans l'encodeur, ne l'est pas ? ».
 //!
-//! Ce que le mode corpus a déjà montré : sur les 152 `.cfg.bin` dont le nom porte `chara_`,
-//! **0 se réencode à l'octet près**, et le réencodage **rogne** — 65 398 octets perdus sur 142
-//! fichiers. Le plus petit cas divergent, `chara_cloth_change_1.00.29.cfg.bin`, fait 48 octets,
-//! en perd exactement 16, et diverge à l'offset 32 : ses 32 premiers octets sont déjà rendus à
-//! l'identique, seuls les 16 derniers manquent — le pied de page relevé par
-//! `cargo run -p nie-formats --example cfgbin_pied`.
+//! Mesure actuelle du mode corpus : sur les 152 `.cfg.bin` dont le nom porte `chara_`,
+//! **4 se réencodent à l'octet près**, 10 ont la même taille mais un contenu différent et 138
+//! perdent des octets, pour un écart cumulé de 63 318 octets. Après émission du pied T2B, le
+//! plus petit cas divergent est `data/common/gamedata/map/z01_debug/test_chara_change_win.cfg.bin`,
+//! 224 octets, delta -12, premier écart à l'offset 22. Le cas précédent de 48 octets a permis
+//! d'isoler le pied de page relevé par `cargo run -p nie-formats --example cfgbin_pied`.
 //!
 //! Attention au faux vert : les tests d'aller-retour de `cfgbin.rs` passent (498/498 T2B, 16/16
 //! RDBN) parce qu'ils comparent l'arbre relu par NOTRE décodeur, lequel n'ouvre jamais ce pied.

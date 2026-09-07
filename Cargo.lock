@@ -4874,6 +4874,7 @@ version = "0.5.9"
 dependencies = [
  "image",
  "nie-core",
+ "nie-data",
  "nie-formats",
  "nie-runtime",
  "serde_json",
@@ -4949,6 +4950,7 @@ dependencies = [
  "assert_cmd",
  "clap",
  "nie-core",
+ "nie-data",
  "nie-formats",
  "serde",
  "serde_json",
@@ -5182,6 +5184,7 @@ version = "0.5.9"
 dependencies = [
  "nie-aphrody",
  "nie-formats",
+ "serde_json",
 ]
 
 [[package]]

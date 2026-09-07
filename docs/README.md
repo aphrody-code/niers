@@ -1,87 +1,48 @@
-# Documentation de niers
+# Documentation niers — Architecture & Index Unifié
 
-Vingt documents, un rôle chacun. Ce qui n'y est pas mesurable ou vérifiable n'y a pas sa place :
-pas de journal, pas d'historique daté — l'état vient des outils, l'histoire vient de `git log`.
+> **Dépôt :** `aphrody-code/nie` (projet `niers`)  
+> **Mission :** Réécriture pixel-perfect et byte-exact de *Inazuma Eleven: Victory Road* (`nie.exe`) en Rust natif.  
+> **Contrat Commercial :** Accord N° RG-L5-VR-2026-001 (Rose Griffon / LEVEL-5 Inc.).
 
-## La direction — un seul cap, quatre plans subordonnés
+---
 
-Les plans se sont multipliés ; ils ne se contredisent pas, ils ne disaient simplement pas
-lequel commande. Voici l'ordre, du cap au geste :
+## 1. Références Maîtresses & Règle Unique
 
-| Rang | Document | Ce qu'il décide |
-|---|---|---|
-| **Le cap** | [PLAN-SITE-ULTIME.md](PLAN-SITE-ULTIME.md) | **L'état d'arrivée** : un seul site qui expose TOUT ce que le dépôt sait faire. Instrument unique — une matrice de couverture à **cinq** états : `servi`, `partiel`, `manquant` (le décodeur existe, la route non), `bloqué` (ni l'un ni l'autre : du reverse d'abord) et `interne` (avec sa raison). Gate maîtresse : `manquant = 0` **et** `partiel = 0`. La matrice **existe** depuis le 2026-09-06 (`nie-site --regenerer-couverture`, servie par `/couverture`) : 583 capacités mesurées sur 9 sources. Départ `manquant = 205` ; après cinq lots qu'elle a désignés le jour même, **27** — dont plus aucun fichier du jeu. |
-| L'échéance | [../PLAN.md](../PLAN.md) | La bascule Azalée → Vercel et Aphrody sur `aphrody.com` : dates, gates chiffrées, rollback par journée |
-| L'exécution | [CODEX-JOUR-UNIQUE.md](CODEX-JOUR-UNIQUE.md) | Ce que l'agent fait aujourd'hui, dans quel ordre, et à quoi on reconnaît que c'est fait |
-| Le long terme | [PLAN.md](PLAN.md) | Le moteur et la forge : les deux faces, l'état chiffré, les priorités |
-| Le gel | [stack/](stack/README.md) | Les décisions techniques figées, leurs versions, les alternatives rejetées |
+Pour éviter les doublons et les contradictions entre agents (Claude, Codex, Astra/AGY), la documentation est articulée autour des documents de référence suivants :
 
-**La règle qui les relie :** un plan qui n'avance pas la matrice de couverture n'avance pas le
-projet. Un compte, une commande, un hôte, une date — sinon ce n'est pas fait.
+| Document | Rôle & Contenu |
+| :--- | :--- |
+| **[../AGENTS.md](../AGENTS.md)** | **Contrat opérationnel et technique unique pour TOUS les agents** : règles multi-agents, mode urgence/YOLO, convention de langue (anglais pour le code / français pour l'utilisateur), architecture des 38 crates Rust, gates Cargo/Bun, pièges d'environnement (VFS, FFI, Windows). |
+| **[UNIFIED-PLAN.md](UNIFIED-PLAN.md)** | **Feuille de route & Plans unifiés** : synthèse du cap ultime (`manquant = 0`), des 7 blocs prioritaires actifs, de la bascule Vercel/Aphrody.com et de la forge byte-exacte. |
+| **[AUDIT-USAGE-GEMINI-FLASH.md](AUDIT-USAGE-GEMINI-FLASH.md)** | **Analyse des quotas & capacité de travail** : mesure des 307 623 lignes Rust, calcul de l'overhead agy-cli et projection d'autonomie avec Gemini 3.8 Flash (Thinking Low). |
 
-## Commencer ici
+---
 
-| Document | Contenu |
-|---|---|
-| [PLAN-SITE-ULTIME.md](PLAN-SITE-ULTIME.md) | **Le cap** : couverture de toute la surface du dépôt vers un seul site |
-| [../PLAN.md](../PLAN.md) | **La semaine du 2026-09-05 au 2026-09-11** : Azalée sur Vercel, Aphrody sur `aphrody.com`, Inacord — jour par jour, trois agents, une gate qui compte par jour |
-| [PLAN.md](PLAN.md) | **L'objectif et l'état chiffré** : les deux faces (moteur et forge), ce qui est mesuré, les priorités |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | **La carte** : les quatre arbres, qui fait autorité sur quoi, les crates, les ponts, les fusions interdites |
-| [FORGE.md](FORGE.md) | Produire `nie.exe` au byte près depuis le workspace — le juge du projet |
-| [INSTALLATION.md](INSTALLATION.md) | Installer la CLI `niers` |
-| [../PROVENANCE.md](../PROVENANCE.md) | D'où vient chaque arbre, ce qui a été écarté à la copie |
+## 2. Cartographie Thématique du Dossier `docs/`
 
-## Le moteur
+### 2.1 Moteur de Jeu & Rendu Graphique
+- **[STACK.md](STACK.md)** : Architecture runtime du moteur, intégration Lua 5.2 et boucle principale.
+- **[DESIGN.md](DESIGN.md)** & **[DESIGN-UI.md](DESIGN-UI.md)** : Rendu pixel-perfect des écrans Start, Menu et HUD (mesures directes sur les captures de `data/menu/`).
+- **[AVATAR.md](AVATAR.md)** : Spécifications complètes de l'éditeur d'avatar (`chara_edit`).
+- **[PLAN-SESSION-3D.md](PLAN-SESSION-3D.md)** : Pipeline de rendu 3D serveur et intégration `nie-render3d`.
+- **[BENCHMARKS.md](BENCHMARKS.md)** : Mesures comparatives de performance (Rust vs C++ vs C#).
 
-| Document | Contenu |
-|---|---|
-| [STACK.md](STACK.md) | Les briques runtime, ce qui est écarté et pourquoi, les règles de la boucle et de Lua |
-| [DESIGN.md](DESIGN.md) | Rendu pixel-perfect des écrans START et MENU, décomposition par couche |
-| [AVATAR.md](AVATAR.md) | L'éditeur d'avatar (`chara_edit`) : composition, icônes, ce qui reste non prouvé |
-| [BENCHMARKS.md](BENCHMARKS.md) | Banc d'essai inter-langages des hot paths |
-| [PLAN-SESSION-3D.md](PLAN-SESSION-3D.md) | Le plan de travail en cours sur le moteur 3D, les avatars et la publication |
-| [stack/README.md](stack/README.md) | **Stack gelée le 2026-09-05** : Azalée sur Vercel + Supabase Cloud, Aphrody (`aphrody.com`) servi par `nie-site` (Axum, 100 % Rust), Inacord et l'interface partagée `inacord-ui` ; mobile et Steam gelés hors semaine |
+### 2.2 Reverse Engineering, Binaire & Formats
+- **[FORGE.md](FORGE.md)** : Production de `nie.exe` byte-exact (atteint 74.00% du binaire et 92.24% de `.text`).
+- **[RE.md](RE.md)** : Base de connaissances RE, ancrage des fonctions et structures décompilées.
+- **[FORMATS.md](FORMATS.md)** & **[VFS.md](VFS.md)** : Spécifications des conteneurs CPK, RDBN, T2B, textures G4TX et VFS (255 308 fichiers indexés).
+- **[modele-de-match.md](modele-de-match.md)** : Analyse de la simulation match et calculs de tirs/arrêts.
 
-## Le binaire et ses données
+### 2.3 Applications, Wiki & Production Web
+- **[AZALEE.md](AZALEE.md)** & **[MIGRATION-SUPABASE-CLOUD-ANALYSIS.md](MIGRATION-SUPABASE-CLOUD-ANALYSIS.md)** : Architecture serverless du wiki Azalée sur Vercel et pooler Supabase Cloud.
+- **[MIGRATION-EXPLORATEUR.md](MIGRATION-EXPLORATEUR.md)** : Unification Inacord / Aphrody via `packages/inacord-ui`.
+- **[FILTRES.md](FILTRES.md)** : Matrice des filtres et navigation du catalogue.
+- **[EXPLOITATION.md](EXPLOITATION.md)** & **[SECURITE-BASCULE.md](SECURITE-BASCULE.md)** : Gestion de la production VPS, services systemd, nginx et remédiation sécurité.
+- **[FUSION.md](FUSION.md)** : Justification du monorepo unifié pour l'écosystème Inazuma Eleven.
 
-| Document | Contenu |
-|---|---|
-| [RE.md](RE.md) | La cible `nie.exe`, la boucle de reverse, la couverture, ce que le RE a établi |
-| [FORMATS.md](FORMATS.md) | Les formats Level-5 et Criware, et l'état du VFS |
-| [modele-de-match.md](modele-de-match.md) | Le modèle tir/blocage/but : ce qui est résolu, ce qui reste opaque |
-| [game-data/](game-data/) | Les familles `cfg.bin` décrites une par une |
-| [nie-rtti-classes.txt](nie-rtti-classes.txt) | Les 1 234 classes RTTI extraites |
-| [dll-exports/](dll-exports/) | Exports des DLL tierces (Steam, EOS, curl) |
+---
 
-## Le wiki, l'application et la production
+## 3. Règle d'Exécution & Invariant
 
-| Document | Contenu |
-|---|---|
-| [FUSION.md](FUSION.md) | Pourquoi tout ce qui touche Inazuma Eleven vit dans ce dépôt, et comment les gisements s'y rejoignent |
-| [AZALEE.md](AZALEE.md) | Le wiki : les trois choses que « Azalée » désigne, et leur rapport à niers |
-| [MIGRATION-EXPLORATEUR.md](MIGRATION-EXPLORATEUR.md) | Le passage des outils et de la galerie du web vers l'explorateur de bureau |
-| [EXPLOITATION.md](EXPLOITATION.md) | Ce qui tourne sur cette machine, d'où, et sous quel service |
-| [ASTRO-LOR.md](ASTRO-LOR.md) | Astro Lor, personnage original : du wiki au jeu |
-
-## Chantiers transverses
-
-| Document | Contenu |
-|---|---|
-| [ORGANISATION.md](ORGANISATION.md) | **Où va quoi** : la structure du dépôt, prise sur `openai/codex`, et les écarts assumés |
-| [ABSORPTION-IECODE.md](ABSORPTION-IECODE.md) | Rendre `csharp/` redondant en portant ce qu'il sait faire |
-| [A2A-CODEX.md](A2A-CODEX.md) | Le protocole entre les agents qui codent ici en même temps |
-| [EXPORT-APP.md](EXPORT-APP.md) | L'outil C++ d'export des icônes d'application (WebP + zstd) |
-| [legal/](legal/) | L'accord commercial signé |
-
-## Ailleurs dans le dépôt
-
-`../CLAUDE.md` et `../AGENTS.md` (règles de travail) · `../apps/inacord/ROADMAP.md`
-(app desktop) · `../plugins/niers-plugin/` (plugin et skills) · `../CHANGELOG.md`,
-`../NOTICE`, `../SECURITY.md`.
-
-Chaque arbre porte son propre README : [`../crates/`](../crates/README.md),
-[`../packages/`](../packages/README.md), [`../apps/`](../apps/README.md),
-[`../csharp/`](../csharp/README.md), [`../python/`](../python/README.md),
-[`../scripts/`](../scripts/README.md), [`../deploy/`](../deploy/README.md),
-[`../plugins/`](../plugins/README.md), [`../cmake/`](../cmake/README.md),
-[`../third_party/`](../third_party/README.md), [`../supabase/`](../supabase/README.md).
+1. **Aucun commit aveugle :** Une gate n'est validée que lorsqu'une commande a été jouée et a retourné un compte exact (lignes, liens, bytes, code de retour).
+2. **Déploiement live :** Un service déployé n'est achevé que lorsqu'une requête en ligne sur son port/domaine a certifié son statut.

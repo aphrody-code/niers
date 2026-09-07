@@ -1,0 +1,25 @@
+{
+  "name": "niers",
+  "version": "0.1.0+codex.20260905003718",
+  "description": "Outillage NIERS : donn\u00e9es du jeu, cr\u00e9ation et assemblage 3D, rendu et validation locale.",
+  "author": {
+    "name": "Rose Griffon"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "NIERS",
+    "shortDescription": "Donn\u00e9es du jeu et atelier 3D local",
+    "longDescription": "Navigation NIERS, formats du jeu, cr\u00e9ation et assemblage de mod\u00e8les et textures, diagnostic du rendu avec preuves locales.",
+    "developerName": "Rose Griffon",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Assembler un personnage et ses textures.",
+      "Cr\u00e9er un asset 3D avec les outils locaux.",
+      "Diagnostiquer le rendu et v\u00e9rifier les corrections."
+    ]
+  }
+}

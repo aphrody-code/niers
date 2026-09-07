@@ -1,16 +1,9 @@
 # Instructions @rose-griffon/db
 
-## Architecture
+See root [AGENTS.md](../../AGENTS.md) for global monorepo rules.
 
-- Le package est divisé en entrées spécifiques (`/browser`, `/server`, `/service`) pour éviter d'importer des dépendances Node.js (ex: `next/headers`) dans le bundle client.
-- **NE JAMAIS** importer `@rose-griffon/db/service` ou `@rose-griffon/db/server` dans un composant client.
-
-## Maintenance des types
-
-1. Assurez-vous d'avoir le CLI Supabase installé localement.
-2. Lancez `bun run types:gen` pour mettre à jour `src/types.gen.ts`.
-3. Vérifiez les regressions avec `bun run type-check`.
-
-## Storage
-
-- Utilisez toujours `getAssetUrl(path)` pour construire les URLs d'images. Cela permet de basculer facilement entre les buckets ou d'ajouter un CDN ultérieurement.
+## Package Architecture & Constraints
+- Specific entrypoints: `/browser`, `/server`, `/service` to prevent bundling Node.js modules into client bundles.
+- **NEVER** import `@rose-griffon/db/service` or `@rose-griffon/db/server` in client components.
+- Run `bun run types:gen` with Supabase CLI to update `src/types.gen.ts`.
+- Always use `getAssetUrl(path)` to generate dynamic image URLs.

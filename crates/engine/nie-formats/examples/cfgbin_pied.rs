@@ -1,10 +1,9 @@
-//! Le pied de page des `.cfg.bin` T2B : ce que `parse_t2b` ignore et que `encode_t2b` n'écrit pas.
+//! Le pied de page des `.cfg.bin` T2B : ce que `parse_t2b` ignore et que `encode_t2b` réémet
+//! avec une variante conservatrice.
 //!
-//! Mesure d'origine (`cfgbin_reencodage`) : 0 fichier sur 152 se réencode à l'octet près, et le
-//! réencodage **rogne** — 65 398 octets perdus sur 142 fichiers. Le plus petit cas divergent,
-//! `chara_cloth_change_1.00.29.cfg.bin`, fait 48 octets, en perd 16, et diverge exactement à
-//! l'offset 32 : ses 32 premiers octets sont déjà rendus à l'identique, seuls les 16 derniers
-//! manquent. Ces 16 octets portent la chaîne `t2b`.
+//! Mesure actuelle (`t2b_roundtrip`) : 4 fichiers sur 152 se réencodent à l'octet près ; le
+//! réencodage **rogne encore**. Le cas de 48 octets qui a permis d'isoler le pied perdait 16
+//! octets à l'offset 32 avant que `encode_t2b` ne l'émette. Ces 16 octets portent la chaîne `t2b`.
 //!
 //! Les tests d'aller-retour passent quand même (498/498 T2B) parce qu'ils comparent l'arbre
 //! relu par notre propre décodeur, lequel n'ouvre jamais ce pied. C'est un vert qui ne prouve

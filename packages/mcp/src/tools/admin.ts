@@ -25,6 +25,7 @@ import { structured, text, toolError } from "../protocol/types.ts";
 import { defineTool, type RegisteredTool } from "../registry.ts";
 import { KNOWN_SERVICES } from "./ops.ts";
 import { resolveInside } from "./paths.ts";
+import { ensureDir, deleteRecursive, movePath } from "./fs-native.ts";
 
 export interface AdminToolsOptions {
 	/** Racine du dépôt : prison de chemin des outils de fichiers. */
@@ -122,7 +123,7 @@ export function adminTools(options: AdminToolsOptions): RegisteredTool[] {
 				const existait = await Bun.file(target.absolute).exists();
 				if (createDirs) {
 					const parent = target.absolute.slice(0, target.absolute.lastIndexOf("/"));
-					await executer(["mkdir", "-p", parent], root, 10_000);
+					await ensureDir(parent);
 				}
 				const octets = await Bun.write(target.absolute, content);
 				audit(`mcp-admin repo_write path=${target.relative} bytes=${octets} nouveau=${existait ? 0 : 1}`);
@@ -190,8 +191,7 @@ export function adminTools(options: AdminToolsOptions): RegisteredTool[] {
 				}
 				if (info.isDirectory()) {
 					if (!recursive) return toolError(`${target.relative} est un dossier : passer recursive: true.`);
-					const resultat = await executer(["rm", "-rf", "--", target.absolute], root, 60_000);
-					if (resultat.exitCode !== 0) return toolError(resultat.stderr || "échec de la suppression");
+					await deleteRecursive(target.absolute);
 				} else {
 					await Bun.file(target.absolute).delete();
 				}
@@ -222,8 +222,11 @@ export function adminTools(options: AdminToolsOptions): RegisteredTool[] {
 						.catch(() => undefined);
 					if (!stat) return toolError(`Source introuvable : ${source.relative}`);
 				}
-				const resultat = await executer(["mv", "--", source.absolute, destination.absolute], root, 30_000);
-				if (resultat.exitCode !== 0) return toolError(resultat.stderr || "échec du déplacement");
+				try {
+					await movePath(source.absolute, destination.absolute);
+				} catch (e: any) {
+					return toolError(e?.message || "échec du déplacement");
+				}
 				audit(`mcp-admin repo_move from=${source.relative} to=${destination.relative}`);
 				return structured({ from: source.relative, to: destination.relative, moved: true });
 			},
