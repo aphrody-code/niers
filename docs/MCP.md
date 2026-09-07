@@ -138,6 +138,14 @@ La crate réexporte aussi l'intégralité des surfaces publiques sous `nie_compu
 PID, résoudre les modules/plages et lire exactement une plage mémoire. Les opérations d'écriture
 de `nie-trace` restent hors de cette façade read-only.
 
+La façade expose également `snapshot`, `scan_aob` et `catalog_entry`. Le scan est limité par
+`limit` et par les régions du module demandé. Les capacités d'écriture, de dump disque, de
+lancement, de recette effective et de patch EAC ne sont pas implicitement activées : elles
+nécessitent une commande distincte, une autorisation explicite et une preuve post-opération.
+
+La décision détaillée et la matrice complète des API sont dans
+[`COMPUTER-USE-RE-TRACE.md`](COMPUTER-USE-RE-TRACE.md).
+
 Références vérifiées : [MCP Tools](https://modelcontextprotocol.io/specification/2025-06-18/server/tools),
 [MCP Schema](https://modelcontextprotocol.io/specification/2025-11-25/schema),
 [GhidraMCP](https://github.com/gnummers/ghidra-mcp), et [OpenAI Computer Use](https://developers.openai.com/api/docs/guides/tools/computer-use).
