@@ -4817,6 +4817,8 @@ name = "nie-computer-use"
 version = "0.5.9"
 dependencies = [
  "anyhow",
+ "nie-re",
+ "nie-trace",
  "serde",
  "serde_json",
 ]

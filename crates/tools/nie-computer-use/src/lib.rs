@@ -9,6 +9,40 @@ use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
+/// Complete static reverse-engineering surface, available through Computer Use.
+pub mod re {
+    pub use nie_re::*;
+}
+
+/// Complete live-process tracing surface, available through Computer Use.
+pub mod trace {
+    pub use nie_trace::*;
+}
+
+pub const NIE_PROCESS_NAME: &str = "nie.exe";
+
+/// Safe facade over the read-only `nie-re` + `nie-trace` integration.
+pub struct NiersComputerUse;
+
+impl NiersComputerUse {
+    #[must_use]
+    pub fn find_nie_pid() -> Option<i32> { nie_trace::find_pid_by_name(NIE_PROCESS_NAME) }
+
+    #[must_use]
+    pub fn module_range(pid: i32, module: &str) -> Option<(u64, u64)> {
+        nie_trace::module_range(pid, module)
+    }
+
+    #[must_use]
+    pub fn module_regions(pid: i32, module: &str, all: bool) -> Vec<nie_trace::MapEntry> {
+        nie_trace::module_regions(pid, module, all)
+    }
+
+    pub fn read_memory(pid: i32, address: u64, length: usize) -> Result<Vec<u8>, nie_trace::MemError> {
+        nie_trace::read_exact(pid, address, length)
+    }
+}
+
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum Surface {
@@ -99,5 +133,10 @@ mod tests {
     fn cli_surface_spellings_are_stable() {
         assert_eq!("nie-exe".parse::<Surface>().unwrap(), Surface::NieExe);
         assert_eq!("ghidra".parse::<Surface>().unwrap(), Surface::Ghidra);
+    }
+
+    #[test]
+    fn facade_keeps_nie_target_explicit() {
+        assert_eq!(NIE_PROCESS_NAME, "nie.exe");
     }
 }

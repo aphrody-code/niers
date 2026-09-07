@@ -133,6 +133,11 @@ cible est trouvée ou que l'endpoint HTTP est joignable ; cela ne signifie ni qu
 ni qu'un handshake MCP Ghidra est terminé. Les actions visibles restent dans la frontière
 WinClean/Computer Use, avec observation avant et après et validation humaine.
 
+La crate réexporte aussi l'intégralité des surfaces publiques sous `nie_computer_use::re` et
+`nie_computer_use::trace`. `NiersComputerUse` fournit la façade ciblée `nie.exe` pour trouver le
+PID, résoudre les modules/plages et lire exactement une plage mémoire. Les opérations d'écriture
+de `nie-trace` restent hors de cette façade read-only.
+
 Références vérifiées : [MCP Tools](https://modelcontextprotocol.io/specification/2025-06-18/server/tools),
 [MCP Schema](https://modelcontextprotocol.io/specification/2025-11-25/schema),
 [GhidraMCP](https://github.com/gnummers/ghidra-mcp), et [OpenAI Computer Use](https://developers.openai.com/api/docs/guides/tools/computer-use).
