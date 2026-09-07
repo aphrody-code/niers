@@ -1,5 +1,8 @@
 # UNIFIED-PLAN.md — Master Execution Plan & Operational Roadmap
 
+> Canonical active plan: [`../PLAN.md`](../PLAN.md). This document remains the English
+> coordination appendix; current decisions, gates, and resume order live at repository root.
+
 > **Consolidated on 2026-09-07.**
 > Synthesizes:
 > 1. The Supreme Objective: **PLAN-SITE-ULTIME** (Master coverage towards `manquant = 0`)

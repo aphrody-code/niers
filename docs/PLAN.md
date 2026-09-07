@@ -1,5 +1,8 @@
 # Plan maître
 
+> Plan actif et décisions : [`../PLAN.md`](../PLAN.md). Ce document est l’annexe technique
+> moteur/forge ; toute évolution de priorité ou de gate doit d’abord être reportée au plan racine.
+
 ## L'objectif
 
 **Un moteur de jeu complet en Rust, et une chaîne qui produit `nie.exe` identique à l'original au

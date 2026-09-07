@@ -1,5 +1,8 @@
 # Plan de session — moteur, avatars et publication
 
+> Plan actif : [`../PLAN.md`](../PLAN.md). Cette annexe décrit uniquement le lot 3D/avatar et
+> doit y reporter toute nouvelle mesure ou décision.
+
 Dernière consolidation : 5 septembre 2026. Les cases ne sont cochées qu'après vérification.
 
 ## Règles et arbitrages

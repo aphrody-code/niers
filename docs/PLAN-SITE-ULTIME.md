@@ -1,5 +1,8 @@
 # Le site ultime — exigence de couverture sur toute la surface du dépôt
 
+> Plan actif : [`../PLAN.md`](../PLAN.md). Cette annexe conserve les preuves détaillées de
+> couverture ; l’état de reprise et les priorités canoniques sont dans le plan racine.
+
 > Consigne de l'utilisateur, 2026-09-06. Ce plan **remplace** l'horizon de `/PLAN.md` (qui
 > reste valable pour la bascule Azalée → Vercel et ses gates). Il ne décrit pas une semaine :
 > il décrit **l'état d'arrivée** — un seul site, qui expose tout ce que ce dépôt sait faire.

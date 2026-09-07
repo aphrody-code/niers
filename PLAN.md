@@ -1,5 +1,46 @@
 # PLAN — une semaine de bout en bout, du 2026-09-05 au 2026-09-11
 
+> **Référentiel canonique — état au 2026-09-07, session interrompue volontairement.**
+> Toute nouvelle décision, mesure ou reprise commence ici. Les documents spécialisés ci-dessous
+> restent les annexes de preuve ; ils ne portent pas un objectif concurrent.
+
+## État courant et reprise
+
+Le cap actif est l’alignement complet de `nie-ui` et `nie-aphrody` avec les deux hôtes
+`apps/nie-web` et `crates/tools/nie-site`, en gardant le menu et les données du jeu comme sources
+de vérité. Le socle livré et vérifié dans cette session est :
+
+| Élément | État mesuré |
+|---|---|
+| SSR `nie-site` | palette `nie_aphrody::design::fichier_css()` + écrans `nie_ui::css::screens_block()` |
+| `/` réel | HTTP 200, 33 534 octets, `<style>`, `--jeu-*`, `--screen-*`, titre présents |
+| `/avatar` réel | hôte React monté ; repli `chara_edit` lisible quand le catalogue résolu manque |
+| `/couverture` réel | gate `manquant = 0`, `partiel = 0`, 578 capacités mesurées |
+| `nie-site` | `cargo clippy -p nie-site --bins --tests -- -D warnings` : 0 avertissement |
+| tests de couverture | 3 ciblés passés après raccordement de la feuille CSS générée |
+| sessions | conservées ; seul le serveur de QA local a été arrêté lors de la pause |
+
+### Prochaine reprise, dans cet ordre
+
+1. Rejouer `cargo test -p nie-site --lib --tests` et `bun run typecheck`.
+2. Vérifier les écrans `/`, `/avatar`, `/explorateur`, `/options` et les quatre catalogues dans le
+   navigateur, avec capture et arbre d’accessibilité ; compter les éléments rendus.
+3. Traiter uniquement les écarts constatés contre `packages/inacord-ui` et les générateurs Rust.
+4. Rejouer la matrice de couverture, puis publier les comptes et l’état Git avant toute livraison.
+
+### Hiérarchie unique des plans
+
+Ce fichier est le plan actif et le journal de décision. Les annexes sont spécialisées :
+
+- [`docs/PLAN-SITE-ULTIME.md`](docs/PLAN-SITE-ULTIME.md) : couverture site/VFS, routes et gates
+  de capacité ;
+- [`docs/PLAN.md`](docs/PLAN.md) : détails moteur, formats, forge et jeu jouable ;
+- [`docs/PLAN-SESSION-3D.md`](docs/PLAN-SESSION-3D.md) : pipeline de rendu et avatars ;
+- [`docs/UNIFIED-PLAN.md`](docs/UNIFIED-PLAN.md) : vue anglaise de coordination et ledger.
+
+Une annexe peut détailler une preuve ou un protocole, mais ne peut pas contredire ce fichier : en
+cas de divergence, la mesure la plus récente est reportée ici puis l’annexe est amendée.
+
 **But.** À la fin de la semaine : **Azalée** (`azalee.rosegriffon.fr`, DA Rose Griffon)
 tourne sur Vercel en full serverless sur Supabase Cloud ; **Aphrody** (`aphrody.com`, DA du
 vrai jeu) sert les outils et les assets depuis `nie-site` (Axum, 100 % Rust) ; **Inacord**
