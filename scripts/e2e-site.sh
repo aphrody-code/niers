@@ -118,7 +118,9 @@ nettoyer() {
 trap nettoyer EXIT
 
 # `req <chemin> [entêtes curl...]` — rend « <code> <octets> » et écrit le corps dans $CORPS.
-CORPS="$(mktemp -t nie-site-corps-XXXXXX)"
+# Place the temporary response on the repository's Windows-backed volume. This lets
+# curl.exe and the WSL shell address the same file after path conversion.
+CORPS="$(mktemp "$RACINE/var/e2e-site-corps-XXXXXX")"
 trap 'rm -f "$CORPS"' EXIT
 req() {
 	local chemin="$1"
@@ -146,14 +148,56 @@ else
 	echo "  [1-2/4] --no-build : bundle et binaire réutilisés"
 fi
 
-[ -x "$BINAIRE" ] || { echo "ERREUR: $BINAIRE absent. Lancer sans --no-build." >&2; exit 1; }
+if [ ! -f "$BINAIRE" ] && [ -f "${BINAIRE}.exe" ]; then
+	# Cargo ajoute .exe sous Windows, y compris quand la suite est lancée depuis Git Bash.
+	BINAIRE="${BINAIRE}.exe"
+fi
+[ -f "$BINAIRE" ] || { echo "ERREUR: $BINAIRE absent. Lancer sans --no-build." >&2; exit 1; }
 [ -f "$BUNDLE/index.html" ] || { echo "ERREUR: $BUNDLE/index.html absent." >&2; exit 1; }
+
+# Un binaire Windows lancé depuis WSL écoute dans le réseau Windows ; `curl` Linux
+# utiliserait un loopback WSL distinct. Employer l'outil Windows dans ce cas.
+CURL_BIN="curl"
+if [[ "$BINAIRE" == *.exe ]] && command -v curl.exe >/dev/null 2>&1; then
+	CURL_BIN="curl.exe"
+fi
+curl() {
+	if [[ "$CURL_BIN" == "curl.exe" ]]; then
+		local args=() arg output_next=0
+		for arg in "$@"; do
+			if [ "$output_next" -eq 1 ] && [[ "$arg" == /* ]] && [[ "$arg" != "/dev/null" ]] && command -v wslpath >/dev/null 2>&1; then
+				arg="$(wslpath -w "$arg")"
+			fi
+			[[ "$arg" == "/dev/null" ]] && arg="NUL"
+			args+=("$arg")
+			if [ "$arg" = "-o" ]; then output_next=1; else output_next=0; fi
+		done
+		command "$CURL_BIN" "${args[@]}"
+	else
+		command "$CURL_BIN" "$@"
+	fi
+}
 
 # --- 2. Démarrer le serveur ------------------------------------------------------------------
 echo "  [3/4] démarrage…"
-NIE_SITE_ADDR="127.0.0.1:$PORT" NIE_GAME_DIR="${NIE_GAME_DIR:-$RACINE}" \
-	"$BINAIRE" >>"$JOURNAL" 2>&1 &
+
+# Git Bash expose la racine sous `/c/...`, mais Rust/Windows attend `C:/...`.
+# Garder la valeur fournie par l'appelant ; convertir seulement la valeur par défaut.
+if [ -z "${NIE_GAME_DIR:-}" ] && command -v cygpath >/dev/null 2>&1; then
+	GAME_DIR_DEFAUT="$(cygpath -w "$RACINE")"
+elif [ -z "${NIE_GAME_DIR:-}" ] && command -v wslpath >/dev/null 2>&1; then
+	GAME_DIR_DEFAUT="$(wslpath -w "$RACINE")"
+else
+	GAME_DIR_DEFAUT="$RACINE"
+fi
+NIE_SITE_ADDR="127.0.0.1:$PORT" NIE_GAME_DIR="${NIE_GAME_DIR:-$GAME_DIR_DEFAUT}" \
+	"$BINAIRE" --listen "127.0.0.1:$PORT" >>"$JOURNAL" 2>&1 &
 PID=$!
+
+SERVEUR_WINDOWS=0
+if [[ "$BINAIRE" == *.exe ]]; then
+	SERVEUR_WINDOWS=1
+fi
 
 # Le VFS s'indexe en tâche de fond ; `/healthz` doit répondre AVANT lui, c'est une propriété
 # du service et le premier point vérifié.
@@ -161,7 +205,9 @@ declare -i attente=0
 until curl -sS -o /dev/null "$BASE/healthz" 2>/dev/null; do
 	attente+=1
 	[ "$attente" -gt 100 ] && { echo "ERREUR: pas de réponse sur /healthz après 10 s." >&2; exit 1; }
-	kill -0 "$PID" 2>/dev/null || { echo "ERREUR: le serveur s'est arrêté au démarrage." >&2; exit 1; }
+	if [ "$SERVEUR_WINDOWS" -eq 0 ]; then
+		kill -0 "$PID" 2>/dev/null || { echo "ERREUR: le serveur s'est arrêté au démarrage." >&2; exit 1; }
+	fi
 	sleep 0.1
 done
 LIGNES+=("  $(couleur '32' 'ok')    /healthz répond après ${attente}00 ms, VFS encore en indexation")
