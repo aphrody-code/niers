@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Niers Computer Use Probe",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["surface", "available", "target", "detail"],
+  "properties": {
+    "surface": { "enum": ["nie_exe", "ghidra"] },
+    "available": { "type": "boolean" },
+    "target": { "type": "string", "minLength": 1 },
+    "detail": { "type": "string", "minLength": 1 }
+  }
+}

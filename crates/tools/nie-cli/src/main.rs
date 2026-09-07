@@ -5,6 +5,7 @@
 mod avatar_cmd;
 mod decode_cmd;
 mod delegate;
+mod computer_use_cmd;
 mod icons_cmd;
 mod img_cmd;
 mod lua_audit_cmd;
@@ -54,6 +55,16 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Cmd {
+    /// Probe non-destructively the native `nie.exe` or Ghidra Computer Use surface.
+    #[command(name = "computer-use")]
+    ComputerUse {
+        #[arg(value_enum)]
+        surface: computer_use_cmd::SurfaceArg,
+        #[arg(long)]
+        executable: Option<String>,
+        #[arg(long, default_value = "http://127.0.0.1:8080/mcp")]
+        ghidra_url: String,
+    },
     /// Délègue au toolkit C++ `iecode` (~40 commandes non encore portées).
     ///
     /// `niers` est la seule CLI utilisateur (cf. docs/ARCHITECTURE.md) : les
@@ -1951,6 +1962,7 @@ fn run() -> anyhow::Result<()> {
         .init();
     let cli = Cli::parse();
     match cli.cmd {
+        Cmd::ComputerUse { surface, executable, ghidra_url } => computer_use_cmd::run(surface, executable, ghidra_url),
         Cmd::Cpp { args } => delegate::cpp(&args),
         Cmd::Cs { args } => delegate::cs(&args),
         Cmd::Mod { op } => mod_cmd::executer(op),

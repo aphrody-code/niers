@@ -1,0 +1,18 @@
+[package]
+name = "nie-computer-use"
+description = "Native, bounded Computer Use probes for nie.exe and Ghidra."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+

@@ -26,6 +26,7 @@ nie-seed.workspace = true
 nie-queue.workspace = true
 nie-re.workspace = true
 nie-trace.workspace = true
+nie-computer-use = { path = "../nie-computer-use" }
 nie-data = { workspace = true, features = ["serde", "std"] }
 nie-formats = { workspace = true, features = ["serde", "textures", "audio-decode", "images"] }
 nie-explore.workspace = true

@@ -4786,6 +4786,7 @@ dependencies = [
  "ignore",
  "image",
  "image_dds",
+ "nie-computer-use",
  "nie-data",
  "nie-explore",
  "nie-formats",
@@ -4809,6 +4810,15 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "nie-computer-use"
+version = "0.5.9"
+dependencies = [
+ "anyhow",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
