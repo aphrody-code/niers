@@ -13,7 +13,13 @@ workspace = true
 
 [dependencies]
 anyhow.workspace = true
+hex.workspace = true
+rusqlite.workspace = true
+sha2.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 nie-re.workspace = true
 nie-trace.workspace = true
+
+[dev-dependencies]
+nie-index = { path = "../../forge/nie-index" }

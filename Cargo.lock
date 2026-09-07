@@ -4817,10 +4817,14 @@ name = "nie-computer-use"
 version = "0.5.9"
 dependencies = [
  "anyhow",
+ "hex",
+ "nie-index",
  "nie-re",
  "nie-trace",
+ "rusqlite",
  "serde",
  "serde_json",
+ "sha2",
 ]
 
 [[package]]

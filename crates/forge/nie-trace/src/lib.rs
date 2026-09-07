@@ -82,6 +82,8 @@ impl MapEntry {
 /// Échec d'une lecture mémoire, détail OS décodé.
 #[derive(Debug, Error)]
 pub enum MemError {
+    #[error("lecture mémoire refusée: longueur {length} supérieure à la limite {max}")]
+    InvalidLength { length: usize, max: usize },
     #[error("{op} a échoué pid={pid} addr=0x{addr:x} len={len} errno={errno}{hint}")]
     Syscall {
         op: &'static str,
