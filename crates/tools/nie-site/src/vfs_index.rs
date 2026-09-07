@@ -86,7 +86,9 @@ impl Vue {
         let Some(ext) = extension(chemin) else {
             return false;
         };
-        self.extensions().iter().any(|e| ext.eq_ignore_ascii_case(e))
+        self.extensions()
+            .iter()
+            .any(|e| ext.eq_ignore_ascii_case(e))
     }
 }
 
@@ -1005,7 +1007,8 @@ impl IndexVfs {
         let distinct = valeurs.len();
         // Les plus fournies d'abord, à égalité par ordre alphabétique : deux appels rendent la
         // même liste, ce qu'un tri instable sur le seul total ne garantit pas.
-        valeurs.sort_unstable_by(|a, b| b.total.cmp(&a.total).then_with(|| a.valeur.cmp(&b.valeur)));
+        valeurs
+            .sort_unstable_by(|a, b| b.total.cmp(&a.total).then_with(|| a.valeur.cmp(&b.valeur)));
         valeurs.truncate(limite);
         (valeurs, distinct)
     }
@@ -1194,7 +1197,6 @@ mod tests {
         DemandeFiltre::default()
     }
 
-
     #[test]
     fn vues_comptent_ce_qu_elles_filtrent() {
         let idx = index_exemple();
@@ -1237,7 +1239,11 @@ mod tests {
         assert!(!Vue::Textures.retient("data/sans_extension"));
         assert_eq!(Vue::depuis_segment("modeles"), Some(Vue::Modeles));
         assert_eq!(Vue::depuis_segment("inexistante"), None);
-        assert_eq!(extension("data/x.y/z"), None, "un point de dossier ne compte pas");
+        assert_eq!(
+            extension("data/x.y/z"),
+            None,
+            "un point de dossier ne compte pas"
+        );
         assert_eq!(extension("data/a.g4tx"), Some("g4tx"));
     }
 
@@ -1273,7 +1279,10 @@ mod tests {
     fn filtre_par_cpk() {
         let idx = index_exemple();
         assert_eq!(idx.nb_cpks(), 4);
-        assert_eq!(idx.cpk_de("data/common/param/game_param.bin"), Some("common.cpk"));
+        assert_eq!(
+            idx.cpk_de("data/common/param/game_param.bin"),
+            Some("common.cpk")
+        );
 
         let d = DemandeFiltre {
             cpk: Some("COMMON.CPK".to_owned()),
@@ -1281,7 +1290,11 @@ mod tests {
         };
         let r = idx.resoudre(None, &d);
         let a = &r.applique;
-        assert_eq!(a.cpk.as_deref(), Some("common.cpk"), "renvoye tel qu'indexe");
+        assert_eq!(
+            a.cpk.as_deref(),
+            Some("common.cpk"),
+            "renvoye tel qu'indexe"
+        );
         assert!(!a.cpk_inconnu);
         let (_, total) = idx.page_filtree(None, &r.clone().paginer(0, 50));
         assert_eq!(total, 3, "chr + game_param + chara.p3lip");
@@ -1316,9 +1329,13 @@ mod tests {
                 ..dem()
             };
             let r = idx.resoudre(None, &d);
-        let a = &r.applique;
+            let a = &r.applique;
             assert!(!a.ext_inconnue, "{ext}");
-            assert_eq!(idx.page_filtree(None, &r.clone().paginer(0, 50)).1, attendu, "{ext}");
+            assert_eq!(
+                idx.page_filtree(None, &r.clone().paginer(0, 50)).1,
+                attendu,
+                "{ext}"
+            );
         }
 
         // `.bin` n'est retenu par AUCUNE vue : sans ce filtre il est inatteignable.

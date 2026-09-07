@@ -1,7 +1,7 @@
 //! Lecteur de tables `@UTF` (Universal Table Format) et d'archives CPK Criware.
 //!
 //! Port Rust de :
-//! - `aphrody/crates/ievr-tools/src/cri.rs` (référence primaire, MIT)
+//! - `crates/tools/ievr-tools/src/cri.rs` (référence primaire, MIT)
 //! - `refs/iecode-re/cli/ffi/rust/cpk-reader/src/utf.rs` (référence secondaire)
 //! - `IECODE.Core/Formats/Criware/UtfTable.cs` (référence C# — IECODE)
 //!

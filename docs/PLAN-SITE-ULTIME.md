@@ -253,6 +253,22 @@
 
 ---
 
+> **Amendement du 2026-09-07 (10) — mesure courante et fermeture des trois modèles 3D.**
+>
+> `nie-site --regenerer-couverture var/couverture-site.json --racine-depot C:\\Users\\aphro\\niers`
+> rejoué sur le dépôt courant produit **578 capacités**, **255 843 unités de poids** et **84
+> routes montées** : `servi=282`, `manquant=0`, `partiel=0`, `bloqué=1` (9 unités),
+> `interne=295`. Les sources mesurées sont désormais `niers=43`, Inacord=158, Azalée=74 pages
+> et 26 routes API, `nie-data=115`, `nie-formats=46`, `nie-lua=34`, iecode=39 et VFS=43
+> extensions. La même matrice servie par un `nie-site` lancé répond 200 sur `/couverture` et
+> `/api/v1/couverture` (135 507 octets).
+>
+> Le correctif G4MG et la sélection du G4MD embarqué dans les G4PKM ferment l'ouverture 3D :
+> cache QA frais, HTTP 200 et `nie-render3d` code 0 pour `k000010` (5 666 triangles), `k000100`
+> (9 414) et `d010020` (7 962). Les assets de marque sont eux aussi régénérés par
+> `nie-aphrody::assets_de_marque` : 11 fichiers, 207 885 octets ; tests crate 7/7 et manifeste
+> multilingue 1/1.
+
 ## 1. Ce que « ultime » veut dire ici
 
 Un seul site — Aphrody, servi par `nie-site`, monté par `apps/nie-web` et par Inacord — où :
@@ -644,10 +660,10 @@ catalogue, `idle` au repos, une des seize poses de `look-directions` quand la so
 seule (30 Ko) puis l'atlas après `img.decode()` — parce qu'un `background-image` en cours de
 chargement n'affiche rien et ne le dit pas.
 
-Reste du lot, avec sa raison : les huit favicons et le manifeste que `assets::assets_de_marque`
-sait produire ne sont **pas** encore branchés ; l'icône du site est aujourd'hui un portrait du
-personnage recadré à la main depuis le zukan officiel. C'est un asset LEVEL-5 et non une sortie
-de la crate — à faire passer par `assets_de_marque` ou à assumer comme tel.
+Les huit favicons et le manifeste sont maintenant produits par `assets::assets_de_marque` via
+`cargo run -p nie-aphrody --bin export_assets -- --out apps/nie-web/public/static` : 11 fichiers,
+207 885 octets, depuis `idle[0]`. Les tests de la crate (7/7) et la route manifeste dans les trois
+langues (1/1) passent ; aucun portrait recadré à la main ne reste comme source du site.
 
 **Gate :** `rg -c '<svg' packages/inacord-ui/src` → les glyphes restants sont **justifiés un à
 un** (un tracé géométrique du dépôt est légitime ; une icône du jeu redessinée à la main ne
@@ -974,13 +990,15 @@ arithmétique ne la trouve.
 
 ### Ouvert, et pourquoi
 
-1. **Trois modèles sur 102 ne se rendent pas** (`keshin/k000010`, `keshin/k000100`,
-   `item/d010020`), et la cause est identifiée à l'octet : le GLB assemblé par
-   `nie-model-serve` porte des **indices de sommet globaux** (jusqu'à 11 493) pour des
-   accesseurs `POSITION` **locaux** par primitive (818 / 858 / 2 394). Les personnages et les
-   armures sont conformes (`maxidx == count − 1`). Le correctif appartient à `nie-model-serve` ;
-   côté site l'erreur est classée **502** — l'amont a produit l'artefact — et le viewport écarte
-   les triangles hors bornes plutôt que d'abandonner la scène.
+1. ~~**Trois modèles sur 102 ne se rendent pas** (`keshin/k000010`, `keshin/k000100`,
+   `item/d010020`).~~ **Réglé le 2026-09-07.** `nie-formats::g4mg` compacte désormais les
+   références globales vers les sommets locaux et écarte les triangles dont une référence reste
+   inconnue ; `nie-model-serve` préfère le G4MD canonique embarqué dans le `.g4pkm` quand un
+   G4MD libre historique décrit un autre LOD (`d010020` : stride 48 / face 303 872 contre
+   stride 68 / offsets hors du G4MG). Vérification sur cache frais : les trois routes répondent
+   200 et `nie-render3d` termine à 0 — `k000010` 5 666 triangles, `k000100` 9 414,
+   `d010020` 7 962. Les captures sont une preuve de parsing/rendu sans erreur ; elles ne
+   prétendent pas encore à une fidélité pixel-perfect.
 2. ~~**`app::ROUTES` est périmé**~~ — **réglé le 2026-09-06.** Il figeait 19 routes pour un
    routeur qui en montait **37** : les 7 d'Aphrody, les 5 de la 3D et les 6 de Lua/formats n'y
    étaient jamais entrées, chaque lot ayant respecté son périmètre et la liste n'appartenant à
@@ -1001,7 +1019,9 @@ arithmétique ne la trouve.
    texture n'a donc qu'un niveau.
 5. **Un débordement horizontal** de la coquille (`packages/inacord-ui`), visible identiquement
    sur `/textures` et sur `/modeles` : il préexiste aux deux lots.
-6. **Les huit favicons de `assets_de_marque`** ne sont pas branchées (cf. lot 5).
+6. ~~**Les huit favicons de `assets_de_marque`** ne sont pas branchées.~~ **Réglé le
+   2026-09-07** : export canonique vers `apps/nie-web/public/static`, manifestes et route
+   vérifiés.
 7. ~~**Le sas `apps/nie-web/src/legacy/`**~~ — **vidé le 2026-09-06 : 90 fichiers, 23 647
    lignes.** Il en portait **87** au dernier compte du plan ; la mesure du jour en trouve 90,
    et **40 d'entre eux** citaient Rose Griffon — ce que la décision du 2026-09-05 interdit
@@ -1035,11 +1055,12 @@ arithmétique ne la trouve.
    | `app/save` | 45 | `POST /api/v1/save/roster` |
    | `lib/wiki`, `lib/game-text` | 24 | `/api/v1/text` |
 
-   **Le seul trou réel est un écran d'avatar.** Sa donnée est servie ; son interface n'existe
-   nulle part. C'est écrit ici plutôt que laissé à découvrir.
-8. **La page « Sons »** liste les `.awb` comme des sons individuels : `bgm_chronicle.awb` y
-   apparaît avec un lecteur audio et **1 291,9 Mo**. Ce sont des banques, pas des pistes ; il
-   faut cataloguer par ACB, comme le fait déjà Azalée.
+   ~~**Le seul trou réel était un écran d'avatar.**~~ **Réglé le 2026-09-07.** `Avatar.tsx`
+   consomme le catalogue résolu, ses 20 catégories et ses pièces, avec repli sur `chara_edit`.
+8. ~~**La page « Sons »** liste les `.awb` comme des sons individuels.~~ **Réglé le 2026-09-07.**
+   La vue filtre les banques `.acb`, ouvre `/assets/audio-info/{chemin}`, puis rend les cues
+   décrites par l'ACB avec leur AWB et leur durée ; aucune banque AWB n'est présentée comme une
+   piste unique.
 
 ## 6. Les invariants — ce qui vaut pour tous les lots
 

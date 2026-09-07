@@ -11,7 +11,7 @@
 //! Cette couleur n'est pas recopiée en hexadécimal : elle est lue sur le [`crate::color::ColorToken`]
 //! qui la porte déjà, pour qu'une seule ligne du dépôt connaisse chaque hexadécimal.
 
-use crate::color::{ABYSS_BACKGROUND, ColorToken, CYAN_ACCENT, hex_to_rgb_triplet};
+use crate::color::{ABYSS_BACKGROUND, CYAN_ACCENT, ColorToken, hex_to_rgb_triplet};
 
 /// Un jeton non coloré : un nom de propriété CSS et sa valeur, déjà unitée comme le veut le CSS
 /// (`"14px"`, `"120ms"`, `"0.02em"`…). Une seule forme sert toutes les unités : la valeur est la
@@ -35,57 +35,121 @@ impl RawToken {
 macro_rules! raw_token {
     ($doc:literal, $ident:ident, $name:literal, $value:literal) => {
         #[doc = $doc]
-        pub const $ident: RawToken = RawToken { name: $name, value: $value };
+        pub const $ident: RawToken = RawToken {
+            name: $name,
+            value: $value,
+        };
     };
 }
 
 // --- Géométrie : les tuiles du menu sont biseautées, pas rectangulaires ------------------------
 raw_token!(
     "Le biseau des tuiles du menu — elles ne sont pas rectangulaires. Valeur CSS `14px`.",
-    BEVEL, "jeu-biseau", "14px"
+    BEVEL,
+    "jeu-biseau",
+    "14px"
 );
-raw_token!("Le rayon de bordure par défaut. Valeur CSS `4px`.", RADIUS, "jeu-rayon", "4px");
+raw_token!(
+    "Le rayon de bordure par défaut. Valeur CSS `4px`.",
+    RADIUS,
+    "jeu-rayon",
+    "4px"
+);
 raw_token!(
     "L'épaisseur de bordure par défaut. Valeur CSS `2px`.",
-    BORDER_WIDTH, "jeu-bordure", "2px"
+    BORDER_WIDTH,
+    "jeu-bordure",
+    "2px"
 );
 
 // --- Rythme --------------------------------------------------------------------------------
-raw_token!("L'espacement le plus fin. Valeur CSS `4px`.", SPACE_XS, "jeu-espace-xs", "4px");
-raw_token!("Un petit espacement. Valeur CSS `8px`.", SPACE_S, "jeu-espace-s", "8px");
-raw_token!("L'espacement de référence. Valeur CSS `16px`.", SPACE_M, "jeu-espace-m", "16px");
-raw_token!("Un grand espacement. Valeur CSS `24px`.", SPACE_L, "jeu-espace-l", "24px");
-raw_token!("Le plus grand espacement. Valeur CSS `40px`.", SPACE_XL, "jeu-espace-xl", "40px");
+raw_token!(
+    "L'espacement le plus fin. Valeur CSS `4px`.",
+    SPACE_XS,
+    "jeu-espace-xs",
+    "4px"
+);
+raw_token!(
+    "Un petit espacement. Valeur CSS `8px`.",
+    SPACE_S,
+    "jeu-espace-s",
+    "8px"
+);
+raw_token!(
+    "L'espacement de référence. Valeur CSS `16px`.",
+    SPACE_M,
+    "jeu-espace-m",
+    "16px"
+);
+raw_token!(
+    "Un grand espacement. Valeur CSS `24px`.",
+    SPACE_L,
+    "jeu-espace-l",
+    "24px"
+);
+raw_token!(
+    "Le plus grand espacement. Valeur CSS `40px`.",
+    SPACE_XL,
+    "jeu-espace-xl",
+    "40px"
+);
 
 // --- Mouvement : court et net, comme le jeu -------------------------------------------------
 raw_token!(
     "La durée d'une transition rapide. Valeur CSS `120ms`.",
-    FAST_DURATION, "jeu-duree-rapide", "120ms"
+    FAST_DURATION,
+    "jeu-duree-rapide",
+    "120ms"
 );
 raw_token!(
     "La durée d'une transition moyenne. Valeur CSS `220ms`.",
-    MEDIUM_DURATION, "jeu-duree-moyenne", "220ms"
+    MEDIUM_DURATION,
+    "jeu-duree-moyenne",
+    "220ms"
 );
 raw_token!(
     "La courbe d'accélération des transitions. Valeur CSS `cubic-bezier(0.2, 0, 0, 1)`.",
-    EASING_CURVE, "jeu-courbe", "cubic-bezier(0.2, 0, 0, 1)"
+    EASING_CURVE,
+    "jeu-courbe",
+    "cubic-bezier(0.2, 0, 0, 1)"
 );
 
 // --- Typographie -----------------------------------------------------------------------------
-raw_token!("La graisse des titres. Valeur CSS `800`.", TITLE_WEIGHT, "jeu-titre-poids", "800");
+raw_token!(
+    "La graisse des titres. Valeur CSS `800`.",
+    TITLE_WEIGHT,
+    "jeu-titre-poids",
+    "800"
+);
 raw_token!(
     "L'espacement des lettres d'un titre. Valeur CSS `0.02em`.",
-    TITLE_TRACKING, "jeu-titre-espacement", "0.02em"
+    TITLE_TRACKING,
+    "jeu-titre-espacement",
+    "0.02em"
 );
 raw_token!(
     "L'espacement des lettres d'un libellé. Valeur CSS `0.06em`.",
-    LABEL_TRACKING, "jeu-libelle-espacement", "0.06em"
+    LABEL_TRACKING,
+    "jeu-libelle-espacement",
+    "0.06em"
 );
 
 /// Les 14 jetons non colorés à valeur fixe (hors élévation), dans l'ordre exact du CSS.
 pub const RAW_TOKENS: [RawToken; 14] = [
-    BEVEL, RADIUS, BORDER_WIDTH, SPACE_XS, SPACE_S, SPACE_M, SPACE_L, SPACE_XL, FAST_DURATION,
-    MEDIUM_DURATION, EASING_CURVE, TITLE_WEIGHT, TITLE_TRACKING, LABEL_TRACKING,
+    BEVEL,
+    RADIUS,
+    BORDER_WIDTH,
+    SPACE_XS,
+    SPACE_S,
+    SPACE_M,
+    SPACE_L,
+    SPACE_XL,
+    FAST_DURATION,
+    MEDIUM_DURATION,
+    EASING_CURVE,
+    TITLE_WEIGHT,
+    TITLE_TRACKING,
+    LABEL_TRACKING,
 ];
 
 /// Une ombre ou une lueur : une géométrie fixe (décalages, flou) plus la couleur d'un jeton
@@ -120,16 +184,28 @@ impl ElevationToken {
 // --- Élévation : la géométrie est écrite, les composantes dérivent des rôles -------------------
 /// L'ombre portée d'une tuile du menu. Géométrie `0 2px 8px`, couleur = [`ABYSS_BACKGROUND`]
 /// (`#131420`) à 45 % — dans le CSS livré : `rgb(19 20 32 / 45%)`.
-pub const TILE_SHADOW: ElevationToken =
-    ElevationToken { name: "jeu-ombre-tuile", geometry: "0 2px 8px", color: ABYSS_BACKGROUND, alpha_pct: 45 };
+pub const TILE_SHADOW: ElevationToken = ElevationToken {
+    name: "jeu-ombre-tuile",
+    geometry: "0 2px 8px",
+    color: ABYSS_BACKGROUND,
+    alpha_pct: 45,
+};
 /// L'ombre portée d'un panneau. Géométrie `0 8px 32px`, couleur = [`ABYSS_BACKGROUND`]
 /// (`#131420`) à 65 % — dans le CSS livré : `rgb(19 20 32 / 65%)`.
-pub const PANEL_SHADOW: ElevationToken =
-    ElevationToken { name: "jeu-ombre-panneau", geometry: "0 8px 32px", color: ABYSS_BACKGROUND, alpha_pct: 65 };
+pub const PANEL_SHADOW: ElevationToken = ElevationToken {
+    name: "jeu-ombre-panneau",
+    geometry: "0 8px 32px",
+    color: ABYSS_BACKGROUND,
+    alpha_pct: 65,
+};
 /// La lueur d'un état actif. Géométrie `0 0 12px`, couleur = [`CYAN_ACCENT`] (`#97c0fc`) à 55 %
 /// — dans le CSS livré : `rgb(151 192 252 / 55%)`.
-pub const ACCENT_GLOW: ElevationToken =
-    ElevationToken { name: "jeu-lueur-accent", geometry: "0 0 12px", color: CYAN_ACCENT, alpha_pct: 55 };
+pub const ACCENT_GLOW: ElevationToken = ElevationToken {
+    name: "jeu-lueur-accent",
+    geometry: "0 0 12px",
+    color: CYAN_ACCENT,
+    alpha_pct: 55,
+};
 
 /// Les trois jetons d'élévation, dans l'ordre exact du CSS.
 pub const ELEVATION_TOKENS: [ElevationToken; 3] = [TILE_SHADOW, PANEL_SHADOW, ACCENT_GLOW];

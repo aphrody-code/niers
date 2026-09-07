@@ -233,6 +233,9 @@ mod tests {
         );
         // `.cfg.bin` reste BINAIRE : c'est `.cfg` qui est du texte, et confondre les deux
         // servirait 71 101 fichiers RDBN/T2B en `text/plain`.
-        assert_eq!(type_contenu("a/base_act.cfg.bin"), "application/octet-stream");
+        assert_eq!(
+            type_contenu("a/base_act.cfg.bin"),
+            "application/octet-stream"
+        );
     }
 }

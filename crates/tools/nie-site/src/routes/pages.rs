@@ -37,8 +37,37 @@ use axum::response::{Html, IntoResponse, Redirect, Response};
 use crate::i18n::{Alternative, Langue, alternatives};
 use crate::state::EtatSite;
 
-/// Couleur de cadrage de la DA du jeu (`#295B9F`), mesurée sur le menu principal.
-pub const COULEUR_THEME: &str = "#295B9F";
+/// Couleur de cadrage de la DA du jeu, issue du jeton typé de `nie-ui`.
+pub const COULEUR_THEME: &str = nie_ui::color::TILE_TOP.hex;
+
+/// Feuille minimale de la SSR : les valeurs de couleur et de géométrie viennent des générateurs
+/// Rust, tandis que cette couche ne porte que la structure de la page. Le bundle React prend
+/// ensuite le relais avec la même famille de jetons.
+fn feuille_ssr() -> String {
+    let mut css = nie_aphrody::design::fichier_css();
+    css.push('\n');
+    css.push_str(&nie_ui::css::screens_block());
+    css.push_str(
+        r#"
+*, *::before, *::after { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body {
+  margin: 0;
+  background: var(--jeu-ciel-clair);
+  color: var(--jeu-nuit-profonde);
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+}
+#racine > main { width: min(1400px, 100%); margin-inline: auto; padding: var(--jeu-espace-xl); }
+a { color: var(--jeu-accent-azur); }
+a:focus-visible { outline: 3px solid var(--jeu-accent-ambre); outline-offset: 3px; }
+@media (max-width: 640px) {
+  #racine > main { padding: var(--jeu-espace-l) var(--jeu-espace-m); }
+}
+"#,
+    );
+    css
+}
 
 /// La vignette de partage, servie par le bundle.
 ///
@@ -83,7 +112,7 @@ struct Entree {
 /// segment d'URL brut, en minuscule, identique dans les trois langues — parce qu'il tombait
 /// dans la branche générique de [`metadonnees`]. Une entrée du menu que le serveur ne connaît
 /// pas est une page sans titre, absente du plan du site et non déclarée à `robots.txt`.
-const ENTREES: [Entree; 7] = [
+const ENTREES: [Entree; 8] = [
     Entree {
         // `/medias` manquait, alors que c'est l'une des DEUX entrées du menu et qu'elle figure
         // au plan du site : elle sortait donc en `<title>medias — Aphrody</title>`, description
@@ -153,6 +182,15 @@ const ENTREES: [Entree; 7] = [
             "言語・テーマ・リストの密度・文字サイズなど、Aphrody の設定をゲームのオプション画面で。",
         ],
     },
+    Entree {
+        segment: "avatar",
+        titres: ["Avatar", "Avatar", "アバター"],
+        descriptions: [
+            "Composer un personnage joueur à partir des pièces et réglages du jeu.",
+            "Compose a player character from the game's parts and settings.",
+            "ゲームのパーツと設定から選手キャラクターを組み立てます。",
+        ],
+    },
 ];
 
 /// Les deux URL héritées des écrans fusionnés : elles mènent à l'explorateur.
@@ -190,9 +228,7 @@ pub fn route_canonique(route: &str) -> String {
 pub fn route_servie(route: &str) -> bool {
     let nu = route.trim_start_matches('/').trim_end_matches('/');
     let premier = nu.split('/').next().unwrap_or("");
-    premier.is_empty()
-        || ENTREES.iter().any(|e| e.segment == premier)
-        || ALIAS.contains(&premier)
+    premier.is_empty() || ENTREES.iter().any(|e| e.segment == premier) || ALIAS.contains(&premier)
 }
 
 /// Index de la langue dans les tables de libellés.
@@ -409,6 +445,8 @@ pub struct Coquille {
     pub route: String,
     /// Feuille de style du bundle, quand elle a été trouvée.
     pub feuille: Option<String>,
+    /// CSS SSR généré depuis `nie-aphrody` et `nie-ui`, pour que la page reste alignée avant React.
+    pub feuille_ssr: String,
     /// Point d'entrée JavaScript du bundle, quand il a été trouvé.
     pub script: Option<String>,
     /// Couleur de thème (`theme-color`).
@@ -445,6 +483,8 @@ pub struct PageErreur {
     pub message: String,
     /// Couleur de thème.
     pub couleur_theme: &'static str,
+    /// CSS partagé avec la coquille principale.
+    pub feuille_ssr: String,
 }
 
 impl PageErreur {
@@ -456,6 +496,7 @@ impl PageErreur {
             titre,
             message: message.into(),
             couleur_theme: COULEUR_THEME,
+            feuille_ssr: feuille_ssr(),
         };
         match page.render() {
             Ok(html) => (code, Html(html)).into_response(),
@@ -701,6 +742,7 @@ pub fn construire(
         type_og,
         route: route.to_owned(),
         feuille,
+        feuille_ssr: feuille_ssr(),
         script,
         couleur_theme: COULEUR_THEME,
         catalogues,
@@ -882,7 +924,14 @@ mod tests {
             assert!(!c.noindex, "{alias} est servie");
             assert_eq!(c.route, alias, "le bundle garde la route demandee");
         }
-        let inconnue = construire("https://aphrody.com", "/gallery", Langue::Fr, None, None, None);
+        let inconnue = construire(
+            "https://aphrody.com",
+            "/gallery",
+            Langue::Fr,
+            None,
+            None,
+            None,
+        );
         assert!(inconnue.noindex, "une route inventee ne s'indexe pas");
     }
 
@@ -940,6 +989,16 @@ mod tests {
         assert!(html.contains(r#"content="summary_large_image""#));
         assert!(html.contains(r#"content="1200""#));
         assert!(html.contains(r#"content="630""#));
+    }
+
+    #[test]
+    fn la_ssr_porte_les_sources_de_design_uniques() {
+        let html = page("/", Langue::Fr);
+        assert!(html.contains("<style>"));
+        assert!(html.contains("--jeu-fond-abysse"));
+        assert!(html.contains("--jeu-biseau"));
+        assert!(html.contains("--screen-"));
+        assert!(html.contains(COULEUR_THEME));
     }
 
     #[test]

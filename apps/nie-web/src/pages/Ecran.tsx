@@ -65,6 +65,7 @@ export function EcranSecondaire({
 			<header
 				style={{
 					display: "flex",
+					flexWrap: "wrap",
 					alignItems: "center",
 					gap: "var(--jeu-espace-l)",
 					padding: "10px var(--jeu-espace-xl)",
@@ -95,7 +96,10 @@ export function EcranSecondaire({
 					APHRODY
 				</button>
 
-				<nav aria-label="Entrées du site" style={{ marginLeft: "auto" }}>
+				<nav
+					aria-label="Entrées du site"
+					style={{ marginLeft: "auto", minWidth: 0, maxWidth: "100%", overflowX: "auto" }}
+				>
 					<TileStrip ecart={6}>
 						{entrees.map((entree) => (
 							<IconTile

@@ -13,7 +13,7 @@
 //! provenance dans le CSS source, donc aucun n'est ajouté ici.
 
 use crate::color::{
-    AZURE_ACCENT, BRICK_ACCENT, CHALK_SURFACE, ColorToken, CLEAR_SKY, DEEP_NIGHT, ICE_SURFACE,
+    AZURE_ACCENT, BRICK_ACCENT, CHALK_SURFACE, CLEAR_SKY, ColorToken, DEEP_NIGHT, ICE_SURFACE,
     MIST_SURFACE, SOFT_TEXT, TILE_BORDER, TILE_TOP,
 };
 use crate::tokens::{ElevationToken, RADIUS, RawToken, TILE_SHADOW};
@@ -67,26 +67,86 @@ impl SemanticRole {
 
 /// Les 20 rôles shadcn du bloc `@theme inline`, dans l'ordre où `base.css` les déclare.
 pub const SHADCN_ROLES: [SemanticRole; 20] = [
-    SemanticRole { css_property: "color-background", value: RoleValue::Token(CLEAR_SKY) },
-    SemanticRole { css_property: "color-foreground", value: RoleValue::Token(DEEP_NIGHT) },
-    SemanticRole { css_property: "color-card", value: RoleValue::Literal("#fff") },
-    SemanticRole { css_property: "color-card-foreground", value: RoleValue::Token(DEEP_NIGHT) },
-    SemanticRole { css_property: "color-popover", value: RoleValue::Literal("#fff") },
-    SemanticRole { css_property: "color-popover-foreground", value: RoleValue::Token(DEEP_NIGHT) },
-    SemanticRole { css_property: "color-primary", value: RoleValue::Token(TILE_TOP) },
-    SemanticRole { css_property: "color-primary-foreground", value: RoleValue::Token(CLEAR_SKY) },
-    SemanticRole { css_property: "color-secondary", value: RoleValue::Token(ICE_SURFACE) },
-    SemanticRole { css_property: "color-secondary-foreground", value: RoleValue::Token(DEEP_NIGHT) },
-    SemanticRole { css_property: "color-muted", value: RoleValue::Token(CHALK_SURFACE) },
-    SemanticRole { css_property: "color-muted-foreground", value: RoleValue::Token(SOFT_TEXT) },
-    SemanticRole { css_property: "color-accent", value: RoleValue::Token(ICE_SURFACE) },
-    SemanticRole { css_property: "color-accent-foreground", value: RoleValue::Token(DEEP_NIGHT) },
-    SemanticRole { css_property: "color-destructive", value: RoleValue::Token(BRICK_ACCENT) },
-    SemanticRole { css_property: "color-destructive-foreground", value: RoleValue::Token(CLEAR_SKY) },
-    SemanticRole { css_property: "color-border", value: RoleValue::Token(TILE_BORDER) },
-    SemanticRole { css_property: "color-input", value: RoleValue::Token(TILE_BORDER) },
-    SemanticRole { css_property: "color-ring", value: RoleValue::Token(AZURE_ACCENT) },
-    SemanticRole { css_property: "radius", value: RoleValue::Raw(RADIUS) },
+    SemanticRole {
+        css_property: "color-background",
+        value: RoleValue::Token(CLEAR_SKY),
+    },
+    SemanticRole {
+        css_property: "color-foreground",
+        value: RoleValue::Token(DEEP_NIGHT),
+    },
+    SemanticRole {
+        css_property: "color-card",
+        value: RoleValue::Literal("#fff"),
+    },
+    SemanticRole {
+        css_property: "color-card-foreground",
+        value: RoleValue::Token(DEEP_NIGHT),
+    },
+    SemanticRole {
+        css_property: "color-popover",
+        value: RoleValue::Literal("#fff"),
+    },
+    SemanticRole {
+        css_property: "color-popover-foreground",
+        value: RoleValue::Token(DEEP_NIGHT),
+    },
+    SemanticRole {
+        css_property: "color-primary",
+        value: RoleValue::Token(TILE_TOP),
+    },
+    SemanticRole {
+        css_property: "color-primary-foreground",
+        value: RoleValue::Token(CLEAR_SKY),
+    },
+    SemanticRole {
+        css_property: "color-secondary",
+        value: RoleValue::Token(ICE_SURFACE),
+    },
+    SemanticRole {
+        css_property: "color-secondary-foreground",
+        value: RoleValue::Token(DEEP_NIGHT),
+    },
+    SemanticRole {
+        css_property: "color-muted",
+        value: RoleValue::Token(CHALK_SURFACE),
+    },
+    SemanticRole {
+        css_property: "color-muted-foreground",
+        value: RoleValue::Token(SOFT_TEXT),
+    },
+    SemanticRole {
+        css_property: "color-accent",
+        value: RoleValue::Token(ICE_SURFACE),
+    },
+    SemanticRole {
+        css_property: "color-accent-foreground",
+        value: RoleValue::Token(DEEP_NIGHT),
+    },
+    SemanticRole {
+        css_property: "color-destructive",
+        value: RoleValue::Token(BRICK_ACCENT),
+    },
+    SemanticRole {
+        css_property: "color-destructive-foreground",
+        value: RoleValue::Token(CLEAR_SKY),
+    },
+    SemanticRole {
+        css_property: "color-border",
+        value: RoleValue::Token(TILE_BORDER),
+    },
+    SemanticRole {
+        css_property: "color-input",
+        value: RoleValue::Token(TILE_BORDER),
+    },
+    SemanticRole {
+        css_property: "color-ring",
+        value: RoleValue::Token(AZURE_ACCENT),
+    },
+    SemanticRole {
+        css_property: "radius",
+        value: RoleValue::Raw(RADIUS),
+    },
 ];
 
 /// Les 7 rôles Material 3 du même bloc, employés par les composants venus du wiki.
@@ -95,15 +155,30 @@ pub const MATERIAL_ROLES: [SemanticRole; 7] = [
         css_property: "color-surface-container-lowest",
         value: RoleValue::Literal("#fff"),
     },
-    SemanticRole { css_property: "color-surface-container-low", value: RoleValue::Token(ICE_SURFACE) },
-    SemanticRole { css_property: "color-surface-container-high", value: RoleValue::Token(CHALK_SURFACE) },
+    SemanticRole {
+        css_property: "color-surface-container-low",
+        value: RoleValue::Token(ICE_SURFACE),
+    },
+    SemanticRole {
+        css_property: "color-surface-container-high",
+        value: RoleValue::Token(CHALK_SURFACE),
+    },
     SemanticRole {
         css_property: "color-surface-container-highest",
         value: RoleValue::Token(MIST_SURFACE),
     },
-    SemanticRole { css_property: "color-on-surface", value: RoleValue::Token(DEEP_NIGHT) },
-    SemanticRole { css_property: "color-on-surface-variant", value: RoleValue::Token(SOFT_TEXT) },
-    SemanticRole { css_property: "shadow-level-1", value: RoleValue::Elevation(TILE_SHADOW) },
+    SemanticRole {
+        css_property: "color-on-surface",
+        value: RoleValue::Token(DEEP_NIGHT),
+    },
+    SemanticRole {
+        css_property: "color-on-surface-variant",
+        value: RoleValue::Token(SOFT_TEXT),
+    },
+    SemanticRole {
+        css_property: "shadow-level-1",
+        value: RoleValue::Elevation(TILE_SHADOW),
+    },
 ];
 
 /// Le rôle nommé, shadcn ou Material 3, ou `None`.
@@ -121,8 +196,11 @@ mod tests {
 
     #[test]
     fn aucun_nom_de_role_nest_duplique() {
-        let mut noms: Vec<&str> =
-            SHADCN_ROLES.iter().chain(&MATERIAL_ROLES).map(|r| r.css_property).collect();
+        let mut noms: Vec<&str> = SHADCN_ROLES
+            .iter()
+            .chain(&MATERIAL_ROLES)
+            .map(|r| r.css_property)
+            .collect();
         let avant = noms.len();
         noms.sort_unstable();
         noms.dedup();
@@ -138,7 +216,10 @@ mod tests {
             .chain(&MATERIAL_ROLES)
             .filter(|r| matches!(r.value, RoleValue::Literal(_)))
             .count();
-        assert_eq!(litteraux, 3, "le nombre de rôles non rattachés à un jeton a changé");
+        assert_eq!(
+            litteraux, 3,
+            "le nombre de rôles non rattachés à un jeton a changé"
+        );
     }
 
     #[test]
@@ -149,8 +230,14 @@ mod tests {
             find("color-background").unwrap().declaration(),
             "--color-background: var(--jeu-ciel-clair);"
         );
-        assert_eq!(find("color-card").unwrap().declaration(), "--color-card: #fff;");
-        assert_eq!(find("radius").unwrap().declaration(), "--radius: var(--jeu-rayon);");
+        assert_eq!(
+            find("color-card").unwrap().declaration(),
+            "--color-card: #fff;"
+        );
+        assert_eq!(
+            find("radius").unwrap().declaration(),
+            "--radius: var(--jeu-rayon);"
+        );
         assert_eq!(
             find("shadow-level-1").unwrap().declaration(),
             "--shadow-level-1: var(--jeu-ombre-tuile);"

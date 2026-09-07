@@ -188,7 +188,11 @@ fn azalee(racine: &Path, inv: &mut Inventaire) -> anyhow::Result<()> {
         };
         let mut segments: Vec<&str> = relatif
             .parent()
-            .map(|p| p.components().filter_map(|c| c.as_os_str().to_str()).collect())
+            .map(|p| {
+                p.components()
+                    .filter_map(|c| c.as_os_str().to_str())
+                    .collect()
+            })
             .unwrap_or_default();
         segments.retain(|s| !(s.starts_with('(') && s.ends_with(')')));
         let route = if segments.is_empty() {
@@ -206,7 +210,11 @@ fn azalee(racine: &Path, inv: &mut Inventaire) -> anyhow::Result<()> {
     pages.dedup();
     apis.sort_unstable();
     apis.dedup();
-    anyhow::ensure!(!pages.is_empty(), "aucune page trouvée sous {}", base.display());
+    anyhow::ensure!(
+        !pages.is_empty(),
+        "aucune page trouvée sous {}",
+        base.display()
+    );
     for p in pages {
         inv.pousser(Source::Azalee, p, 1);
     }

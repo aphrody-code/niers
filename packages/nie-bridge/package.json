@@ -1,6 +1,6 @@
 {
   "name": "@niers/bridge",
-  "version": "0.5.9",
+	"version": "0.5.10",
   "private": true,
   "description": "Protocole de contrôle partagé entre nie-mcp (serveur) et nie-explorer (client) : mêmes types de commandes des deux côtés.",
   "type": "module",

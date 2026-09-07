@@ -283,7 +283,8 @@ pub fn comparer_variantes(
         details.push("Amélioration pure des statistiques globales".to_string());
         Classification::AmeliorationPure
     } else {
-        details.push("Variante tactique avec ajustement de moveset et stats équilibrées".to_string());
+        details
+            .push("Variante tactique avec ajustement de moveset et stats équilibrées".to_string());
         Classification::VariationTactique
     };
 
@@ -499,7 +500,8 @@ mod tests {
         assert_eq!(r.techniques_ajoutees, ["Tornade"]);
         assert_eq!(r.techniques_retirees, ["s_perdue"]);
         assert!(
-            r.explication.ends_with("Nouvelles techniques apprises : Tornade."),
+            r.explication
+                .ends_with("Nouvelles techniques apprises : Tornade."),
             "{}",
             r.explication
         );

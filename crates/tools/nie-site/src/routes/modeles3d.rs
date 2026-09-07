@@ -288,7 +288,12 @@ pub struct Modele {
 
 impl Modele {
     /// Construit l'entrée, URL comprises, à partir du couple famille/code.
-    fn nouveau(famille: Famille, code: String, nom: Option<String>, fichiers: Option<usize>) -> Self {
+    fn nouveau(
+        famille: Famille,
+        code: String,
+        nom: Option<String>,
+        fichiers: Option<usize>,
+    ) -> Self {
         let base = format!("/model/{}/{code}", famille.segment());
         Self {
             glb: format!("{base}.glb"),
@@ -389,7 +394,12 @@ impl DemandeCatalogue {
 
     /// La famille demandée, ou l'erreur qui nomme les six possibles.
     fn famille(&self) -> Result<Famille, ErreurSite> {
-        match self.famille.as_deref().map(str::trim).filter(|f| !f.is_empty()) {
+        match self
+            .famille
+            .as_deref()
+            .map(str::trim)
+            .filter(|f| !f.is_empty())
+        {
             None => Ok(Famille::Perso),
             Some(f) => Famille::depuis_segment(f).ok_or_else(|| {
                 ErreurSite::Introuvable(format!(
@@ -596,8 +606,8 @@ pub async fn catalogue(
 
     if famille == Famille::Perso {
         let gisement = Arc::clone(&etat.gisement);
-        let page =
-            tokio::task::spawn_blocking(move || page_perso(&gisement, p, motif.as_deref())).await??;
+        let page = tokio::task::spawn_blocking(move || page_perso(&gisement, p, motif.as_deref()))
+            .await??;
         return Ok(Json(page));
     }
 
@@ -1032,7 +1042,12 @@ async fn apercu(
     let (degres, l, h) = demande.bornee();
     let cle = format!("rendu3d:{}/{code}@{degres}x{l}x{h}", famille.segment());
     if let Some(cachee) = etat.cache.get(&cle).await {
-        return Ok(reponse_octets(&cachee, CONTROLE, Encodage::Identite, entetes));
+        return Ok(reponse_octets(
+            &cachee,
+            CONTROLE,
+            Encodage::Identite,
+            entetes,
+        ));
     }
 
     let octets = octets_amont(etat, &famille.chemin_amont(&code)).await?;
@@ -1056,7 +1071,12 @@ async fn apercu(
         corps: bytes::Bytes::from(png),
     };
     etat.cache.insert(cle, cachee.clone()).await;
-    Ok(reponse_octets(&cachee, CONTROLE, Encodage::Identite, entetes))
+    Ok(reponse_octets(
+        &cachee,
+        CONTROLE,
+        Encodage::Identite,
+        entetes,
+    ))
 }
 
 /// Valide le couple famille/code venu de l'URL.
@@ -1189,13 +1209,11 @@ mod tests {
 
     #[test]
     fn l_apercu_quantifie_son_angle_et_borne_sa_taille() {
-        let d = |angle, l, h| DemandeApercu {
-            angle,
-            l,
-            h,
-        }
-        .bornee();
-        assert_eq!(d(None, None, None), (0, TAILLE_RENDU_DEFAUT, TAILLE_RENDU_DEFAUT));
+        let d = |angle, l, h| DemandeApercu { angle, l, h }.bornee();
+        assert_eq!(
+            d(None, None, None),
+            (0, TAILLE_RENDU_DEFAUT, TAILLE_RENDU_DEFAUT)
+        );
         // La hauteur suit la largeur quand elle est tue : une vignette est carrée.
         assert_eq!(d(None, Some(200), None), (0, 200, 200));
         // 360° et 0° sont le même angle : une seule clé de cache.
@@ -1204,7 +1222,10 @@ mod tests {
         assert_eq!(d(Some(-90.0), None, None).0, 270);
         assert_eq!(d(Some(45.4), None, None).0, 45);
         // Une demande absurde est ramenée dans les bornes, elle n'échoue pas.
-        assert_eq!(d(None, Some(99_999), Some(0)), (0, TAILLE_RENDU_MAX, TAILLE_RENDU_MIN));
+        assert_eq!(
+            d(None, Some(99_999), Some(0)),
+            (0, TAILLE_RENDU_MAX, TAILLE_RENDU_MIN)
+        );
         // Un angle non fini ne doit pas se propager jusqu'au rastériseur.
         assert_eq!(d(Some(f32::NAN), None, None).0, 0);
         assert_eq!(d(Some(f32::INFINITY), None, None).0, 0);
@@ -1230,8 +1251,18 @@ mod tests {
     #[test]
     fn le_catalogue_filtre_sur_le_code_et_sur_le_nom() {
         let modeles = vec![
-            Modele::nouveau(Famille::Perso, "c01000010".into(), Some("Mark Evans".into()), None),
-            Modele::nouveau(Famille::Perso, "c05024610".into(), Some("Axel Blaze".into()), None),
+            Modele::nouveau(
+                Famille::Perso,
+                "c01000010".into(),
+                Some("Mark Evans".into()),
+                None,
+            ),
+            Modele::nouveau(
+                Famille::Perso,
+                "c05024610".into(),
+                Some("Axel Blaze".into()),
+                None,
+            ),
             Modele::nouveau(Famille::Waza, "a000010".into(), None, Some(3)),
         ];
         assert_eq!(filtrer(modeles.clone(), None).len(), 3);
@@ -1257,7 +1288,10 @@ mod tests {
             ("data/common/chr/_waza/a000010/a000010.g4mg".to_owned(), 10),
             ("data/common/chr/_waza/a000010/a000010.g4pkm".to_owned(), 20),
             ("data/common/chr/_item/b000003/b000003.g4sk".to_owned(), 30),
-            ("data/common/chr/_item/b000003/b000003.objbin".to_owned(), 40),
+            (
+                "data/common/chr/_item/b000003/b000003.objbin".to_owned(),
+                40,
+            ),
             ("data/common/chr/_item/d010000/d010000.g4mg".to_owned(), 50),
             ("data/common/chr/c000101/c000101.g4md".to_owned(), 60),
         ]);
@@ -1289,7 +1323,11 @@ mod tests {
             q: Some("  Mark  ".into()),
         };
         assert_eq!(d.famille().unwrap(), Famille::Keshin);
-        assert_eq!(d.motif().as_deref(), Some("mark"), "espaces et casse retires");
+        assert_eq!(
+            d.motif().as_deref(),
+            Some("mark"),
+            "espaces et casse retires"
+        );
         assert_eq!(d.pagination().per_page, crate::config::PER_PAGE_MAX);
 
         let d = DemandeCatalogue {
@@ -1298,7 +1336,10 @@ mod tests {
         };
         let e = d.famille().unwrap_err();
         assert_eq!(e.statut().as_u16(), 404);
-        assert!(e.to_string().contains("perso"), "l'erreur nomme les familles");
+        assert!(
+            e.to_string().contains("perso"),
+            "l'erreur nomme les familles"
+        );
     }
 
     #[test]

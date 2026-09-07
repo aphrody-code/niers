@@ -387,6 +387,16 @@ Les `rva` trouvées par scan statique coïncident **exactement** avec celles du 
 voies se confirment. Discipline conservée — un AOB à hits multiples (`free-buy-shop`, 2 hits) ou
 introuvable (`special-move-type`) repasse à `rva: None` : on ne devine pas une adresse.
 
+### Portail `just preuves` — état mesuré le 2026-09-07
+
+Le portail uemu est actuellement **hors service sur cet environnement** :
+`just preuves` rend **0 ✓ / 47 ✗ / 0 ⧗**, et chacune des 47 validations termine avec
+`exit=127` (`validate_affine_compose` jusqu'à `validate_variant_set_int`). Ce code indique que
+l'exécutable ou le lanceur de preuve n'est pas disponible ; il ne s'agit pas d'un écart de valeur
+du portage. La commande de reprise reste `just preuves` (ou `just preuves <motif>` pour une famille).
+La gate n'est donc pas laissée ambiguë : les autres portails sont mesurés séparément, mais aucune
+preuve uemu positive n'est revendiquée tant que la dépendance manquante n'est pas réinstallée.
+
 ## Qualité
 
 ```

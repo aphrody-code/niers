@@ -140,10 +140,7 @@ struct Built {
 static BUILT: OnceLock<Result<Built, String>> = OnceLock::new();
 
 /// Lit un fichier du VFS et le rend sous la forme iecode que `nie-data` consomme.
-fn read_iecode(
-    vfs: &nie_formats::vfs::Vfs,
-    path: &str,
-) -> Result<serde_json::Value, String> {
+fn read_iecode(vfs: &nie_formats::vfs::Vfs, path: &str) -> Result<serde_json::Value, String> {
     let bytes = vfs
         .read(path)
         .map_err(|e| format!("lecture impossible de `{path}` : {e}"))?;
@@ -161,9 +158,10 @@ fn build(index: &IndexVfs, vfs: &nie_formats::vfs::Vfs) -> Result<Built, String>
     let mut sources = Vec::new();
 
     let mut take = |role: &str, key: &'static str, prefix: &str| -> Result<String, String> {
-        let (path, bytes) = super::donnees::resoudre(index, key, Some(prefix)).ok_or_else(|| {
-            format!("source `{role}` absente : aucun `{key}` sous `{prefix}` dans ce VFS")
-        })?;
+        let (path, bytes) =
+            super::donnees::resoudre(index, key, Some(prefix)).ok_or_else(|| {
+                format!("source `{role}` absente : aucun `{key}` sous `{prefix}` dans ce VFS")
+            })?;
         sources.push(Source {
             role: role.to_owned(),
             key,

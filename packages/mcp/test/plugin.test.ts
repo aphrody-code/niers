@@ -29,11 +29,12 @@ const NOM_PLUGIN = "niers";
 const NOM_SERVEUR = "niers-game";
 const SOURCE_MARKETPLACE = "./niers-plugin";
 
-/** Les 16 skills livrées. Une disparition — comme un ajout — doit rougir. */
+/** Les 17 skills livrées. Une disparition — comme un ajout — doit rougir. */
 const SKILLS = [
 	"aphrody-pet",
 	"assembler-modeles-textures",
 	"bun-ffi",
+	"computer-use-nie-ghidra",
 	"creer-assets-3d",
 	"formats-level5",
 	"ievr-terminologie",

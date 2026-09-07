@@ -330,7 +330,8 @@ async fn icon_index(state: &EtatSite) -> Result<&'static IconIndex, ErreurSite> 
     let index = state.index()?;
     let vfs = state.vfs()?;
     let built =
-        tokio::task::spawn_blocking(move || ICONS.get_or_init(|| build_index(&index, &vfs))).await?;
+        tokio::task::spawn_blocking(move || ICONS.get_or_init(|| build_index(&index, &vfs)))
+            .await?;
     Ok(built)
 }
 
@@ -1393,9 +1394,7 @@ pub struct ModeCatalog {
 
 /// Un mode est-il retenu par le motif ?
 fn mode_retained(d: &ModeDef, pattern: Option<&str>) -> bool {
-    pattern.is_none_or(|q| {
-        d.slug.to_lowercase().contains(q) || d.label.to_lowercase().contains(q)
-    })
+    pattern.is_none_or(|q| d.slug.to_lowercase().contains(q) || d.label.to_lowercase().contains(q))
 }
 
 /// `GET /api/v1/modes` — le catalogue des modes de jeu.
@@ -1443,11 +1442,7 @@ fn resolve_mode(slug: &str) -> Result<&'static ModeDef, ErreurSite> {
         ErreurSite::Introuvable(format!(
             "mode inconnu `{slug}` ; les {} modes catalogues sont : {}",
             MODES.len(),
-            MODES
-                .iter()
-                .map(|d| d.slug)
-                .collect::<Vec<_>>()
-                .join(", ")
+            MODES.iter().map(|d| d.slug).collect::<Vec<_>>().join(", ")
         ))
     })
 }
@@ -1708,10 +1703,9 @@ async fn screen_index(state: &EtatSite) -> Result<&'static ScreenIndex, ErreurSi
     }
     let paths = menu_paths(state).await?;
     let vfs = state.vfs()?;
-    let built = tokio::task::spawn_blocking(move || {
-        SCREENS.get_or_init(|| build_screens(&vfs, paths))
-    })
-    .await?;
+    let built =
+        tokio::task::spawn_blocking(move || SCREENS.get_or_init(|| build_screens(&vfs, paths)))
+            .await?;
     Ok(built)
 }
 
@@ -1842,11 +1836,7 @@ pub async fn missing_layers(
     let mut retenus: Vec<MissingLayer> = idx
         .missing_layers
         .iter()
-        .filter(|(l, _)| {
-            motif
-                .as_ref()
-                .is_none_or(|m| l.to_lowercase().contains(m))
-        })
+        .filter(|(l, _)| motif.as_ref().is_none_or(|m| l.to_lowercase().contains(m)))
         .map(|(layer, screens)| MissingLayer {
             layer: layer.clone(),
             screens: *screens,
@@ -1854,7 +1844,11 @@ pub async fn missing_layers(
         .collect();
     // Les plus réclamés d'abord : un calque déclaré par vingt écrans coûte vingt fois plus
     // qu'un déclaré par un seul.
-    retenus.sort_by(|a, b| b.screens.cmp(&a.screens).then_with(|| a.layer.cmp(&b.layer)));
+    retenus.sort_by(|a, b| {
+        b.screens
+            .cmp(&a.screens)
+            .then_with(|| a.layer.cmp(&b.layer))
+    });
     let total = retenus.len();
     let bornes = demande.bornee();
     let elements = retenus
@@ -1986,12 +1980,7 @@ pub async fn screen(
 }
 
 /// Examine un calque : son `.objbin`, sa pose, et s'il affiche quelque chose.
-fn inspect_layer(
-    vfs: &Vfs,
-    index: &IndexVfs,
-    paths: &MenuPaths,
-    layer: &str,
-) -> ScreenObject {
+fn inspect_layer(vfs: &Vfs, index: &IndexVfs, paths: &MenuPaths, layer: &str) -> ScreenObject {
     let vide = |reason: &'static str| ScreenObject {
         layer: layer.to_owned(),
         objbin: None,
@@ -2023,21 +2012,21 @@ fn inspect_layer(
     let (mut position, mut positioned, mut reason) = (None, false, None);
     match obj.g4pkm_path.as_deref() {
         None => reason = Some("l'objet ne declare aucun SkeletonAnime"),
-        Some(logique) => {
-            match super::inspect::resolve_companion(index, logique, SCREEN_LOCALE) {
-                None => reason = Some("chemin de squelette declare mais absent de ce montage"),
-                Some(p) => match vfs.read(&p).ok().and_then(|d| {
-                    nie_formats::g4pkm::parse(&d).ok()
-                }) {
-                    None => reason = Some("squelette lu mais illisible par g4pkm::parse"),
-                    Some(layout) => {
-                        let t = nie_formats::menu::assemble_object(&obj, &layout, 0, 0).transform;
-                        position = Some([t.x_px, t.y_px]);
-                        positioned = true;
-                    }
-                },
-            }
-        }
+        Some(logique) => match super::inspect::resolve_companion(index, logique, SCREEN_LOCALE) {
+            None => reason = Some("chemin de squelette declare mais absent de ce montage"),
+            Some(p) => match vfs
+                .read(&p)
+                .ok()
+                .and_then(|d| nie_formats::g4pkm::parse(&d).ok())
+            {
+                None => reason = Some("squelette lu mais illisible par g4pkm::parse"),
+                Some(layout) => {
+                    let t = nie_formats::menu::assemble_object(&obj, &layout, 0, 0).transform;
+                    position = Some([t.x_px, t.y_px]);
+                    positioned = true;
+                }
+            },
+        },
     }
 
     ScreenObject {
@@ -2077,7 +2066,11 @@ mod tests_screens {
         assert!(manquants.is_empty());
 
         let (n, manquants, servi) = layer_status(&calques(&["a", "b", "c"]), &dispo);
-        assert_eq!((n, servi), (2, false), "un calque absent suffit a retirer `served`");
+        assert_eq!(
+            (n, servi),
+            (2, false),
+            "un calque absent suffit a retirer `served`"
+        );
         assert_eq!(manquants, vec!["c".to_owned()], "et il est NOMME");
     }
 
@@ -2124,8 +2117,14 @@ mod tests_screens {
         // Le piege du § 9.4 du cap : trois nomenclatures. `mainmenu01` est un CALQUE ; le
         // stem attendu par la route est celui du `_setting.cfg.bin`. Mesure du 2026-09-06 :
         // /api/v1/screens/mainmenu01 rend 404, et c'est correct.
-        assert_eq!(stem("a/b/mainmenu01_setting.cfg.bin", SCREEN_SUFFIX).as_deref(), Some("mainmenu01"));
-        assert_eq!(stem("a/b/mainmenu01_00_background.objbin", SCREEN_SUFFIX), None);
+        assert_eq!(
+            stem("a/b/mainmenu01_setting.cfg.bin", SCREEN_SUFFIX).as_deref(),
+            Some("mainmenu01")
+        );
+        assert_eq!(
+            stem("a/b/mainmenu01_00_background.objbin", SCREEN_SUFFIX),
+            None
+        );
     }
 }
 
@@ -2203,7 +2202,10 @@ mod tests {
         assert!(is_real_icon("icon_item01", 256, 256));
         // Falsification des deux moities de la regle, separement.
         assert!(!is_real_icon("dmy_icon", 256, 256), "les `dmy` sont exclus");
-        assert!(!is_real_icon("icon_item01", 4, 4), "4x4 n'est pas une icone");
+        assert!(
+            !is_real_icon("icon_item01", 4, 4),
+            "4x4 n'est pas une icone"
+        );
         // Une image large mais fine reste une icone : la regle exige les DEUX dimensions.
         assert!(is_real_icon("bar", 4, 64));
         assert!(is_real_icon("bar", 64, 4));
@@ -2309,7 +2311,11 @@ mod tests {
     fn cinq_modes_sont_officiels_et_ce_n_est_pas_un_avis() {
         // Le jeu les enumere lui-meme dans menu_text (volumes BGM/voix, affichage de la liste
         // de puissance). Si ce compte bouge, c'est une decision, pas une retouche.
-        let officiels: Vec<&str> = MODES.iter().filter(|d| d.official).map(|d| d.slug).collect();
+        let officiels: Vec<&str> = MODES
+            .iter()
+            .filter(|d| d.official)
+            .map(|d| d.slug)
+            .collect();
         assert_eq!(
             officiels,
             vec![
@@ -2404,9 +2410,15 @@ mod tests {
         );
         assert_eq!(versionless("chara_edit_top"), "chara_edit_top");
         let vr = resolve_mode("victory-road").unwrap();
-        assert!(matches(vr, &versionless("victory_road_top_menu_inc_7.01.12.00")));
+        assert!(matches(
+            vr,
+            &versionless("victory_road_top_menu_inc_7.01.12.00")
+        ));
         // Falsification : un script d'un autre mode ne doit pas y entrer.
-        assert!(!matches(vr, &versionless("chronicle_mode_top_menu_1.0.0.0")));
+        assert!(!matches(
+            vr,
+            &versionless("chronicle_mode_top_menu_1.0.0.0")
+        ));
         // Un mode sans prefixe ne capte RIEN — c'est le cas mesure de `competition`.
         let comp = resolve_mode("competition").unwrap();
         assert!(comp.prefixes.is_empty());
@@ -2416,7 +2428,11 @@ mod tests {
     #[test]
     fn le_stem_se_prend_sur_la_feuille_pas_sur_le_chemin() {
         assert_eq!(
-            stem("data/common/gamedata/menu/obj/victory_road_top.objbin", OBJECT_SUFFIX).as_deref(),
+            stem(
+                "data/common/gamedata/menu/obj/victory_road_top.objbin",
+                OBJECT_SUFFIX
+            )
+            .as_deref(),
             Some("victory_road_top")
         );
         assert_eq!(

@@ -200,7 +200,10 @@ async fn toutes_les_routes_declarees_repondent() {
         ("/api/v1/inspect/spritesheet/data/x.g4tx", &[400, 404, 503]),
         ("/api/v1/inspect/font/data/x.cfg.bin", &[400, 404, 503]),
         ("/api/v1/inspect/menu/data/x.objbin", &[400, 404, 503]),
-        ("/api/v1/inspect/texture-chunk/data/x.g4tx", &[400, 404, 503]),
+        (
+            "/api/v1/inspect/texture-chunk/data/x.g4tx",
+            &[400, 404, 503],
+        ),
         ("/api/v1/inspect/color", &[200, 400]),
         ("/api/v1/inspect/compare", &[200]),
         ("/api/v1/inspect/plate", &[200]),
@@ -380,17 +383,17 @@ async fn documents_well_known() {
     );
     let texte = String::from_utf8(corps).unwrap();
     assert!(texte.starts_with("<?xml"));
-    // 4 routes x 3 langues, et chaque entree porte le groupe complet de ses traductions.
-    // Quatre, et non neuf : les quatre catalogues ont fusionne dans `/medias`, les trois vues
+    // 5 routes x 3 langues, et chaque entree porte le groupe complet de ses traductions.
+    // Cinq : les quatre catalogues ont fusionne dans `/medias`, les trois vues
     // d'exploration dans `/explorateur`, et `/settings` a sa page. Une page, une URL canonique.
-    assert_eq!(texte.matches("<url>").count(), 12);
-    assert_eq!(texte.matches("<loc>").count(), 12);
+    assert_eq!(texte.matches("<url>").count(), 15);
+    assert_eq!(texte.matches("<loc>").count(), 15);
     assert_eq!(
         texte.matches("xhtml:link").count(),
-        48,
+        60,
         "4 alternates par entree"
     );
-    assert_eq!(texte.matches(r#"hreflang="x-default""#).count(), 12);
+    assert_eq!(texte.matches(r#"hreflang="x-default""#).count(), 15);
     // Sans la declaration de l'espace de noms, les `xhtml:link` ne sont que du bruit.
     assert!(texte.contains(r#"xmlns:xhtml="http://www.w3.org/1999/xhtml""#));
     for attendu in [
@@ -399,6 +402,7 @@ async fn documents_well_known() {
         "<loc>https://exemple.test/ja/medias</loc>",
         "<loc>https://exemple.test/settings</loc>",
         "<loc>https://exemple.test/en/settings</loc>",
+        "<loc>https://exemple.test/avatar</loc>",
     ] {
         assert!(texte.contains(attendu), "{attendu} absent du plan");
     }
@@ -700,7 +704,7 @@ async fn le_manifeste_repond_dans_les_trois_langues() {
             .unwrap_or_else(|e| panic!("{chemin} ne rend pas du JSON : {e}"));
         assert_eq!(v["lang"], code, "{chemin}");
         assert_eq!(v["start_url"], depart, "{chemin}");
-        assert_eq!(v["icons"].as_array().expect("icones").len(), 2, "{chemin}");
+        assert_eq!(v["icons"].as_array().expect("icones").len(), 9, "{chemin}");
     }
 }
 
@@ -1340,4 +1344,3 @@ async fn la_borne_de_debit_compte_par_ip_et_annonce_son_retour() {
     );
     assert!(etat.limiteur.is_some());
 }
-

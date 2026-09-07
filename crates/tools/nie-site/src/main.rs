@@ -78,7 +78,10 @@ fn regenerer_couverture(racine: &std::path::Path, sortie: &std::path::Path) -> a
     );
     for nom in nie_site::couverture::Etat::NOMS {
         let c = matrice.par_etat.get(nom).copied().unwrap_or_default();
-        println!("  {nom:<9} {:>5} capacites  {:>8} poids", c.capacites, c.poids);
+        println!(
+            "  {nom:<9} {:>5} capacites  {:>8} poids",
+            c.capacites, c.poids
+        );
     }
     for ligne in &matrice.par_source {
         let manquant = ligne.par_etat.get("manquant").copied().unwrap_or_default();
@@ -121,7 +124,11 @@ fn regenerer_couverture(racine: &std::path::Path, sortie: &std::path::Path) -> a
         matrice.gate.manquant_poids,
         matrice.gate.partiel,
         matrice.gate.partiel_poids,
-        if matrice.gate.tenue { "TENUE" } else { "ROMPUE" }
+        if matrice.gate.tenue {
+            "TENUE"
+        } else {
+            "ROMPUE"
+        }
     );
     Ok(())
 }

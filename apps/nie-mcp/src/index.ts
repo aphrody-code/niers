@@ -144,6 +144,20 @@ async function main(): Promise<void> {
     ({ path }) => safe(() => requireVfs().stat(path)),
   );
 
+  server.registerTool(
+    "vfs_cat",
+    {
+      title: "Lire un fichier du VFS",
+      description:
+        "Extrait les octets d'un fichier du jeu directement depuis les archives CPK. Renvoie sa taille, son conteneur CPK, et son contenu sous forme de texte ou de base64.",
+      inputSchema: {
+        path: z.string().min(1).describe("chemin VFS complet du fichier"),
+        maxBytes: z.number().int().positive().optional().describe("taille maximale lue (défaut 262 144)"),
+      },
+    },
+    ({ path, maxBytes }) => safe(() => requireVfs().cat(path, maxBytes)),
+  );
+
   // -------------------------------------------------------------- Assets ----
   server.registerTool(
     "asset_get",

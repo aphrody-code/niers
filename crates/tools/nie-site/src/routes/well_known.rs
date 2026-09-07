@@ -32,7 +32,7 @@ pub struct UrlPlan {
 
 /// Les routes de navigation publiées au plan de site. Les espaces `/f` et `/b` n'y sont
 /// **jamais** : ce sont 255 000 fichiers, et un plan de site n'est pas un index d'assets.
-pub const PLAN: [UrlPlan; 4] = [
+pub const PLAN: [UrlPlan; 5] = [
     UrlPlan {
         chemin: "/",
         frequence: "daily",
@@ -53,6 +53,11 @@ pub const PLAN: [UrlPlan; 4] = [
         chemin: "/settings",
         frequence: "monthly",
         priorite: "0.3",
+    },
+    UrlPlan {
+        chemin: "/avatar",
+        frequence: "monthly",
+        priorite: "0.5",
     },
 ];
 
@@ -297,8 +302,15 @@ pub async fn manifeste(uri: axum::http::Uri) -> Response {
         "background_color": crate::routes::pages::COULEUR_THEME,
         "theme_color": crate::routes::pages::COULEUR_THEME,
         "icons": [
+            { "src": "/static/icone-16.png", "sizes": "16x16", "type": "image/png", "purpose": "any" },
+            { "src": "/static/icone-32.png", "sizes": "32x32", "type": "image/png", "purpose": "any" },
+            { "src": "/static/icone-48.png", "sizes": "48x48", "type": "image/png", "purpose": "any" },
+            { "src": "/static/icone-64.png", "sizes": "64x64", "type": "image/png", "purpose": "any" },
+            { "src": "/static/icone-128.png", "sizes": "128x128", "type": "image/png", "purpose": "any" },
+            { "src": "/static/icone-180.png", "sizes": "180x180", "type": "image/png", "purpose": "any" },
             { "src": "/static/icone-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
             { "src": "/static/icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+            { "src": "/static/icone.svg", "type": "image/svg+xml", "purpose": "any maskable" },
         ],
     });
     texte(
@@ -378,16 +390,16 @@ mod tests {
 
     #[test]
     fn plan_complet() {
-        assert_eq!(PLAN.len(), 4);
+        assert_eq!(PLAN.len(), 5);
         let urls = plan_trilingue("https://aphrody.com");
-        assert_eq!(urls.len(), 12, "4 routes x 3 langues");
+        assert_eq!(urls.len(), 15, "5 routes x 3 langues");
         let rendu = Plan {
             urls: &urls,
             lastmod: Some("2026-09-05".to_owned()),
         }
         .render()
         .unwrap();
-        assert_eq!(rendu.matches("<url>").count(), 12);
+        assert_eq!(rendu.matches("<url>").count(), 15);
         assert!(rendu.starts_with("<?xml"));
         assert!(rendu.contains("https://aphrody.com/medias"));
         assert!(rendu.contains("https://aphrody.com/ja/medias"));
@@ -406,10 +418,12 @@ mod tests {
         // Les Options ont leur page, donc leur place au plan — dans les trois langues.
         assert!(rendu.contains("https://aphrody.com/settings"));
         assert!(rendu.contains("https://aphrody.com/en/settings"));
+        assert!(rendu.contains("https://aphrody.com/avatar"));
+        assert!(rendu.contains("https://aphrody.com/ja/avatar"));
         // Chaque entrée porte son groupe complet : 12 x 4 liens alternatifs.
-        assert_eq!(rendu.matches("xhtml:link").count(), 48);
-        assert_eq!(rendu.matches("hreflang=\"x-default\"").count(), 12);
-        assert_eq!(rendu.matches("<lastmod>2026-09-05</lastmod>").count(), 12);
+        assert_eq!(rendu.matches("xhtml:link").count(), 60);
+        assert_eq!(rendu.matches("hreflang=\"x-default\"").count(), 15);
+        assert_eq!(rendu.matches("<lastmod>2026-09-05</lastmod>").count(), 15);
         // L'espace de noms xhtml doit être déclaré, sinon les `xhtml:link` sont du bruit.
         assert!(rendu.contains("xmlns:xhtml=\"http://www.w3.org/1999/xhtml\""));
     }
@@ -449,9 +463,17 @@ mod tests {
     #[test]
     fn robots_autorise_les_trois_langues() {
         let chemins = chemins_autorises();
-        // 4 routes x 3 langues, moins la racine française déjà couverte par `Allow: /$`.
-        assert_eq!(chemins.len(), 11);
-        for attendu in ["/medias", "/en/medias", "/ja/medias", "/en", "/ja", "/settings", "/ja/settings"] {
+        // 5 routes x 3 langues, moins la racine française déjà couverte par `Allow: /$`.
+        assert_eq!(chemins.len(), 14);
+        for attendu in [
+            "/medias",
+            "/en/medias",
+            "/ja/medias",
+            "/en",
+            "/ja",
+            "/settings",
+            "/ja/settings",
+        ] {
             assert!(
                 chemins.iter().any(|c| c == attendu),
                 "{attendu} non autorisé"
@@ -464,11 +486,11 @@ mod tests {
         }
         .render()
         .unwrap();
-        // 19 : 11 chemins + `/$` + `/llms.txt` + `/feed.atom` pour le regime general, puis les
+        // 22 : 14 chemins + `/$` + `/llms.txt` + `/feed.atom` pour le regime general, puis les
         // 5 du regime des agents (`/`, `/llms.txt`, `/llms-full.txt`, `/feed.atom`, `/api/v1/`).
         assert_eq!(
             r.matches("Allow: ").count(),
-            19,
+            22,
             "les deux regimes, chemin par chemin"
         );
         assert!(r.contains("Allow: /$"));
@@ -557,7 +579,7 @@ mod tests {
             let v: serde_json::Value = serde_json::from_slice(&corps).expect("json valide");
             assert_eq!(v["lang"], code, "{chemin}");
             assert_eq!(v["start_url"], depart, "{chemin}");
-            assert_eq!(v["icons"].as_array().expect("icones").len(), 2);
+            assert_eq!(v["icons"].as_array().expect("icones").len(), 9);
             assert_eq!(v["theme_color"], crate::routes::pages::COULEUR_THEME);
         }
     }

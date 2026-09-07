@@ -60,16 +60,86 @@ pub struct Teinte {
 /// Mesure du 2026-09-06, `pixel mesurer … --k 10`, remplissage 16,98 % de l'atlas (le reste est
 /// transparent). Les parts somment à 99 % aux arrondis près.
 pub const PALETTE: [Teinte; 10] = [
-    Teinte { nom: "creme", hex: "#F7F3F0", part_pct: 25.0, l: 0.9664, c: 0.0059, h: 59.65 },
-    Teinte { nom: "blond", hex: "#EADBA6", part_pct: 21.0, l: 0.8908, c: 0.0707, h: 94.17 },
-    Teinte { nom: "sable", hex: "#C2B19E", part_pct: 13.0, l: 0.7696, c: 0.0329, h: 70.41 },
-    Teinte { nom: "taupe", hex: "#AF9183", part_pct: 11.0, l: 0.6803, c: 0.0416, h: 46.43 },
-    Teinte { nom: "mauve", hex: "#8B7083", part_pct: 9.0, l: 0.5774, c: 0.0435, h: 337.07 },
-    Teinte { nom: "brun", hex: "#6C5454", part_pct: 7.0, l: 0.4705, c: 0.0320, h: 18.35 },
-    Teinte { nom: "ocre", hex: "#91704C", part_pct: 5.0, l: 0.5690, c: 0.0658, h: 68.31 },
-    Teinte { nom: "cacao", hex: "#4E3738", part_pct: 4.0, l: 0.3633, c: 0.0330, h: 15.93 },
-    Teinte { nom: "azur", hex: "#17335C", part_pct: 2.0, l: 0.3229, c: 0.0807, h: 258.02 },
-    Teinte { nom: "nuit", hex: "#131420", part_pct: 2.0, l: 0.1963, c: 0.0242, h: 280.23 },
+    Teinte {
+        nom: "creme",
+        hex: "#F7F3F0",
+        part_pct: 25.0,
+        l: 0.9664,
+        c: 0.0059,
+        h: 59.65,
+    },
+    Teinte {
+        nom: "blond",
+        hex: "#EADBA6",
+        part_pct: 21.0,
+        l: 0.8908,
+        c: 0.0707,
+        h: 94.17,
+    },
+    Teinte {
+        nom: "sable",
+        hex: "#C2B19E",
+        part_pct: 13.0,
+        l: 0.7696,
+        c: 0.0329,
+        h: 70.41,
+    },
+    Teinte {
+        nom: "taupe",
+        hex: "#AF9183",
+        part_pct: 11.0,
+        l: 0.6803,
+        c: 0.0416,
+        h: 46.43,
+    },
+    Teinte {
+        nom: "mauve",
+        hex: "#8B7083",
+        part_pct: 9.0,
+        l: 0.5774,
+        c: 0.0435,
+        h: 337.07,
+    },
+    Teinte {
+        nom: "brun",
+        hex: "#6C5454",
+        part_pct: 7.0,
+        l: 0.4705,
+        c: 0.0320,
+        h: 18.35,
+    },
+    Teinte {
+        nom: "ocre",
+        hex: "#91704C",
+        part_pct: 5.0,
+        l: 0.5690,
+        c: 0.0658,
+        h: 68.31,
+    },
+    Teinte {
+        nom: "cacao",
+        hex: "#4E3738",
+        part_pct: 4.0,
+        l: 0.3633,
+        c: 0.0330,
+        h: 15.93,
+    },
+    Teinte {
+        nom: "azur",
+        hex: "#17335C",
+        part_pct: 2.0,
+        l: 0.3229,
+        c: 0.0807,
+        h: 258.02,
+    },
+    Teinte {
+        nom: "nuit",
+        hex: "#131420",
+        part_pct: 2.0,
+        l: 0.1963,
+        c: 0.0242,
+        h: 280.23,
+    },
 ];
 
 /// Index de la teinte crème dans [`PALETTE`].
@@ -145,50 +215,206 @@ impl Role {
 /// Inacord. Il n'a pas d'effet sur le rendu — il rend la feuille lisible.
 pub const ROLES: [Role; 26] = [
     // --- Fonds : du plus profond au plus clair -----------------------------------------------
-    Role { nom: "jeu-fond-abysse", source: NUIT, l: 0.1963, chroma: 1.0, role: "le fond le plus profond" },
-    Role { nom: "jeu-fond-nuit", source: AZUR, l: 0.3000, chroma: 0.9, role: "un panneau sombre" },
-    Role { nom: "jeu-fond-profond", source: AZUR, l: 0.3800, chroma: 1.1, role: "une surface bleue" },
-    Role { nom: "jeu-fond-moyen", source: AZUR, l: 0.4600, chroma: 1.2, role: "une surface bleue active" },
+    Role {
+        nom: "jeu-fond-abysse",
+        source: NUIT,
+        l: 0.1963,
+        chroma: 1.0,
+        role: "le fond le plus profond",
+    },
+    Role {
+        nom: "jeu-fond-nuit",
+        source: AZUR,
+        l: 0.3000,
+        chroma: 0.9,
+        role: "un panneau sombre",
+    },
+    Role {
+        nom: "jeu-fond-profond",
+        source: AZUR,
+        l: 0.3800,
+        chroma: 1.1,
+        role: "une surface bleue",
+    },
+    Role {
+        nom: "jeu-fond-moyen",
+        source: AZUR,
+        l: 0.4600,
+        chroma: 1.2,
+        role: "une surface bleue active",
+    },
     // --- Accents : ce qui appelle l'oeil ------------------------------------------------------
-    Role { nom: "jeu-accent-ambre", source: BLOND, l: 0.8400, chroma: 1.8, role: "l'accent chaud, la couleur des cheveux" },
+    Role {
+        nom: "jeu-accent-ambre",
+        source: BLOND,
+        l: 0.8400,
+        chroma: 1.8,
+        role: "l'accent chaud, la couleur des cheveux",
+    },
     // L'alerte tirait sur l'OCRE (h = 68°, un jaune-orangé) : elle rendait `#a56c23`, une
     // couleur de bois. Une alerte qui ne tire plus vers le rouge perd sa fonction, pas
     // seulement son nom. Le BRUN du personnage (h = 18,35°) est la teinte la plus rouge de la
     // palette avec le cacao. Le brun mesuré est mat (C = 0,0320) et le gamut autorise ici
     // jusqu'à ×7,28 : à ×5 elle redevient une brique franche sans rien devoir écrêter.
-    Role { nom: "jeu-accent-brique", source: BRUN, l: 0.5800, chroma: 5.0, role: "l'alerte" },
-    Role { nom: "jeu-accent-azur", source: AZUR, l: 0.5800, chroma: 1.6, role: "l'accent froid, la couleur de la tenue" },
+    Role {
+        nom: "jeu-accent-brique",
+        source: BRUN,
+        l: 0.5800,
+        chroma: 5.0,
+        role: "l'alerte",
+    },
+    Role {
+        nom: "jeu-accent-azur",
+        source: AZUR,
+        l: 0.5800,
+        chroma: 1.6,
+        role: "l'accent froid, la couleur de la tenue",
+    },
     // « Cyan » et « turquoise » sont des noms hérités de la palette relevée sur une capture du
     // jeu. Aphrody n'a NI cyan NI turquoise : sa seule teinte froide est le bleu marine de sa
     // tenue. Les deux rôles restent donc deux bleus, distingués par leur clarté (0,84 contre
     // 0,70) et non par leur teinte — l'écart est ici, écrit, plutôt que caché derrière un nom.
-    Role { nom: "jeu-accent-cyan", source: AZUR, l: 0.8000, chroma: 1.2, role: "le liseré d'un état actif" },
-    Role { nom: "jeu-accent-turquoise", source: AZUR, l: 0.7000, chroma: 1.9, role: "le succès" },
+    Role {
+        nom: "jeu-accent-cyan",
+        source: AZUR,
+        l: 0.8000,
+        chroma: 1.2,
+        role: "le liseré d'un état actif",
+    },
+    Role {
+        nom: "jeu-accent-turquoise",
+        source: AZUR,
+        l: 0.7000,
+        chroma: 1.9,
+        role: "le succès",
+    },
     // --- Surfaces claires ---------------------------------------------------------------------
     // La « glace » sourçait la CREME (h = 59,65°) et rendait `#f1e9e3` — du beige chaud sous un
     // nom de surface froide. Elle vient du bleu de la tenue, comme la brume qui la voisine.
-    Role { nom: "jeu-surface-glace", source: AZUR, l: 0.9400, chroma: 0.35, role: "une carte claire" },
-    Role { nom: "jeu-surface-brume", source: AZUR, l: 0.8800, chroma: 0.5, role: "un dégradé clair, teinté du bleu de la tenue" },
-    Role { nom: "jeu-surface-craie", source: SABLE, l: 0.8800, chroma: 0.8, role: "un fond neutre" },
-    Role { nom: "jeu-surface-cendre", source: TAUPE, l: 0.7000, chroma: 0.9, role: "un texte secondaire" },
-    Role { nom: "jeu-surface-rose", source: MAUVE, l: 0.6400, chroma: 1.0, role: "une nuance douce" },
+    Role {
+        nom: "jeu-surface-glace",
+        source: AZUR,
+        l: 0.9400,
+        chroma: 0.35,
+        role: "une carte claire",
+    },
+    Role {
+        nom: "jeu-surface-brume",
+        source: AZUR,
+        l: 0.8800,
+        chroma: 0.5,
+        role: "un dégradé clair, teinté du bleu de la tenue",
+    },
+    Role {
+        nom: "jeu-surface-craie",
+        source: SABLE,
+        l: 0.8800,
+        chroma: 0.8,
+        role: "un fond neutre",
+    },
+    Role {
+        nom: "jeu-surface-cendre",
+        source: TAUPE,
+        l: 0.7000,
+        chroma: 0.9,
+        role: "un texte secondaire",
+    },
+    Role {
+        nom: "jeu-surface-rose",
+        source: MAUVE,
+        l: 0.6400,
+        chroma: 1.0,
+        role: "une nuance douce",
+    },
     // --- Texte --------------------------------------------------------------------------------
-    Role { nom: "jeu-texte-vif", source: CREME, l: 0.9850, chroma: 0.6, role: "le texte sur fond sombre" },
-    Role { nom: "jeu-texte-doux", source: AZUR, l: 0.6400, chroma: 1.3, role: "un lien, un texte de second plan" },
+    Role {
+        nom: "jeu-texte-vif",
+        source: CREME,
+        l: 0.9850,
+        chroma: 0.6,
+        role: "le texte sur fond sombre",
+    },
+    Role {
+        nom: "jeu-texte-doux",
+        source: AZUR,
+        l: 0.6400,
+        chroma: 1.3,
+        role: "un lien, un texte de second plan",
+    },
     // --- L'écran du menu : ciel, tuiles, plaque -----------------------------------------------
-    Role { nom: "jeu-ciel-clair", source: CREME, l: 0.9750, chroma: 0.7, role: "le fond de l'écran d'accueil" },
-    Role { nom: "jeu-ciel-brume", source: AZUR, l: 0.8900, chroma: 0.45, role: "le ciel, en haut à droite" },
-    Role { nom: "jeu-nuit-profonde", source: AZUR, l: 0.3229, chroma: 1.0, role: "le texte sur fond clair — la mesure telle quelle" },
-    Role { nom: "jeu-tuile-haut", source: AZUR, l: 0.5000, chroma: 1.3, role: "le haut d'une tuile" },
-    Role { nom: "jeu-tuile-bas", source: AZUR, l: 0.3900, chroma: 1.2, role: "le bas d'une tuile" },
-    Role { nom: "jeu-tuile-bord", source: AZUR, l: 0.4500, chroma: 1.2, role: "le bord d'une tuile" },
-    Role { nom: "jeu-tuile-active-haut", source: AZUR, l: 0.5800, chroma: 1.5, role: "le haut d'une tuile active" },
-    Role { nom: "jeu-tuile-active-bas", source: AZUR, l: 0.4600, chroma: 2.0, role: "le bas d'une tuile active" },
+    Role {
+        nom: "jeu-ciel-clair",
+        source: CREME,
+        l: 0.9750,
+        chroma: 0.7,
+        role: "le fond de l'écran d'accueil",
+    },
+    Role {
+        nom: "jeu-ciel-brume",
+        source: AZUR,
+        l: 0.8900,
+        chroma: 0.45,
+        role: "le ciel, en haut à droite",
+    },
+    Role {
+        nom: "jeu-nuit-profonde",
+        source: AZUR,
+        l: 0.3229,
+        chroma: 1.0,
+        role: "le texte sur fond clair — la mesure telle quelle",
+    },
+    Role {
+        nom: "jeu-tuile-haut",
+        source: AZUR,
+        l: 0.5000,
+        chroma: 1.3,
+        role: "le haut d'une tuile",
+    },
+    Role {
+        nom: "jeu-tuile-bas",
+        source: AZUR,
+        l: 0.3900,
+        chroma: 1.2,
+        role: "le bas d'une tuile",
+    },
+    Role {
+        nom: "jeu-tuile-bord",
+        source: AZUR,
+        l: 0.4500,
+        chroma: 1.2,
+        role: "le bord d'une tuile",
+    },
+    Role {
+        nom: "jeu-tuile-active-haut",
+        source: AZUR,
+        l: 0.5800,
+        chroma: 1.5,
+        role: "le haut d'une tuile active",
+    },
+    Role {
+        nom: "jeu-tuile-active-bas",
+        source: AZUR,
+        l: 0.4600,
+        chroma: 2.0,
+        role: "le bas d'une tuile active",
+    },
     // La plaque centrale est l'element le plus sature de l'ecran : a 1,8 elle perdait 41 % du
     // chroma qu'elle avait, et devenait un bleu de bureau. Le bleu mesure est mat (C = 0,0807) ;
     // il faut trois fois son chroma pour qu'une plaque tienne son role d'accent.
-    Role { nom: "jeu-plaque-bleu", source: AZUR, l: 0.4200, chroma: 1.9, role: "la plaque centrale" },
-    Role { nom: "jeu-lisere-or", source: BLOND, l: 0.7800, chroma: 2.1, role: "le liseré doré" },
+    Role {
+        nom: "jeu-plaque-bleu",
+        source: AZUR,
+        l: 0.4200,
+        chroma: 1.9,
+        role: "la plaque centrale",
+    },
+    Role {
+        nom: "jeu-lisere-or",
+        source: BLOND,
+        l: 0.7800,
+        chroma: 2.1,
+        role: "le liseré doré",
+    },
 ];
 
 /// Les trois couleurs de la coquille Inacord, dérivées des mêmes teintes.
@@ -200,9 +426,27 @@ pub const ROLES_INACORD: [Role; 3] = [
     // Inacord est une ardoise FROIDE et desaturee — c'est la decision produit du 2026-09-05.
     // Sourcee sur le cacao et le brun, sa coquille virait au brun chaud (`#372627`, `#4f3d3d`)
     // et changeait d'ambiance sans que personne ne l'ait demande.
-    Role { nom: "inacord-panneau", source: NUIT, l: 0.2900, chroma: 1.0, role: "le panneau d'Inacord" },
-    Role { nom: "inacord-panneau-clair", source: AZUR, l: 0.3800, chroma: 0.6, role: "son panneau clair" },
-    Role { nom: "inacord-accent", source: AZUR, l: 0.7000, chroma: 1.1, role: "son unique accent" },
+    Role {
+        nom: "inacord-panneau",
+        source: NUIT,
+        l: 0.2900,
+        chroma: 1.0,
+        role: "le panneau d'Inacord",
+    },
+    Role {
+        nom: "inacord-panneau-clair",
+        source: AZUR,
+        l: 0.3800,
+        chroma: 0.6,
+        role: "son panneau clair",
+    },
+    Role {
+        nom: "inacord-accent",
+        source: AZUR,
+        l: 0.7000,
+        chroma: 1.1,
+        role: "son unique accent",
+    },
 ];
 
 /// Les trois composantes sRGB d'une couleur Oklch, **sans écrêtage**.
@@ -574,14 +818,22 @@ mod tests {
                 "{a} sur {b} : contraste {mesure:.2}, minimum {min}"
             );
         }
-        assert_eq!(contrastes().len(), PAIRES.len(), "une paire nomme un rôle inconnu");
+        assert_eq!(
+            contrastes().len(),
+            PAIRES.len(),
+            "une paire nomme un rôle inconnu"
+        );
     }
 
     #[test]
     fn la_feuille_porte_tous_les_roles() {
         let css = feuille_css();
         for r in ROLES.iter().chain(ROLES_INACORD.iter()) {
-            assert!(css.contains(&format!("--{}: oklch(", r.nom)), "{} absent", r.nom);
+            assert!(
+                css.contains(&format!("--{}: oklch(", r.nom)),
+                "{} absent",
+                r.nom
+            );
         }
         assert!(css.starts_with("/* Couleurs derivees"));
         assert!(css.trim_end().ends_with('}'));

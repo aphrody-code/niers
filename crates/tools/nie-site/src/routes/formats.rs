@@ -108,8 +108,18 @@ const FAMILLES_PROPRES: [(&str, bool, &str, &str); 7] = [
     // une extension ne peut avoir qu'une ligne — deux donneraient deux comptes du même corpus.
     // Le maillage **assemblé** reste servi en GLB par `/api/v1/3d` et `/model/…` : décoder la
     // géométrie d'un fichier et assembler un modèle jouable sont deux services distincts.
-    (".acb", false, "/assets/audio-info/{chemin}", "application/json"),
-    (".awb", false, "/assets/audio-info/{chemin}", "application/json"),
+    (
+        ".acb",
+        false,
+        "/assets/audio-info/{chemin}",
+        "application/json",
+    ),
+    (
+        ".awb",
+        false,
+        "/assets/audio-info/{chemin}",
+        "application/json",
+    ),
     (".usm", false, "/f/{chemin}", "application/octet-stream"),
 ];
 
@@ -131,8 +141,16 @@ pub fn familles() -> Vec<(&'static str, bool, &'static str, &'static str)> {
     };
     FAMILLES_PROPRES
         .into_iter()
-        .chain(super::geometrie::FAMILLES.into_iter().map(|(s, ..)| en_process(s)))
-        .chain(super::level5::FAMILLES.into_iter().map(|(s, ..)| en_process(s)))
+        .chain(
+            super::geometrie::FAMILLES
+                .into_iter()
+                .map(|(s, ..)| en_process(s)),
+        )
+        .chain(
+            super::level5::FAMILLES
+                .into_iter()
+                .map(|(s, ..)| en_process(s)),
+        )
         .collect()
 }
 

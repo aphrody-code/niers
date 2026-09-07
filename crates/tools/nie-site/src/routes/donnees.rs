@@ -198,7 +198,11 @@ pub async fn familles(
     let motif = demande.q.as_deref().map(str::to_lowercase);
     let retenus: Vec<&CleFamille> = tout
         .iter()
-        .filter(|c| motif.as_ref().is_none_or(|m| c.cle.to_lowercase().contains(m)))
+        .filter(|c| {
+            motif
+                .as_ref()
+                .is_none_or(|m| c.cle.to_lowercase().contains(m))
+        })
         .collect();
     let bornes = demande.bornee();
     let items: Vec<CleFamille> = retenus
@@ -279,8 +283,7 @@ pub async fn donnees(
         )));
     }
 
-    let decodage =
-        tokio::task::spawn_blocking(move || decoder(&chemin, &octets)).await??;
+    let decodage = tokio::task::spawn_blocking(move || decoder(&chemin, &octets)).await??;
     Ok(Json(decodage))
 }
 

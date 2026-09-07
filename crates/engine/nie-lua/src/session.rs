@@ -324,16 +324,20 @@ impl LuaSession {
             let missing = Rc::clone(&journals.missing);
             let loaded = Rc::clone(&journals.loaded);
             let decoded = Rc::clone(&journals.decoded);
-            crate::install_include_with_trace(&lua, move |name| match resolver(name) {
-                Some(bytes) => {
-                    loaded.borrow_mut().push(name.to_string());
-                    Some(bytes)
-                }
-                None => {
-                    missing.borrow_mut().push(name.to_string());
-                    None
-                }
-            }, Some(decoded))?;
+            crate::install_include_with_trace(
+                &lua,
+                move |name| match resolver(name) {
+                    Some(bytes) => {
+                        loaded.borrow_mut().push(name.to_string());
+                        Some(bytes)
+                    }
+                    None => {
+                        missing.borrow_mut().push(name.to_string());
+                        None
+                    }
+                },
+                Some(decoded),
+            )?;
         }
         // Les stubs viennent EN DERNIER : la métatable de `_G` ne doit intercepter que ce qu'aucun
         // binder n'a fourni, sinon tout serait déclaré « manquant ».
@@ -473,13 +477,13 @@ impl LuaSession {
                 },
             )?;
         }
-        let already_initialized = self
-            .active_menu
-            .borrow()
-            .as_ref()
-            .is_some_and(|(loaded_name, loaded_bytes)| {
-                loaded_name == name && loaded_bytes.as_slice() == script_bytes
-            });
+        let already_initialized =
+            self.active_menu
+                .borrow()
+                .as_ref()
+                .is_some_and(|(loaded_name, loaded_bytes)| {
+                    loaded_name == name && loaded_bytes.as_slice() == script_bytes
+                });
         let decoded_includes_before = self.decoded_include_instructions.borrow().clone();
         let result = if already_initialized {
             crate::menu_host::drive_menu_for_frames_existing(
@@ -514,9 +518,9 @@ impl LuaSession {
         let mut result = result;
         if let Ok(report) = &mut result {
             report.decoded_include_instructions = decoded_include_instructions;
-            report.decoded_instructions_total = report.decoded_instructions.map(|main| {
-                main + report.decoded_include_instructions.values().sum::<usize>()
-            });
+            report.decoded_instructions_total = report
+                .decoded_instructions
+                .map(|main| main + report.decoded_include_instructions.values().sum::<usize>());
         }
         if instruction_limit.is_some() {
             self.lua.remove_hook();
@@ -1082,38 +1086,29 @@ mod tests {
             "data/common/script/lua/menu/main_1.lua.bin".to_string(),
             "data/common/script/lua/menu/inc_1.lua.bin".to_string(),
         ];
-        let session = LuaSession::with_script_paths(
-            registry,
-            logs,
-            true,
-            paths,
-            move |path| {
-                if path.ends_with("main_1.lua.bin") {
-                    Some(main_for_reader.clone())
-                } else if path.ends_with("inc_1.lua.bin") {
-                    Some(include_for_reader.clone())
-                } else {
-                    None
-                }
-            },
-        )
+        let session = LuaSession::with_script_paths(registry, logs, true, paths, move |path| {
+            if path.ends_with("main_1.lua.bin") {
+                Some(main_for_reader.clone())
+            } else if path.ends_with("inc_1.lua.bin") {
+                Some(include_for_reader.clone())
+            } else {
+                None
+            }
+        })
         .expect("session VFS menu");
         let report = session
-            .drive_menu_vfs_for_frames(
-                "LUA_MAIN",
-                &[],
-                &std::collections::BTreeMap::new(),
-                0,
-            )
+            .drive_menu_vfs_for_frames("LUA_MAIN", &[], &std::collections::BTreeMap::new(), 0)
             .expect("pilotage VFS");
         assert!(report.top_level_ok);
         assert!(report.decoded_instructions.unwrap_or(0) > 0);
-        assert!(report
-            .decoded_include_instructions
-            .get("LUA_INC")
-            .copied()
-            .unwrap_or(0)
-            > 0);
+        assert!(
+            report
+                .decoded_include_instructions
+                .get("LUA_INC")
+                .copied()
+                .unwrap_or(0)
+                > 0
+        );
         assert_eq!(
             report.decoded_instructions_total,
             Some(

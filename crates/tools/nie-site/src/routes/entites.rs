@@ -427,12 +427,7 @@ impl Demande {
             presences: self
                 .presences
                 .iter()
-                .map(|(c, present)| {
-                    (
-                        c.clone(),
-                        if *present { "present" } else { "absent" },
-                    )
-                })
+                .map(|(c, present)| (c.clone(), if *present { "present" } else { "absent" }))
                 .collect(),
         }
     }
@@ -495,7 +490,9 @@ pub struct LigneUnique {
 pub fn nom_sql_valide(s: &str) -> bool {
     !s.is_empty()
         && s.len() <= NOM_MAX
-        && s.chars().next().is_some_and(|c| c.is_ascii_alphabetic() || c == '_')
+        && s.chars()
+            .next()
+            .is_some_and(|c| c.is_ascii_alphabetic() || c == '_')
         && s.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
 }
 
@@ -527,7 +524,9 @@ pub fn cle_primaire(colonnes: &[(String, String, i32)]) -> (String, bool) {
     // Une colonne réellement nommée `rowid` masque le rowid implicite : c'est elle la clé, et
     // `SELECT rowid, *` la dupliquerait.
     for cible in ["rowid", "id"] {
-        if let Some((nom, _, _)) = colonnes.iter().find(|(n, _, _)| n.eq_ignore_ascii_case(cible))
+        if let Some((nom, _, _)) = colonnes
+            .iter()
+            .find(|(n, _, _)| n.eq_ignore_ascii_case(cible))
         {
             return (nom.clone(), false);
         }
@@ -614,7 +613,9 @@ pub fn trouver<'a>(
     demande: &str,
 ) -> Result<&'a TableServie, ErreurSite> {
     if nom_sql_valide(demande)
-        && let Some(t) = catalogue.iter().find(|t| t.nom.eq_ignore_ascii_case(demande))
+        && let Some(t) = catalogue
+            .iter()
+            .find(|t| t.nom.eq_ignore_ascii_case(demande))
     {
         return Ok(t);
     }
@@ -682,7 +683,11 @@ pub fn analyser(
         }
     };
 
-    let ordre = match brut.get("ordre").map(|v| v.trim()).filter(|v| !v.is_empty()) {
+    let ordre = match brut
+        .get("ordre")
+        .map(|v| v.trim())
+        .filter(|v| !v.is_empty())
+    {
         None => Ordre::Croissant,
         Some(o) if o.eq_ignore_ascii_case("asc") => Ordre::Croissant,
         Some(o) if o.eq_ignore_ascii_case("desc") => Ordre::Decroissant,
@@ -697,7 +702,11 @@ pub fn analyser(
     // par colonne serait indistinguable d'une egalite (`?element=` est deja refuse comme
     // « valeur de filtre vide »), et le client ne saurait plus ce qu'il demande.
     let mut facets: Vec<String> = Vec::new();
-    if let Some(liste) = brut.get("facets").map(|v| v.trim()).filter(|v| !v.is_empty()) {
+    if let Some(liste) = brut
+        .get("facets")
+        .map(|v| v.trim())
+        .filter(|v| !v.is_empty())
+    {
         for demande in liste.split(',').map(str::trim).filter(|s| !s.is_empty()) {
             let colonne = table.colonne(demande).ok_or_else(|| {
                 ErreurSite::Demande(format!(
@@ -907,10 +916,7 @@ pub fn clause_sauf(table: &TableServie, d: &Demande, sauf: Option<&str>) -> Clau
         // declarees INTEGER *et* dans des colonnes declarees REAL, et que SQLite compare selon
         // le TYPE STOCKE : sans le cast, une valeur ecrite en texte serait comparee comme du
         // texte, ce que le refus ci-dessus vise justement a empecher.
-        morceaux.push(format!(
-            "CAST(\"{colonne}\" AS REAL) {} ?",
-            sens.sql()
-        ));
+        morceaux.push(format!("CAST(\"{colonne}\" AS REAL) {} ?", sens.sql()));
         params.push(ValeurSql::Real(*valeur));
     }
 
@@ -954,8 +960,9 @@ pub fn ligne_en_json(
         let valeur = match ligne.get_ref(i)? {
             rusqlite::types::ValueRef::Null => ValeurJson::Null,
             rusqlite::types::ValueRef::Integer(n) => ValeurJson::from(n),
-            rusqlite::types::ValueRef::Real(x) => serde_json::Number::from_f64(x)
-                .map_or(ValeurJson::Null, ValeurJson::Number),
+            rusqlite::types::ValueRef::Real(x) => {
+                serde_json::Number::from_f64(x).map_or(ValeurJson::Null, ValeurJson::Number)
+            }
             rusqlite::types::ValueRef::Text(t) => {
                 ValeurJson::String(String::from_utf8_lossy(t).into_owned())
             }
@@ -994,9 +1001,11 @@ pub fn catalogue_compte_de(
 ) -> Result<Vec<TableComptee>, ErreurSite> {
     let mut sortie = Vec::new();
     for table in schema_de(c, gisement)? {
-        let n: i64 = c.query_row(&format!("SELECT count(*) FROM \"{}\"", table.nom), [], |r| {
-            r.get(0)
-        })?;
+        let n: i64 = c.query_row(
+            &format!("SELECT count(*) FROM \"{}\"", table.nom),
+            [],
+            |r| r.get(0),
+        )?;
         sortie.push(TableComptee {
             table,
             lignes: usize::try_from(n).unwrap_or(0),
@@ -1190,9 +1199,7 @@ pub async fn catalogue(
     let gisement = std::sync::Arc::clone(&etat.gisement);
     let anime = std::sync::Arc::clone(&etat.anime);
     let (tables, pagination, motif) = tokio::task::spawn_blocking(move || {
-        let page = brut
-            .get("page")
-            .and_then(|v| v.trim().parse::<u32>().ok());
+        let page = brut.get("page").and_then(|v| v.trim().parse::<u32>().ok());
         let par_page = brut
             .get("par_page")
             .or_else(|| brut.get("per_page"))
@@ -1299,7 +1306,13 @@ fn reponse_csv(p: &PageLignes) -> axum::response::Response {
         }
     }
     let mut corps = String::new();
-    corps.push_str(&colonnes.iter().map(|c| echapper_csv(c)).collect::<Vec<_>>().join(","));
+    corps.push_str(
+        &colonnes
+            .iter()
+            .map(|c| echapper_csv(c))
+            .collect::<Vec<_>>()
+            .join(","),
+    );
     corps.push('\n');
     for ligne in &p.page.elements {
         let cellules: Vec<String> = colonnes
@@ -1316,14 +1329,7 @@ fn reponse_csv(p: &PageLignes) -> axum::response::Response {
     // Le nom porte la TABLE et la PAGE : sans la seconde, deux exports du même corpus se
     // recouvrent dans le dossier de téléchargement et le lecteur croit n'en avoir qu'un.
     let nom = format!("{}-page{}.csv", p.table, p.page.page);
-    let mut reponse = (
-        [(
-            header::CONTENT_TYPE,
-            "text/csv; charset=utf-8",
-        )],
-        corps,
-    )
-        .into_response();
+    let mut reponse = ([(header::CONTENT_TYPE, "text/csv; charset=utf-8")], corps).into_response();
     if let Ok(v) = format!("attachment; filename=\"{nom}\"").parse() {
         reponse.headers_mut().insert(header::CONTENT_DISPOSITION, v);
     }
@@ -1413,7 +1419,9 @@ pub fn dans_le_gisement<T>(
             anime.chemin().display()
         )));
     }
-    if connues == 0 && let Some(e) = premiere_erreur {
+    if connues == 0
+        && let Some(e) = premiere_erreur
+    {
         return Err(e);
     }
     Err(ErreurSite::Introuvable(format!(
@@ -1578,7 +1586,11 @@ mod tests {
         // correspondraient plus à l'écran.
         let croise = analyser(
             &t,
-            &q(&[("facets", "element"), ("element", "Feu"), ("zukan__max", "1")]),
+            &q(&[
+                ("facets", "element"),
+                ("element", "Feu"),
+                ("zukan__max", "1"),
+            ]),
         )
         .unwrap();
         let f = faceter(&g, &t, &croise);
@@ -1643,10 +1655,22 @@ mod tests {
         // lignes justes pour une question qui n'a pas ete posee.
         let (_d, g) = base();
         let t = table_de(&g, "inagle_characters");
-        assert!(analyser(&t, &q(&[("element__in", " , ")])).is_err(), "liste vide");
-        assert!(analyser(&t, &q(&[("couleur__in", "x")])).is_err(), "colonne inconnue");
-        let trop = (0..=IN_VALEURS_MAX).map(|i| i.to_string()).collect::<Vec<_>>().join(",");
-        assert!(analyser(&t, &q(&[("element__in", trop.as_str())])).is_err(), "liste trop longue");
+        assert!(
+            analyser(&t, &q(&[("element__in", " , ")])).is_err(),
+            "liste vide"
+        );
+        assert!(
+            analyser(&t, &q(&[("couleur__in", "x")])).is_err(),
+            "colonne inconnue"
+        );
+        let trop = (0..=IN_VALEURS_MAX)
+            .map(|i| i.to_string())
+            .collect::<Vec<_>>()
+            .join(",");
+        assert!(
+            analyser(&t, &q(&[("element__in", trop.as_str())])).is_err(),
+            "liste trop longue"
+        );
 
         // Et il republie ce qu'il a applique, sous le nom que le client a envoye.
         let d = analyser(&t, &q(&[("element__in", "Feu,Bois")])).unwrap();
@@ -1667,7 +1691,11 @@ mod tests {
         assert_eq!(compter(&g, &t, &d), 2, "la page, elle, est bien filtree");
         let f = faceter(&g, &t, &d);
         assert_eq!(compte_de(&f[0], "Feu"), Some(2));
-        assert_eq!(compte_de(&f[0], "Bois"), Some(1), "la seconde valeur reste cochable");
+        assert_eq!(
+            compte_de(&f[0], "Bois"),
+            Some(1),
+            "la seconde valeur reste cochable"
+        );
     }
 
     #[test]
@@ -1695,14 +1723,21 @@ mod tests {
 
         let f = faceter(&g, &t, &analyser(&t, &q(&[("facets", "groupe")])).unwrap());
         assert_eq!(f[0].distinct, 2, "`plein` et le creux, pas trois groupes");
-        assert_eq!(f[0].values.len(), 2, "`distinct` et la liste comptent pareil");
+        assert_eq!(
+            f[0].values.len(),
+            2,
+            "`distinct` et la liste comptent pareil"
+        );
         assert_eq!(compte_de(&f[0], "plein"), Some(1));
         let creux = f[0]
             .values
             .iter()
             .find(|v| v.value.is_none())
             .expect("le creux est une valeur, rendue `null`");
-        assert_eq!(creux.count, 2, "la chaine vide et le NULL comptent ensemble");
+        assert_eq!(
+            creux.count, 2,
+            "la chaine vide et le NULL comptent ensemble"
+        );
     }
 
     #[test]
@@ -1881,10 +1916,8 @@ mod tests {
         let (_d, miroir) = base();
         let (_d2, anime) = base_anime();
         // La moitie positive de chaque cote : chacun trouve SA table.
-        let a = dans_le_gisement(&miroir, &anime, "inagle_characters", |_, t| {
-            Ok(t.gisement)
-        })
-        .unwrap();
+        let a =
+            dans_le_gisement(&miroir, &anime, "inagle_characters", |_, t| Ok(t.gisement)).unwrap();
         let b = dans_le_gisement(&miroir, &anime, "episodes", |_, t| Ok(t.gisement)).unwrap();
         assert_eq!(a, GISEMENT_EXTRAIT);
         assert_eq!(b, GISEMENT_ANIME);
@@ -1897,7 +1930,9 @@ mod tests {
     fn un_gisement_absent_degrade_au_lieu_d_eteindre() {
         // La regle du demarrage, tenue ici : le miroir manque, la serie repond quand meme.
         let (_d2, anime) = base_anime();
-        let v = dans_le_gisement(&base_absente(), &anime, "episodes", |_, t| Ok(t.nom.clone()));
+        let v = dans_le_gisement(&base_absente(), &anime, "episodes", |_, t| {
+            Ok(t.nom.clone())
+        });
         assert_eq!(v.unwrap(), "episodes");
     }
 
@@ -1956,7 +1991,12 @@ mod tests {
         let noms: Vec<&str> = cat.iter().map(|t| t.table.nom.as_str()).collect();
         assert_eq!(
             noms,
-            ["inagle_characters", "inagle_exp_table", "inagle_liens", "inagle_skills"],
+            [
+                "inagle_characters",
+                "inagle_exp_table",
+                "inagle_liens",
+                "inagle_skills"
+            ],
             "`_meta` n'est pas servie"
         );
         let chara = &cat[0];
@@ -2099,7 +2139,10 @@ mod tests {
         assert_eq!(enorme.pagination.per_page, crate::config::PER_PAGE_MAX);
         // `per_page` reste accepté, comme partout ailleurs dans l'API.
         assert_eq!(
-            analyser(t, &q(&[("per_page", "7")])).unwrap().pagination.per_page,
+            analyser(t, &q(&[("per_page", "7")]))
+                .unwrap()
+                .pagination
+                .per_page,
             7
         );
         let e = analyser(t, &q(&[("page", "deux")])).unwrap_err();
@@ -2129,7 +2172,9 @@ mod tests {
         let l = g.lire(|c| lire_ligne(c, liens, "1")).unwrap();
         assert_eq!(l["source"], "a");
         assert_eq!(l["rowid"], 1);
-        let e = g.lire(|c| lire_ligne(c, liens, "pas_un_entier")).unwrap_err();
+        let e = g
+            .lire(|c| lire_ligne(c, liens, "pas_un_entier"))
+            .unwrap_err();
         assert_eq!(e.statut().as_u16(), 404);
     }
 
@@ -2181,14 +2226,20 @@ mod tests {
             db: racine.join("var/mirror.sqlite"),
             ..crate::config::Config::default()
         };
-        assert!(config.db.is_file(), "miroir absent: {}", config.db.display());
+        assert!(
+            config.db.is_file(),
+            "miroir absent: {}",
+            config.db.display()
+        );
         let etat = EtatSite::nouveau(config);
         let app = axum::Router::new()
             .route("/api/v1/entites", axum::routing::get(catalogue))
             .route("/api/v1/entites/{table}", axum::routing::get(lignes))
             .route("/api/v1/entites/{table}/{id}", axum::routing::get(ligne))
             .with_state(etat);
-        let ecoute = tokio::net::TcpListener::bind("127.0.0.1:8099").await.unwrap();
+        let ecoute = tokio::net::TcpListener::bind("127.0.0.1:8099")
+            .await
+            .unwrap();
         let secondes = std::env::var("NIE_SITE_ESSAI_SECONDES")
             .ok()
             .and_then(|v| v.parse::<u64>().ok())

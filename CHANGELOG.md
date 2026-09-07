@@ -11,6 +11,11 @@ listé qui ne s'y retrouve.
 
 ## [Non publié]
 
+## [0.5.10] — 2026-09-07
+
+- Regroupe la couche Inazuma/IEVR, IETV, Zukan et Wonderbot dans `niers`.
+- Ajoute l’outil standalone `ievr-tools` pour l’inventaire et l’analyse binaire.
+
 ### Modifié
 
 - Réorganisation du dépôt sur le modèle de [`openai/codex`](https://github.com/openai/codex) :
@@ -70,7 +75,8 @@ reverse-engineering.
 365 commits — l'amorçage. Familles de données `nie-data` (52), cœur `nie-core` (34),
 formats Level-5 `nie-formats` (15), serveur de modèles, premières vagues de reverse.
 
-[Non publié]: https://github.com/aphrody-code/nie/compare/v0.5.9...HEAD
+[Non publié]: https://github.com/aphrody-code/nie/compare/v0.5.10...HEAD
+[0.5.10]: https://github.com/aphrody-code/nie/compare/v0.5.9...v0.5.10
 [0.5.9]: https://github.com/aphrody-code/nie/compare/v0.5.6...v0.5.9
 [0.5.6]: https://github.com/aphrody-code/nie/compare/v0.5.4...v0.5.6
 [0.5.4]: https://github.com/aphrody-code/nie/compare/v0.5.3...v0.5.4

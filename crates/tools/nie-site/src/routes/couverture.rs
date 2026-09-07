@@ -58,24 +58,31 @@ pub async fn page(State(etat): State<EtatSite>) -> Result<Response, ErreurSite> 
 /// Rend la matrice en HTML — sans script, sans dépendance, et sans rien afficher que la mesure.
 fn rendre(m: &crate::couverture::Matrice) -> String {
     let mut html = String::with_capacity(64 * 1024);
+    let feuille = nie_aphrody::design::fichier_css();
     html.push_str(
         "<!doctype html><html lang=\"fr\"><head><meta charset=\"utf-8\">\
          <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\
          <meta name=\"robots\" content=\"noindex\">\
-         <title>Couverture</title><style>\
-         :root{color-scheme:dark}\
-         body{background:#12141c;color:#e7ecf5;font:15px/1.55 system-ui,sans-serif;margin:0 auto;padding:2rem 1.25rem;max-width:74rem}\
-         h1{font-size:1.5rem;margin:0 0 .25rem}h2{font-size:1.1rem;margin:2.5rem 0 .75rem}\
-         p.sous{color:#93a0b8;margin:0 0 2rem}\
-         table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}\
-         th,td{text-align:left;padding:.35rem .6rem;border-bottom:1px solid #232838}\
-         th{color:#93a0b8;font-weight:600}td.n,th.n{text-align:right}\
-         .servi{color:#5fd39a}.partiel{color:#e8c46a}.manquant{color:#ef8a6a}\
-         .bloque{color:#a58ce0}.interne{color:#93a0b8}\
-         .gate{display:inline-block;padding:.35rem .7rem;border-radius:.3rem;font-weight:600}\
-         .tenue{background:#12351f;color:#5fd39a}.rompue{background:#3a1c14;color:#ef8a6a}\
-         code{color:#93a0b8}\
-         </style></head><body>",
+         <title>Couverture</title><style>",
+    );
+    html.push_str(&feuille);
+    html.push_str(
+        r#"
+         :root{color-scheme:light}
+         *,*::before,*::after{box-sizing:border-box}
+         body{background:var(--jeu-ciel-clair);color:var(--jeu-nuit-profonde);font:15px/1.55 system-ui,sans-serif;margin:0 auto;padding:2rem 1.25rem;max-width:74rem}
+         h1{font-size:1.5rem;margin:0 0 .25rem}h2{font-size:1.1rem;margin:2.5rem 0 .75rem}
+         p.sous{color:var(--jeu-texte-doux);margin:0 0 2rem}
+         table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+         th,td{text-align:left;padding:.35rem .6rem;border-bottom:1px solid var(--jeu-tuile-bord)}
+         th{color:var(--jeu-texte-doux);font-weight:600}td.n,th.n{text-align:right}
+         .servi{color:var(--jeu-accent-turquoise)}.partiel{color:var(--jeu-accent-ambre)}.manquant{color:var(--jeu-accent-brique)}
+         .bloque{color:var(--jeu-surface-rose)}.interne{color:var(--jeu-texte-doux)}
+         .gate{display:inline-block;padding:.35rem .7rem;border-radius:.3rem;font-weight:600}
+         .tenue{background:var(--jeu-surface-glace);color:var(--jeu-accent-turquoise)}.rompue{background:var(--jeu-surface-rose);color:var(--jeu-accent-brique)}
+         code{color:var(--jeu-texte-doux)}
+         a{color:var(--jeu-accent-azur)}
+         </style></head><body>"#,
     );
     html.push_str("<h1>Couverture</h1><p class=\"sous\">");
     html.push_str(&echapper(&format!(
@@ -253,10 +260,28 @@ mod tests {
 
     #[test]
     fn le_texte_libre_est_echappe() {
-        assert_eq!(echapper("<script>&\"x\""), "&lt;script&gt;&amp;&quot;x&quot;");
+        assert_eq!(
+            echapper("<script>&\"x\""),
+            "&lt;script&gt;&amp;&quot;x&quot;"
+        );
         // Les raisons de classement contiennent réellement des chevrons :
         // `crates/engine/nie-data/src/<module>.rs`.
         let html = rendre(&matrice_temoin());
-        assert!(!html.contains("<module>"), "un chevron non échappé casse le document");
+        assert!(
+            !html.contains("<module>"),
+            "un chevron non échappé casse le document"
+        );
+    }
+
+    #[test]
+    fn la_page_porte_la_palette_generee_par_aphrody() {
+        let html = rendre(&matrice_temoin());
+        let feuille = nie_aphrody::design::fichier_css();
+        assert!(
+            html.contains(&feuille),
+            "la page de couverture doit embarquer la feuille CSS générée"
+        );
+        assert!(html.contains("var(--jeu-ciel-clair)"));
+        assert!(!html.contains("#12141c"), "ancienne palette sombre résiduelle");
     }
 }

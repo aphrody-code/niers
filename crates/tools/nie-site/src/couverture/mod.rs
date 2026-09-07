@@ -676,7 +676,10 @@ mod tests {
             .filter_map(|r| r.etat.route().map(|route| (r.id, route)))
             .filter(|(_, route)| !route_montee(route, &chemins))
             .collect();
-        assert!(orphelines.is_empty(), "routes citées non montées: {orphelines:?}");
+        assert!(
+            orphelines.is_empty(),
+            "routes citées non montées: {orphelines:?}"
+        );
     }
 
     #[test]
@@ -778,7 +781,10 @@ mod tests {
         assert_eq!(m.total.capacites, 5);
         assert_eq!(m.total.poids, 71_101 + 5_512 + 9 + 1 + 1);
         let somme: u64 = m.par_etat.values().map(|c| c.poids).sum();
-        assert_eq!(somme, m.total.poids, "la somme par état doit retomber sur le total");
+        assert_eq!(
+            somme, m.total.poids,
+            "la somme par état doit retomber sur le total"
+        );
         assert_eq!(m.par_etat["manquant"].poids, 1);
         assert_eq!(m.par_etat["interne"].poids, 5_512);
         assert_eq!(m.par_etat["bloque"].poids, 9);
@@ -829,8 +835,14 @@ mod tests {
             .iter()
             .find(|f| f.id == "vfs-effets")
             .expect("le filet du VFS est publié");
-        assert_eq!(vfs_effets.capacites, 0, "`.cfg.bin` est pris par une décision nommée");
-        assert!(!vfs_effets.raison.is_empty(), "un filet publie la raison qu'il applique");
+        assert_eq!(
+            vfs_effets.capacites, 0,
+            "`.cfg.bin` est pris par une décision nommée"
+        );
+        assert!(
+            !vfs_effets.raison.is_empty(),
+            "un filet publie la raison qu'il applique"
+        );
     }
 
     #[test]

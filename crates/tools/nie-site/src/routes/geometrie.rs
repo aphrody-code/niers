@@ -103,7 +103,11 @@ pub enum Famille {
 pub const FAMILLES: [(&str, Famille, &str); 9] = [
     (".g4pk", Famille::G4pk, "table des sous-fichiers"),
     (".g4mg", Famille::G4mg, "sous-mailles, sommets et triangles"),
-    (".objbin", Famille::Objbin, "objet de menu et ses composants"),
+    (
+        ".objbin",
+        Famille::Objbin,
+        "objet de menu et ses composants",
+    ),
     (".g4pkm", Famille::G4pkm, "squelette 2D et poses de liaison"),
     (".g4cm", Famille::G4cm, "clips, objets et canaux de camera"),
     (".col", Famille::Col, "en-tete du conteneur PXCL"),
@@ -256,9 +260,8 @@ pub fn conteneur_level5(octets: &[u8]) -> Option<Conteneur> {
         return None;
     }
     let u16_a = |o: usize| u16::from_le_bytes([octets[o], octets[o + 1]]);
-    let u32_a = |o: usize| {
-        u32::from_le_bytes([octets[o], octets[o + 1], octets[o + 2], octets[o + 3]])
-    };
+    let u32_a =
+        |o: usize| u32::from_le_bytes([octets[o], octets[o + 1], octets[o + 2], octets[o + 3]]);
     let entete = u32::from(u16_a(0x04));
     let donnees = u32_a(0x0C);
     if entete == 0
@@ -857,8 +860,10 @@ mod tests {
 
         // Un magic non imprimable n'en est pas un : sans ce refus, n'importe quels octets
         // produiraient un « conteneur » nommé par du bruit.
-        assert!(conteneur_level5(&[0x7f, 0x7f, 0xff, 0xff, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-            .is_none());
+        assert!(
+            conteneur_level5(&[0x7f, 0x7f, 0xff, 0xff, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+                .is_none()
+        );
         assert!(conteneur_level5(b"G4VS").is_none(), "trop court");
 
         // Non-régression, mesurée en production le 2026-09-06 : ce fichier TEXTE du VFS

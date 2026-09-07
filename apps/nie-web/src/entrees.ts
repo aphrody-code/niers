@@ -64,6 +64,9 @@ export const MEDIAS = "medias";
  */
 export const SETTINGS = "settings";
 
+/** L'éditeur d'avatar, alimenté par les tables `chara_edit` du VFS. */
+export const AVATAR = "avatar";
+
 /** Une entrée du menu : sa route, son libellé, son pictogramme. */
 export interface EntreeMenu {
 	/** Le segment d'URL — c'est aussi l'identité de l'entrée. */
@@ -86,6 +89,7 @@ const HABILLAGE: Record<string, { libelle: string; glyphe: NomGlyphe }> = {
 	[MEDIAS]: { libelle: "Médias", glyphe: "image" },
 	[EXPLORATEUR]: { libelle: "Explorer", glyphe: "arbre" },
 	[SETTINGS]: { libelle: "Options", glyphe: "engrenage" },
+	[AVATAR]: { libelle: "Avatar", glyphe: "ballon" },
 };
 
 /** Le libellé d'une entrée, ou son nom brut si le site ne la connaît pas. */
@@ -113,7 +117,7 @@ export function routesReconnues(etat: SanteApi | null): string[] {
  * l'arborescence, et le serveur ne le publie pas comme une vue.
  */
 export function entreesMenu(_etat: SanteApi | null): EntreeMenu[] {
-	return [MEDIAS, EXPLORATEUR, SETTINGS].map((vue) => ({
+	return [MEDIAS, AVATAR, EXPLORATEUR, SETTINGS].map((vue) => ({
 		vue,
 		libelle: libelleEntree(vue),
 		glyphe: HABILLAGE[vue]?.glyphe ?? "arbre",

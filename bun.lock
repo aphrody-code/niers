@@ -178,7 +178,7 @@
     },
     "apps/inacord": {
       "name": "inacord",
-      "version": "0.5.9",
+      "version": "0.5.10",
       "dependencies": {
         "@base-ui/react": "^1.7.0",
         "@monaco-editor/react": "^4.7.0",
@@ -227,7 +227,7 @@
     },
     "apps/nie-mcp": {
       "name": "@niers/nie-mcp",
-      "version": "0.5.9",
+      "version": "0.5.10",
       "bin": {
         "nie-mcp": "src/index.ts",
       },
@@ -664,7 +664,7 @@
     },
     "packages/nie": {
       "name": "nie",
-      "version": "0.5.9",
+      "version": "0.5.10",
       "devDependencies": {
         "@types/bun": "catalog:",
         "typescript": "catalog:",
@@ -672,7 +672,7 @@
     },
     "packages/nie-bridge": {
       "name": "@niers/bridge",
-      "version": "0.5.9",
+      "version": "0.5.10",
       "devDependencies": {
         "@types/bun": "catalog:",
         "typescript": "catalog:",
@@ -699,7 +699,7 @@
     },
     "packages/nie-plugin": {
       "name": "nie-plugin",
-      "version": "0.5.9",
+      "version": "0.5.10",
       "dependencies": {
         "nie": "workspace:*",
       },

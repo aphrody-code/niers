@@ -8,7 +8,7 @@ import {
 	separerLangue,
 } from "./routage";
 
-const ENTREES = ["textures", "modeles", "sons", "videos", "explorateur", "settings"] as const;
+const ENTREES = ["textures", "modeles", "sons", "videos", "explorateur", "avatar", "settings"] as const;
 
 describe("localeDuPrefixe / prefixeDeLocale", () => {
 	test("les trois langues, aller et retour", () => {

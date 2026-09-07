@@ -233,7 +233,8 @@ pub fn zukan_jeu_vers_serie(jeu: Option<&str>) -> Option<String> {
         "Orion"
     } else if jeu.starts_with("Inazuma Eleven GO Galaxy") {
         "Galaxy"
-    } else if jeu.starts_with("Inazuma Eleven GO Chrono Stones") || jeu.starts_with("Inazuma Eleven GO2")
+    } else if jeu.starts_with("Inazuma Eleven GO Chrono Stones")
+        || jeu.starts_with("Inazuma Eleven GO2")
     {
         "Chrono Stone"
     } else if jeu.starts_with("Inazuma Eleven GO") {
@@ -680,7 +681,8 @@ pub fn audit_zukan_jeu_vers_serie(jeu: Option<&str>) -> Option<String> {
         "Ares"
     } else if jeu.starts_with("Inazuma Eleven GO Galaxy") {
         "Galaxy"
-    } else if jeu.starts_with("Inazuma Eleven GO Chrono Stones") || jeu.starts_with("Inazuma Eleven GO2")
+    } else if jeu.starts_with("Inazuma Eleven GO Chrono Stones")
+        || jeu.starts_with("Inazuma Eleven GO2")
     {
         "Chrono Stone"
     } else if jeu.starts_with("Inazuma Eleven GO") {
@@ -835,11 +837,7 @@ pub fn evaluer_ligne(
 
     let est_heros_ares = db.rarity_label == "Héros" && db.series.as_deref() == Some("Ares");
     let z_serie = audit_zukan_jeu_vers_serie(z.jeu.as_deref());
-    let ere_db = db
-        .series
-        .as_deref()
-        .filter(|s| !s.is_empty())
-        .and_then(ere);
+    let ere_db = db.series.as_deref().filter(|s| !s.is_empty()).and_then(ere);
     let ere_z = z_serie.as_deref().and_then(ere);
     let ere_diverge = !est_heros_ares
         && match (ere_db, ere_z) {
@@ -860,10 +858,7 @@ pub fn evaluer_ligne(
 
     let mut raisons: Vec<String> = Vec::new();
     if !nom_concorde {
-        raisons.push(format!(
-            "NAME: zukan=\"{}\" ≠ db=\"{}\"",
-            z.nom, db.name_en
-        ));
+        raisons.push(format!("NAME: zukan=\"{}\" ≠ db=\"{}\"", z.nom, db.name_en));
     }
     if poste_diverge {
         raisons.push(format!(
@@ -1077,7 +1072,10 @@ mod tests {
             zukan_jeu_vers_serie(Some("Inazuma Eleven Orion")).as_deref(),
             Some("Orion")
         );
-        assert_eq!(audit_zukan_jeu_vers_serie(Some("Inazuma Eleven Orion")), None);
+        assert_eq!(
+            audit_zukan_jeu_vers_serie(Some("Inazuma Eleven Orion")),
+            None
+        );
     }
 
     #[test]
@@ -1370,7 +1368,9 @@ mod tests {
         let a = evaluer_ligne(&db, &index).expect("corrélation -1 attendue");
         assert_eq!(a.correlation_stats, Some(-1.0));
         assert!(
-            a.raisons.iter().any(|r| r == "STATS: correlation=-1.00 (very low)"),
+            a.raisons
+                .iter()
+                .any(|r| r == "STATS: correlation=-1.00 (very low)"),
             "{:?}",
             a.raisons
         );

@@ -7,7 +7,7 @@
 [package]
 name = "inacord"
 description = "Explorateur/éditeur du VFS (CPK) d'Inazuma Eleven: Victory Road — UI native Windows (Fluent/Mica)"
-version = "0.5.9"
+version = "0.5.10"
 authors = ["niers"]
 edition = "2021"
 # Deux binaires vivent ici : l'application et `export-bindings`. `tauri dev` lance

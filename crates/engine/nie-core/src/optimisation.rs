@@ -209,9 +209,8 @@ pub fn est_passif(
     nom_fr: Option<&str>,
     nom_en: Option<&str>,
 ) -> bool {
-    let contient_boost = |s: Option<&str>| {
-        s.is_some_and(|v| !v.is_empty() && v.to_lowercase().contains("boost"))
-    };
+    let contient_boost =
+        |s: Option<&str>| s.is_some_and(|v| !v.is_empty() && v.to_lowercase().contains("boost"));
     categorie_en == Some("Passive")
         || categorie_fr == Some("Passif")
         || contient_boost(nom_fr)
@@ -420,9 +419,7 @@ pub fn calculer_synergie_equipe(
         let element_fr = element_en_francais(element_dominant);
         synergies_actives.push(SynergieActive {
             nom: format!("Cohésion Élémentaire ({element_fr})"),
-            description: format!(
-                "Dominance forte de l'élément {element_fr} (>= 55% de l'équipe)."
-            ),
+            description: format!("Dominance forte de l'élément {element_fr} (>= 55% de l'équipe)."),
             type_bonus: "Multiplicateur de Hissatsu".to_string(),
             valeur: 12,
         });
@@ -635,7 +632,12 @@ mod tests {
         assert!(est_passif(None, Some("Passif"), None, None));
         assert!(est_passif(None, None, Some("Boost de Feu"), None));
         assert!(est_passif(None, None, None, Some("Fire BOOST")));
-        assert!(!est_passif(Some("Shoot"), Some("Tir"), Some("Tornade"), None));
+        assert!(!est_passif(
+            Some("Shoot"),
+            Some("Tir"),
+            Some("Tornade"),
+            None
+        ));
     }
 
     #[test]
@@ -746,12 +748,17 @@ mod tests {
                 )
             })
             .collect();
-        let r = calculer_synergie_equipe(&equipe, Some(&Entraineur {
-            nom: "Coach".to_string(),
-            element: "Wind".to_string(),
-        }));
+        let r = calculer_synergie_equipe(
+            &equipe,
+            Some(&Entraineur {
+                nom: "Coach".to_string(),
+                element: "Wind".to_string(),
+            }),
+        );
         assert!(
-            r.synergies_actives.iter().any(|s| s.nom == "Harmonie Tactique"),
+            r.synergies_actives
+                .iter()
+                .any(|s| s.nom == "Harmonie Tactique"),
             "le dominant doit être Wind, pas Fire"
         );
     }
@@ -762,7 +769,11 @@ mod tests {
             .map(|i| joueur(&format!("J{i}"), "Lumière", "MF", "MF"))
             .collect();
         let r = calculer_synergie_equipe(&equipe, None);
-        assert!(!r.synergies_actives.iter().any(|s| s.nom.starts_with("Cohésion")));
+        assert!(
+            !r.synergies_actives
+                .iter()
+                .any(|s| s.nom.starts_with("Cohésion"))
+        );
         assert_eq!(r.score_synergie, 40);
     }
 
@@ -776,7 +787,11 @@ mod tests {
             element: "Wind".to_string(),
         };
         let r = calculer_synergie_equipe(&equipe, Some(&coach));
-        assert!(!r.synergies_actives.iter().any(|s| s.nom == "Harmonie Tactique"));
+        assert!(
+            !r.synergies_actives
+                .iter()
+                .any(|s| s.nom == "Harmonie Tactique")
+        );
         assert!(r.recommandations[0].contains("Envisagez un coach d'élément Fire"));
     }
 
@@ -810,7 +825,11 @@ mod tests {
         equipe[1].element = "Fire".to_string();
         equipe[0].passifs.push("Boost de Feu".to_string());
         let r = calculer_synergie_equipe(&equipe, None);
-        assert!(!r.synergies_actives.iter().any(|s| s.type_bonus.starts_with("Boost Élémentaire")));
+        assert!(
+            !r.synergies_actives
+                .iter()
+                .any(|s| s.type_bonus.starts_with("Boost Élémentaire"))
+        );
     }
 
     #[test]

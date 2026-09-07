@@ -142,7 +142,10 @@ pub fn looks_like_text(key: &str) -> bool {
 /// bits.
 pub fn parse_hash(raw: &str) -> Result<u32, ErreurSite> {
     let clean = raw.trim();
-    let parsed = if let Some(hex) = clean.strip_prefix("0x").or_else(|| clean.strip_prefix("0X")) {
+    let parsed = if let Some(hex) = clean
+        .strip_prefix("0x")
+        .or_else(|| clean.strip_prefix("0X"))
+    {
         u32::from_str_radix(hex, 16).ok()
     } else {
         clean.parse::<u32>().ok()
@@ -278,7 +281,10 @@ impl Survey {
         self.languages
             .get(language)
             .map_or_else(Vec::new, |families| {
-                families.values().flat_map(|f| f.paths.iter().cloned()).collect()
+                families
+                    .values()
+                    .flat_map(|f| f.paths.iter().cloned())
+                    .collect()
             })
     }
 }
@@ -380,14 +386,11 @@ struct Decoded {
 }
 
 /// Lit et décode un candidat, en ne gardant que son **compte** de lignes.
-fn survey_one(
-    vfs: &nie_formats::vfs::Vfs,
-    path: &str,
-    language: &str,
-    size: u32,
-) -> Decoded {
+fn survey_one(vfs: &nie_formats::vfs::Vfs, path: &str, language: &str, size: u32) -> Decoded {
     let lines = match vfs.read(path) {
-        Ok(bytes) => decode(path, &bytes).map(|l| l.len()).map_err(|e| e.to_string()),
+        Ok(bytes) => decode(path, &bytes)
+            .map(|l| l.len())
+            .map_err(|e| e.to_string()),
         Err(e) => Err(format!("lecture VFS impossible: {e}")),
     };
     Decoded {
@@ -573,13 +576,16 @@ fn resolve(s: &'static Survey, language: &str, family: &str) -> Result<Vec<Strin
             s.languages().join(", ")
         )));
     };
-    families.get(family).map(|f| f.paths.clone()).ok_or_else(|| {
-        ErreurSite::Introuvable(format!(
-            "la langue `{language}` ne porte aucune famille `{family}` ; \
+    families
+        .get(family)
+        .map(|f| f.paths.clone())
+        .ok_or_else(|| {
+            ErreurSite::Introuvable(format!(
+                "la langue `{language}` ne porte aucune famille `{family}` ; \
              ses {} familles sont sur /api/v1/text",
-            families.len()
-        ))
-    })
+                families.len()
+            ))
+        })
 }
 
 /// Charge les lignes d'un jeu de chemins, **sans rien dédoublonner**.
@@ -1135,10 +1141,8 @@ pub async fn translate(
 
         // 2. Pour chaque langue cible, relever les textes des memes (famille, hash).
         //    Un seul balayage par langue, pas un par correspondance.
-        let voulus: std::collections::HashSet<(String, u32)> = trouves
-            .iter()
-            .map(|(f, h, _)| (f.clone(), *h))
-            .collect();
+        let voulus: std::collections::HashSet<(String, u32)> =
+            trouves.iter().map(|(f, h, _)| (f.clone(), *h)).collect();
         let mut par_langue: BTreeMap<String, BTreeMap<(String, u32), Vec<String>>> =
             BTreeMap::new();
         for (langue, chemins) in &cibles_paths {
@@ -1226,7 +1230,10 @@ mod tests {
 
     #[test]
     fn language_is_the_first_segment_after_the_root() {
-        assert_eq!(language_of("data/common/text/fr/menu_text.cfg.bin"), Some("fr"));
+        assert_eq!(
+            language_of("data/common/text/fr/menu_text.cfg.bin"),
+            Some("fr")
+        );
         assert_eq!(
             language_of("data/common/text/zh_hant/mission/mission_text.cfg.bin"),
             Some("zh_hant")
@@ -1268,7 +1275,15 @@ mod tests {
 
     #[test]
     fn a_malformed_hash_is_a_400_naming_both_forms() {
-        for raw in ["", "1e5", "0x", "d25e0b9c", "-1", "4294967296", "0xffffffff0"] {
+        for raw in [
+            "",
+            "1e5",
+            "0x",
+            "d25e0b9c",
+            "-1",
+            "4294967296",
+            "0xffffffff0",
+        ] {
             let e = parse_hash(raw).unwrap_err();
             assert_eq!(e.statut().as_u16(), 400, "`{raw}` doit etre refuse");
             assert!(format!("{e}").contains("hexadecimal"), "{e}");

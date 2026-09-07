@@ -219,7 +219,12 @@ mod tests {
     }
 
     /// Les comptes d'un champ, sous une demande donnée — sous la forme qu'un test lit.
-    fn comptes(index: &IndexVfs, dem: DemandeFiltre, q: Option<&str>, champ: Champ) -> Vec<(String, usize)> {
+    fn comptes(
+        index: &IndexVfs,
+        dem: DemandeFiltre,
+        q: Option<&str>,
+        champ: Champ,
+    ) -> Vec<(String, usize)> {
         let r = index.resoudre(q, &dem);
         index
             .comptes(None, &r, champ, FACET_VALEURS_MAX)
@@ -237,12 +242,19 @@ mod tests {
         let index = index_temoin();
         assert_eq!(
             comptes(&index, DemandeFiltre::default(), None, Champ::Ext),
-            [("bin".to_owned(), 3), ("g4tx".to_owned(), 1), ("p3lip".to_owned(), 1)]
+            [
+                ("bin".to_owned(), 3),
+                ("g4tx".to_owned(), 1),
+                ("p3lip".to_owned(), 1)
+            ]
         );
         assert_eq!(
             comptes(
                 &index,
-                DemandeFiltre { prefixe: Some("data/common".to_owned()), ..DemandeFiltre::default() },
+                DemandeFiltre {
+                    prefixe: Some("data/common".to_owned()),
+                    ..DemandeFiltre::default()
+                },
                 None,
                 Champ::Ext
             ),
@@ -260,7 +272,10 @@ mod tests {
         // filtres, `ext` rendrait `g4tx: 1` des qu'on a clique `g4tx`, et les deux autres
         // extensions seraient inatteignables.
         let index = index_temoin();
-        let dem = DemandeFiltre { ext: Some("g4tx".to_owned()), ..DemandeFiltre::default() };
+        let dem = DemandeFiltre {
+            ext: Some("g4tx".to_owned()),
+            ..DemandeFiltre::default()
+        };
 
         // La page, elle, EST filtree : les deux comptes disent bien deux choses differentes.
         let r = index.resoudre(None, &dem);
@@ -268,7 +283,11 @@ mod tests {
 
         assert_eq!(
             comptes(&index, dem, None, Champ::Ext),
-            [("bin".to_owned(), 3), ("g4tx".to_owned(), 1), ("p3lip".to_owned(), 1)],
+            [
+                ("bin".to_owned(), 3),
+                ("g4tx".to_owned(), 1),
+                ("p3lip".to_owned(), 1)
+            ],
             "les autres extensions restent cliquables"
         );
 
@@ -276,10 +295,17 @@ mod tests {
         // fait tout rejeter. Comme elle disparait avec son propre filtre, la facette doit
         // redevenir complete — sinon un `?ext=typo` viderait l'ecran ET la liste des choix,
         // sans aucun moyen de revenir en arriere.
-        let typo = DemandeFiltre { ext: Some("inexistante".to_owned()), ..DemandeFiltre::default() };
+        let typo = DemandeFiltre {
+            ext: Some("inexistante".to_owned()),
+            ..DemandeFiltre::default()
+        };
         let r = index.resoudre(None, &typo);
         assert_eq!(index.page_filtree(None, &r).1, 0, "la page est bien vide");
-        assert_eq!(comptes(&index, typo, None, Champ::Ext).len(), 3, "la sortie de secours reste");
+        assert_eq!(
+            comptes(&index, typo, None, Champ::Ext).len(),
+            3,
+            "la sortie de secours reste"
+        );
     }
 
     #[test]
@@ -288,9 +314,21 @@ mod tests {
         // est correct sur un montage dump. Avec des entrees completes, elle compte.
         use crate::vfs_index::Entree;
         let index = IndexVfs::depuis_entrees(vec![
-            Entree { chemin: "data/a.g4tx".to_owned(), taille: 1, cpk: "common.cpk".to_owned() },
-            Entree { chemin: "data/b.g4tx".to_owned(), taille: 2, cpk: "common.cpk".to_owned() },
-            Entree { chemin: "data/c.bin".to_owned(), taille: 3, cpk: "menu.cpk".to_owned() },
+            Entree {
+                chemin: "data/a.g4tx".to_owned(),
+                taille: 1,
+                cpk: "common.cpk".to_owned(),
+            },
+            Entree {
+                chemin: "data/b.g4tx".to_owned(),
+                taille: 2,
+                cpk: "common.cpk".to_owned(),
+            },
+            Entree {
+                chemin: "data/c.bin".to_owned(),
+                taille: 3,
+                cpk: "menu.cpk".to_owned(),
+            },
         ]);
         assert_eq!(
             comptes(&index, DemandeFiltre::default(), None, Champ::Cpk),
@@ -300,7 +338,10 @@ mod tests {
         assert_eq!(
             comptes(
                 &index,
-                DemandeFiltre { ext: Some("bin".to_owned()), ..DemandeFiltre::default() },
+                DemandeFiltre {
+                    ext: Some("bin".to_owned()),
+                    ..DemandeFiltre::default()
+                },
                 None,
                 Champ::Cpk
             ),
@@ -316,7 +357,11 @@ mod tests {
         // porte aucune taille.
         assert!(champs_demandes(Some("taille")).is_err());
         assert!(champs_demandes(Some("ext,inconnu")).is_err());
-        assert_eq!(champs_demandes(Some("ext,cpk,ext")).unwrap().len(), 2, "dedoublonne");
+        assert_eq!(
+            champs_demandes(Some("ext,cpk,ext")).unwrap().len(),
+            2,
+            "dedoublonne"
+        );
         assert!(champs_demandes(None).unwrap().is_empty());
         assert!(champs_demandes(Some(" , ")).unwrap().is_empty());
     }
@@ -330,7 +375,11 @@ mod tests {
         let (fichiers, total) = index.page_filtree(None, &r);
         assert_eq!(total, 1, "le motif traverse les dossiers");
         assert_eq!(fichiers.len(), 1);
-        assert!(fichiers[0].chemin.ends_with("chara_base_1.03.98.00.cfg.bin"));
+        assert!(
+            fichiers[0]
+                .chemin
+                .ends_with("chara_base_1.03.98.00.cfg.bin")
+        );
     }
 
     #[test]
@@ -346,8 +395,16 @@ mod tests {
                 ..DemandeFiltre::default()
             },
         );
-        assert_eq!(index.page_filtree(None, &sans).1, 3, "trois `.cfg.bin` en tout");
-        assert_eq!(index.page_filtree(None, &avec).1, 2, "deux sous ce sous-arbre");
+        assert_eq!(
+            index.page_filtree(None, &sans).1,
+            3,
+            "trois `.cfg.bin` en tout"
+        );
+        assert_eq!(
+            index.page_filtree(None, &avec).1,
+            2,
+            "deux sous ce sous-arbre"
+        );
         // La moitie qui compte : le meme motif sous un AUTRE sous-arbre ne rend pas le meme
         // compte. Un prefixe ignore rendrait 3 aux trois appels.
         let ailleurs = index.resoudre(
@@ -402,9 +459,17 @@ mod tests {
         assert_eq!(compte("data/**"), 5, "tout l'index");
         assert_eq!(compte("data/common/**"), 3);
         assert_eq!(compte("data/**/*.g4tx"), 1);
-        assert_eq!(compte("data/common/**,data/dx11/**/*.g4tx"), 4, "la liste cumule");
+        assert_eq!(
+            compte("data/common/**,data/dx11/**/*.g4tx"),
+            4,
+            "la liste cumule"
+        );
         // La moitie qui compte : sans la priorite de l'exclusion, ce serait 3.
-        assert_eq!(compte("data/common/**,!**/chara_text*"), 2, "l'exclusion prime");
+        assert_eq!(
+            compte("data/common/**,!**/chara_text*"),
+            2,
+            "l'exclusion prime"
+        );
         // Et un motif qui ne designe rien rend 0, pas tout.
         assert_eq!(compte("data/aucun/**"), 0);
     }
@@ -422,8 +487,14 @@ mod tests {
                 ..DemandeFiltre::default()
             },
         );
-        assert!(r.applique.glob_vide, "le service dit que le motif ne filtre rien");
-        assert_eq!(r.applique.glob, None, "et ne le republie pas comme applique");
+        assert!(
+            r.applique.glob_vide,
+            "le service dit que le motif ne filtre rien"
+        );
+        assert_eq!(
+            r.applique.glob, None,
+            "et ne le republie pas comme applique"
+        );
         assert_eq!(index.page_filtree(None, &r).1, 5);
     }
 
@@ -456,7 +527,11 @@ mod tests {
         );
         let (fichiers, total) = index.page_filtree(None, &r.paginer(0, 10));
         assert_eq!(total, 2);
-        assert!(fichiers.iter().all(|f| f.chemin.starts_with("data/common/chara/")));
+        assert!(
+            fichiers
+                .iter()
+                .all(|f| f.chemin.starts_with("data/common/chara/"))
+        );
     }
 
     #[test]
@@ -465,7 +540,11 @@ mod tests {
         let r = index.resoudre(Some("chara"), &DemandeFiltre::default());
         let (_, total) = index.page_filtree(None, &r);
         assert_eq!(total, 2);
-        assert_eq!(index.len(), 5, "le denominateur ne bouge pas avec le filtre");
+        assert_eq!(
+            index.len(),
+            5,
+            "le denominateur ne bouge pas avec le filtre"
+        );
     }
 
     #[test]
@@ -494,8 +573,17 @@ mod tests {
             );
         }
         for connu in [
-            "q=chara", "ext=g4mg", "prefixe=data", "glob=data/**", "cpk=x.cpk", "tri=taille",
-            "ordre=desc", "taille_min=1", "taille_max=2", "page=2", "per_page=25",
+            "q=chara",
+            "ext=g4mg",
+            "prefixe=data",
+            "glob=data/**",
+            "cpk=x.cpk",
+            "tri=taille",
+            "ordre=desc",
+            "taille_min=1",
+            "taille_max=2",
+            "page=2",
+            "per_page=25",
         ] {
             assert!(essayer(connu).is_ok(), "`{connu}` est servi et doit passer");
         }

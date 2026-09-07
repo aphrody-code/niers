@@ -1,0 +1,25 @@
+{
+  "name": "@aphrody/yolo",
+  "version": "3.0.0",
+  "description": "Universal Autonomous Execution Skill for AI Coding Agents (2026 Edition)",
+  "type": "module",
+  "license": "MIT",
+  "author": "aphrody-code",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aphrody-code/YOLO.git"
+  },
+  "scripts": {
+    "grind": "bun run scripts/yolo-grind.ts",
+    "test": "bun test"
+  },
+  "keywords": [
+    "skill",
+    "claude-skill",
+    "antigravity-skill",
+    "mcp",
+    "autonomous",
+    "yolo",
+    "orchestration"
+  ]
+}

@@ -22,7 +22,7 @@ exclude = ["crates/archive/nie-engine"]
 
 [workspace.package]
 edition = "2024"
-version = "0.5.9"
+version = "0.5.10"
 license = "MIT"
 authors = ["Rose Griffon"]
 repository = "https://github.com/aphrody-code/nie"
@@ -31,6 +31,7 @@ rust-version = "1.97"
 [workspace.dependencies]
 # erreurs : thiserror par-crate, anyhow en propagation, miette pour le CLI
 anyhow = "1"
+byteorder = "1"
 thiserror = "2"
 miette = { version = "7", features = ["fancy"] }
 

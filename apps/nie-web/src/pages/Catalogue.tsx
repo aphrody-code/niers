@@ -123,12 +123,13 @@ function ecrireUrl(e: EtatFiltre) {
 /**
  * Les extensions que chaque vue retient — MESURÉES sur le service le 2026-09-07, en lisant les
  * 200 premiers éléments de chaque vue triés dans les deux sens (`textures` → `g4tx`, `sons` →
- * `acb`, `awb`, `videos` → `usm`). Le catalogue ne publie pas de facettes ; sans cette liste le
+ * `acb`, `videos` → `usm`). Le catalogue ne publie pas de facettes ; sans cette liste le
  * panneau proposerait les 40 extensions du VFS, dont 37 que la vue refuse (`ext_inconnue`).
  */
 const EXTENSIONS_PAR_VUE: Record<string, readonly string[]> = {
 	textures: ["g4tx"],
-	sons: ["acb", "awb"],
+	// Un AWB est le payload d'une banque, pas une piste. Les cues nommés viennent de l'ACB.
+	sons: ["acb"],
 	videos: ["usm"],
 };
 
@@ -320,6 +321,7 @@ function CatalogueVfs({ vue }: { vue: VueCatalogue }) {
 	// declencherait une requete sur 143 246 chemins.
 	const [saisie, setSaisie] = useState(initial.q);
 	const [panneau, setPanneau] = useState(false);
+	const [banque, setBanque] = useState<string | null>(null);
 	const famillesPanneau = useMemo(() => famillesCatalogue(vue), [vue]);
 	const valeurFiltres = useMemo(() => valeurPanneau(etat), [etat]);
 	const touches = useMemo<GameHint[]>(
@@ -479,6 +481,11 @@ function CatalogueVfs({ vue }: { vue: VueCatalogue }) {
 							{/* Pour les sons, le conteneur n'est PAS un lien : un clic sur « lire »
 							    declencherait la navigation au lieu de la lecture. */}
 							<a
+								onClick={(e) => {
+									if (vue !== "sons") return;
+									e.preventDefault();
+									setBanque(t.chemin);
+								}}
 								href={vue === "sons" || vue === "videos" ? undefined : source.urlFichier(t.chemin)}
 								style={{
 									display: "block",
@@ -557,6 +564,8 @@ function CatalogueVfs({ vue }: { vue: VueCatalogue }) {
 				</ul>
 			)}
 
+			{vue === "sons" && banque ? <AudioBankPanel chemin={banque} onClose={() => setBanque(null)} /> : null}
+
 			{pages > 1 ? (
 				<nav
 					aria-label="Pagination"
@@ -583,6 +592,44 @@ function CatalogueVfs({ vue }: { vue: VueCatalogue }) {
 					</button>
 				</nav>
 			) : null}
+		</section>
+	);
+}
+
+type Cue = { index: number; name: string | null; codec: string; durationSec: number; awbId: number | null };
+type Bank = { cueCount: number; name: string | null; externalAwb: string | null; cues: Cue[] };
+
+/** Rend le contenu d'une banque : l'ACB décrit et chaque cue devient jouable. */
+function AudioBankPanel({ chemin, onClose }: { chemin: string; onClose: () => void }) {
+	const source = useAssetSource();
+	const [bank, setBank] = useState<Bank | null>(null);
+	const [erreur, setErreur] = useState(false);
+	const [charge, setCharge] = useState(true);
+	useEffect(() => {
+		const ac = new AbortController();
+		setCharge(true);
+		setErreur(false);
+		const url = `/assets/audio-info/${chemin.split("/").map(encodeURIComponent).join("/")}`;
+		fetch(url, { signal: ac.signal, headers: { accept: "application/json" } })
+			.then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+			.then((v: Bank) => setBank(v))
+			.catch(() => { if (!ac.signal.aborted) setErreur(true); })
+			.finally(() => { if (!ac.signal.aborted) setCharge(false); });
+		return () => ac.abort();
+	}, [chemin]);
+	return (
+		<section style={{ marginTop: "var(--jeu-espace-l)", padding: "var(--jeu-espace-l)", background: "rgb(255 255 255 / 82%)", boxShadow: "var(--jeu-ombre-panneau)" }} aria-live="polite">
+			<div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
+				<TitreVue appoint={bank ? accorde(bank.cueCount, "cue") : undefined}>Banque audio</TitreVue>
+				<button type="button" onClick={onClose} className="game-button-secondary" style={BOUTON}>Fermer</button>
+			</div>
+			{charge ? <Note>Lecture du catalogue ACB…</Note> : erreur ? <Note ton="alerte">Cette banque ne peut pas être cataloguée pour le moment.</Note> : bank ? <>
+				<p style={{ fontWeight: 700 }}>{bank.name ?? chemin}{bank.externalAwb ? ` · AWB associé : ${bank.externalAwb}` : ""}</p>
+				<ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 6 }}>
+					{bank.cues.slice(0, 80).map((cue) => <li key={`${cue.index}-${cue.awbId}`} style={{ display: "grid", gridTemplateColumns: "4rem minmax(0, 1fr) auto", gap: 10, alignItems: "center", padding: 7, background: "var(--jeu-surface-craie)" }}><span>#{cue.index}</span><span title={cue.name ?? undefined} style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{cue.name ?? "Cue sans nom"} · {cue.codec} · {cue.durationSec.toFixed(2)} s</span>{source.urlAudio ? <audio controls preload="none" src={source.urlAudio(chemin, cue.awbId)} style={{ width: 210, height: 30 }} /> : null}</li>)}
+				</ul>
+				{bank.cues.length > 80 ? <p style={{ fontWeight: 700 }}>Les 80 premières cues sont affichées sur {bank.cueCount}.</p> : null}
+			</> : <Note ton="alerte">Cette banque ne peut pas être cataloguée pour le moment.</Note>}
 		</section>
 	);
 }

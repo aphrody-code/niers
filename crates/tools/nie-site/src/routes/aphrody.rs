@@ -319,7 +319,10 @@ pub async fn atlas() -> Response {
 /// réencode — ce qui garantit que ce qui sort d'ici est ce que le manifeste décrit, et non une
 /// copie qu'on aurait oublié de regénérer.
 pub async fn frame(Path((animation, fichier)): Path<(String, String)>) -> Response {
-    let Some(index) = fichier.strip_suffix(".png").and_then(|n| n.parse::<usize>().ok()) else {
+    let Some(index) = fichier
+        .strip_suffix(".png")
+        .and_then(|n| n.parse::<usize>().ok())
+    else {
         return (
             StatusCode::NOT_FOUND,
             [(header::CONTENT_TYPE, "text/plain; charset=utf-8")],
@@ -346,11 +349,7 @@ pub async fn frame(Path((animation, fichier)): Path<(String, String)>) -> Respon
         Ok(r) => r,
         Err(e) => return erreur_package(&e.to_string()),
     };
-    match assets::encoder_png(
-        &rgba,
-        frame.atlas_rect.width,
-        frame.atlas_rect.height,
-    ) {
+    match assets::encoder_png(&rgba, frame.atlas_rect.width, frame.atlas_rect.height) {
         Ok(png) => (
             [
                 (header::CONTENT_TYPE, "image/png"),
@@ -376,12 +375,8 @@ pub async fn svg() -> Response {
             .and_then(|a| a.frames.first())
             .ok_or("pose de repos absente du package")?;
         let rgba = pet.extract(frame).map_err(|e| e.to_string())?;
-        let image = pixel::Image::nouvelle(
-            frame.atlas_rect.width,
-            frame.atlas_rect.height,
-            rgba,
-        )
-        .map_err(|e| e.to_string())?;
+        let image = pixel::Image::nouvelle(frame.atlas_rect.width, frame.atlas_rect.height, rgba)
+            .map_err(|e| e.to_string())?;
         pixel::vectoriser(&image, pixel::ReglagesVecteur::default()).map_err(|e| e.to_string())
     });
     match prepare {

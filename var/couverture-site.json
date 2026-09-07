@@ -1,10 +1,10 @@
 {
-  "genere_le": "2026-09-07T00:14:57Z",
+  "genere_le": "2026-09-07T02:37:56Z",
   "version": "0.5.9",
   "routes_montees": 84,
   "total": {
-    "capacites": 577,
-    "poids": 255842
+    "capacites": 578,
+    "poids": 255843
   },
   "par_etat": {
     "bloque": {
@@ -12,8 +12,8 @@
       "poids": 9
     },
     "interne": {
-      "capacites": 294,
-      "poids": 5805
+      "capacites": 295,
+      "poids": 5806
     },
     "manquant": {
       "capacites": 0,
@@ -35,8 +35,8 @@
       "commande": "niers --help",
       "unite": "capacités",
       "total": {
-        "capacites": 42,
-        "poids": 42
+        "capacites": 43,
+        "poids": 43
       },
       "par_etat": {
         "bloque": {
@@ -44,8 +44,8 @@
           "poids": 0
         },
         "interne": {
-          "capacites": 29,
-          "poids": 29
+          "capacites": 30,
+          "poids": 30
         },
         "manquant": {
           "capacites": 0,
@@ -348,8 +348,8 @@
       "id": "niers-reverse",
       "source": "niers",
       "etat": "interne",
-      "capacites": 11,
-      "poids": 11,
+      "capacites": 12,
+      "poids": 12,
       "raison": "boucle de reverse-engineering : coûteuse, privilégiée, sans public (§ 5, lot 1)"
     },
     {
@@ -427,6 +427,14 @@
   ],
   "incoherences": [],
   "capacites": [
+    {
+      "source": "niers",
+      "nom": "computer-use",
+      "poids": 1,
+      "regle": "niers-reverse",
+      "etat": "interne",
+      "raison": "boucle de reverse-engineering : coûteuse, privilégiée, sans public (§ 5, lot 1)"
+    },
     {
       "source": "niers",
       "nom": "cpp",

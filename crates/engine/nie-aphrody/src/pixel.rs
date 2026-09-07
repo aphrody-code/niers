@@ -1072,7 +1072,9 @@ impl Crop {
             return Err(Error::Invalid(format!("--crop « {s} » : attendu X,Y,W,H")));
         };
         if w == 0 || h == 0 {
-            return Err(Error::Invalid(format!("--crop « {s} » : largeur et hauteur ≥ 1")));
+            return Err(Error::Invalid(format!(
+                "--crop « {s} » : largeur et hauteur ≥ 1"
+            )));
         }
         Ok(Self { x, y, w, h })
     }
@@ -1118,7 +1120,15 @@ mod tests {
     #[test]
     fn crop_parse_accepte_la_forme_x_y_w_h_et_refuse_le_reste() {
         let c = Crop::parse("10, 20,30,40").expect("forme valide");
-        assert_eq!(c, Crop { x: 10, y: 20, w: 30, h: 40 });
+        assert_eq!(
+            c,
+            Crop {
+                x: 10,
+                y: 20,
+                w: 30,
+                h: 40
+            }
+        );
         assert_eq!(c.boite().x1, 39);
         assert_eq!(c.boite().y1, 59);
         assert!(Crop::parse("1,2,3").is_err());
@@ -1132,15 +1142,42 @@ mod tests {
         let mut rgba = Vec::new();
         for _y in 0..4 {
             for x in 0..4 {
-                rgba.extend_from_slice(if x < 2 { &[255, 0, 0, 255] } else { &[0, 0, 255, 255] });
+                rgba.extend_from_slice(if x < 2 {
+                    &[255, 0, 0, 255]
+                } else {
+                    &[0, 0, 255, 255]
+                });
             }
         }
         let img = Image::nouvelle(4, 4, rgba).expect("tampon");
-        let droite = palette_crop(&img, Crop { x: 2, y: 0, w: 2, h: 4 }, 3).expect("mesure");
+        let droite = palette_crop(
+            &img,
+            Crop {
+                x: 2,
+                y: 0,
+                w: 2,
+                h: 4,
+            },
+            3,
+        )
+        .expect("mesure");
         assert_eq!(droite.len(), 1, "une seule classe attendue : {droite:?}");
         assert_eq!(droite[0].hex, "#0000FF");
         assert!((droite[0].part_pct - 100.0).abs() < 1e-9);
-        assert!(palette_crop(&img, Crop { x: 3, y: 0, w: 2, h: 4 }, 3).is_err(), "hors image");
+        assert!(
+            palette_crop(
+                &img,
+                Crop {
+                    x: 3,
+                    y: 0,
+                    w: 2,
+                    h: 4
+                },
+                3
+            )
+            .is_err(),
+            "hors image"
+        );
     }
 
     /// Un disque plein sur fond transparent : les grandeurs mesurées doivent être celles de la

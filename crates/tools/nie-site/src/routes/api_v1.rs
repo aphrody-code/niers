@@ -21,9 +21,7 @@ use serde::Serialize;
 use crate::error::ErreurSite;
 use crate::routes::{DemandePage, Page};
 use crate::state::EtatSite;
-use crate::vfs_index::{
-    Compte, DemandeFiltre, Fichier, FiltresAppliques, SEGMENT_TOUT, VUES, Vue,
-};
+use crate::vfs_index::{Compte, DemandeFiltre, Fichier, FiltresAppliques, SEGMENT_TOUT, VUES, Vue};
 
 /// Table du miroir dont sont tirés les personnages. Constante de la crate : jamais un nom de
 /// table venu du client.
@@ -373,7 +371,9 @@ fn clauses_chara(
         // joker SQL (défaut relevé ailleurs dans le dépôt).
         let motif = format!(
             "%{}%",
-            m.replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_")
+            m.replace('\\', "\\\\")
+                .replace('%', "\\%")
+                .replace('_', "\\_")
         );
         ou.push(ClauseChara {
             colonne: None,
@@ -454,7 +454,9 @@ pub async fn chara(
     let (nom_tri, clause_tri) = match choisi {
         Some((public, colonne)) => (
             (*public).to_owned(),
-            format!("CASE WHEN \"{colonne}\" IS NULL THEN 1 ELSE 0 END, \"{colonne}\" {sens}, internal_code"),
+            format!(
+                "CASE WHEN \"{colonne}\" IS NULL THEN 1 ELSE 0 END, \"{colonne}\" {sens}, internal_code"
+            ),
         ),
         None => ("zukan".to_owned(), tri_defaut),
     };
@@ -608,18 +610,43 @@ mod tests {
         let (clauses, _, _) = clauses_chara(Some("mark"), &d);
 
         let (page, p_page) = ou_chara(&clauses, None);
-        assert_eq!(page.matches('?').count(), 7, "5 pour le motif + element + position");
+        assert_eq!(
+            page.matches('?').count(),
+            7,
+            "5 pour le motif + element + position"
+        );
         assert_eq!(p_page.len(), 7);
 
         let (f_element, p_element) = ou_chara(&clauses, Some("element"));
-        assert_eq!(f_element.matches('?').count(), 6, "element retire, position gardee");
-        assert!(f_element.contains("\"position\""), "les AUTRES filtres restent : {f_element}");
-        assert!(!f_element.contains("\"element\""), "le sien part : {f_element}");
-        assert_eq!(p_element, ["%mark%"; 5].iter().map(|s| (*s).to_owned()).chain(["Milieu".to_owned()]).collect::<Vec<_>>());
+        assert_eq!(
+            f_element.matches('?').count(),
+            6,
+            "element retire, position gardee"
+        );
+        assert!(
+            f_element.contains("\"position\""),
+            "les AUTRES filtres restent : {f_element}"
+        );
+        assert!(
+            !f_element.contains("\"element\""),
+            "le sien part : {f_element}"
+        );
+        assert_eq!(
+            p_element,
+            ["%mark%"; 5]
+                .iter()
+                .map(|s| (*s).to_owned())
+                .chain(["Milieu".to_owned()])
+                .collect::<Vec<_>>()
+        );
 
         // La recherche libre ne se retire jamais : elle ne porte sur aucune colonne facetee.
         let (f_series, _) = ou_chara(&clauses, Some("series"));
-        assert_eq!(f_series.matches('?').count(), 7, "aucune colonne `series` n'etait filtree");
+        assert_eq!(
+            f_series.matches('?').count(),
+            7,
+            "aucune colonne `series` n'etait filtree"
+        );
     }
 
     #[test]

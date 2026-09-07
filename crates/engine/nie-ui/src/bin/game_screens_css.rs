@@ -24,7 +24,12 @@ fn main() -> ExitCode {
     match args.first().map(String::as_str) {
         Some("--write") => match std::fs::write(&chemin, genere.as_bytes()) {
             Ok(()) => {
-                eprintln!("{} ecrit — {} octets, {} lignes", chemin.display(), genere.len(), genere.lines().count());
+                eprintln!(
+                    "{} ecrit — {} octets, {} lignes",
+                    chemin.display(),
+                    genere.len(),
+                    genere.lines().count()
+                );
                 ExitCode::SUCCESS
             }
             Err(e) => {
@@ -44,10 +49,19 @@ fn main() -> ExitCode {
                     .zip(genere.lines())
                     .position(|(a, b)| a != b)
                     .map_or_else(
-                        || format!("longueurs : {} livres, {} engendres", livre.len(), genere.len()),
+                        || {
+                            format!(
+                                "longueurs : {} livres, {} engendres",
+                                livre.len(),
+                                genere.len()
+                            )
+                        },
                         |n| format!("premiere divergence ligne {}", n + 1),
                     );
-                eprintln!("{} DIVERGE — {premiere}. Regenerer : --write", chemin.display());
+                eprintln!(
+                    "{} DIVERGE — {premiere}. Regenerer : --write",
+                    chemin.display()
+                );
                 ExitCode::FAILURE
             }
             Err(e) => {

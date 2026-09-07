@@ -1960,8 +1960,15 @@ fn run() -> anyhow::Result<()> {
         .init();
     let cli = Cli::parse();
     match cli.cmd {
-        Cmd::ComputerUse { surface, executable, ghidra_url } => {
-            println!("{}", nie_computer_use::probe_cli(&surface, executable, ghidra_url)?);
+        Cmd::ComputerUse {
+            surface,
+            executable,
+            ghidra_url,
+        } => {
+            println!(
+                "{}",
+                nie_computer_use::probe_cli(&surface, executable, ghidra_url)?
+            );
             Ok(())
         }
         Cmd::Cpp { args } => delegate::cpp(&args),

@@ -26,6 +26,21 @@ Versions lues dans `Cargo.lock`, pas déclarées d'intention.
 | Base de connaissance | `rusqlite` (bundled) | 0.37 | `var/niers.sqlite` |
 | Désassemblage | `iced-x86` + `goblin` | — | `nie-re`, `nie-asm` — pas de dépendance externe à r2/objdump |
 
+### Reverse engineering et Computer Use
+
+La chaîne canonique est `nie-re` (analyse statique et base SQLite) → `nie-trace` (processus vivant)
+→ `nie-computer-use` (façade d’orchestration). Les consommateurs sont `nie-cli re`, `nie mem`, les
+exemples de dumps et Inacord en lecture de `var/niers.sqlite`. Les fichiers locaux correspondants
+sont les crates sous `crates/forge/` et `crates/tools/`; ils correspondent à `origin/main` du dépôt
+[aphrody-code/nie](https://github.com/aphrody-code/nie) sur l’audit du 2026-09-07.
+
+Les algorithmes Rust sont conservés. La seule migration recommandée est une couche de session
+read-only typée dans `nie-computer-use`, avec hash du binaire, `binary_id`, RVA/VA, backend et
+artefact de preuve. La surface d’écriture (`write_*`, recettes, patch EAC) et le lancement de
+processus ne doivent pas être admis implicitement. La parité actuelle est partielle : les tests
+unitaires passent, mais il manque encore le test Windows live, les fixtures PE/SQLite, le handshake
+Ghidra MCP et les tests de limites.
+
 Physique de match, boucle de jeu, skinning, IA, police et compositeur 2D n'ont **aucune
 dépendance** : ce sont des ports du décompilé (`nie-core`, `nie-formats::menu`, `nie-formats::font`).
 

@@ -12,6 +12,24 @@
       "sourceType": "github",
       "skillPath": "skills/m15-anti-pattern/SKILL.md",
       "computedHash": "d9f5d80bd2ab49f063a61d90a96100298788ea0e1e5bd5e917be3c7e124078a2"
+    },
+    "mcp-creator": {
+      "source": "curiositech/some_claude_skills",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/mcp-creator/SKILL.md",
+      "computedHash": "b7eda43deefcdbe7850a0daa87f8c2af2e1c9ce2b9afa35fd2fee8c627998b82"
+    },
+    "plugin-forge": {
+      "source": "bonkey/skills",
+      "sourceType": "github",
+      "skillPath": "skills/plugin-forge/SKILL.md",
+      "computedHash": "f4f238b234fddc0d3f0afa63ab5c9a7680e7acc096f815eecc3406d956721d99"
+    },
+    "yolo": {
+      "source": "aphrody-code/YOLO",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "3e2889ef5cdd1fe2fec9d4fc212f1aadddb165644429199b23b50c170b541d21"
     }
   }
 }

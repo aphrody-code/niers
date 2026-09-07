@@ -12,9 +12,10 @@ import "@niers/inacord-ui/shell/game-tokens.css";
 import "@niers/inacord-ui/shell/game-screens.css";
 import * as React from "react";
 import { useEffect, useMemo, useState } from "react";
-import { ALIAS, EXPLORATEUR, MEDIAS, SETTINGS, routesReconnues } from "./entrees";
+import { ALIAS, AVATAR, EXPLORATEUR, MEDIAS, SETTINGS, routesReconnues } from "./entrees";
 import { Catalogue } from "./pages/Catalogue";
 import { Chargement } from "./pages/Chargement";
+import { Avatar } from "./pages/Avatar";
 import { EcranSecondaire, Note } from "./pages/Ecran";
 import { Explorateur } from "./pages/Explorateur";
 import { MenuPrincipal } from "./pages/MenuPrincipal";
@@ -199,6 +200,8 @@ function Site() {
 				<Note>Chargement…</Note>
 			) : !pret ? (
 				<Note>Le catalogue est en cours de préparation. Il s'affichera dès qu'il sera prêt.</Note>
+			) : vue === AVATAR ? (
+				<Avatar />
 			) : vue === EXPLORATEUR || (ALIAS as readonly string[]).includes(vue) ? (
 				// Les deux URL héritées mènent ici : l'explorateur EST la page de recherche et
 				// de données, son panneau de droite en porte le contenu.

@@ -6,8 +6,8 @@
 //! Vérité terrain = la sortie d'inagle `packages/inagle/src/entries/enjoy_mode_teams.json`
 //! (28 entrées). Les valeurs hex ci-dessous ont été vérifiées byte-exact contre ce fichier.
 
-use nie_data::hash::HashId;
 use nie_data::enjoy_mode_team::{EnjoyModeTeam, parse_enjoy_mode_teams};
+use nie_data::hash::HashId;
 use serde_json::{Value, json};
 
 /// Une variable CfgBin entière (les CRC/Int du dump).

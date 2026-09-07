@@ -705,9 +705,9 @@ pub async fn script(
         let chunk = decoder(&octets)?;
         let v = match forme {
             Forme::Analyse => serde_json::to_value(analyser(&pour_tache, octets.len(), &chunk)),
-            Forme::Chunk => serde_json::to_value(&chunk).map(|c| {
-                serde_json::json!({ "chemin": pour_tache, "octets": octets.len(), "chunk": c })
-            }),
+            Forme::Chunk => serde_json::to_value(&chunk).map(
+                |c| serde_json::json!({ "chemin": pour_tache, "octets": octets.len(), "chunk": c }),
+            ),
         }
         .map_err(|e| ErreurSite::Interne(format!("reponse non serialisable: {e}")))?;
         Ok::<_, ErreurSite>(v)
@@ -741,10 +741,7 @@ pub async fn desassemblage(
         header::CONTENT_TYPE,
         HeaderValue::from_static("text/plain; charset=utf-8"),
     );
-    entetes.insert(
-        header::CACHE_CONTROL,
-        HeaderValue::from_static(CONTROLE),
-    );
+    entetes.insert(header::CACHE_CONTROL, HeaderValue::from_static(CONTROLE));
     Ok(reponse)
 }
 

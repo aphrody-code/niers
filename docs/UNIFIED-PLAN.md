@@ -59,3 +59,24 @@
 3. `cargo check --workspace --tests` (Workspace consistency)
 4. `scripts/e2e-site.sh` (Live API coverage validation)
 5. Live service returns verified count and response payload (not just 200/active).
+
+## 5. RE / Computer Use parity gate
+
+The RE work follows one canonical chain:
+
+```text
+local executable + hash
+  -> Ghidra / CodeBrowser evidence
+  -> nie-re + nie-index (static analysis and SQLite)
+  -> nie-trace (bounded live reads/scans)
+  -> nie-computer-use (typed read-only orchestration)
+```
+
+The existing Rust crates are kept; no duplicate implementation is to be removed. The migration
+target is the boundary: a session must carry executable hash, image base, explicit SQLite
+`binary_id`, RVA/VA, backend, operation and evidence artifact. Writes, EAC patches, recipes and
+process launch stay outside the default agent surface.
+
+The gate is not complete until the parity tests cover PE + SQLite fixtures, Ghidra CSV/schema and
+MCP handshake, Windows live memory, size/permission limits, and rejection of a mismatched build.
+The detailed inventory is [`docs/re/PARITY-AUDIT-2026-09-07.md`](re/PARITY-AUDIT-2026-09-07.md).

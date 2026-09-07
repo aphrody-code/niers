@@ -30,6 +30,8 @@ Pour éviter les doublons et les contradictions entre agents (Claude, Codex, Ast
 ### 2.2 Reverse Engineering, Binaire & Formats
 - **[FORGE.md](FORGE.md)** : Production de `nie.exe` byte-exact (atteint 74.00% du binaire et 92.24% de `.text`).
 - **[RE.md](RE.md)** : Base de connaissances RE, ancrage des fonctions et structures décompilées.
+- **[re/README.md](re/README.md)** : Centre canonique des données RE et règle d’audit local → consommateur → Rust → parité.
+- **[COMPUTER-USE-RE-TRACE.md](COMPUTER-USE-RE-TRACE.md)** : frontière read-only, provenance, garde-fous et décision de migration `nie-re`/`nie-trace`.
 - **[FORMATS.md](FORMATS.md)** & **[VFS.md](VFS.md)** : Spécifications des conteneurs CPK, RDBN, T2B, textures G4TX et VFS (255 308 fichiers indexés).
 - **[modele-de-match.md](modele-de-match.md)** : Analyse de la simulation match et calculs de tirs/arrêts.
 
@@ -38,6 +40,7 @@ Pour éviter les doublons et les contradictions entre agents (Claude, Codex, Ast
 - **[MIGRATION-EXPLORATEUR.md](MIGRATION-EXPLORATEUR.md)** : Unification Inacord / Aphrody via `packages/inacord-ui`.
 - **[FILTRES.md](FILTRES.md)** : Matrice des filtres et navigation du catalogue.
 - **[EXPLOITATION.md](EXPLOITATION.md)** & **[SECURITE-BASCULE.md](SECURITE-BASCULE.md)** : Gestion de la production VPS, services systemd, nginx et remédiation sécurité.
+- **[MCP.md](MCP.md)** : Architecture du serveur MCP natif pur Rust (`rmcp`), couverture intégrale de `nie-cli` et plan de remplacement de `apps/nie-mcp`.
 - **[FUSION.md](FUSION.md)** : Justification du monorepo unifié pour l'écosystème Inazuma Eleven.
 
 ---

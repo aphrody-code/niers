@@ -64,7 +64,11 @@ fn main() -> ExitCode {
         return ExitCode::FAILURE;
     }
     if identique {
-        println!("\n{} : inchange ({} proprietes).", chemin.display(), proprietes(&attendu));
+        println!(
+            "\n{} : inchange ({} proprietes).",
+            chemin.display(),
+            proprietes(&attendu)
+        );
         return ExitCode::SUCCESS;
     }
     if let Some(parent) = chemin.parent()
@@ -111,7 +115,10 @@ fn proprietes(css: &str) -> usize {
 /// Les dix teintes de départ : ce que la mesure a trouvé sur l'atlas.
 fn afficher_palette() {
     println!("PALETTE MESUREE — 10 teintes, k-means Oklab sur les 74 frames de l'atlas\n");
-    println!("  {:<8} {:<9} {:>6}   {:<28}", "teinte", "hex", "part", "oklch");
+    println!(
+        "  {:<8} {:<9} {:>6}   {:<28}",
+        "teinte", "hex", "part", "oklch"
+    );
     println!("  {}", "-".repeat(58));
     for t in &PALETTE {
         println!(
@@ -124,7 +131,10 @@ fn afficher_palette() {
 /// Les vingt-neuf rôles dérivés, avec leur marge au gamut et, au premier passage, l'ancienne
 /// valeur écrite à la main qu'ils remplacent.
 fn afficher_roles(ancien: Option<&str>) {
-    println!("\n\nROLES DERIVES — {} couleurs\n", ROLES.len() + ROLES_INACORD.len());
+    println!(
+        "\n\nROLES DERIVES — {} couleurs\n",
+        ROLES.len() + ROLES_INACORD.len()
+    );
     println!(
         "  {:<24} {:<7} {:<28} {:<9} {:<9} marge gamut",
         "role", "source", "oklch", "avant", "apres"
@@ -174,7 +184,10 @@ fn hex_ecrit(css: &str, nom: &str) -> Option<String> {
 
 /// Le contraste WCAG des paires que l'interface superpose réellement.
 fn afficher_contrastes() {
-    println!("\n\nCONTRASTES WCAG — les {} paires que l'interface affiche\n", PAIRES.len());
+    println!(
+        "\n\nCONTRASTES WCAG — les {} paires que l'interface affiche\n",
+        PAIRES.len()
+    );
     println!(
         "  {:<22} {:<22} {:>8} {:>8}   verdict",
         "texte", "sur fond", "mesure", "minimum"

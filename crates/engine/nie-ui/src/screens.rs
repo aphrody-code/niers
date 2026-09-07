@@ -168,39 +168,231 @@ macro_rules! capture {
 
 /// Les 33 captures, dans l'ordre exact du manifeste (`entries[]`).
 pub const CAPTURES: [Capture; 33] = [
-    capture!("filters_elements.png", "filters_elements", CharaBankMenu, Some("filter_elements"), DocumentedFamily),
-    capture!("filters_position.png", "filters_position", CharaBankMenu, Some("filter_position"), DocumentedFamily),
-    capture!("filters_rarity.png", "filters_rarity", CharaBankMenu, Some("filter_rarity"), DocumentedFamily),
-    capture!("filters_appearance.png", "filters_appearance", CharaBankMenu, Some("filter_appearance"), DocumentedFamily),
-    capture!("filters_foot.png", "filters_foot", CharaBankMenu, Some("filter_foot"), DocumentedFamily),
-    capture!("filters_bonus.png", "filters_bonus", CharaBankMenu, Some("filter_bonus"), DocumentedFamily),
-    capture!("filters_team_role.png", "filters_team_role", CharaBankMenu, Some("filter_team_role"), DocumentedFamily),
-    capture!("filters_team.png", "filters_team", CharaBankMenu, Some("filter_team"), DocumentedFamily),
-    capture!("formation_select.png", "formation_select", SoccerFormationMenu, None, DocumentedFamily),
-    capture!("formation_presets.png", "formation_presets", SoccerFormationMenu, Some("formation_preset_selector"), DocumentedFamily),
-    capture!("character_detail_hamano.png", "character_detail_hamano", CharaBankMenu, Some("character_detail"), DocumentedFamily),
-    capture!("chronicle_map.png", "chronicle_map", ChronicleModeTopMenu, Some("chronicle_map"), DocumentedFamily),
-    capture!("main_menu.png", "main_menu", MainMenu, None, DocumentedExact),
-    capture!("options.png", "options", CameraOptionMenu, None, ConfigAndVisual),
-    capture!("controls.png", "controls", CameraOptionMenuShortcut, Some("controller_settings"), ConfigAndVisual),
-    capture!("trophy_gallery.png", "trophy_gallery", GalleryMenu, None, DocumentedFamily),
-    capture!("pause_controls.png", "pause_controls", PauseMenu, None, DictionaryAndVisual),
-    capture!("story_mode.png", "story_mode", StoryModeTopMenu, None, DocumentedExact),
-    capture!("avatar_edit_top.png", "avatar_edit_top", KizunaTownAvatarMenu, Some("avatar_edit_root"), DocumentedFamily),
-    capture!("avatar_edit_style.png", "avatar_edit_style", KizunaTownAvatarMenu, Some("chara_edit_style"), DocumentedFamily),
-    capture!("avatar_edit_hair.png", "avatar_edit_hair", KizunaTownAvatarMenu, Some("chara_edit_hair"), DocumentedFamily),
-    capture!("avatar_edit_clothes.png", "avatar_edit_clothes", KizunaTownAvatarMenu, Some("chara_edit_clothes"), DocumentedFamily),
-    capture!("avatar_edit_stats.png", "avatar_edit_stats", KizunaTownAvatarMenu, Some("chara_edit_stats"), DocumentedFamily),
-    capture!("avatar_edit_name.png", "avatar_edit_name", KizunaTownAvatarMenu, Some("chara_edit_name"), DocumentedFamily),
-    capture!("main_menu_alt.png", "main_menu_alt", MainMenu, None, DocumentedExact),
-    capture!("event_calendar.png", "event_calendar", AdventCalendarMenu, None, DocumentedExact),
+    capture!(
+        "filters_elements.png",
+        "filters_elements",
+        CharaBankMenu,
+        Some("filter_elements"),
+        DocumentedFamily
+    ),
+    capture!(
+        "filters_position.png",
+        "filters_position",
+        CharaBankMenu,
+        Some("filter_position"),
+        DocumentedFamily
+    ),
+    capture!(
+        "filters_rarity.png",
+        "filters_rarity",
+        CharaBankMenu,
+        Some("filter_rarity"),
+        DocumentedFamily
+    ),
+    capture!(
+        "filters_appearance.png",
+        "filters_appearance",
+        CharaBankMenu,
+        Some("filter_appearance"),
+        DocumentedFamily
+    ),
+    capture!(
+        "filters_foot.png",
+        "filters_foot",
+        CharaBankMenu,
+        Some("filter_foot"),
+        DocumentedFamily
+    ),
+    capture!(
+        "filters_bonus.png",
+        "filters_bonus",
+        CharaBankMenu,
+        Some("filter_bonus"),
+        DocumentedFamily
+    ),
+    capture!(
+        "filters_team_role.png",
+        "filters_team_role",
+        CharaBankMenu,
+        Some("filter_team_role"),
+        DocumentedFamily
+    ),
+    capture!(
+        "filters_team.png",
+        "filters_team",
+        CharaBankMenu,
+        Some("filter_team"),
+        DocumentedFamily
+    ),
+    capture!(
+        "formation_select.png",
+        "formation_select",
+        SoccerFormationMenu,
+        None,
+        DocumentedFamily
+    ),
+    capture!(
+        "formation_presets.png",
+        "formation_presets",
+        SoccerFormationMenu,
+        Some("formation_preset_selector"),
+        DocumentedFamily
+    ),
+    capture!(
+        "character_detail_hamano.png",
+        "character_detail_hamano",
+        CharaBankMenu,
+        Some("character_detail"),
+        DocumentedFamily
+    ),
+    capture!(
+        "chronicle_map.png",
+        "chronicle_map",
+        ChronicleModeTopMenu,
+        Some("chronicle_map"),
+        DocumentedFamily
+    ),
+    capture!(
+        "main_menu.png",
+        "main_menu",
+        MainMenu,
+        None,
+        DocumentedExact
+    ),
+    capture!(
+        "options.png",
+        "options",
+        CameraOptionMenu,
+        None,
+        ConfigAndVisual
+    ),
+    capture!(
+        "controls.png",
+        "controls",
+        CameraOptionMenuShortcut,
+        Some("controller_settings"),
+        ConfigAndVisual
+    ),
+    capture!(
+        "trophy_gallery.png",
+        "trophy_gallery",
+        GalleryMenu,
+        None,
+        DocumentedFamily
+    ),
+    capture!(
+        "pause_controls.png",
+        "pause_controls",
+        PauseMenu,
+        None,
+        DictionaryAndVisual
+    ),
+    capture!(
+        "story_mode.png",
+        "story_mode",
+        StoryModeTopMenu,
+        None,
+        DocumentedExact
+    ),
+    capture!(
+        "avatar_edit_top.png",
+        "avatar_edit_top",
+        KizunaTownAvatarMenu,
+        Some("avatar_edit_root"),
+        DocumentedFamily
+    ),
+    capture!(
+        "avatar_edit_style.png",
+        "avatar_edit_style",
+        KizunaTownAvatarMenu,
+        Some("chara_edit_style"),
+        DocumentedFamily
+    ),
+    capture!(
+        "avatar_edit_hair.png",
+        "avatar_edit_hair",
+        KizunaTownAvatarMenu,
+        Some("chara_edit_hair"),
+        DocumentedFamily
+    ),
+    capture!(
+        "avatar_edit_clothes.png",
+        "avatar_edit_clothes",
+        KizunaTownAvatarMenu,
+        Some("chara_edit_clothes"),
+        DocumentedFamily
+    ),
+    capture!(
+        "avatar_edit_stats.png",
+        "avatar_edit_stats",
+        KizunaTownAvatarMenu,
+        Some("chara_edit_stats"),
+        DocumentedFamily
+    ),
+    capture!(
+        "avatar_edit_name.png",
+        "avatar_edit_name",
+        KizunaTownAvatarMenu,
+        Some("chara_edit_name"),
+        DocumentedFamily
+    ),
+    capture!(
+        "main_menu_alt.png",
+        "main_menu_alt",
+        MainMenu,
+        None,
+        DocumentedExact
+    ),
+    capture!(
+        "event_calendar.png",
+        "event_calendar",
+        AdventCalendarMenu,
+        None,
+        DocumentedExact
+    ),
     capture!("shop.png", "shop", ShopMenu, None, DocumentedExact),
-    capture!("chronicle_shop.png", "chronicle_shop", ShopMenu, Some("chronicle_shop"), DocumentedFamily),
-    capture!("chronicle_mode.png", "chronicle_mode", ChronicleModeTopMenu, None, DocumentedExact),
-    capture!("player_universe.png", "player_universe", PlayersUniverseMenu, None, DocumentedExact),
-    capture!("player_roster.png", "player_roster", CharaBankMenu, Some("character_roster"), DocumentedFamily),
-    capture!("player_skill_tree.png", "player_skill_tree", AbilityLearningBoardMenu, None, DocumentedExact),
-    capture!("bank_character_detail.png", "bank_character_detail", CharaBankMenu, Some("character_detail"), DocumentedFamily),
+    capture!(
+        "chronicle_shop.png",
+        "chronicle_shop",
+        ShopMenu,
+        Some("chronicle_shop"),
+        DocumentedFamily
+    ),
+    capture!(
+        "chronicle_mode.png",
+        "chronicle_mode",
+        ChronicleModeTopMenu,
+        None,
+        DocumentedExact
+    ),
+    capture!(
+        "player_universe.png",
+        "player_universe",
+        PlayersUniverseMenu,
+        None,
+        DocumentedExact
+    ),
+    capture!(
+        "player_roster.png",
+        "player_roster",
+        CharaBankMenu,
+        Some("character_roster"),
+        DocumentedFamily
+    ),
+    capture!(
+        "player_skill_tree.png",
+        "player_skill_tree",
+        AbilityLearningBoardMenu,
+        None,
+        DocumentedExact
+    ),
+    capture!(
+        "bank_character_detail.png",
+        "bank_character_detail",
+        CharaBankMenu,
+        Some("character_detail"),
+        DocumentedFamily
+    ),
 ];
 
 /// La capture nommée par son `screen`, ou `None`.
@@ -211,7 +403,9 @@ pub fn find(screen: &str) -> Option<Capture> {
 
 /// Les captures d'un écran canonique, dans l'ordre du manifeste.
 pub fn of_screen(screen: CanonicalScreen) -> impl Iterator<Item = Capture> {
-    CAPTURES.into_iter().filter(move |c| c.canonical_screen == screen)
+    CAPTURES
+        .into_iter()
+        .filter(move |c| c.canonical_screen == screen)
 }
 
 /// Le dossier des captures : `NIE_MENU_CAPTURES` s'il est posé et non vide, sinon
@@ -253,7 +447,10 @@ pub fn captures_dir_if_present() -> Option<PathBuf> {
 pub fn png_size(header: &[u8]) -> Result<(u32, u32), String> {
     const SIGNATURE: [u8; 8] = [0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A];
     if header.len() < 24 {
-        return Err(format!("{} octets : en-tête PNG tronqué (24 attendus)", header.len()));
+        return Err(format!(
+            "{} octets : en-tête PNG tronqué (24 attendus)",
+            header.len()
+        ));
     }
     if header[..8] != SIGNATURE {
         return Err("signature PNG absente".into());
@@ -261,7 +458,8 @@ pub fn png_size(header: &[u8]) -> Result<(u32, u32), String> {
     if &header[12..16] != b"IHDR" {
         return Err("le premier chunk n'est pas IHDR".into());
     }
-    let be = |i: usize| u32::from_be_bytes([header[i], header[i + 1], header[i + 2], header[i + 3]]);
+    let be =
+        |i: usize| u32::from_be_bytes([header[i], header[i + 1], header[i + 2], header[i + 3]]);
     Ok((be(16), be(20)))
 }
 
@@ -286,19 +484,35 @@ mod tests {
         assert_eq!(fichiers.len(), 33);
         assert_eq!(ecrans.len(), 33);
         for c in CAPTURES {
-            assert_eq!(c.file, format!("{}.png", c.screen), "{} : file ≠ screen.png", c.screen);
+            assert_eq!(
+                c.file,
+                format!("{}.png", c.screen),
+                "{} : file ≠ screen.png",
+                c.screen
+            );
         }
     }
 
     #[test]
     fn les_14_ecrans_canoniques_sont_tous_captures_et_nommes_sans_doublon() {
-        let noms: BTreeSet<&str> = CanonicalScreen::ALL.iter().map(|c| c.manifest_name()).collect();
+        let noms: BTreeSet<&str> = CanonicalScreen::ALL
+            .iter()
+            .map(|c| c.manifest_name())
+            .collect();
         assert_eq!(noms.len(), 14);
         for s in CanonicalScreen::ALL {
-            assert_eq!(CanonicalScreen::from_manifest_name(s.manifest_name()), Some(s));
-            assert!(of_screen(s).next().is_some(), "{} : aucune capture", s.manifest_name());
+            assert_eq!(
+                CanonicalScreen::from_manifest_name(s.manifest_name()),
+                Some(s)
+            );
+            assert!(
+                of_screen(s).next().is_some(),
+                "{} : aucune capture",
+                s.manifest_name()
+            );
         }
-        let distincts: BTreeSet<CanonicalScreen> = CAPTURES.iter().map(|c| c.canonical_screen).collect();
+        let distincts: BTreeSet<CanonicalScreen> =
+            CAPTURES.iter().map(|c| c.canonical_screen).collect();
         assert_eq!(distincts.len(), 14);
         for c in [
             Confidence::DocumentedExact,
@@ -314,7 +528,9 @@ mod tests {
     fn find_et_of_screen_retrouvent_le_menu_principal() {
         assert_eq!(find("main_menu").map(|c| c.file), Some("main_menu.png"));
         assert_eq!(find("inconnu"), None);
-        let principal: Vec<&str> = of_screen(CanonicalScreen::MainMenu).map(|c| c.screen).collect();
+        let principal: Vec<&str> = of_screen(CanonicalScreen::MainMenu)
+            .map(|c| c.screen)
+            .collect();
         assert_eq!(principal, ["main_menu", "main_menu_alt"]);
     }
 
@@ -344,22 +560,48 @@ mod tests {
         let texte = std::fs::read_to_string(dir.join("manifest.json")).expect("manifest lisible");
         let json: serde_json::Value = serde_json::from_str(&texte).expect("manifest JSON");
         assert_eq!(json["schema_version"], 1);
-        assert_eq!(json["image_dimensions"], serde_json::json!([IMAGE_SIZE.0, IMAGE_SIZE.1]));
+        assert_eq!(
+            json["image_dimensions"],
+            serde_json::json!([IMAGE_SIZE.0, IMAGE_SIZE.1])
+        );
         let entries = json["entries"].as_array().expect("entries[]");
-        assert_eq!(entries.len(), CAPTURES.len(), "le manifeste n'a plus 33 entrées");
+        assert_eq!(
+            entries.len(),
+            CAPTURES.len(),
+            "le manifeste n'a plus 33 entrées"
+        );
         for (i, (e, c)) in entries.iter().zip(CAPTURES.iter()).enumerate() {
             let lu = Capture {
-                file: Box::leak(e["file"].as_str().expect("file").to_owned().into_boxed_str()),
-                screen: Box::leak(e["screen"].as_str().expect("screen").to_owned().into_boxed_str()),
+                file: Box::leak(
+                    e["file"]
+                        .as_str()
+                        .expect("file")
+                        .to_owned()
+                        .into_boxed_str(),
+                ),
+                screen: Box::leak(
+                    e["screen"]
+                        .as_str()
+                        .expect("screen")
+                        .to_owned()
+                        .into_boxed_str(),
+                ),
                 canonical_screen: CanonicalScreen::from_manifest_name(
                     e["canonical_screen"].as_str().expect("canonical_screen"),
                 )
-                .unwrap_or_else(|| panic!("entrée {i} : canonical_screen inconnu {}", e["canonical_screen"])),
+                .unwrap_or_else(|| {
+                    panic!(
+                        "entrée {i} : canonical_screen inconnu {}",
+                        e["canonical_screen"]
+                    )
+                }),
                 visual_subscreen: e["visual_subscreen"]
                     .as_str()
                     .map(|s| &*Box::leak(s.to_owned().into_boxed_str())),
-                confidence: Confidence::from_manifest_name(e["confidence"].as_str().expect("confidence"))
-                    .unwrap_or_else(|| panic!("entrée {i} : confidence inconnue {}", e["confidence"])),
+                confidence: Confidence::from_manifest_name(
+                    e["confidence"].as_str().expect("confidence"),
+                )
+                .unwrap_or_else(|| panic!("entrée {i} : confidence inconnue {}", e["confidence"])),
             };
             assert_eq!(&lu, c, "entrée {i} ({}) diverge du manifeste", c.file);
         }
@@ -375,7 +617,8 @@ mod tests {
         let mut vus = 0;
         for c in CAPTURES {
             let chemin = dir.join(c.file);
-            let octets = std::fs::read(&chemin).unwrap_or_else(|e| panic!("{} : {e}", chemin.display()));
+            let octets =
+                std::fs::read(&chemin).unwrap_or_else(|e| panic!("{} : {e}", chemin.display()));
             let taille = png_size(&octets[..octets.len().min(24)])
                 .unwrap_or_else(|e| panic!("{} : {e}", chemin.display()));
             assert_eq!(taille, IMAGE_SIZE, "{} n'est pas en 2560×1440", c.file);
@@ -396,13 +639,23 @@ mod tests {
         let texte = std::fs::read_to_string(dir.join("manifest.json")).expect("manifest lisible");
         let json: serde_json::Value = serde_json::from_str(&texte).expect("manifest JSON");
         let mut documentes: BTreeSet<String> = BTreeSet::new();
-        for r in json["lua_analysis"]["documented_roots"].as_array().expect("documented_roots") {
+        for r in json["lua_analysis"]["documented_roots"]
+            .as_array()
+            .expect("documented_roots")
+        {
             documentes.insert(r.as_str().expect("racine").to_owned());
         }
-        for r in json["runtime_matrix"]["results"].as_array().expect("runtime_matrix.results") {
+        for r in json["runtime_matrix"]["results"]
+            .as_array()
+            .expect("runtime_matrix.results")
+        {
             documentes.insert(r["screen"].as_str().expect("screen").to_owned());
         }
-        assert!(documentes.len() >= 14, "le manifeste documente {} familles", documentes.len());
+        assert!(
+            documentes.len() >= 14,
+            "le manifeste documente {} familles",
+            documentes.len()
+        );
         for s in CanonicalScreen::ALL {
             assert!(
                 documentes.contains(s.manifest_name()),

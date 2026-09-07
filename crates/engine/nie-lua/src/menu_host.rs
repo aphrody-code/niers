@@ -2164,7 +2164,15 @@ pub fn drive_menu_for_frames(
     item_counts: &BTreeMap<u32, i32>,
     frames: u32,
 ) -> Result<DriveReport, LuaError> {
-    drive_menu_for_frames_impl(lua, script_bytes, name, layer_ids, item_counts, frames, true)
+    drive_menu_for_frames_impl(
+        lua,
+        script_bytes,
+        name,
+        layer_ids,
+        item_counts,
+        frames,
+        true,
+    )
 }
 
 /// Pilote un menu dont le chunk principal est déjà chargé dans `lua`.
@@ -2180,7 +2188,15 @@ pub(crate) fn drive_menu_for_frames_existing(
     item_counts: &BTreeMap<u32, i32>,
     frames: u32,
 ) -> Result<DriveReport, LuaError> {
-    drive_menu_for_frames_impl(lua, script_bytes, name, layer_ids, item_counts, frames, false)
+    drive_menu_for_frames_impl(
+        lua,
+        script_bytes,
+        name,
+        layer_ids,
+        item_counts,
+        frames,
+        false,
+    )
 }
 
 fn drive_menu_for_frames_impl(
@@ -2199,7 +2215,9 @@ fn drive_menu_for_frames_impl(
     let mut report = DriveReport {
         frames_requested: frames,
         decoded_instructions: crate::is_lua52_bytecode(script_bytes)
-            .then(|| crate::bytecode::parse(script_bytes).map(|chunk| chunk.main.total_instructions()))
+            .then(|| {
+                crate::bytecode::parse(script_bytes).map(|chunk| chunk.main.total_instructions())
+            })
             .transpose()?,
         top_level_ok: !initialize,
         ..DriveReport::default()
@@ -2212,8 +2230,7 @@ fn drive_menu_for_frames_impl(
         match func.call::<()>(()) {
             Ok(()) => report.top_level_ok = true,
             Err(e) => {
-                report.top_level_err =
-                    Some(e.to_string().lines().next().unwrap_or("").to_string())
+                report.top_level_err = Some(e.to_string().lines().next().unwrap_or("").to_string())
             }
         }
     }

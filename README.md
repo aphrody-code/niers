@@ -27,6 +27,7 @@
 - [Repository layout](#repository-layout)
 - [Platform support](#platform-support)
 - [Development](#development)
+- [Reverse-engineering bridge](#reverse-engineering-bridge)
 - [Roadmap](#roadmap)
 - [Contributing](#contributing)
 - [Legal](#legal)
@@ -234,6 +235,19 @@ Further reading: [`docs/PLAN.md`](docs/PLAN.md) (the plan, with numbers) ·
 [`docs/RE.md`](docs/RE.md) (the target and the loop) ·
 [`docs/FORMATS.md`](docs/FORMATS.md) (file formats) ·
 [`apps/inacord/ROADMAP.md`](apps/inacord/ROADMAP.md) (desktop app).
+
+## Reverse-engineering bridge
+
+The canonical local chain is `Ghidra → nie-re/nie-index → nie-trace → nie-computer-use`.
+`nie-re` owns static PE/`.pdata`/RTTI/vtable/disassembly analysis and the SQLite knowledge base;
+`nie-trace` owns bounded live process reads and scans; `nie-computer-use` is the read-only typed
+orchestration boundary. The source-to-consumer parity matrix and migration decision live in
+[`docs/re/PARITY-AUDIT-2026-09-07.md`](docs/re/PARITY-AUDIT-2026-09-07.md).
+
+Current measured gates: `nie-re` 72 passed / 0 failed, `nie-trace` 43 passed / 0 failed, and
+`nie-computer-use` 5 passed / 0 failed. These do not yet prove Windows live-memory, PE/SQLite,
+Ghidra MCP handshake, or wrong-build rejection. Existing Rust implementations are retained;
+only the orchestration boundary is scheduled for migration, with provenance and explicit limits.
 
 ## Roadmap
 

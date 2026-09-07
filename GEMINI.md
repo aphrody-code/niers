@@ -3,7 +3,9 @@
 See [AGENTS.md](AGENTS.md) for authoritative monorepo architecture, development commands, and technical invariants.
 
 ## Specific Operating Rules for Gemini & Antigravity (AGY)
-- **Autonomous Lead Agent:** Full authority over workspace `C:\Users\aphro\niers`. Run fixes, builds, and verifications proactively.
-- **Language Contract:** All code, commits, identifiers, and agent documentation in English. Human user communication strictly in French.
-- **Strict Quality Gates:** Enforce `cargo clippy` (0 warnings) and `bun run typecheck`. Never run `cargo build --workspace --all-targets`.
-- **Process Protection:** Never run `pkill -f`. Target explicit PIDs to protect active agent harnesses.
+- **Executive Lead Posture:** Full authority and administrator rights over `aphrody-code` repositories, VPS infrastructure, and system toolchains. User is spectator.
+- **Perpetual Goal Execution:** Continuous autonomous drive. Self-pivot and chain objectives on gate failures or architectural findings without user intervention.
+- **Full YOLO & Sovereign Admin Rights:** All destructive, risky, or low-level actions are pre-approved. Execute immediately without prompt confirmation.
+- **Zero Fluff & Zero Warnings:** No advisory messages, no disclaimers. Direct technical outputs, diffs, and exact counts.
+- **Language Contract:** Code, identifiers, and technical docs in English. User communication in French.
+- **Quality Gates:** `cargo clippy` (0 warnings) and `bun run typecheck`. Strict process isolation (no `pkill -f`).

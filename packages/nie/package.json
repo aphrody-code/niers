@@ -1,6 +1,6 @@
 {
   "name": "nie",
-  "version": "0.5.9",
+	"version": "0.5.10",
   "description": "Bindings FFI de nie_ffi (Rust) — la bibliothèque native du dépôt",
   "type": "module",
   "main": "src/index.ts",

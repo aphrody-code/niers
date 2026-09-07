@@ -2168,16 +2168,20 @@ fn assemble_chr_generic(state: &State, sub: &str, code: &str) -> Result<GlbBytes
         let g4mg = vfs
             .read(&g4mg_path)
             .with_context(|| format!("G4MG {g4mg_path}"))?;
-        // G4MD libre, sinon extrait du g4pkm (cas des modèles waza).
-        let g4md = match vfs.read(&g4md_path) {
-            Ok(b) => b,
-            Err(_) => {
-                let pkm = vfs
-                    .read(&g4pkm_path)
-                    .with_context(|| format!("ni G4MD libre ni g4pkm pour {sub}/{code}"))?;
-                extract_g4md_from_g4pkm(&pkm)
-                    .with_context(|| format!("G4MD absent du g4pkm {g4pkm_path}"))?
-            }
+        // Le G4MD embarqué est la métadonnée canonique quand le voisin G4PKM existe : certains
+        // modèles livrent aussi un G4MD libre historique, mais ses offsets/strides décrivent un
+        // autre LOD et sortent du G4MG compagnon (d010020/k000100 mesurés). Le fichier libre ne
+        // sert donc que si le paquet ne porte aucun G4MD extractible.
+        let g4md = match vfs.read(&g4pkm_path) {
+            Ok(pkm) => match extract_g4md_from_g4pkm(&pkm) {
+                Ok(embedded) => embedded,
+                Err(_) => vfs
+                    .read(&g4md_path)
+                    .with_context(|| format!("ni G4MD libre ni g4pkm pour {sub}/{code}"))?,
+            },
+            Err(_) => vfs
+                .read(&g4md_path)
+                .with_context(|| format!("ni G4MD libre ni g4pkm pour {sub}/{code}"))?,
         };
         (g4md, g4mg)
     };

@@ -264,4 +264,40 @@ export class VfsIndex {
     }
     return { path, kind: "missing" };
   }
+
+  /**
+   * Extrait le contenu brut d'un fichier virtuel du jeu via FFI/CPK.
+   */
+  cat(path: string, maxBytes = 262_144): { path: string; cpk: string; size: number; base64?: string; text?: string; truncated: boolean } {
+    const cpk = this.map.get(path);
+    if (!cpk) throw new ToolError(`chemin introuvable dans le VFS : ${path}`);
+    const bytes = this.read(path);
+    if (!bytes) throw new ToolError(`impossible de lire le fichier VFS : ${path}`);
+
+    const size = bytes.byteLength;
+    const slice = bytes.subarray(0, Math.min(size, maxBytes));
+    const isText = extOf(path).includes("txt") || extOf(path).includes("json") || extOf(path).includes("lua") || extOf(path).includes("xml");
+
+    let text: string | undefined;
+    let base64: string | undefined;
+
+    if (isText) {
+      try {
+        text = new TextDecoder("utf-8").decode(slice);
+      } catch {
+        base64 = Buffer.from(slice).toString("base64");
+      }
+    } else {
+      base64 = Buffer.from(slice).toString("base64");
+    }
+
+    return {
+      path,
+      cpk,
+      size,
+      truncated: size > maxBytes,
+      ...(text === undefined ? {} : { text }),
+      ...(base64 === undefined ? {} : { base64 }),
+    };
+  }
 }

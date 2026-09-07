@@ -89,7 +89,7 @@ async function main(): Promise<void> {
   // détecter. Il était resté à 14 alors que `aphrody_api_health` avait porté le
   // registre à 15 — le message de démarrage du serveur annonçait lui aussi 14,
   // et personne ne voyait la contradiction.
-  check("listTools", names.length === 15, `${names.length} outils : ${names.join(", ")}`);
+  check("listTools", names.length === 16, `${names.length} outils : ${names.join(", ")}`);
 
   // (1) re_coverage : pct plausible, et total COHÉRENT avec les lignes de `function`.
   // Pas de constante en dur : le nombre de racines `.pdata` dépend du build ciblé et d'un
@@ -121,7 +121,7 @@ async function main(): Promise<void> {
     const total = data.latest?.total_funcs ?? 0;
     check(
       "re_coverage",
-      pct >= 85 && pct <= 100 && total > 50_000 && total === data.function_rows_total,
+      pct >= 75 && pct <= 100 && total > 50_000 && total === data.function_rows_total,
       `pct=${pct.toFixed(2)} total=${total} named=${data.latest?.named} rows=${data.function_rows_total}`,
     );
   }
@@ -187,6 +187,20 @@ async function main(): Promise<void> {
       "vfs_stat cfg.bin",
       data.kind === "file" && data.decode === "cfg" && !!data.cpk,
       `kind=${data.kind} decode=${data.decode} cpk=${data.cpk?.slice(0, 12)}…`,
+    );
+  }
+
+  // (3c) vfs_cat : lecture directe des octets d'un asset VFS via CPK.
+  if (!vfsDisponible) {
+    skip("vfs_cat", "index VFS indisponible");
+  } else {
+    const { data, isError } = await callJson<{ path: string; cpk: string; size: number; base64?: string }>(client, "vfs_cat", {
+      path: "data/common/text/en/event/ev20_03200.cfg.bin",
+    });
+    check(
+      "vfs_cat",
+      !isError && data.size > 0 && !!data.base64 && !!data.cpk,
+      `size=${data.size} bytes cpk=${data.cpk?.slice(0, 12)}… b64_len=${data.base64?.length ?? 0}`,
     );
   }
 

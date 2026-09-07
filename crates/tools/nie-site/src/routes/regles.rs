@@ -1097,7 +1097,10 @@ mod tests {
         assert_eq!(r.parametres.rarete, 20);
         assert_eq!(r.parametres.rang_table, 5);
         let ur = stats(Query(query(&[("rarete", "5")]))).await.unwrap().0;
-        assert_eq!(r.stats, ur.stats, "BASARA et UR partagent la table du rang 5");
+        assert_eq!(
+            r.stats, ur.stats,
+            "BASARA et UR partagent la table du rang 5"
+        );
     }
 
     #[tokio::test]

@@ -16,7 +16,9 @@ use crate::color::{
     ACTIVE_TILE_BOTTOM, ACTIVE_TILE_TOP, BLUE_PLATE, ColorToken, DEEP_BACKGROUND, GOLD_TRIM,
     NIGHT_BACKGROUND, TILE_BORDER, TILE_BOTTOM, TILE_TOP,
 };
-use crate::tokens::{BEVEL, BORDER_WIDTH, ElevationToken, PANEL_SHADOW, RADIUS, RawToken, TILE_SHADOW};
+use crate::tokens::{
+    BEVEL, BORDER_WIDTH, ElevationToken, PANEL_SHADOW, RADIUS, RawToken, TILE_SHADOW,
+};
 
 /// La composition visuelle d'une tuile du menu : dégradé haut/bas, bordure, biseau, ombre.
 /// Chaque champ pointe vers le jeton qui porte déjà ce rôle — aucune valeur n'est nouvelle.
@@ -76,11 +78,17 @@ pub struct PanelStyle {
 
 /// Un panneau sur `--jeu-fond-profond` — la profondeur médiane des trois que le CSS propose
 /// (`--jeu-fond-nuit` le plus sombre, `--jeu-fond-moyen` le plus clair).
-pub const PANEL_DEEP: PanelStyle =
-    PanelStyle { background: DEEP_BACKGROUND, shadow: PANEL_SHADOW, radius: RADIUS };
+pub const PANEL_DEEP: PanelStyle = PanelStyle {
+    background: DEEP_BACKGROUND,
+    shadow: PANEL_SHADOW,
+    radius: RADIUS,
+};
 /// Un panneau sur `--jeu-fond-nuit`, le plus sombre des trois profondeurs.
-pub const PANEL_NIGHT: PanelStyle =
-    PanelStyle { background: NIGHT_BACKGROUND, shadow: PANEL_SHADOW, radius: RADIUS };
+pub const PANEL_NIGHT: PanelStyle = PanelStyle {
+    background: NIGHT_BACKGROUND,
+    shadow: PANEL_SHADOW,
+    radius: RADIUS,
+};
 
 /// La plaque centrale du menu — le CSS ne la commente qu'une fois (« la plaque centrale ») et ne
 /// décrit qu'un seul exemplaire, borné d'un liseré doré plutôt que d'une bordure ordinaire.
@@ -95,7 +103,11 @@ pub struct PlateStyle {
 }
 
 /// L'unique plaque décrite par le CSS actuel — `--jeu-plaque-bleu` + `--jeu-lisere-or`.
-pub const PLATE: PlateStyle = PlateStyle { background: BLUE_PLATE, trim: GOLD_TRIM, radius: RADIUS };
+pub const PLATE: PlateStyle = PlateStyle {
+    background: BLUE_PLATE,
+    trim: GOLD_TRIM,
+    radius: RADIUS,
+};
 
 #[cfg(test)]
 mod tests {
@@ -113,7 +125,10 @@ mod tests {
     fn la_tuile_active_garde_la_meme_bordure_que_la_tuile_au_repos() {
         assert_eq!(ACTIVE_TILE.gradient_top.name, "jeu-tuile-active-haut");
         assert_eq!(ACTIVE_TILE.gradient_bottom.name, "jeu-tuile-active-bas");
-        assert_eq!(ACTIVE_TILE.border_color, TILE.border_color, "aucune bordure « active » dans le CSS");
+        assert_eq!(
+            ACTIVE_TILE.border_color, TILE.border_color,
+            "aucune bordure « active » dans le CSS"
+        );
     }
 
     #[test]

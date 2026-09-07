@@ -60,7 +60,9 @@ fn morton(bx: usize, by: usize) -> usize {
 }
 
 fn main() {
-    let path = std::env::args().nth(1).expect("usage: probe_g4tg_swizzle <fichier>");
+    let path = std::env::args()
+        .nth(1)
+        .expect("usage: probe_g4tg_swizzle <fichier>");
     let data = std::fs::read(&path).expect("lecture");
     let n = data.len();
     println!("fichier {path}  {n} octets  {} blocs de 16 o", n / B);
@@ -99,7 +101,10 @@ fn main() {
             };
             let Ok(rgba) = s.decode_rgba8() else { continue };
             let (dh, dv) = ecarts(w, h, &rgba.data);
-            ligne += &format!(" | {nom} dh={dh:6.2} dv={dv:6.2} r={:5.2}", dv / dh.max(0.01));
+            ligne += &format!(
+                " | {nom} dh={dh:6.2} dv={dv:6.2} r={:5.2}",
+                dv / dh.max(0.01)
+            );
         }
         println!("{ligne}");
     }

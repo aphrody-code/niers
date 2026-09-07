@@ -54,16 +54,26 @@ mod tests {
     /// jeu n'est pas monté sur cette machine — jamais un vert silencieux.
     #[test]
     fn icon_sheet_css_habille_un_atlas_reel_du_jeu() {
-        let dir = nie_formats::vfs::resolve_game_dir().to_string_lossy().into_owned();
+        let dir = nie_formats::vfs::resolve_game_dir()
+            .to_string_lossy()
+            .into_owned();
         let data_dir = Path::new(&dir).join("data");
         let mut vfs = nie_formats::vfs::Vfs::new();
         if vfs.init(&data_dir).is_err() {
-            eprintln!("skip icon_sheet_css_habille_un_atlas_reel_du_jeu : jeu absent à {}", data_dir.display());
+            eprintln!(
+                "skip icon_sheet_css_habille_un_atlas_reel_du_jeu : jeu absent à {}",
+                data_dir.display()
+            );
             return;
         }
-        let Some(chemin) = vfs.iter().map(|(p, _)| p.to_string()).find(|p| p.ends_with("font/gaiji_game.g4tx"))
+        let Some(chemin) = vfs
+            .iter()
+            .map(|(p, _)| p.to_string())
+            .find(|p| p.ends_with("font/gaiji_game.g4tx"))
         else {
-            eprintln!("skip icon_sheet_css_habille_un_atlas_reel_du_jeu : gaiji_game.g4tx absent du VFS");
+            eprintln!(
+                "skip icon_sheet_css_habille_un_atlas_reel_du_jeu : gaiji_game.g4tx absent du VFS"
+            );
             return;
         };
         let data = vfs.read(&chemin).expect("lecture de l'atlas");
@@ -72,14 +82,28 @@ mod tests {
             nie_formats::sprite_sheet::depuis_g4tx(&atlas, 0).expect("l'atlas porte une texture");
 
         let css = icon_sheet_css(&sheet, "/tex/dx11/font/gaiji_game.png");
-        eprintln!("{chemin} : {} régions, {} octets de CSS habillé", sheet.len(), css.len());
+        eprintln!(
+            "{chemin} : {} régions, {} octets de CSS habillé",
+            sheet.len(),
+            css.len()
+        );
 
-        assert!(sheet.len() > 50, "atlas d'icônes attendu, {} régions", sheet.len());
+        assert!(
+            sheet.len() > 50,
+            "atlas d'icônes attendu, {} régions",
+            sheet.len()
+        );
         assert!(css.contains("background-image: url(\"/tex/dx11/font/gaiji_game.png\")"));
         assert!(css.contains(&format!(".{PREFIXE}-sprite {{")));
-        assert!(css.contains("var(--jeu-duree-rapide)"), "la durée rapide n'est pas posée");
+        assert!(
+            css.contains("var(--jeu-duree-rapide)"),
+            "la durée rapide n'est pas posée"
+        );
         assert!(css.contains("var(--jeu-rayon)"), "le rayon n'est pas posé");
-        assert!(css.contains("var(--jeu-accent-azur)"), "l'accent de focus n'est pas posé");
+        assert!(
+            css.contains("var(--jeu-accent-azur)"),
+            "l'accent de focus n'est pas posé"
+        );
     }
 
     #[test]

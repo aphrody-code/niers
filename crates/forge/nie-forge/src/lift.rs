@@ -1342,8 +1342,17 @@ mod disp32_diag2 {
         let bytes = [0x48u8, 0x8b, 0x8a, 0x30, 0x00, 0x00, 0x00];
         let mut d = Decoder::with_ip(64, &bytes, 0x140000000, DecoderOptions::NONE);
         let i = d.decode();
-        eprintln!("mnemonic={:?} op0={:?} op1={:?}", i.mnemonic(), i.op_kind(0), i.op_kind(1));
-        eprintln!("memory_displ_size={} disp={}", i.memory_displ_size(), i.memory_displacement64());
+        eprintln!(
+            "mnemonic={:?} op0={:?} op1={:?}",
+            i.mnemonic(),
+            i.op_kind(0),
+            i.op_kind(1)
+        );
+        eprintln!(
+            "memory_displ_size={} disp={}",
+            i.memory_displ_size(),
+            i.memory_displacement64()
+        );
         let ins = insn_of(&i, &bytes);
         eprintln!("insn_of = {ins:?}");
         if let Some(ins) = ins {

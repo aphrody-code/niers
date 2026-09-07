@@ -1,13 +1,16 @@
 {
   "mcpServers": {
     "niers-game": {
+      "type": "stdio",
       "command": "bun",
       "args": [
         "run",
         "apps/nie-mcp/src/index.ts"
       ],
       "env": {
-        "NIE_GAME_DIR": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\INAZUMA ELEVEN Victory Road"
+        "NIERS_REDIS": "redis://127.0.0.1:6379",
+        "MODEL_SERVE_URL": "http://127.0.0.1:8790",
+        "NIE_APHRODY_API_URL": "http://127.0.0.1:8085"
       }
     }
   }

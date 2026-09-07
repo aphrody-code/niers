@@ -103,10 +103,7 @@ struct Built {
 static BUILT: OnceLock<Result<Built, String>> = OnceLock::new();
 
 /// Lit `chara_param` et en extrait les styles de jeu.
-fn build(
-    index: &crate::vfs_index::IndexVfs,
-    vfs: &nie_formats::vfs::Vfs,
-) -> Result<Built, String> {
+fn build(index: &crate::vfs_index::IndexVfs, vfs: &nie_formats::vfs::Vfs) -> Result<Built, String> {
     let start = std::time::Instant::now();
     let (source, _) = super::donnees::resoudre(index, KEY, Some(PREFIX)).ok_or_else(|| {
         format!("aucun `{KEY}` sous `{PREFIX}` dans ce VFS : le style de jeu se lit dans ce fichier et nulle part ailleurs")

@@ -19,7 +19,8 @@
 //!   renormalisée ;
 //! - **UV0** (vtype=10) : float32×2, ushort UNORM16 → `u/65535`, short SNORM16 → `s/32767` ;
 //! - **indices** à `face_data_base + submesh.index_offset`, u16 par défaut, u32 si
-//!   `vertex_count > 65535`, LOCAUX à la sous-maille.
+//!   `vertex_count > 65535` ; ils sont normalisés en sortie en indices locaux, y compris quand
+//!   un fichier réel les exprime dans l'espace vertex global.
 //!
 //! On ne fabrique JAMAIS de normale/UV si l'attribut est absent ou ne tient pas dans le stride
 //! (liste vide → le writer GLB n'émet pas l'accessor correspondant).
@@ -29,7 +30,7 @@
 //! Compatible `no_std + alloc`.
 
 extern crate alloc;
-use alloc::{string::String, vec::Vec};
+use alloc::{collections::BTreeMap, string::String, vec::Vec};
 
 use crate::g4md::{G4md, VertexAttribute};
 
@@ -214,6 +215,7 @@ pub fn extract_geometry(g4mg: &[u8], g4md: &G4md) -> Vec<SubmeshGeometry> {
     };
 
     let mut out = Vec::with_capacity(g4md.submeshes.len());
+    let mut global_bases = Vec::with_capacity(g4md.submeshes.len());
 
     for (idx, sm) in g4md.submeshes.iter().enumerate() {
         let vertex_count = sm.vertex_count as usize;
@@ -321,6 +323,13 @@ pub fn extract_geometry(g4mg: &[u8], g4md: &G4md) -> Vec<SubmeshGeometry> {
                 indices.push(v);
             }
         }
+        // Les fichiers multi-mailles de keshin (et certains objets) stockent les indices dans
+        // l'espace vertex GLOBAL du G4MG. Les positions que cette fonction expose sont, elles,
+        // locales à chaque sous-maille : le GLB doit donc recevoir le même index rebasé. On ne
+        // corrige que la signature mesurée [base, base+count) ; un index réellement corrompu
+        // reste visible et sera rejeté par le parseur GLB au lieu d'être masqué.
+        let vertex_base =
+            (stride > 0 && v_offset.is_multiple_of(stride)).then_some(v_offset / stride);
 
         out.push(SubmeshGeometry {
             index: idx,
@@ -334,9 +343,120 @@ pub fn extract_geometry(g4mg: &[u8], g4md: &G4md) -> Vec<SubmeshGeometry> {
             colors,
             indices,
         });
+        global_bases.push(vertex_base);
     }
 
+    compact_global_indices(&mut out, &global_bases);
     out
+}
+
+/// Compacte les indices qui référencent l'espace vertex global du G4MG.
+///
+/// Les buffers exposés par [`extract_geometry`] sont locaux à chaque sous-maille, mais certains
+/// G4MG (notamment les meshes keshin) écrivent des indices vers n'importe quelle sous-maille.
+/// Quand une liste n'est pas locale, on reconstruit seulement les sommets effectivement référencés
+/// et on réécrit la liste en indices locaux. Un triangle dont une référence reste introuvable est
+/// écarté afin de ne jamais émettre un GLB contenant un indice hors de son accessor POSITION.
+fn compact_global_indices(geometries: &mut [SubmeshGeometry], global_bases: &[Option<usize>]) {
+    let mut global_vertices = BTreeMap::new();
+    let source_geometries = geometries.to_vec();
+    for (geometry_index, geometry) in source_geometries.iter().enumerate() {
+        let Some(&Some(base)) = global_bases.get(geometry_index) else {
+            continue;
+        };
+        for local_index in 0..geometry.positions.len() {
+            global_vertices.insert(base + local_index, (geometry_index, local_index));
+        }
+    }
+
+    for geometry_index in 0..geometries.len() {
+        let geometry = &source_geometries[geometry_index];
+        if geometry.indices.is_empty()
+            || geometry.indices.iter().all(|&index| {
+                usize::try_from(index).is_ok_and(|index| index < geometry.positions.len())
+            })
+        {
+            continue;
+        }
+        let old = geometry.clone();
+        let mut remap = BTreeMap::new();
+        let mut positions = Vec::new();
+        let mut normals = Vec::new();
+        let mut uv0 = Vec::new();
+        let mut colors = Vec::new();
+        let has_normals = !old.normals.is_empty();
+        let has_uv0 = !old.uv0.is_empty();
+        let has_colors = !old.colors.is_empty();
+        let mut indices = Vec::with_capacity(old.indices.len());
+
+        for triangle in old.indices.chunks(3) {
+            if triangle.len() != 3 {
+                continue;
+            }
+            let references = triangle.iter().map(|&index| {
+                usize::try_from(index).ok().and_then(|index| {
+                    if index < old.positions.len() {
+                        Some((geometry_index, index))
+                    } else {
+                        global_vertices.get(&index).copied()
+                    }
+                })
+            });
+            let Some(references) = references.collect::<Option<Vec<_>>>() else {
+                continue;
+            };
+            for (source_geometry_index, source_local_index) in references {
+                let vertex_key = (source_geometry_index, source_local_index);
+                let local_index = if let Some(&local_index) = remap.get(&vertex_key) {
+                    local_index
+                } else {
+                    let source = &source_geometries[source_geometry_index];
+                    let local_index = positions.len() as u32;
+                    positions.push(source.positions[source_local_index]);
+                    if has_normals {
+                        normals.push(source.normals.get(source_local_index).copied().unwrap_or(
+                            Vec3 {
+                                x: 0.0,
+                                y: 0.0,
+                                z: 1.0,
+                            },
+                        ));
+                    }
+                    if has_uv0 {
+                        uv0.push(
+                            source
+                                .uv0
+                                .get(source_local_index)
+                                .copied()
+                                .unwrap_or(Vec2 { u: 0.0, v: 0.0 }),
+                        );
+                    }
+                    if has_colors {
+                        colors.push(source.colors.get(source_local_index).copied().unwrap_or(
+                            Vec4 {
+                                x: 1.0,
+                                y: 1.0,
+                                z: 1.0,
+                                w: 1.0,
+                            },
+                        ));
+                    }
+                    remap.insert(vertex_key, local_index);
+                    local_index
+                };
+                indices.push(local_index);
+            }
+        }
+
+        let target = &mut geometries[geometry_index];
+        target.vertex_count = positions.len();
+        target.index32 = positions.len() > 65535;
+        target.positions = positions;
+        target.normals = normals;
+        target.uv0 = uv0;
+        target.colors = colors;
+        target.indices = indices;
+    }
 }
 
 /// Nom de texture base-color pour la sous-maille (via `material_index` → `material_base_names`).
@@ -692,6 +812,46 @@ mod tests {
         let geo = extract_geometry(&mg, &md);
         let base = material_base_name(&md, &geo[0]);
         assert_eq!(base.map(String::as_str), Some("mat_10"));
+    }
+
+    #[test]
+    fn indices_globaux_sont_compactes_depuis_toutes_les_sous_mailles() {
+        let geometry = |index, x, indices| SubmeshGeometry {
+            index,
+            vertex_count: 2,
+            stride: 68,
+            material_index: 0,
+            index32: false,
+            positions: alloc::vec![
+                Vec3 { x, y: 0.0, z: 0.0 },
+                Vec3 {
+                    x: x + 1.0,
+                    y: 0.0,
+                    z: 0.0
+                }
+            ],
+            normals: Vec::new(),
+            uv0: Vec::new(),
+            colors: Vec::new(),
+            indices,
+        };
+        let mut geometries = alloc::vec![
+            geometry(0, 10.0, alloc::vec![]),
+            geometry(1, 20.0, alloc::vec![2, 3, 2]),
+        ];
+        compact_global_indices(&mut geometries, &[Some(2), Some(4)]);
+        assert_eq!(geometries[1].positions[0].x, 10.0);
+        assert_eq!(geometries[1].positions[1].x, 11.0);
+        assert_eq!(geometries[1].indices, alloc::vec![0, 1, 0]);
+        assert_eq!(geometries[1].vertex_count, 2);
+
+        let mut invalid = alloc::vec![
+            geometry(0, 10.0, alloc::vec![]),
+            geometry(1, 20.0, alloc::vec![2, 3, 999]),
+        ];
+        compact_global_indices(&mut invalid, &[Some(2), Some(4)]);
+        assert!(invalid[1].indices.is_empty());
+        assert!(invalid[1].positions.is_empty());
     }
 
     // ── Quad de menu réel : `mainmenu90_02_2.g4mg` ────────────────────────────

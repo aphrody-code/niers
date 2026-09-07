@@ -72,6 +72,9 @@ nie-core = { path = "../../engine/nie-core" }
 # `include_bytes!`. Le site ne fait que republier ce package — il n'en garde aucune copie.
 # Il porte aussi `assets::encoder_png`, le seul encodeur PNG du site (cf. `routes::modeles3d`).
 nie-aphrody = { path = "../../engine/nie-aphrody" }
+# Les surfaces et jetons typés du jeu : la SSR doit partager exactement la même source que
+# `packages/inacord-ui`, pas recopier une couleur ou un angle dans ses templates.
+nie-ui = { path = "../../engine/nie-ui" }
 
 # Le rendu 3D du moteur : `glb::parse` + `render::render`, le rasteriseur CPU a z-buffer qui
 # sert de verite terrain aux goldens. C'est ce que l'amont ne sait PAS faire — il assemble des

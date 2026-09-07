@@ -5,8 +5,8 @@
 //! six sous-commandes ne le justifient pas.
 
 use nie_aphrody::pixel::{
-    Boite, Comparaison, Crop, Image, Masque, Mesure, Reglages, ReglagesVecteur, comparer,
-    mesurer, palette_crop, planche, rasteriser_svg, tokens_css, vectoriser,
+    Boite, Comparaison, Crop, Image, Masque, Mesure, Reglages, ReglagesVecteur, comparer, mesurer,
+    palette_crop, planche, rasteriser_svg, tokens_css, vectoriser,
 };
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -178,9 +178,13 @@ fn cmd_capture(args: &mut Vec<String>) -> Result<(), String> {
     let crop = option(args, "--crop", 1)?
         .map(|v| Crop::parse(&v[0]).map_err(|e| e.to_string()))
         .transpose()?
-        .ok_or_else(|| format!("capture exige --crop X,Y,W,H
+        .ok_or_else(|| {
+            format!(
+                "capture exige --crop X,Y,W,H
 
-{AIDE}"))?;
+{AIDE}"
+            )
+        })?;
     let chemin = positionnel(args, "<PNG>")?;
     let palette = palette_crop(&charger(&chemin)?, crop, k).map_err(|e| e.to_string())?;
     if json {

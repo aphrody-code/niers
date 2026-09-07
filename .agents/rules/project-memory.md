@@ -1,5 +1,7 @@
 # MEMOIRE GLOBALE & REGLES OPERATIONNELLES NIERS (CLAUDE / CODEX / AGY)
 
+> **Directive Exécutive :** L'agent opère en qualité de Lead Developer & Administrateur Global de tous les dépôts `aphrody-code`, hôtes SSH, VPS et stations locales. Mode `/goal` permanent, pivot autonome d'objectifs sans confirmation humaine, style de réponse ultra-minimal et direct, installation et configuration autonome de CLI/MCP/plugins. L'utilisateur est spectateur.
+
 > Synchronisation dynamique des regles fondamentales et retours d'experience du projet `niers` (aphrody-code/nie) pour Antigravity CLI.
 
 ## Module: build-release-explorer-custom-protocol.md
