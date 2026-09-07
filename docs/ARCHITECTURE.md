@@ -47,46 +47,67 @@ Surcharges : `NIE_IECODE_EXE`, `NIE_IECODE_DLL`. Code : `crates/tools/nie-cli/sr
 
 ## Les crates Rust
 
-Rangées par rôle. `crates/archive/*` est **hors du workspace** (`exclude` dans `Cargo.toml`) :
-référence de portage en lecture seule, jamais compilée par `cargo build --workspace`.
+**38 membres** (`cargo metadata --no-deps --format-version 1 | jq '.packages | length'`, mesuré
+2026-09-07 : 10 forge + 19 engine + 9 tools), rangés par rôle ci-dessous, colonne `tests` =
+`rg -c '#\[test\]' <dossier>` le même jour. `crates/archive/*` (2 crates, hors des 38) est **hors
+du workspace** : `nie-engine` en est exclu explicitement (`exclude = […]` dans le `Cargo.toml`
+racine — ~15 000 lignes portées des fichiers C décompilés, 434 marqueurs `// EXTERN:`, consommées
+par aucune crate vivante) ; `nie-rs` n'a jamais figuré dans `members` (son propre `Cargo.lock`
+autonome, origine dans l'outil externe `iecode-re`, pas un livrable niers). Les deux restent en
+lecture seule, référence de portage, jamais compilées par `cargo build --workspace`.
 
-### `crates/forge/*` — produire le binaire
+### `crates/forge/*` — produire le binaire (10)
 
-| Crate | Rôle |
-|---|---|
-| `nie-pe` | Lecture/écriture byte-exacte du PE64 + découpage du fichier en unités de forge |
-| `nie-asm` | Encodeur x86-64 dialecte MSVC — réassemble les corps depuis `forge/asm/*.s` |
-| `nie-forge` | Boucle `split`/`lift`/`cc`/`build`/`verify`/`report`, mesure la part produite |
-| `nie-re` | RTTI MSVC, indexation goblin/iced-x86, propagation de labels sur le call-graph |
-| `nie-index` | Base de connaissance SQLite (`var/niers.sqlite`) |
-| `nie-seed` | Import du savoir fusionné (index Ghidra, RTTI, formats iecode, hash→nom inagle) |
-| `nie-queue` | Frontière BFS dédupliquée (redis) |
-| `nie-trace` | RE en direct : lecture de la mémoire d'un `nie.exe` en cours d'exécution |
+| Crate | Rôle | Tests |
+|---|---|---:|
+| `aphrody-re` | Triage PE/ELF/Mach-O pur Rust (sections, entropie, empreintes) + extraction de chaînes + désassemblage x86 | 0 |
+| `nie-pe` | Lecture/écriture byte-exacte du PE64 + découpage du fichier en unités de forge | 24 |
+| `nie-asm` | Encodeur x86-64 dialecte MSVC — réassemble les corps depuis `forge/asm/*.s` | 23 |
+| `nie-forge` | Boucle `split`/`lift`/`cc`/`build`/`verify`/`report`, mesure la part produite | 33 |
+| `nie-re` | RTTI MSVC, indexation goblin/iced-x86, propagation de labels sur le call-graph | 73 |
+| `nie-index` | Base de connaissance SQLite (`var/niers.sqlite`) | 4 |
+| `nie-seed` | Import du savoir fusionné (index Ghidra, RTTI, formats iecode, hash→nom inagle) | 24 |
+| `nie-queue` | Frontière BFS dédupliquée (redis), workers parallèles sur fonctions non résolues | 0 |
+| `nie-dump` | Lecture/scan AOB d'un minidump Windows de `nie.exe` | 6 |
+| `nie-trace` | RE en direct : lecture de la mémoire d'un `nie.exe` en cours d'exécution | 93 |
 
-### `crates/engine/*` — le moteur
+### `crates/engine/*` — le moteur (19)
 
-| Crate | Rôle |
-|---|---|
-| `nie-formats` | Parsers Level-5 (CPK, cfg.bin, G4*, CriLayla, Criware), `no_std`-friendly |
-| `nie-data` | Modèles de données du jeu (skills, auras, chara_param, items, growth) |
-| `nie-core` | Logique reversée (ballon, IA tactique, FSM de match, gardien, stats, CRand) |
-| `nie-geom` | Types géométriques POD partagés — source unique `Vec2`/`Vec3` |
-| `nie-lua` | VM Lua 5.2 réelle (mlua, PUC-Rio 5.2.4 vendored) + analyse statique tree-sitter |
-| `nie-camera` | Modèle et contrôleurs de caméra portés (`CCameraCtrl*`) |
-| `nie-app` | Machine à états d'écran (`GameState`) + rendu abstrait (trait `Renderer`) |
-| `nie-game` | Hôte GUI natif wgpu — rend les vrais assets |
-| `nie-render3d` | Renderer 3D : charge un GLB réel et le rend en perspective |
-| `nie-runtime` | Boucle intégrée monde + physique + rendu top-down → frames/MP4 |
-| `nie-play` / `nie-headless` | Fronts headless/golden, sans fenêtre |
-| `nie-save` | Déchiffrement, lecture et édition des saves (XOR clé CRC32) |
-| `nie-explore` | Aperçu/description des entrées VFS par format |
-| `nie-ffi` | Frontière C-ABI — **seul natif chargé côté TS** |
-| `nie-wasm` | Bindings WebAssembly du savoir vérifié |
+| Crate | Rôle | Tests |
+|---|---|---:|
+| `nie-formats` | Parsers Level-5 (CPK, cfg.bin, G4*, CriLayla, Criware), `no_std`-friendly | 386 |
+| `nie-data` | Modèles de données du jeu (skills, auras, chara_param, items, growth) | 1445 |
+| `nie-core` | Logique reversée (ballon, IA tactique, FSM de match, gardien, stats, CRand) | 311 |
+| `nie-geom` | Types géométriques POD partagés — source unique `Vec2`/`Vec3` | 9 |
+| `nie-lua` | VM Lua 5.2 réelle (mlua, PUC-Rio 5.2.4 vendored) + analyse statique tree-sitter | 107 |
+| `nie-camera` | Modèle et contrôleurs de caméra portés (`CCameraCtrl*`), codec G4CM, pilotage live | 33 |
+| `nie-app` | Machine à états d'écran (`GameState`) + rendu abstrait (trait `Renderer`) | 17 |
+| `nie-game` | Hôte GUI natif wgpu — rend les vrais assets | 24 |
+| `nie-render3d` | Renderer 3D : charge un GLB réel et le rend en perspective | 17 |
+| `nie-runtime` | Boucle intégrée monde + physique + rendu top-down → frames/MP4 | 6 |
+| `nie-play` | Front headless/golden : rejoue `nie-app`, écrit PNG/MP4 déterministes | 0 |
+| `nie-headless` | Front headless sans fenêtre, résumé JSON par format | 18 |
+| `nie-save` | Déchiffrement, lecture et édition des saves (XOR clé CRC32) | 57 |
+| `nie-explore` | Aperçu/description des entrées VFS par format | 41 |
+| `nie-viola` | Modding Level-5 (dump/pack/merge/crypto Criware), périmètre outil « Viola » | 51 |
+| `nie-ui` | Source unique typée des jetons de design du jeu (OKLCH, géométrie, mouvement) → CSS | 35 |
+| `nie-aphrody` | Runtime typé du pet « Codex Aphrody v2 » (atlas RGBA, animations, directions) | 56 |
+| `nie-ffi` | Frontière C-ABI — **seul natif chargé côté TS** | 13 |
+| `nie-wasm` | Bindings WebAssembly du savoir vérifié | 32 |
 
-### `crates/tools/*` — outillage
+### `crates/tools/*` — outillage (9)
 
-`nie-cli` (le binaire `niers`), `nie-wiki`, `nie-zukan`, `nie-steam`, `nie-model-serve`,
-`nie-editor`, `nie-bench`, `nie-tasks`.
+| Crate | Rôle | Tests |
+|---|---|---:|
+| `nie-cli` | Binaire `niers` — la seule CLI utilisateur, pilote aussi la boucle RE et la frontière redis | 24 |
+| `nie-site` | Serveur HTTP Aphrody (Axum 0.8) : bundle `nie-web`, `/api/v1`, VFS `/f` `/b`, proxy `nie-model-serve` | 275 |
+| `nie-model-serve` | Serveur HTTP live d'assemblage GLB IEVR (corps+face+uniforme depuis CPK, cache disque) | 13 |
+| `nie-steam` | Acquisition Steam native (download/dump de dépôts IEVR), remplace SteamKit2 | 35 |
+| `nie-zukan` | Ingesteur de l'encyclopédie officielle Level-5 Inagle (JP/FR/EN) | 53 |
+| `nie-wiki` | Exploration game-data IEVR depuis le miroir SQLite (personnages, skills, items, équipes) | 0 |
+| `nie-editor` | Éditeur 3D NIE natif, viewport GPU partagé DirectX 12/Vulkan/OpenGL | 1 |
+| `nie-bench` | Banc d'essai inter-langages : mesure les hot paths Rust, échantillons pour C++/C#/TS | 2 |
+| `nie-tasks` | Orchestration de jobs asynchrones annulables/pausables avec progression | 0 |
 
 ## Les ponts
 

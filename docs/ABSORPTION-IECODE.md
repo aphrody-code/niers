@@ -167,6 +167,16 @@ cargo), **aucun couplage Bun**.
    `csharp/` → retirer ; `ARCHITECTURE.md`, `SKILL.md`, `CLAUDE.md` passent de quatre
    implémentations à trois.
 
+> **Statut re-mesuré le 2026-09-07 — (9) est à moitié fausse.** `docs/DESIGN.md:561` est
+> **fait** : il cite le golden Rust `g4pkm.rs`, plus `G4pkmLayoutTests.cs`. Les deux autres points
+> sont **prématurés**, pas juste en retard : `csharp/` reste vivant et entretenu (correctifs de
+> résolution de chemin du 2026-09-05), toujours cité comme source d'origine par les en-têtes Rust
+> (`//! Port Rust de IECODE.Core/…`) — retirer la cible `csharp/` du grep de `port-scout.md`
+> **avant** que (5)-(8) soient faits couperait la seule méthode de recherche pour ce qui n'est pas
+> encore porté. Et passer de « quatre » à « trois » implémentations tant que `csharp/` compile et
+> sert encore serait une désinformation documentaire, pas une simplification. Les deux ne doivent
+> être faits qu'**après** (5)-(8), jamais en anticipation.
+
 `IECODE.sln` et les `.csproj` ne bloquent qu'après (6) et (8).
 
 ---
@@ -184,7 +194,56 @@ ecart=3
 
 Le numérateur vient de clap (il suit le binaire, pas une note) ; le dénominateur est la constante
 `delegate::COMMANDES_IECODE_CLI`, ancrée par un test et accompagnée de sa méthode de comptage —
-sans quoi le chiffre dérive à la première relecture. Le décompte de 38 annoncé plus haut était
-faux : `IECODE.CLI` enregistre **27** commandes de premier niveau (`analyze cfg config convert
-cpklist crypto decode decrypt download dump encrypt extract help info list loose pack passive
-pipeline read restore-loose search steam-build sync test-g4sk types`).
+sans quoi le chiffre dérive à la première relecture.
+
+> **Correction du 2026-09-07 — le dénominateur de 27 était lui-même faux, et le compte de « 38 »
+> qu'il réfutait ci-dessus était le bon, pour une méthode différente.** Le comptage par
+> `grep -oE 'new Command\("[a-z][a-z0-9-]*"' csharp/IECODE.CLI/Program.cs` (utilisé pour arriver à
+> 27) ne voit que les commandes **littérales** dans `Program.cs` ; il rate toutes celles
+> enregistrées via une factory `XxxCommand.Create()` — 25 fichiers sous
+> `csharp/IECODE.CLI/Commands/*.cs` (`BenchmarkCommand`, `CdnCommand`, `MemCommand`, `G4txCommand`,
+> `LuaCommand`, `ShaderCommand`, etc.), invisibles à ce grep. Le compte robuste, vérifié ligne par
+> ligne : `grep -c 'rootCommand.AddCommand' csharp/IECODE.CLI/Program.cs` = **38**, chaque appel
+> distinct (aucune commande ajoutée deux fois). `delegate::COMMANDES_IECODE_CLI` vaut maintenant
+> **38**, avec la méthode corrigée dans sa doc.
+>
+> Le numérateur a bougé aussi : `enum Cmd` (`crates/tools/nie-cli/src/main.rs:56-582`) compte
+> aujourd'hui **42** variantes de premier niveau (41 à champs + la variante unité `Backends,`
+> ligne 78 — un `grep` sur `{` seul ne la voit pas), pas 24.
+>
+> ```
+> niers=42 commandes natives
+> iecode-cli=38 commandes deleguees
+> ecart=0 (saturating_sub)
+> ```
+>
+> **Le `ecart=0` ne veut plus dire « absorption terminée ».** La formule
+> `COMMANDES_IECODE_CLI.saturating_sub(niers_commandes)` suppose qu'un port `niers` retire
+> toujours une délégation `iecode-cli` à due proportion. Ce n'est plus vrai : `mem`, `wiki`, `save`,
+> `video`, `vn`, `avatar`, `icons` sont des commandes **nouvelles**, sans équivalent dans
+> `IECODE.CLI` — elles gonflent le numérateur sans rien absorber. La liste réelle des 8 capacités
+> encore sans substitut Rust (§ *Capacités réellement absentes*, plus haut) reste le bon inventaire
+> du travail restant ; la soustraction brute ne l'est plus.
+
+---
+
+## Instrument vivant des capacités CLI/UI
+
+Ne pas dupliquer ici les chiffres de `niers`, d'Inacord, d'Azalée ou du VFS en prose : ils périment
+en silence (cf. `var/couverture-site.json` retrouvé daté d'un jour lors de cette même passe, avec
+`niers=40`/`routes_montees=80` au lieu de 42/84 mesurés en source). La source vivante est
+`nie-site --regenerer-couverture var/couverture-site.json` (fichier suivi par git, jamais tenu à
+la main) et la page `/couverture` / `/api/v1/couverture` qu'il alimente — neuf sources mesurées
+(`niers`, `inacord`, pages et routes d'`azalee`, modules de `nie-data`/`nie-formats`, fonctions
+publiques de `nie-lua`, commandes `iecode` C++, extensions du VFS), classées `servi`/`partiel`/
+`manquant`/`bloque`/`interne` par des règles écrites (`crates/tools/nie-site/src/couverture/
+regles.rs`), pas par un tableau maintenu ici.
+
+## Capacités C# non portées — reconduites, non re-vérifiées le 2026-09-07
+
+Les 8 items de « Capacités réellement absentes » (plus haut) datent de la mesure du 2026-08-12 et
+n'ont pas été repassés au crible dans cette passe (`CfgBinTypesGenerator`, `DiskBudget`,
+`HostProfile`, `FxbinParser` sémantique, `G4maParser::ParseMotionNames`, `CdnMediaTypes`/ETag,
+`G4pk::DetectSubFormat`/`ExtractFiles`, les magics de format manquants, la divergence
+`AdxInfo/ComputeCoefficients`). Rien n'indique qu'ils aient bougé, mais rien ne le confirme non
+plus — à recompter à la source avant de les cocher, pas à recopier.

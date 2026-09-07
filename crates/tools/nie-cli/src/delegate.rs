@@ -130,10 +130,17 @@ pub fn cs(args: &[String]) -> anyhow::Result<()> {
 /// Une ligne `clé=valeur` par back-end : présent ou non, et où.
 /// Commandes de premier niveau enregistrées par `IECODE.CLI` (le binaire .NET délégué).
 ///
-/// Comptées à la source : `grep -oE 'new Command\("[a-z][a-z0-9-]*"' csharp/IECODE.CLI/Program.cs`,
-/// noms dédoublonnés. C'est le dénominateur de l'absorption — sans méthode écrite, le chiffre
-/// dérive à la première relecture.
-pub const COMMANDES_IECODE_CLI: usize = 27;
+/// Comptées à la source : `grep -c 'rootCommand.AddCommand' csharp/IECODE.CLI/Program.cs`. C'est
+/// le dénominateur de l'absorption — sans méthode écrite, le chiffre dérive à la première
+/// relecture.
+///
+/// **Pas `grep -oE 'new Command\("[a-z][a-z0-9-]*"'`** : cette ancienne méthode (jusqu'au
+/// 2026-09-06) ne voit que les commandes littérales dans `Program.cs` et rate toutes celles
+/// enregistrées via une factory `XxxCommand.Create()` définie dans `Commands/*.cs`
+/// (`BenchmarkCommand`, `CdnCommand`, `MemCommand`, `G4txCommand`, `LuaCommand`, `ShaderCommand`,
+/// etc.) — elle donnait 27, mesuré à nouveau le 2026-09-07 : 38 `rootCommand.AddCommand(...)`,
+/// tous distincts, vérifiés un par un.
+pub const COMMANDES_IECODE_CLI: usize = 38;
 
 /// Affiche l'état des back-ends et l'écart d'absorption.
 ///
@@ -168,7 +175,7 @@ mod tests {
     /// recompter a la source (cf. doc de la constante), pas ajuster le chiffre a vue.
     #[test]
     fn le_denominateur_de_l_absorption_est_ancre() {
-        assert_eq!(COMMANDES_IECODE_CLI, 27);
+        assert_eq!(COMMANDES_IECODE_CLI, 38);
     }
 
     #[test]

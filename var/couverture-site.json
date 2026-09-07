@@ -1,10 +1,10 @@
 {
-  "genere_le": "2026-09-06T17:12:49Z",
+  "genere_le": "2026-09-07T00:14:57Z",
   "version": "0.5.9",
-  "routes_montees": 80,
+  "routes_montees": 84,
   "total": {
-    "capacites": 582,
-    "poids": 255847
+    "capacites": 577,
+    "poids": 255842
   },
   "par_etat": {
     "bloque": {
@@ -24,8 +24,8 @@
       "poids": 0
     },
     "servi": {
-      "capacites": 287,
-      "poids": 250033
+      "capacites": 282,
+      "poids": 250028
     }
   },
   "par_source": [
@@ -35,8 +35,8 @@
       "commande": "niers --help",
       "unite": "capacités",
       "total": {
-        "capacites": 40,
-        "poids": 40
+        "capacites": 42,
+        "poids": 42
       },
       "par_etat": {
         "bloque": {
@@ -44,8 +44,8 @@
           "poids": 0
         },
         "interne": {
-          "capacites": 27,
-          "poids": 27
+          "capacites": 29,
+          "poids": 29
         },
         "manquant": {
           "capacites": 0,
@@ -101,8 +101,8 @@
       "commande": "fd -t f page.tsx apps/azalee/app",
       "unite": "capacités",
       "total": {
-        "capacites": 81,
-        "poids": 81
+        "capacites": 74,
+        "poids": 74
       },
       "par_etat": {
         "bloque": {
@@ -110,8 +110,8 @@
           "poids": 0
         },
         "interne": {
-          "capacites": 74,
-          "poids": 74
+          "capacites": 72,
+          "poids": 72
         },
         "manquant": {
           "capacites": 0,
@@ -122,8 +122,8 @@
           "poids": 0
         },
         "servi": {
-          "capacites": 7,
-          "poids": 7
+          "capacites": 2,
+          "poids": 2
         }
       },
       "gate_tenue": true
@@ -336,10 +336,94 @@
     "tenue": true
   },
   "regles_mortes": [
-    "inacord-lua",
-    "data-familles",
-    "formats-restants",
-    "vfs-effets"
+    "azalee-outils-stats",
+    "azalee-outils-comparaison",
+    "azalee-outils-tirage",
+    "azalee-outils-equipe",
+    "azalee-outils-traduction",
+    "azalee-outils"
+  ],
+  "filets": [
+    {
+      "id": "niers-reverse",
+      "source": "niers",
+      "etat": "interne",
+      "capacites": 11,
+      "poids": 11,
+      "raison": "boucle de reverse-engineering : coûteuse, privilégiée, sans public (§ 5, lot 1)"
+    },
+    {
+      "id": "inacord-lua",
+      "source": "inacord",
+      "etat": "interne",
+      "capacites": 0,
+      "poids": 0,
+      "raison": "touche à l'exécution de scripts : refus structurel"
+    },
+    {
+      "id": "inacord-hote",
+      "source": "inacord",
+      "etat": "interne",
+      "capacites": 12,
+      "poids": 12,
+      "raison": "relève de l'hôte desktop : disque, fenêtre, presse-papiers, corbeille (cf. `capacites()` du contrat asset-source)"
+    },
+    {
+      "id": "azalee-catalogues",
+      "source": "azalee",
+      "etat": "interne",
+      "capacites": 31,
+      "poids": 31,
+      "raison": "fiche encyclopedique : Azalee demeure le wiki de reference (lot 6) ; la donnee du jeu, elle, est servie par /api/v1/donnees/famille/{cle}"
+    },
+    {
+      "id": "azalee-api-editorial",
+      "source": "azalee-api",
+      "etat": "interne",
+      "capacites": 8,
+      "poids": 8,
+      "raison": "éditorial et métadonnées du wiki : Azalée demeure le wiki de référence"
+    },
+    {
+      "id": "data-familles",
+      "source": "nie-data",
+      "etat": "manquant",
+      "capacites": 0,
+      "poids": 0,
+      "raison": "crates/engine/nie-data/src/<module>.rs — parseur typé, golden testé, sans route"
+    },
+    {
+      "id": "formats-restants",
+      "source": "nie-formats",
+      "etat": "manquant",
+      "capacites": 0,
+      "poids": 0,
+      "raison": "crates/engine/nie-formats/src/<module>.rs — parseur écrit, aucune route ne l'appelle"
+    },
+    {
+      "id": "lua-exec",
+      "source": "nie-lua",
+      "etat": "interne",
+      "capacites": 22,
+      "poids": 22,
+      "raison": "VM, hôte de menu, capture de `print`, découverte d'appels : TOUT ceci exécute le script — `nie-site` lie `nie-lua` avec `default-features = false` et un test le vérifie"
+    },
+    {
+      "id": "iecode-admin",
+      "source": "iecode",
+      "etat": "interne",
+      "capacites": 39,
+      "poids": 39,
+      "raison": "toolkit C++ atteint par `niers cpp` : API d'administration, non affichée (§ 5, lot 7)"
+    },
+    {
+      "id": "vfs-effets",
+      "source": "vfs",
+      "etat": "bloque",
+      "capacites": 0,
+      "poids": 0,
+      "raison": "shaders, effets, particules, tissu : aucun parseur dans le dépôt, du reverse est nécessaire avant toute route"
+    }
   ],
   "incoherences": [],
   "capacites": [
@@ -446,6 +530,22 @@
       "regle": "niers-lua",
       "etat": "servi",
       "route": "/api/v1/lua/scripts/{*chemin}"
+    },
+    {
+      "source": "niers",
+      "nom": "lua-run",
+      "poids": 1,
+      "regle": "niers-reverse",
+      "etat": "interne",
+      "raison": "boucle de reverse-engineering : coûteuse, privilégiée, sans public (§ 5, lot 1)"
+    },
+    {
+      "source": "niers",
+      "nom": "lua-audit",
+      "poids": 1,
+      "regle": "niers-reverse",
+      "etat": "interne",
+      "raison": "boucle de reverse-engineering : coûteuse, privilégiée, sans public (§ 5, lot 1)"
     },
     {
       "source": "niers",
@@ -2257,14 +2357,6 @@
     },
     {
       "source": "azalee",
-      "nom": "/gallery",
-      "poids": 1,
-      "regle": "azalee-catalogues",
-      "etat": "interne",
-      "raison": "fiche encyclopedique : Azalee demeure le wiki de reference (lot 6) ; la donnee du jeu, elle, est servie par /api/v1/donnees/famille/{cle}"
-    },
-    {
-      "source": "azalee",
       "nom": "/invocation",
       "poids": 1,
       "regle": "azalee-catalogues",
@@ -2521,59 +2613,11 @@
     },
     {
       "source": "azalee",
-      "nom": "/tools",
-      "poids": 1,
-      "regle": "azalee-outils",
-      "etat": "interne",
-      "raison": "page d'index sans donnée : cinq cartes de navigation écrites en dur. L'équivalent d'Aphrody est son menu, engendré par le serveur — une page de liens ne se porte pas, elle se remplace"
-    },
-    {
-      "source": "azalee",
-      "nom": "/tools/compare",
-      "poids": 1,
-      "regle": "azalee-outils-comparaison",
-      "etat": "servi",
-      "route": "/api/v1/regles/comparaison"
-    },
-    {
-      "source": "azalee",
-      "nom": "/tools/my-team",
-      "poids": 1,
-      "regle": "azalee-outils-equipe",
-      "etat": "servi",
-      "route": "/api/v1/team/synergy"
-    },
-    {
-      "source": "azalee",
       "nom": "/tools/niers",
       "poids": 1,
       "regle": "azalee-outils-updater",
       "etat": "interne",
       "raison": "point de mise à jour d'Inacord : il doit rester à l'URL que les 0.5.x interrogent"
-    },
-    {
-      "source": "azalee",
-      "nom": "/tools/random-team",
-      "poids": 1,
-      "regle": "azalee-outils-tirage",
-      "etat": "servi",
-      "route": "/api/v1/entites/{table}"
-    },
-    {
-      "source": "azalee",
-      "nom": "/tools/stats",
-      "poids": 1,
-      "regle": "azalee-outils-stats",
-      "etat": "servi",
-      "route": "/api/v1/regles/stats"
-    },
-    {
-      "source": "azalee",
-      "nom": "/tools/translator",
-      "poids": 1,
-      "regle": "azalee-outils-traduction",
-      "etat": "servi",
-      "route": "/api/v1/text/translate"
     },
     {
       "source": "azalee-api",
