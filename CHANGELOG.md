@@ -11,6 +11,13 @@ listé qui ne s'y retrouve.
 
 ## [Non publié]
 
+## [0.5.11] — 2026-09-07
+
+- Configure l'exécution du CLI BXC natif 0.9.7 depuis niers sans charger le
+  preload Bun du monorepo.
+- Documente l'installation Windows et la séparation entre le paquet npm BXC
+  publié et le binaire standalone.
+
 ## [0.5.10] — 2026-09-07
 
 - Regroupe la couche Inazuma/IEVR, IETV, Zukan et Wonderbot dans `niers`.

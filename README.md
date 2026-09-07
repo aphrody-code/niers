@@ -7,7 +7,7 @@
 
 <p align="center">
   <a href="https://github.com/aphrody-code/nie/actions/workflows/ci.yml"><img alt="ci" src="https://github.com/aphrody-code/nie/actions/workflows/ci.yml/badge.svg"></a>
-  <img alt="version" src="https://img.shields.io/badge/version-0.5.9-blue">
+  <img alt="version" src="https://img.shields.io/badge/version-0.5.11-blue">
   <img alt="rust" src="https://img.shields.io/badge/rust-nightly--2026--05--17-orange">
   <img alt="edition" src="https://img.shields.io/badge/edition-2024-orange">
   <img alt="forge" src="https://img.shields.io/badge/forge-69.37%25%20of%20nie.exe-yellow">

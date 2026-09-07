@@ -1,6 +1,6 @@
 {
   "name": "nie-plugin",
-  "version": "0.5.10",
+  "version": "0.5.11",
   "description": "Bun plugin — importe les formats de jeu IEVR (.g4tx, .cfg.bin, .objbin, .g4pkm, .lip, .mev, .g4md) et expose nie:re/* (artefacts RE + Lua décompilé)",
   "type": "module",
   "main": "src/index.ts",

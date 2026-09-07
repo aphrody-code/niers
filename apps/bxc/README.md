@@ -27,7 +27,10 @@ réécrire cette garantie.
 ## Ce qui n'est PAS dans le dépôt
 
 Le moteur de navigation `@aphrody/bxc` reste une **dépendance du registre npm**
-(0.8.0), celle que `@aphrody/ietv` et `@aphrody/zukan` réclament déjà. Seuls les
+(0.9.6, dernière version publiée), celle que `@aphrody/ietv` et `@aphrody/zukan` réclament déjà. Le
+binaire natif standalone BXC 0.9.7 est installé séparément dans
+`%USERPROFILE%\\.bxc\\bin` ; voir [`docs/BXC-NATIVE.md`](../../docs/BXC-NATIVE.md).
+Seuls les
 paquets métier sont entrés dans niers : `packages/ietv`, `packages/ietv-client`,
 `packages/wonderbot`, `packages/zukan`.
 

@@ -6,7 +6,7 @@
 
 import { spawn } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { dansLeDepot } from "../../lib/racine";
 
 // Recon web EXHAUSTIF d'un site officiel Inazuma Eleven (cible par défaut :
@@ -24,6 +24,10 @@ import { dansLeDepot } from "../../lib/racine";
 // tout corps JSON est persisté.
 
 const BXC_BIN = process.env.BXC_BIN || "bxc";
+// Les binaires Bun standalone lisent le bunfig.toml du cwd. Le dépôt niers en
+// possède un preload IEVR ; isoler le CLI natif évite qu'il tente de charger
+// ce preload avec le mauvais workspace.
+const BXC_CWD = process.env.BXC_CWD || (BXC_BIN.includes("\\") || BXC_BIN.includes("/") ? dirname(BXC_BIN) : undefined);
 const DEFAULT_PROFILE = process.env.BXC_RECON_PROFILE || "http";
 
 export interface WebReconOptions {
@@ -91,7 +95,7 @@ interface BxcRunResult {
 /** Exécute `bxc` avec args et renvoie stdout/stderr (timeout dur). */
 function runBxc(args: string[], timeoutMs = 90000): Promise<BxcRunResult> {
 	return new Promise((resolve) => {
-		const child = spawn(BXC_BIN, args, { stdio: ["ignore", "pipe", "pipe"] });
+		const child = spawn(BXC_BIN, args, { stdio: ["ignore", "pipe", "pipe"], cwd: BXC_CWD });
 		let stdout = "";
 		let stderr = "";
 		const timer = setTimeout(() => {

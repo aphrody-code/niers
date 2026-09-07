@@ -22,7 +22,7 @@ exclude = ["crates/archive/nie-engine"]
 
 [workspace.package]
 edition = "2024"
-version = "0.5.10"
+version = "0.5.11"
 license = "MIT"
 authors = ["Rose Griffon"]
 repository = "https://github.com/aphrody-code/nie"

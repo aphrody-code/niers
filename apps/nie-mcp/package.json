@@ -1,6 +1,6 @@
 {
   "name": "@niers/nie-mcp",
-	"version": "0.5.10",
+	"version": "0.5.11",
   "private": true,
   "type": "module",
   "description": "Serveur MCP exposant Inazuma Eleven Victory Road (projet RE niers) : VFS CPK, assets décodés, base de connaissance RE, code du repo.",
