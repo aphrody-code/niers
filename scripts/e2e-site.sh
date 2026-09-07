@@ -113,6 +113,7 @@ nettoyer() {
 		tail -30 "$JOURNAL" >&2
 	}
 	rm -f "$JOURNAL"
+	rm -f "$CORPS"
 	return $code
 }
 trap nettoyer EXIT
@@ -121,7 +122,6 @@ trap nettoyer EXIT
 # Place the temporary response on the repository's Windows-backed volume. This lets
 # curl.exe and the WSL shell address the same file after path conversion.
 CORPS="$(mktemp "$RACINE/var/e2e-site-corps-XXXXXX")"
-trap 'rm -f "$CORPS"' EXIT
 req() {
 	local chemin="$1"
 	shift
@@ -138,11 +138,17 @@ echo "▸ Aphrody — suite de bout en bout (port $PORT)"
 
 # --- 1. Construire ce qui sera servi ---------------------------------------------------------
 if [ "$BUILD" -eq 1 ]; then
+	BUN_BIN="bun"
+	command -v "$BUN_BIN" >/dev/null 2>&1 || BUN_BIN="bun.exe"
+	CARGO_BIN="cargo"
+	command -v "$CARGO_BIN" >/dev/null 2>&1 || CARGO_BIN="cargo.exe"
+	command -v "$BUN_BIN" >/dev/null 2>&1 || { echo "ERREUR: bun/bun.exe absent." >&2; exit 1; }
+	command -v "$CARGO_BIN" >/dev/null 2>&1 || { echo "ERREUR: cargo/cargo.exe absent." >&2; exit 1; }
 	echo "  [1/4] bundle apps/nie-web…"
-	(cd apps/nie-web && bun run build) >"$JOURNAL" 2>&1 ||
+	(cd apps/nie-web && "$BUN_BIN" run build) >"$JOURNAL" 2>&1 ||
 		{ echo "ERREUR: le bundle n'a pas été construit." >&2; exit 1; }
 	echo "  [2/4] binaire nie-site (release)…"
-	cargo build --release -p nie-site >>"$JOURNAL" 2>&1 ||
+	"$CARGO_BIN" build --release -p nie-site >>"$JOURNAL" 2>&1 ||
 		{ echo "ERREUR: le binaire n'a pas été construit." >&2; exit 1; }
 else
 	echo "  [1-2/4] --no-build : bundle et binaire réutilisés"
