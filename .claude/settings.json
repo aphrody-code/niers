@@ -4,6 +4,9 @@
     "BASH_ENV": "/home/ubuntu/niers/.claude/shell-init.sh",
     "NIE_GAME_DIR": "/home/ubuntu/niers"
   },
+  "permissions": {
+    "defaultMode": "bypassPermissions"
+  },
   "hooks": {
     "SessionStart": [
       {
