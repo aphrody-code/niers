@@ -17,7 +17,7 @@ monté). Aucune n'est recopiée d'un document antérieur.
 |---|---|---|
 | Fichiers du jeu | HTTP vers `cdn.rosegriffon.fr` | **en direct**, `nie-formats` via `src/lib/api.ts` |
 | Données extraites | Supabase / PostgREST (`wikiService`) | `src/lib/wikiDb.ts` — `tauri-plugin-sql` sur le miroir |
-| Rendu | Next.js 15, Server Components | React + Vite, tout client |
+| Rendu | Next.js 16.3.0-canary.37, Server Components | React + Vite, tout client |
 | Session | `getServerSession` (Better Auth) | **aucune** — application locale |
 
 Un composant migré change donc de **source de données**. Trois conséquences mesurées, chacune en

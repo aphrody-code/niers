@@ -21,7 +21,7 @@ des services.
 | `bxc/packages/{ietv,ietv-client,wonderbot,zukan}` | `packages/*` | le catalogue d'épisodes et son bot Discord |
 | `bxc/` (app) | `apps/bxc` | l'automatisation de navigateur dont dépend le crawler |
 | `~/.cache/ietv/episodes.db` | `data/anime/episodes.db` | 355 épisodes, 10 saisons, 3 chaînes |
-| `rg/apps/azalee` | `apps/azalee` | le site du wiki (Next.js 15) — sans `.next` ni `data/` |
+| `rg/apps/azalee` | `apps/azalee` | le site du wiki (Next.js 16.3.0-canary.37) — sans `.next` ni `data/` |
 | `rg/packages/azalee` | `packages/azalee` | sa bibliothèque — sans `bin/azalee`, 79 Mo de binaire recompilable |
 | `rg/packages/{ui,assets,mcp}` | `packages/*` | le socle d'interface, les images, le serveur MCP |
 | *(généré depuis la base)* | `supabase/migrations/` | le schéma des 66 tables `inagle_*`, qui n'existait nulle part |

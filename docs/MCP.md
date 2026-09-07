@@ -23,7 +23,7 @@ L'architecture du serveur frère `aphrody-mcp` dans `aphrody/crates/google_mcp` 
 ## 2. Invariants & Avantages Stratégiques pour `niers`
 
 La migration vers un serveur MCP Rust natif procure des bénéfices décisifs :
-- **Accès in-process direct au moteur :** Les 38 crates Rust (`nie-formats`, `nie-data`, `nie-core`, `nie-lua`, `nie-trace`) sont appelées directement en mémoire, évitant toute sérialisation FFI ou passage de gros tampons binaires (textures G4TX, modèles G4MD/GLB) à travers un sous-processus.
+- **Accès in-process direct au moteur :** Les crates Rust du workspace (`nie-formats`, `nie-data`, `nie-core`, `nie-lua`, `nie-trace`) sont appelées directement en mémoire, évitant toute sérialisation FFI ou passage de gros tampons binaires (textures G4TX, modèles G4MD/GLB) à travers un sous-processus.
 - **Portabilité absolue :** Un binaire unique compilé (`niers.exe mcp` ou `nie-mcp.exe`) autonome, ne nécessitant ni runtime Bun, ni dépendances `node_modules`, ni Zod.
 - **Cohérence des types :** Synchronisation directe avec les structs de données canoniques de `nie-data` et `nie-formats`.
 

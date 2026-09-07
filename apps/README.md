@@ -5,7 +5,7 @@ bibliothèque va dans [`packages/`](../packages). Toutes partagent le lockfile d
 
 | Application | Ce que c'est | Comment ça tourne |
 |---|---|---|
-| `azalee` | le site du wiki (Next.js 15, App Router) | service `azalee-web`, déploiement bleu/vert |
+| `azalee` | le site du wiki (Next.js 16.3.0-canary.37, App Router) | service `azalee-web`, déploiement bleu/vert |
 | `nie-explorer` | explorateur / éditeur de bureau (Tauri : React + Rust) | `bun run tauri dev`, publié par `scripts/release-desktop.sh` |
 | `nie-mcp` | serveur MCP `niers-game` — VFS, assets, KB RE, pilotage de l'explorateur | déclaré dans `.mcp.json` |
 | `bxc` | passerelle vers `@aphrody/bxc` et workflow de scrapping unifié | `bun --bun apps/bxc/src/…` |
