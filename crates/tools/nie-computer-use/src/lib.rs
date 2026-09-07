@@ -7,12 +7,25 @@ use std::path::Path;
 
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum Surface {
     NieExe,
     Ghidra,
+}
+
+impl FromStr for Surface {
+    type Err = anyhow::Error;
+
+    fn from_str(value: &str) -> Result<Self> {
+        match value {
+            "nie-exe" | "nie_exe" => Ok(Self::NieExe),
+            "ghidra" => Ok(Self::Ghidra),
+            other => anyhow::bail!("unknown Computer Use surface `{other}`; expected nie-exe or ghidra"),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -59,6 +72,12 @@ pub fn probe_json(request: &ProbeRequest) -> Result<String> {
     serde_json::to_string_pretty(&probe(request)?).context("serialize Computer Use probe")
 }
 
+/// Parse the stable CLI spelling and return the JSON probe response.
+pub fn probe_cli(surface: &str, executable: Option<String>, ghidra_url: String) -> Result<String> {
+    let request = ProbeRequest { surface: surface.parse()?, executable, ghidra_url };
+    probe_json(&request)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -74,5 +93,11 @@ mod tests {
         let result = probe(&ProbeRequest { surface: Surface::NieExe, executable: Some("does-not-exist-nie.exe".into()), ghidra_url: default_ghidra_url() }).unwrap();
         assert!(!result.available);
         assert_eq!(result.detail, "executable not found");
+    }
+
+    #[test]
+    fn cli_surface_spellings_are_stable() {
+        assert_eq!("nie-exe".parse::<Surface>().unwrap(), Surface::NieExe);
+        assert_eq!("ghidra".parse::<Surface>().unwrap(), Surface::Ghidra);
     }
 }
