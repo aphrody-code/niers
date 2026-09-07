@@ -85,6 +85,7 @@
  */
 
 import { appendFile, mkdir, readdir, readFile, readlink, rename, rm, stat, symlink, writeFile } from "node:fs/promises";
+import { freemem, totalmem } from "node:os";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Configuration
@@ -441,6 +442,12 @@ interface MemorySnapshot {
 }
 
 async function readMemory(): Promise<MemorySnapshot> {
+	if (process.platform === "win32") {
+		return {
+			totalMiB: Math.round(totalmem() / 1024 / 1024),
+			availableMiB: Math.round(freemem() / 1024 / 1024),
+		};
+	}
 	const meminfo = await readFile("/proc/meminfo", "utf8");
 	const champ = (nom: string): number => {
 		const ligne = meminfo.split("\n").find((entry) => entry.startsWith(`${nom}:`));
@@ -451,9 +458,14 @@ async function readMemory(): Promise<MemorySnapshot> {
 
 /** Mémoire réellement consommée par une unité systemd, en Mio (0 si arrêtée). */
 async function unitMemoryMiB(unit: string, property = "MemoryCurrent"): Promise<number> {
-	const result = await run(["systemctl", "show", unit, `--property=${property}`, "--value"]);
-	const brut = Number.parseInt(result.stdout.trim(), 10);
-	return Number.isFinite(brut) && brut > 0 ? Math.round(brut / 1024 / 1024) : 0;
+	if (process.platform === "win32") return 0;
+	try {
+		const result = await run(["systemctl", "show", unit, `--property=${property}`, "--value"]);
+		const brut = Number.parseInt(result.stdout.trim(), 10);
+		return Number.isFinite(brut) && brut > 0 ? Math.round(brut / 1024 / 1024) : 0;
+	} catch {
+		return 0;
+	}
 }
 
 /**
@@ -689,7 +701,12 @@ async function currentSlotRelease(app: AppConfig, slot: SlotId): Promise<string 
 }
 
 async function unitActive(unit: string): Promise<boolean> {
-	return (await run(["systemctl", "is-active", "--quiet", unit])).code === 0;
+	if (process.platform === "win32") return false;
+	try {
+		return (await run(["systemctl", "is-active", "--quiet", unit])).code === 0;
+	} catch {
+		return false;
+	}
 }
 
 async function startSlot(app: AppConfig, slot: SlotId): Promise<void> {
