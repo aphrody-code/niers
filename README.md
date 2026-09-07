@@ -230,7 +230,7 @@ Python goes through `uv run`, never a bare `python`.
 Tests backed by the game's JSON dumps resolve their corpus from `NIE_GAMEDATA_JSON` and **announce
 on stderr when they skip** — a golden that silently does nothing is a false green.
 
-Further reading: [`docs/PLAN.md`](docs/PLAN.md) (the plan, with numbers) ·
+Further reading: [`PLAN.md`](PLAN.md) (the canonical active plan and gate ledger) ·
 [`docs/FORGE.md`](docs/FORGE.md) (producing the binary) ·
 [`docs/RE.md`](docs/RE.md) (the target and the loop) ·
 [`docs/FORMATS.md`](docs/FORMATS.md) (file formats) ·

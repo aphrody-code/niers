@@ -49,8 +49,8 @@ deux hôtes ; le jeu s'appelle **nie** et ne bouge pas. Chaque jour a un propri�
 gate qui **compte**, et un rollback.
 
 La stack est **gelée** : [`docs/stack/`](docs/stack/README.md) (décisions, versions,
-alternatives rejetées, gates). Ce fichier est le plan d'exécution de cette semaine ; le plan
-maître du moteur et de la forge reste [`docs/PLAN.md`](docs/PLAN.md).
+alternatives rejetées, gates). Ce fichier est le plan d'exécution canonique ; les détails du
+moteur et de la forge restent dans [`docs/PLAN.md`](docs/PLAN.md), son annexe technique.
 
 > **Amendement du 2026-09-06 (9) — preuve VFS/Lua et relais menu livrés.** Avec `NIE_GAME_DIR`
 > explicite, le poste Windows et `ovh-vps-ubuntu-direct` montent chacun **255 308 entrées / 936
